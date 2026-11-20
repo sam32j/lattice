@@ -261,6 +261,8 @@ enum DefaultsKey {
     static let cleaningModeShortcutEnabled = "cleaningModeShortcutEnabled"
     static let darkModeShortcut = "darkModeShortcut"
     static let darkModeShortcutEnabled = "darkModeShortcutEnabled"
+    static let ejectDisksShortcut = "ejectDisksShortcut"
+    static let ejectDisksShortcutEnabled = "ejectDisksShortcutEnabled"
     static let desktopCurtainActive = "desktopCurtainActive"
     static let uninstallerCommandBarEnabled = "uninstallerCommandBarEnabled"
     static let killProcessSortBy = "killProcessSortBy" // cpu | memory | name | pid
@@ -1294,6 +1296,8 @@ enum Defaults {
         DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
         DefaultsKey.darkModeShortcutEnabled: false,
         DefaultsKey.darkModeShortcut: GlobalShortcut.darkModeDefault.storageValue,
+        DefaultsKey.ejectDisksShortcutEnabled: false,
+        DefaultsKey.ejectDisksShortcut: GlobalShortcut.ejectDisksDefault.storageValue,
         DefaultsKey.uninstallerCommandBarEnabled: false,
         DefaultsKey.killProcessSortBy: "cpu",
         DefaultsKey.killProcessSortAscending: false,

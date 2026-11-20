@@ -278,7 +278,7 @@ struct ShortcutsSettings: View {
         return ShortcutPreferenceRow(
             role: role,
             label: title,
-            symbolName: role == .darkMode ? "circle.lefthalf.filled" : (role.isKeyboardBrightness ? "keyboard" : role.feature.symbolName),
+            symbolName: role == .darkMode ? "circle.lefthalf.filled" : (role == .ejectDisks ? "eject" : (role.isKeyboardBrightness ? "keyboard" : role.feature.symbolName)),
             contextLabel: showsFeatureContext && role != .snippetLibrary && title != featureTitle ? featureTitle : nil,
             statusText: active ? text.active : text.inactive,
             statusIsActive: active,
@@ -290,7 +290,7 @@ struct ShortcutsSettings: View {
             },
             onChange: {
                 FeatureRuntime.shared.sync(role.availabilityFeatures)
-                if role == .darkMode {
+                if role == .darkMode || role == .ejectDisks {
                     QuickTogglesService.shared.syncWithPreferences()
                 }
             }
