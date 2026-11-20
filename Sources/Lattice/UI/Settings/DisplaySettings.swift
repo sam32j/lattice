@@ -19,12 +19,13 @@ struct DisplaySettings: View {
                 if focus == nil || focus == .keepAwake {
                     FeatureActivationSection(feature: .keepAwake) { EnergyKeepAwakeSettings() }
                 }
-                if focus == nil || focus == .brightness || focus == .extraBrightness || focus == .wallpaper {
+                // Display & Energy: displays, wallpaper, then Bluetooth, all on
+                // one page; a Bluetooth search result scrolls to its card here.
+                if focus == nil || focus == .brightness || focus == .extraBrightness
+                    || focus == .wallpaper || focus == .bluetoothSleep {
                     EnergyDisplaySettings()
                     wallpaperCard
                         .settingsSectionAnchor(.wallpaper, cornerRadius: 16)
-                }
-                if focus == nil || focus == .bluetoothSleep {
                     bluetoothCard
                         .settingsSectionAnchor(.bluetoothSleep, cornerRadius: 16)
                 }
@@ -42,14 +43,15 @@ struct DisplaySettings: View {
         .onChange(of: focus) { _, _ in refreshVisibleServices() }
         // The display card's accordion and the cards below it move in one
         // transaction, so nothing under it jumps ahead of the expansion.
-        .settingsExpansionAnimation(value: [brightnessControlEnabled, bluetoothSleepEnabled])
+        .settingsExpansionAnimation(value: [brightnessControlEnabled, bluetoothSleepEnabled,
+                                             wallpaperInstalled])
     }
 
     private func refreshVisibleServices() {
         if (focus == nil || focus == .keepAwake), AppFeature.keepAwake.isAvailable {
             KeepAwakeManager.shared.refreshPasswordlessStatus()
         }
-        if (focus == nil || focus == .brightness || focus == .wallpaper) {
+        if (focus == nil || focus == .brightness || focus == .wallpaper || focus == .bluetoothSleep) {
             // Displays may have changed since launch (docked, clamshell).
             BrightnessService.shared.refresh()
         }
@@ -63,17 +65,24 @@ struct DisplaySettings: View {
 
     private var wallpaperCard: some View {
         let strings = FeatureStrings.wallpaper(l10n.language)
-        return SettingsCard(title: strings.pageTitle) {
-            SettingsRow(symbol: "rectangle.inset.filled.and.cursorarrow", title: strings.enableManagement,
-                        caption: strings.hubDescription) {
-                Toggle(strings.enableManagement, isOn: Binding(
-                    get: { wallpaperInstalled },
-                    set: { enabled in
-                        FeatureRuntime.shared.setAvailable([.wallpaper], enabled)
-                    }
-                ))
-                .labelsHidden()
-            }
+        return SettingsCard(symbol: "photo.tv", title: strings.enableManagement, headerSpacing: 0, headerAccessory: {
+            Toggle(strings.enableManagement, isOn: Binding(
+                get: { wallpaperInstalled },
+                set: { enabled in
+                    FeatureRuntime.shared.setAvailable([.wallpaper], enabled)
+                    if enabled { WallpaperService.shared.reloadSources() }
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.regular)
+            .help(strings.enableManagement)
+            .accessibilityLabel(strings.enableManagement)
+        }) {
+            WallpaperFolderSettings()
+                .padding(.leading, settingsRowTextInset)
+                .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+                .settingsCollapsible(isExpanded: wallpaperInstalled)
         }
     }
 

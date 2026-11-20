@@ -279,7 +279,7 @@ enum SettingsSearchSupport {
 
     /// Features that sit on a shared page but own a sidebar row of their own.
     /// Search heads their matches with that row instead of the page.
-    static let standaloneSearchGroupFeatures: Set<AppFeature> = [.bluetoothSleep]
+    static let standaloneSearchGroupFeatures: Set<AppFeature> = []
 
     struct SearchGroupBuilder {
         let pageItem: SettingsSearchItem
