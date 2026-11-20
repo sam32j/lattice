@@ -10,10 +10,6 @@ struct WindowLayoutSettings: View {
     @ObservedObject var features = FeatureRuntime.shared
     @ObservedObject var service = WindowLayoutService.shared
     @AppStorage(DefaultsKey.windowMaximizeEnabled) var maximizeEnabled = false
-    @ObservedObject var pointerDisplay = PointerDisplayService.shared
-    @AppStorage(DefaultsKey.pointerDisplayEnabled) var pointerDisplayEnabled = false
-    @AppStorage(DefaultsKey.windowDirectionalEnabled) var directionalEnabled = false
-    @AppStorage(DefaultsKey.windowDirectionalShortcut) var directionalShortcutRaw = GlobalShortcut.windowDirectionalDefault.storageValue
     @AppStorage(DefaultsKey.windowEdgeSnapEnabled) var edgeSnapEnabled = false
     @AppStorage(DefaultsKey.windowEdgeSnapDisabledZones) var edgeSnapDisabledZones = ""
     @AppStorage(DefaultsKey.windowEdgeSnapZoneActions) var edgeSnapZoneActions = ""
@@ -23,14 +19,10 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowLayoutWindowGap) var windowGap = 0
     @AppStorage(DefaultsKey.windowLayoutScreenGap) var screenGap = 0
     @AppStorage(DefaultsKey.windowReserveStageManagerSpace) var reserveStageManagerSpace = false
-    @AppStorage(DefaultsKey.windowLayoutMarginPercent) var marginPercent = WindowLayoutMargin.defaultPercent
-    @AppStorage(DefaultsKey.windowLayoutHoldToCycleDisplayEnabled) var holdToCycleDisplayEnabled = false
-    @AppStorage(DefaultsKey.windowLayoutHoldDelay) var holdDelay = "default"
     @AppStorage(DefaultsKey.spacesOrderEnabled) var spacesOrderEnabled = false
     @AppStorage(DefaultsKey.autoQuitEnabled) var autoQuitEnabled = false
-    @State var directionalError: String?
     @State var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
-    @State var conflictAlert: ShortcutConflictAlert?
+
     var text: WindowLayoutFeatureStrings {
         FeatureStrings.windowLayout(l10n.language)
     }
@@ -57,51 +49,51 @@ struct WindowLayoutSettings: View {
             .padding(22)
         }
         .toggleStyle(.switch)
-        .shortcutConflictAlert($conflictAlert)
         .onAppear { refreshSystemTilingState() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshSystemTilingState()
         }
-        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility, maximizeEnabled, gestureEnabled, windowLayoutInstalled, autoQuitEnabled, reserveStageManagerSpace, holdToCycleDisplayEnabled])
+        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility, maximizeEnabled, gestureEnabled, windowLayoutInstalled, autoQuitEnabled, reserveStageManagerSpace])
     }
 
     var windowsAndSpaces: some View {
-        SettingsCard(title: SettingsWindowGroupStrings.text(l10n.language)) {
-            if AppFeature.windowMaximizer.isPresentInControls() {
-                VStack(alignment: .leading, spacing: 13) {
-                    SettingsRow(symbol: "arrow.up.left.and.arrow.down.right", title: l10n.s.windowMaximizeName,
-                                caption: l10n.s.windowMaximizeCaption) {
-                        PermissionGatedToggle(l10n.s.windowMaximizeName, isOn: $maximizeEnabled).labelsHidden()
-                            .onChange(of: maximizeEnabled) { _, _ in FeatureRuntime.shared.sync([.windowMaximizer]) }
+        SettingsCard(symbol: "appwindow.swipe.rectangle", title: SettingsWindowGroupStrings.text(l10n.language)) {
+            VStack(alignment: .leading, spacing: 14) {
+                if AppFeature.windowMaximizer.isPresentInControls() {
+                    VStack(alignment: .leading, spacing: 13) {
+                        SettingsControlRow(title: l10n.s.windowMaximizeName,
+                                           caption: l10n.s.windowMaximizeCaption) {
+                            PermissionGatedToggle(l10n.s.windowMaximizeName, isOn: $maximizeEnabled).labelsHidden()
+                                .onChange(of: maximizeEnabled) { _, _ in FeatureRuntime.shared.sync([.windowMaximizer]) }
+                        }
+                        if maximizeEnabled {
+                            WindowMaximizerExclusionsList()
+                        }
                     }
-                    if maximizeEnabled {
-                        WindowMaximizerExclusionsList()
-                            .padding(.leading, settingsRowTextInset)
+                    .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
+                    Divider()
+                }
+                moveAndResizeDragging
+                Divider()
+                DockQuitOnCloseSettings()
+                if AppFeature.spacesOrder.isPresentInControls() {
+                    Divider()
+                    SettingsControlRow(title: l10n.s.spacesOrderName,
+                                       caption: l10n.s.spacesOrderCaption) {
+                        Toggle(l10n.s.spacesOrderName, isOn: $spacesOrderEnabled).labelsHidden()
+                            .onChange(of: spacesOrderEnabled) { _, _ in FeatureRuntime.shared.sync([.spacesOrder]) }
                     }
+                    .settingsSectionAnchor(.spacesOrder, cornerRadius: 16)
                 }
-                .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
-                Divider()
             }
-            moveAndResizeDragging
-            Divider()
-            DockQuitOnCloseSettings()
-            if AppFeature.spacesOrder.isPresentInControls() {
-                Divider()
-                SettingsRow(symbol: "square.stack.3d.up", title: l10n.s.spacesOrderName,
-                            caption: l10n.s.spacesOrderCaption) {
-                    Toggle(l10n.s.spacesOrderName, isOn: $spacesOrderEnabled).labelsHidden()
-                        .onChange(of: spacesOrderEnabled) { _, _ in FeatureRuntime.shared.sync([.spacesOrder]) }
-                }
-                .settingsSectionAnchor(.spacesOrder, cornerRadius: 16)
-            }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 
     var moveAndResizeDragging: some View {
         VStack(alignment: .leading, spacing: 13) {
-            SettingsRow(symbol: "arrow.up.and.down.and.arrow.left.and.right",
-                        title: text.gestureEnable,
-                        caption: text.gestureCaption) {
+            SettingsControlRow(title: text.gestureEnable,
+                               caption: text.gestureCaption) {
                 PermissionGatedToggle(text.gestureEnable, isOn: $gestureEnabled)
                     .labelsHidden()
                     .onChange(of: gestureEnabled) { _, newValue in
@@ -121,45 +113,55 @@ struct WindowLayoutSettings: View {
                                        resizeText: text.gestureResize)
                     SettingsToggleRow(title: text.gestureRaiseWindow, isOn: $gestureRaiseWindow)
                 }
-                .padding(.leading, settingsRowTextInset)
             }
         }
     }
 
     var snappingCard: some View {
-        SettingsCard(title: text.gestureSection) {
-            SettingsRow(symbol: "rectangle.3.group", title: text.enable) {
-                PermissionGatedToggle(text.enable, isOn: Binding(
-                    get: { windowLayoutInstalled },
-                    set: { enabled in
-                        FeatureRuntime.shared.setAvailable([.windowLayout], enabled)
-                        WindowLayoutService.shared.syncWithPreferences()
-                    }
-                ))
-                .labelsHidden()
-            }
-            if windowLayoutInstalled || gestureEnabled {
+        SettingsCard(symbol: "rectangle.3.group", title: text.gestureSection, headerSpacing: windowLayoutInstalled ? 14 : 0, headerAccessory: {
+            PermissionGatedToggle(text.gestureSection, isOn: Binding(
+                get: { windowLayoutInstalled },
+                set: { enabled in
+                    FeatureRuntime.shared.setAvailable([.windowLayout], enabled)
+                    WindowLayoutService.shared.syncWithPreferences()
+                }
+            ))
+            .labelsHidden()
+        }) {
+            if windowLayoutInstalled {
                 VStack(alignment: .leading, spacing: 16) {
                     WindowLayoutIgnoredAppsList()
-                        .padding(.leading, settingsRowTextInset)
-                    if windowLayoutInstalled {
-                        gapPicker(text.windowGap, selection: $windowGap)
-                            .padding(.leading, settingsRowTextInset)
-                        gapPicker(text.screenGap, selection: $screenGap)
-                            .padding(.leading, settingsRowTextInset)
-                        // A child of the arrangement switch: no icon of its
-                        // own, its text aligned with the rows above.
-                        SettingsToggleRow(title: stageManagerText.title,
-                                          caption: stageManagerText.caption,
-                                          isOn: $reserveStageManagerSpace)
-                            .padding(.leading, settingsRowTextInset)
-                        Divider()
-                        snappingControls
-                    }
+                    gapPicker(text.windowGap, selection: $windowGap)
+                    gapPicker(text.screenGap, selection: $screenGap)
+                    SettingsToggleRow(title: stageManagerText.title,
+                                      caption: stageManagerText.caption,
+                                      isOn: $reserveStageManagerSpace)
+                    Divider()
+                    edgeSnapControls
                 }
+                .padding(.leading, settingsRowTextInset)
                 .toggleStyle(TrailingSwitchToggleStyle())
+
+                Divider()
+                    .padding(.leading, settingsRowTextInset)
+
+                Button {
+                    SettingsRouter.shared.request(FeatureSettingsDestination(.windowLayoutShortcuts))
+                } label: {
+                    HStack(spacing: 12) {
+                        Text(WindowLayoutFeatureStrings.manageShortcuts(l10n.language))
+                            .foregroundStyle(.primary)
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, settingsRowTextInset)
             }
         }
     }
-
 }

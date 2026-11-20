@@ -132,35 +132,53 @@ struct WindowEdgeSnapZonePicker: View {
     private func menu(for zone: WindowEdgeSnapZone, part: Int) -> [WindowEdgeSnapMenuEntry] {
         let isOn = !disabledZones.contains(zone)
         let actions = layout.actions(for: zone)
-        let current = actions.indices.contains(part) ? actions[part] : (actions.first ?? zone.defaultAction)
-        // A split edge turns on and off as a whole, so the switch names the
-        // edge rather than the area that opened the menu.
-        let useTitle = zone.maximumParts > 1 ? text.edgeSnapUseEdge : text.edgeSnapUseCorner
+        let rawCurrent = actions.indices.contains(part) ? actions[part] : (actions.first ?? zone.defaultAction)
+        let current = rawCurrent == .centerHalf ? .centerColumn : rawCurrent
+        let enableTitle = WindowLayoutFeatureStrings.edgeSnapEnableZone(l10n.language)
         var entries: [WindowEdgeSnapMenuEntry] = [
-            .item(useTitle, checked: isOn) { setZone(zone, on: !isOn) },
+            .item(enableTitle, checked: isOn) { setZone(zone, on: !isOn) },
             .separator,
         ]
         for group in WindowEdgeSnapPlacementGroup.allCases {
-            let items = group.actions.map { action in
-                WindowEdgeSnapMenuEntry.item(action.title(text), checked: action == current) {
-                    choose(action, for: zone, part: part)
+            var items: [WindowEdgeSnapMenuEntry] = []
+            for (sectionIndex, section) in group.sections.enumerated() {
+                if sectionIndex > 0 {
+                    items.append(.separator)
+                }
+                for action in section {
+                    items.append(
+                        WindowEdgeSnapMenuEntry.item(action.title(text), checked: action == current) {
+                            choose(action, for: zone, part: part)
+                        }
+                    )
                 }
             }
             if group == .other {
                 entries += items
             } else {
-                entries.append(.submenu(group.title(text), checked: group.actions.contains(current), items))
+                entries.append(
+                    .submenu(
+                        group.title(text),
+                        checked: group.actions.contains(current),
+                        items
+                    )
+                )
             }
         }
         if zone.maximumParts > 1 {
             entries.append(.separator)
             let currentCount = isOn ? actions.count : 1
             let counts = (1...zone.maximumParts).map { count in
-                WindowEdgeSnapMenuEntry.item("\(count)", checked: count == currentCount) {
+                WindowEdgeSnapMenuEntry.item(
+                    WindowLayoutFeatureStrings.edgeSnapZoneCount(count, l10n.language),
+                    checked: count == currentCount
+                ) {
                     split(zone, into: count)
                 }
             }
-            entries.append(.submenu(text.edgeSnapAreasOnEdge, checked: false, counts))
+            entries.append(
+                .submenu(WindowLayoutFeatureStrings.edgeSnapSplitInto(l10n.language), checked: false, counts)
+            )
         }
         return entries
     }
