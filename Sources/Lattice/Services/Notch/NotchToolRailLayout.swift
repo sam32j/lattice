@@ -10,11 +10,6 @@ extension NotchLayout {
     static let toolTwoRowThreshold = 8
     static let hubWidgetTileHeight: CGFloat = 45
 
-    static func hubIslandWidgetsHeight(in defaults: UserDefaults = .standard) -> CGFloat {
-        let hasWidget = NotchSupport.modules(in: defaults).contains { [.music, .calendar, .timer].contains($0) }
-        return hasWidget ? hubWidgetTileHeight : 0
-    }
-
     /// Presets intentionally keep large catalogs in two rows.
     static func toolRailRows(count: Int, width: CGFloat, height: CGFloat) -> Int {
         guard count < toolTwoRowThreshold else { return 2 }

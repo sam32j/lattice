@@ -10,21 +10,10 @@ struct KeyboardLightSettings: View {
 
     var body: some View {
         let strings = FeatureStrings.brightness(l10n.language)
-        SettingsCard(title: strings.keyboardLight, headerAccessory: {
-            if brightness.keyboardLightEnabled != nil {
-                Toggle(strings.keyboardLight,
-                       isOn: Binding(
-                        get: { brightness.keyboardLightEnabled ?? false },
-                        set: { brightness.setKeyboardLightEnabled($0) }
-                       ))
-                .labelsHidden()
-            }
-        }) {
+        SettingsCard(symbol: "light.max", title: strings.keyboardLight) {
             VStack(alignment: .leading, spacing: 14) {
                 if brightness.keyboardLightEnabled != nil {
                     keyboardLightSlider
-
-                    Divider()
                 }
 
                 ForEach([GlobalShortcutRole.keyboardBrightnessDecrease, .keyboardBrightnessIncrease]) { role in
@@ -42,6 +31,7 @@ struct KeyboardLightSettings: View {
                         .foregroundStyle(.red)
                 }
             }
+            .padding(.leading, settingsRowTextInset)
         }
         .onAppear { brightness.refreshKeyboardLight() }
     }
@@ -49,6 +39,7 @@ struct KeyboardLightSettings: View {
     var keyboardLightSlider: some View {
         let strings = FeatureStrings.brightness(l10n.language)
         let hubStrings = FeatureStrings.keepAwakeHub(l10n.language)
+        let isLightOn = brightness.keyboardLightEnabled ?? false
         let readout = BrightnessSupport.keyboardLightDisplayReadout(
             level: brightness.keyboardLightLevel,
             isSaturated: brightness.keyboardLightSaturated,
@@ -74,14 +65,32 @@ struct KeyboardLightSettings: View {
                 }
             }
         )
-        return SettingsSliderRow(
-            title: strings.keyboardLightLevel,
-            value: binding,
-            range: 0...1,
-            readout: readout,
-            sliderWidth: 140,
-            usesSystemAppearance: true,
-            onEditingChanged: brightness.keyboardLightDragChanged
-        )
+        return SettingsControlRow(title: strings.keyboardLightLevel) {
+            HStack(spacing: 8) {
+                Button {
+                    brightness.setKeyboardLightEnabled(!isLightOn)
+                } label: {
+                    Image(systemName: "light.max")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(isLightOn ? Color.primary : Color.secondary.opacity(0.6))
+                        .frame(width: 18, height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(isLightOn ? hubStrings.off : hubStrings.on)
+                .accessibilityLabel(strings.keyboardLight)
+                .accessibilityValue(isLightOn ? hubStrings.on : hubStrings.off)
+
+                SettingsValueSlider(
+                    title: strings.keyboardLightLevel,
+                    value: binding,
+                    range: 0...1,
+                    readout: readout,
+                    usesSystemAppearance: true,
+                    onEditingChanged: brightness.keyboardLightDragChanged
+                )
+                .frame(width: 140)
+            }
+        }
     }
 }

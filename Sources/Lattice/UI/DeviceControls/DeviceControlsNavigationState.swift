@@ -15,12 +15,13 @@ enum DeviceControlsAppVolumesLayout {
     static let emptyActiveHeight: CGFloat = 102
 
     static func isActive(_ app: MixerApp, arrangement: MixerAppArrangement? = nil) -> Bool {
-        if app.isPlaying { return true }
+        app.isPlaying
+    }
+
+    static func isVisible(_ app: MixerApp, showInactive: Bool, arrangement: MixerAppArrangement? = nil) -> Bool {
+        if showInactive || app.isPlaying { return true }
         let arr = arrangement ?? MixerAppArrangement(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.mixerAppArrangement) ?? "")
-        if arr.isPinned(app.persistenceID) { return true }
-        if !MixerRoutingSupport.isUnity(app.volume) { return true }
-        if app.selectedOutputDeviceUID != nil { return true }
-        return false
+        return arr.isPinned(app.persistenceID)
     }
 
     static func height(
@@ -32,9 +33,8 @@ enum DeviceControlsAppVolumesLayout {
         if !AppVolumeMixer.isSupported || apps.isEmpty {
             listHeight = emptyMessageHeight
         } else {
-            let count = showInactive
-                ? apps.count
-                : apps.filter { isActive($0) }.count
+            let arr = MixerAppArrangement(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.mixerAppArrangement) ?? "")
+            let count = apps.filter { isVisible($0, showInactive: showInactive, arrangement: arr) }.count
 
             if count == 0 {
                 listHeight = emptyActiveHeight

@@ -7,25 +7,6 @@ import UniformTypeIdentifiers
 
 
 extension AppUpdatesListView {
-    func chooseExceptionApp() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.applicationBundle]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.message = text.addException
-        guard !inNotch else {
-            DispatchQueue.main.async {
-                guard panel.runAboveIsland() == .OK, let url = panel.url else { return }
-                updates.addExclusion(appAt: url)
-            }
-            return
-        }
-        NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        updates.addExclusion(appAt: url)
-    }
-
     @ViewBuilder
     var compactList: some View {
         let rows = LazyVStack(alignment: .leading, spacing: Self.compactRowSpacing) {

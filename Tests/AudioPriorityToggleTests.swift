@@ -11,6 +11,10 @@ enum AudioPriorityToggleTests {
         static let shared = SoundOutputSwitcher()
         func syncWithPreferences() {}
     }
+    final class AppVolumeMixer {
+        static let shared = AppVolumeMixer()
+        func syncWithPreferences() {}
+    }
     class InputState {
         var inputPriorityIsActive = false
         var running = false

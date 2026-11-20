@@ -111,7 +111,6 @@ struct FeatureActivationControl: View {
     let feature: AppFeature
     @ObservedObject private var runtime = FeatureRuntime.shared
     @ObservedObject private var l10n = L10n.shared
-    @AppStorage(DefaultsKey.radialMenuEnabled) private var radialEnabled = false
 
     private var title: String {
         if feature == .radialMenu { return FeatureStrings.radialMenu(l10n.language).enableLabel }

@@ -14,22 +14,16 @@ struct SoundOutputSwitcherControls: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             ShortcutPreferenceRow(role: .soundOutputSwitcher,
-                                  label: "Cycle through with shortcut",
+                                  label: l10n.s.soundOutputSwitcherEnable,
                                   help: l10n.s.soundOutputSwitcherCaption,
                                   additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
                 outputSwitcher.syncWithPreferences()
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                if outputSwitcher.registrationFailed {
-                    inputMessage(l10n.s.shortcutUnavailable, systemImage: "keyboard.badge.ellipsis")
-                }
-                if outputSwitcher.lastSwitchFailed {
-                    inputMessage(l10n.s.soundOutputSwitcherNoAvailableSelection,
-                                 systemImage: "speaker.badge.exclamationmark")
-                }
+            if outputSwitcher.registrationFailed {
+                inputMessage(l10n.s.shortcutUnavailable, systemImage: "keyboard.badge.ellipsis")
+                    .settingsCollapsible(isExpanded: enabled)
             }
-            .settingsCollapsible(isExpanded: enabled)
         }
     }
 

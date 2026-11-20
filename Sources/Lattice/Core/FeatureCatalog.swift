@@ -97,12 +97,12 @@ extension AppFeature {
         case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder:
             return .windowsDock
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
-             .keyboardDebounce, .superKey, .quitWindowProtection, .mouseClickDebounce, .cleaningMode:
+             .keyboardDebounce, .superKey, .quitWindowProtection, .mouseClickDebounce, .cleaningMode, .musicBlock:
             return .mouseKeyboard
         case .clipboardHistory, .pastePlain, .shelf, .urlCleaner,
              .diskImageInstaller, .textSnippets, .scratchpad:
             return .clipboardFiles
-        case .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock:
+        case .mixer, .soundOutputSwitcher, .audioPriority, .micMute:
             return .sound
         case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper:
             return .energyDisplay

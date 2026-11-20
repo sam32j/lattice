@@ -53,26 +53,6 @@ struct SettingsValueSlider: View {
     }
 }
 
-struct SettingsSliderRow: View {
-    let title: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    var step: Double = 0
-    let readout: String
-    var sliderWidth: CGFloat = 140
-    var usesSystemAppearance = true
-    var onEditingChanged: (Bool) -> Void = { _ in }
-
-    var body: some View {
-        SettingsControlRow(title: title) {
-            SettingsValueSlider(title: title, value: $value, range: range, step: step,
-                                readout: readout, usesSystemAppearance: usesSystemAppearance,
-                                onEditingChanged: onEditingChanged)
-                .frame(width: sliderWidth)
-        }
-    }
-}
-
 private struct NativeSettingsSlider: NSViewRepresentable {
     @Binding var value: Double
     @Binding var tracking: Bool

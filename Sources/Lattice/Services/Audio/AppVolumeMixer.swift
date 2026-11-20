@@ -258,10 +258,35 @@ final class AppVolumeMixer: ObservableObject {
     /// System device observation is shared with Audio device priority and the
     /// output switcher. The per-app portion still follows only Volume mixer.
     func syncWithPreferences() {
-        let needs = MixerRoutingSupport.observationNeeds(isAvailable: { $0.isAvailable })
+        let outputPriority = AppFeature.audioPriority.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.audioPriorityOutputEnabled)
+        let needs = MixerRoutingSupport.observationNeeds(isAvailable: { feature in
+            switch feature {
+            case .mixer:
+                return AppFeature.mixer.isAvailable
+                    && UserDefaults.standard.bool(forKey: DefaultsKey.volumeMixerEnabled)
+            case .audioPriority:
+                return outputPriority
+            default:
+                return feature.isAvailable
+            }
+        })
         guard needs.devices else {
+            DispatchQueue.main.async {
+                if DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
+                    DeviceControlsNavigationState.shared.resetSubpage()
+                }
+            }
             stop()
             return
+        }
+
+        if !needs.processes {
+            DispatchQueue.main.async {
+                if DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
+                    DeviceControlsNavigationState.shared.resetSubpage()
+                }
+            }
         }
 
         if listenerInstalled {
@@ -292,6 +317,7 @@ final class AppVolumeMixer: ObservableObject {
             refreshApps()
         } else {
             stopAll()
+            removeOutputControlListeners()
             sessionVolumes.removeAll()
             sessionRoutes.removeAll()
             refresh.discardInFlight()
@@ -303,6 +329,8 @@ final class AppVolumeMixer: ObservableObject {
             }
             if !apps.isEmpty { apps = [] }
             if !hiddenApps.isEmpty { hiddenApps = [] }
+            if systemOutputVolume != nil { systemOutputVolume = nil }
+            if systemOutputMuted != nil { systemOutputMuted = nil }
             processMonitoringEnabled = false
             clearPermissionIfNoActiveAdjustments()
         }
@@ -1725,8 +1753,13 @@ final class AppVolumeMixer: ObservableObject {
         if snapshot.outputDevices != outputDevices {
             outputDevices = snapshot.outputDevices
         }
-        subscribeToOutputControls(of: snapshot.defaultDeviceID)
-        applyOutputControls(volume: snapshot.systemOutputVolume, muted: snapshot.systemOutputMuted)
+        if processMonitoringEnabled {
+            subscribeToOutputControls(of: snapshot.defaultDeviceID)
+            applyOutputControls(volume: snapshot.systemOutputVolume, muted: snapshot.systemOutputMuted)
+        } else {
+            removeOutputControlListeners()
+            applyOutputControls(volume: nil, muted: nil)
+        }
 
         guard let readApps = snapshot.apps else {
             if !apps.isEmpty {
@@ -1772,12 +1805,12 @@ final class AppVolumeMixer: ObservableObject {
             nextOutputDevices: nextOutputDevices,
             lowerOnDisconnect: request.lowerOnHeadphonesDisconnect,
             lowerToPercent: request.lowerToPercent)
-        let systemOutputVolume = defaultDevice.flatMap { device in
+        let systemOutputVolume = request.includeApps ? defaultDevice.flatMap { device in
             hasSettableOutputVolume(for: device.audioObjectID)
                 ? outputVolume(for: device.audioObjectID).map(Double.init)
                 : nil
-        }
-        let systemOutputMuted = defaultDevice.flatMap { outputMuted(for: $0.audioObjectID) }
+        } : nil
+        let systemOutputMuted = request.includeApps ? defaultDevice.flatMap { outputMuted(for: $0.audioObjectID) } : nil
 
         guard request.includeApps, isSupported else {
             return RefreshSnapshot(defaultUID: defaultUID,
@@ -3260,6 +3293,7 @@ private final class MixerTapConfiguration {
     private let lock = NSLock()
     private var pending = false
     private var immediatePending = false
+    private var suspendedDuringRead = false
     private var stopped = false
     private var lastReadAt: CFAbsoluteTime = 0
     private var registrations: [(AudioObjectID, AudioObjectPropertyAddress)] = []
@@ -3322,8 +3356,11 @@ private final class MixerTapConfiguration {
     func refresh(immediately: Bool, suspend: Bool = false) {
         let enqueue = lock.withLock {
             guard !stopped, !requiresRebuild else { return false }
-            if suspend { rendering.value = 0 }
-            immediatePending = immediatePending || immediately
+            if suspend {
+                rendering.value = 0
+                suspendedDuringRead = true
+            }
+            immediatePending = immediatePending || immediately || suspend
             guard !pending else { return false }
             pending = true
             return true
@@ -3331,9 +3368,10 @@ private final class MixerTapConfiguration {
         guard enqueue else { return }
         queue.async { [self] in
             let shouldRead = lock.withLock {
-                let immediately = immediatePending
+                let immediately = immediatePending || !canRender
                 pending = false
                 immediatePending = false
+                suspendedDuringRead = false
                 return !stopped && MixerRoutingSupport.tapLevelReadIsDue(
                     immediately: immediately, sinceLastRead: CFAbsoluteTimeGetCurrent() - lastReadAt)
             }
@@ -3345,7 +3383,7 @@ private final class MixerTapConfiguration {
                 if !unchanged {
                     rendering.value = 0
                     invalidated.value = 1
-                } else if !stopped, !pending, !requiresRebuild {
+                } else if !stopped, !suspendedDuringRead, !requiresRebuild {
                     // A notification arriving during a read owns another
                     // pass and must not be cleared by this older result.
                     rendering.value = 1

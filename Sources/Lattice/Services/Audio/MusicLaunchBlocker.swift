@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
-import CoreServices
 
 /// Blocks a new system music-app process only when a trusted media-key
 /// observation explains it. Other launches are preserved, including voice,

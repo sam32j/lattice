@@ -42,7 +42,7 @@ struct MouseButtonShortcutsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SettingsRow(symbol: "computermouse.fill", title: text.enableLabel, caption: text.enableCaption) {
+            SettingsControlRow(title: text.enableLabel, caption: text.enableCaption) {
                 PermissionGatedToggle(text.enableLabel, isOn: $enabled)
                     .labelsHidden()
                     .onChange(of: enabled) { _, on in
@@ -70,13 +70,12 @@ struct MouseButtonShortcutsSection: View {
                 }
                 captureRow.frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .padding(.leading, settingsRowTextInset)
             .padding(.top, 12)
             .settingsCollapsible(isExpanded: enabled)
             Divider()
                 .padding(.vertical, 12)
-            SettingsRow(symbol: "rectangle.3.group", title: text.spacesEnableLabel,
-                        caption: text.spacesEnableCaption) {
+            SettingsControlRow(title: text.spacesEnableLabel,
+                               caption: text.spacesEnableCaption) {
                 if !spacesCommandsAreReachable {
                     SettingsStatusDot(status: SettingsFeatureStatus(color: .red,
                                                                   message: text.spacesShortcutsOffNote))
@@ -114,7 +113,6 @@ struct MouseButtonShortcutsSection: View {
                         .labelsHidden()
                 }
             }
-            .padding(.leading, settingsRowTextInset)
             .padding(.top, 12)
             .settingsCollapsible(isExpanded: spacesEnabled)
         }

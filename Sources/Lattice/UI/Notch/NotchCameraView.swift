@@ -36,30 +36,3 @@ struct NotchCameraView: View {
         .onDisappear { service.hideEmbedded() }
     }
 }
-
-/// The camera the mirror shows, in the island's top row while it runs with
-/// more than one camera around: the current one's name, cut short beside the
-/// camera, over a native menu of them all.
-struct NotchCameraChooser: View {
-    @ObservedObject private var service = CameraPreviewService.shared
-    @ObservedObject private var l10n = L10n.shared
-    private var strings: CameraPreviewFeatureStrings { FeatureStrings.cameraPreview(l10n.language) }
-
-    private var current: String {
-        service.devices.first { $0.uniqueID == service.selectedDeviceID }?.localizedName ?? strings.cameraMenuLabel
-    }
-
-    var body: some View {
-        if service.isEmbeddedPresented, service.state == .running, service.session != nil, service.devices.count > 1 {
-            NotchMenuButton(title: strings.cameraMenuLabel, items: service.devices.map { device in
-                NotchMenuItem(title: device.localizedName, checked: device.uniqueID == service.selectedDeviceID) {
-                    service.selectCamera(device)
-                }
-            }, cornerRadius: 9) {
-                NotchBandMenuLabel(title: current)
-            }
-            .help(current)
-            .accessibilityValue(current)
-        }
-    }
-}

@@ -318,15 +318,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return true
     }
 
-    /// The screen frame of the status item button, validated as trustworthy
-    /// for anchoring overlays (not an unplaced window parked at screen origin).
-    var statusItemFrame: NSRect? {
-        guard statusController?.statusItem.isVisible == true else { return nil }
-        guard let frame = statusController?.statusItem.button?.window?.frame,
-              StatusItemAnchorSupport.isTrustworthyStatusFrame(frame) else { return nil }
-        return frame
-    }
-
     private static let menuBarLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "lattice",
                                            category: "menubar")
 

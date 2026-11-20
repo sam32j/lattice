@@ -304,8 +304,9 @@ final class WindowLayoutService: ObservableObject {
             frameHistory.discardLatest(for: target.key)
             return finish(.failure(.failed))
         }
-        let sideRepeatCyclesThirds = WindowLayoutSideRepeat.cyclesThirds
-        if let crossing = WindowLayoutGeometry.displayCrossing(for: action,
+        let sideRepeatCyclesThirds = true || WindowLayoutSideRepeat.cyclesThirds
+        if !WindowLayoutGeometry.isSplitAction(action),
+           let crossing = WindowLayoutGeometry.displayCrossing(for: action,
                                                                previousAction: lastActions[target.key],
                                                                sideRepeatCyclesThirds: sideRepeatCyclesThirds),
            accepted(actual: target.frame,
@@ -985,14 +986,75 @@ final class WindowLayoutService: ObservableObject {
                     return noErr
                 }
                 guard id.signature == 0x5655_574C,
-                      kind == UInt32(kEventHotKeyPressed),
                       let action = WindowLayoutAction(shortcutID: id.id) else {
                     return OSStatus(eventNotHandledErr)
                 }
-                DispatchQueue.main.async { if !InputEventTap.isBlocked { service.apply(action) } }
-                return noErr
+                if kind == UInt32(kEventHotKeyPressed) {
+                    DispatchQueue.main.async {
+                        if !InputEventTap.isBlocked {
+                            service.handleHotKeyDown(action)
+                        }
+                    }
+                    return noErr
+                } else if kind == UInt32(kEventHotKeyReleased) {
+                    DispatchQueue.main.async {
+                        service.handleHotKeyUp(action)
+                    }
+                    return noErr
+                }
+                return OSStatus(eventNotHandledErr)
             }, specs.count, &specs, Unmanaged.passUnretained(self).toOpaque(), &eventHandler)
         }
+    }
+
+    private var activeHeldAction: WindowLayoutAction?
+    private var holdTimer: Timer?
+
+    func handleHotKeyDown(_ action: WindowLayoutAction) {
+        guard activeHeldAction != action else { return }
+        stopHoldTimers()
+        activeHeldAction = action
+
+        _ = apply(action)
+
+        let holdToCycleDisplay = UserDefaults.standard.bool(forKey: DefaultsKey.windowLayoutHoldToCycleDisplayEnabled)
+        if holdToCycleDisplay {
+            let delayPref = UserDefaults.standard.string(forKey: DefaultsKey.windowLayoutHoldDelay) ?? "default"
+            let initialDelay: TimeInterval = delayPref == "longer" ? 0.65 : 0.35
+
+            holdTimer = Timer.scheduledTimer(withTimeInterval: initialDelay, repeats: false) { [weak self] _ in
+                guard let self, self.activeHeldAction == action else { return }
+                self.cycleToNextDisplay(for: action)
+            }
+        }
+    }
+
+    func handleHotKeyUp(_ action: WindowLayoutAction) {
+        if activeHeldAction == action {
+            activeHeldAction = nil
+            stopHoldTimers()
+        }
+    }
+
+    private func stopHoldTimers() {
+        holdTimer?.invalidate()
+        holdTimer = nil
+    }
+
+    func cycleToNextDisplay(for action: WindowLayoutAction) {
+        guard AXIsProcessTrusted() else { return }
+        guard let target = focusedTarget(for: action) else { return }
+        let screens = NSScreen.screens
+        guard screens.count > 1 else { return }
+        guard let currentScreen = bestScreen(for: target.frame, screens: screens),
+              let nextScreen = adjacentScreen(to: currentScreen, screens: screens, movingForward: true) else {
+            return
+        }
+        let effectiveAction = lastActions[target.key] ?? action
+        _ = applyPlacement(effectiveAction,
+                           to: target,
+                           visibleFrame: nextScreen.windowLayoutVisibleFrame,
+                           cyclesRepeatedAction: false)
     }
 
     /// Lets go of the layout keys while a shortcut field is listening, so the
@@ -1005,6 +1067,8 @@ final class WindowLayoutService: ObservableObject {
     }
 
     private func unregisterHotkeys() {
+        stopHoldTimers()
+        activeHeldAction = nil
         for (action, ref) in hotKeyRefs {
             UnregisterEventHotKey(ref)
             SystemShortcutTakeover.release(action.shortcutKey)

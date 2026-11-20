@@ -9,7 +9,6 @@ enum AudioSettingsOwnershipTests {
         typealias AudioInputMuteCard = AudioSettingsOwnershipTests.AudioInputMuteCard
         typealias AudioInputDeviceControls = AudioSettingsOwnershipTests.AudioInputDeviceControls
         typealias AudioInputPriorityControls = AudioSettingsOwnershipTests.AudioInputPriorityControls
-        typealias AudioPriorityDisclosure = AudioSettingsOwnershipTests.AudioPriorityDisclosure
         typealias SettingsCard<C: View> = AudioSettingsOwnershipTests.SettingsCard<C>
         let l10n = TextCatalog()
         let microphoneControlEnabled = true
@@ -50,18 +49,6 @@ enum AudioSettingsOwnershipTests {
             }
         }
     }
-    struct MixerDevices: View {
-        typealias AudioInputDeviceControls = AudioSettingsOwnershipTests.AudioInputDeviceControls
-        let l10n = TextCatalog()
-        let settingsMode: Bool
-        struct Mixer { let outputSwitchError: String? = nil }
-        let mixer = Mixer()
-        var universalOutputPicker: some View { Marker(name: "output-picker") }
-        var systemSoundOutputPicker: some View { Marker(name: "system-sounds") }
-        var microphonePicker: some View { Marker(name: "microphone") }
-        var body: some View { audioDevicesSection }
-        func inputMessage(_ text: String, systemImage: String) -> some View { Text(text) }
-    }
     struct AudioInputDeviceControls: View {
         var title: String? = nil
         var sliderWidth: CGFloat = 164
@@ -71,15 +58,10 @@ enum AudioSettingsOwnershipTests {
     struct AudioInputMuteCard: View { var body: some View { Marker(name: "mute") } }
     struct AudioInputPriorityControls: View { var body: some View { Marker(name: "input-priority") } }
     struct AudioOutputPriorityControls: View { var body: some View { Marker(name: "output-priority") } }
-    struct AudioPriorityDisclosure: View {
-        var initiallyExpanded = false
-        var showsHeader = true
-        var body: some View { Marker(name: "combined-priority") }
-    }
     struct MusicBlockingSettings: View { var body: some View { Marker(name: "music-blocking") } }
     struct MixerSection: View {
         let settingsMode: Bool
-        var body: some View { MixerDevices(settingsMode: settingsMode) }
+        var body: some View { Marker(name: "output-picker") }
     }
     struct SettingsCard<Content: View>: View {
         let content: Content
@@ -126,8 +108,6 @@ enum AudioSettingsOwnershipTests {
         suite.expect(output.contains("output-priority") && output.contains("output-picker")
                      && !output.contains("microphone") && !output.contains("input-priority"),
                      "rendered Audio Output owns output priority without microphone controls: \(output)")
-        suite.expect(markers(MixerDevices(settingsMode: false)).contains("microphone"),
-                     "the menu panel retains shared microphone controls")
     }
 }
 

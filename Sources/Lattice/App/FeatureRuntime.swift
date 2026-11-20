@@ -141,33 +141,6 @@ final class FeatureRuntime: ObservableObject {
         if !changed.isEmpty { finishAvailabilityChange() }
     }
 
-
-
-    /// Installed switches that were never once turned on, for the Features
-    /// page to offer as one batch, minus the ones the person chose to keep.
-    func neverSwitchedOnFeatures() -> [AppFeature] {
-        let saved = savedPreferences()
-        let kept = Self.keptFeatures()
-        return AppFeature.neverSwitchedOn(isAvailable: \.isAvailable,
-                                          boolFor: UserDefaults.standard.bool(forKey:),
-                                          isSaved: { saved[$0] != nil })
-            .filter { offerableThisSession.contains($0) && !kept.contains($0) }
-    }
-
-    /// Stops offering these features as unused. A later one that turns out
-    /// never used is still offered, on its own merits.
-    func keep(_ features: [AppFeature]) {
-        let kept = Self.keptFeatures().union(features)
-        UserDefaults.standard.set(kept.map(\.rawValue).sorted().joined(separator: ","),
-                                  forKey: DefaultsKey.featureHubKeptFeatures)
-    }
-
-    private static func keptFeatures() -> Set<AppFeature> {
-        Set((UserDefaults.standard.string(forKey: DefaultsKey.featureHubKeptFeatures) ?? "")
-            .split(separator: ",")
-            .compactMap { AppFeature(rawValue: String($0)) })
-    }
-
     /// Bulk install or uninstall for the hub's "all" buttons.
     func setAllAvailable(_ available: Bool) {
         setAvailable(AppFeature.hubInstallableFeatures, available, enablingFirstInstalls: false)
@@ -269,13 +242,4 @@ extension AppFeature {
     }
 
     var isHardwareSupported: Bool { hardwareUnsupportedReason == nil }
-
-    /// Why a feature list must refuse to install this feature, ready to show
-    /// as a tooltip. `nil` once it is installed: the check reads hardware and
-    /// can be wrong, so it is never allowed to strand an existing install
-    /// behind a greyed row. Both the hub and the first-run picker read this,
-    /// so neither can drift from the gate in `FeatureRuntime`.
-    var installBlockedReason: String? {
-        isAvailable ? nil : hardwareUnsupportedReason
-    }
 }

@@ -395,15 +395,10 @@ final class WallpaperService: ObservableObject {
         }
     }
 
-    // keeps the island open while a picker is up, like its other choosers
-    var isChoosingSource: Bool { openPanel != nil }
-
     // MARK: - Bookmarks
 
     private func present(_ panel: NSOpenPanel, inNotch: Bool = false, completion: @escaping ([URL]) -> Void) {
         openPanel = panel
-        // keep the menu panel up only while its picker is on screen; the
-        // island stays open through isChoosingSource
         if !inNotch { PanelInteractionState.shared.isPresentingPopoverModal = true }
         panel.begin { [weak self] response in
             if !inNotch { PanelInteractionState.shared.isPresentingPopoverModal = false }

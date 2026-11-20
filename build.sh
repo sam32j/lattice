@@ -568,7 +568,6 @@ if (( TEST )); then
         Sources/Lattice/Services/Audio/MusicLaunchSupport.swift
         Sources/Lattice/Services/Bluetooth/BluetoothSleepSupport.swift
         Sources/Lattice/UI/MenuPanel/MixerPercentNativeTextField.swift
-        Sources/Lattice/UI/MenuPanel/MixerAppDragSource.swift
         Sources/Lattice/Services/Audio/BoostLimiter.swift
         Sources/Lattice/Services/Audio/MixerRender.swift
         Sources/Lattice/Services/Audio/PreciseVolumeRollerSupport.swift
@@ -615,6 +614,7 @@ if (( TEST )); then
         Sources/Lattice/UI/Settings/UpdateSettingsStatusRow.swift
         Sources/Lattice/UI/PermissionDetailsSheet.swift
         Sources/Lattice/Core/SettingsNavigationStrings.swift
+        Sources/Lattice/Core/SettingsOrganizationStrings.swift
         Sources/Lattice/App/MenuBarSpacingSupport.swift
         Sources/Lattice/App/MenuBarAllowanceSupport.swift
         Sources/Lattice/App/ReopenRequestSupport.swift

@@ -4,11 +4,6 @@ import SwiftUI
 /// The same native-control rendering seam used by the Settings choice tests.
 enum InputSettingsControlTests {
     static func run(_ suite: TestSuite) {
-        let pinned = MixerPinButton(isPinned: true, pinTitle: "Pin", unpinTitle: "Unpin", appName: "App", action: {})
-        let unpinned = MixerPinButton(isPinned: false, pinTitle: "Pin", unpinTitle: "Unpin", appName: "App", action: {})
-        suite.expect(pinned.symbolName == "pin.fill" && pinned.tint == .blue
-                     && unpinned.symbolName == "pin" && unpinned.tint == .secondary,
-                     "audio pin state uses explicit blue rather than the configurable system accent")
         for (enabled, color, expected) in [(true, Color.red, true), (true, .green, false),
                                           (true, .secondary, false), (false, .red, true),
                                           (false, .green, true), (false, .secondary, true)] {

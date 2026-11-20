@@ -44,6 +44,67 @@ struct CaptureInterfaceStrings {
     let deleteRecentFailureBody: String
     let quickLook: String
 
+    var disableLinksTitle: String { Self.disableLinksTitle(L10n.shared.language) }
+    var disableLinksBody: String { Self.disableLinksBody(L10n.shared.language) }
+    var disableLinksConfirm: String { Self.disableLinksConfirm(L10n.shared.language) }
+
+    static func disableLinksTitle(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Disable Quick Links?"
+        case .ptBR: "Desativar links rápidos?"
+        case .tr: "Hızlı Bağlantıları Devre Dışı Bırak?"
+        case .ru: "Отключить быстрые ссылки?"
+        case .es: "¿Desactivar enlaces rápidos?"
+        case .sk: "Vypnúť rýchle odkazy?"
+        case .de: "Quick Links deaktivieren?"
+        case .fr: "Désactiver les liens rapides ?"
+        case .it: "Disattivare i link rapidi?"
+        case .ja: "クイックリンクを無効にしますか？"
+        case .ko: "빠른 링크를 비활성화하시겠습니까?"
+        case .zhHans: "停用快捷链接？"
+        case .zhTW, .zhHK: "停用快速連結？"
+        case .uk: "Вимкнути швидкі посилання?"
+        }
+    }
+
+    static func disableLinksBody(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "This will deactivate all the links you created."
+        case .ptBR: "Isso desativará todos os links que você criou."
+        case .tr: "Bu, oluşturduğunuz tüm bağlantıları devre dışı bırakır."
+        case .ru: "Это деактивирует все созданные вами ссылки."
+        case .es: "Esto desactivará todos los enlaces que hayas creado."
+        case .sk: "Týmto sa deaktivujú všetky odkazy, ktoré ste vytvorili."
+        case .de: "Dadurch werden alle von dir erstellten Links deaktiviert."
+        case .fr: "Cela désactivera tous les liens que vous avez créés."
+        case .it: "Questo disattiverà tutti i link che hai creato."
+        case .ja: "作成したすべてのリンクが無効になります。"
+        case .ko: "생성한 모든 링크가 비활성화됩니다."
+        case .zhHans: "这将停用您创建的所有链接。"
+        case .zhTW, .zhHK: "這將會停用您建立的所有連結。"
+        case .uk: "Це деактивує всі створені вами посилання."
+        }
+    }
+
+    static func disableLinksConfirm(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Disable"
+        case .ptBR: "Desativar"
+        case .tr: "Devre Dışı Bırak"
+        case .ru: "Отключить"
+        case .es: "Desactivar"
+        case .sk: "Vypnúť"
+        case .de: "Deaktivieren"
+        case .fr: "Désactiver"
+        case .it: "Disattiva"
+        case .ja: "無効にする"
+        case .ko: "비활성화"
+        case .zhHans: "停用"
+        case .zhTW, .zhHK: "停用"
+        case .uk: "Вимкнути"
+        }
+    }
+
     static func localized(_ language: AppLanguage) -> Self {
         switch language {
         case .enUS:
@@ -54,11 +115,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Floating Window",
                 underCursor: "Under cursor",
-                closeAfter: "Close preview after",
+                closeAfter: "Automatically close preview after",
                 focusLost: "Focus changes",
                 fiveSeconds: "5 seconds",
                 fifteenSeconds: "15 seconds",
-                untilClose: "Until close",
+                untilClose: "Never",
                 delete: "Delete",
                 confirmDelete: "Confirm delete",
                 clickAgain: "Click again to delete",
@@ -95,11 +156,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Ilha Dinâmica",
                 floatingWindow: "Janela flutuante",
                 underCursor: "Sob o cursor",
-                closeAfter: "Fechar prévia após",
+                closeAfter: "Fechar prévia automaticamente após",
                 focusLost: "Mudança de foco",
                 fiveSeconds: "5 segundos",
                 fifteenSeconds: "15 segundos",
-                untilClose: "Até fechar",
+                untilClose: "Nunca",
                 delete: "Excluir",
                 confirmDelete: "Confirmar exclusão",
                 clickAgain: "Clique novamente para excluir",
@@ -136,11 +197,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Yüzen pencere",
                 underCursor: "İmlecin altında",
-                closeAfter: "Önizlemeyi şu süreden sonra kapat",
+                closeAfter: "Önizlemeyi şu süreden sonra otomatik kapat",
                 focusLost: "Odak değiştiğinde",
                 fiveSeconds: "5 saniye",
                 fifteenSeconds: "15 saniye",
-                untilClose: "Kapatılana kadar",
+                untilClose: "Asla",
                 delete: "Sil",
                 confirmDelete: "Silmeyi onayla",
                 clickAgain: "Silmek için tekrar tıkla",
@@ -177,11 +238,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Плавающее окно",
                 underCursor: "Под курсором",
-                closeAfter: "Закрыть предпросмотр через",
+                closeAfter: "Автоматически закрывать предпросмотр через",
                 focusLost: "Смена фокуса",
                 fiveSeconds: "5 секунд",
                 fifteenSeconds: "15 секунд",
-                untilClose: "До закрытия",
+                untilClose: "Никогда",
                 delete: "Удалить",
                 confirmDelete: "Подтвердить удаление",
                 clickAgain: "Нажмите ещё раз для удаления",
@@ -218,11 +279,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Isla dinámica",
                 floatingWindow: "Ventana flotante",
                 underCursor: "Bajo el cursor",
-                closeAfter: "Cerrar vista previa después de",
+                closeAfter: "Cerrar vista previa automáticamente después de",
                 focusLost: "Cambio de foco",
                 fiveSeconds: "5 segundos",
                 fifteenSeconds: "15 segundos",
-                untilClose: "Hasta cerrar",
+                untilClose: "Nunca",
                 delete: "Eliminar",
                 confirmDelete: "Confirmar eliminación",
                 clickAgain: "Vuelve a hacer clic para eliminar",
@@ -259,11 +320,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Plávajúce okno",
                 underCursor: "Pod kurzorom",
-                closeAfter: "Zavrieť náhľad po",
+                closeAfter: "Automaticky zavrieť náhľad po",
                 focusLost: "Zmena zamerania",
                 fiveSeconds: "5 sekúnd",
                 fifteenSeconds: "15 sekúnd",
-                untilClose: "Do zatvorenia",
+                untilClose: "Nikdy",
                 delete: "Odstrániť",
                 confirmDelete: "Potvrdiť odstránenie",
                 clickAgain: "Opätovným kliknutím odstránite",
@@ -300,11 +361,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Schwebendes Fenster",
                 underCursor: "Unter dem Zeiger",
-                closeAfter: "Vorschau schließen nach",
+                closeAfter: "Vorschau automatisch schließen nach",
                 focusLost: "Fokuswechsel",
                 fiveSeconds: "5 Sekunden",
                 fifteenSeconds: "15 Sekunden",
-                untilClose: "Bis zum Schließen",
+                untilClose: "Nie",
                 delete: "Löschen",
                 confirmDelete: "Löschen bestätigen",
                 clickAgain: "Zum Löschen erneut klicken",
@@ -341,11 +402,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Fenêtre flottante",
                 underCursor: "Sous le pointeur",
-                closeAfter: "Fermer l’aperçu après",
+                closeAfter: "Fermer automatiquement l’aperçu après",
                 focusLost: "Changement de focus",
                 fiveSeconds: "5 secondes",
                 fifteenSeconds: "15 secondes",
-                untilClose: "Jusqu’à fermeture",
+                untilClose: "Jamais",
                 delete: "Supprimer",
                 confirmDelete: "Confirmer la suppression",
                 clickAgain: "Cliquer à nouveau pour supprimer",
@@ -382,11 +443,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Finestra mobile",
                 underCursor: "Sotto il cursore",
-                closeAfter: "Chiudi anteprima dopo",
+                closeAfter: "Chiudi automaticamente l’anteprima dopo",
                 focusLost: "Cambio di focus",
                 fiveSeconds: "5 secondi",
                 fifteenSeconds: "15 secondi",
-                untilClose: "Fino alla chiusura",
+                untilClose: "Mai",
                 delete: "Elimina",
                 confirmDelete: "Conferma eliminazione",
                 clickAgain: "Fai di nuovo clic per eliminare",
@@ -423,11 +484,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "フローティングウインドウ",
                 underCursor: "カーソルの下",
-                closeAfter: "プレビューを閉じるタイミング",
+                closeAfter: "プレビューを自動で閉じるタイミング",
                 focusLost: "フォーカスが切り替わったとき",
                 fiveSeconds: "5秒",
                 fifteenSeconds: "15秒",
-                untilClose: "手動で閉じるまで",
+                untilClose: "なし",
                 delete: "削除",
                 confirmDelete: "削除を確定",
                 clickAgain: "もう一度クリックして削除",
@@ -464,11 +525,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "플로팅 창",
                 underCursor: "커서 아래",
-                closeAfter: "미리보기 닫기 시점",
+                closeAfter: "미리보기 자동 닫기 시점",
                 focusLost: "포커스가 바뀔 때",
                 fiveSeconds: "5초",
                 fifteenSeconds: "15초",
-                untilClose: "직접 닫을 때까지",
+                untilClose: "안 함",
                 delete: "삭제",
                 confirmDelete: "삭제 확인",
                 clickAgain: "다시 클릭하여 삭제",
@@ -505,11 +566,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "灵动岛",
                 floatingWindow: "悬浮窗口",
                 underCursor: "光标下方",
-                closeAfter: "预览关闭时间",
+                closeAfter: "自动关闭预览时间",
                 focusLost: "焦点变化时",
                 fiveSeconds: "5 秒",
                 fifteenSeconds: "15 秒",
-                untilClose: "直到手动关闭",
+                untilClose: "从不",
                 delete: "删除",
                 confirmDelete: "确认删除",
                 clickAgain: "再次点击以删除",
@@ -546,11 +607,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "動態島",
                 floatingWindow: "浮動視窗",
                 underCursor: "游標下方",
-                closeAfter: "預覽關閉時間",
+                closeAfter: "自動關閉預覽時間",
                 focusLost: "焦點切換時",
                 fiveSeconds: "5 秒",
                 fifteenSeconds: "15 秒",
-                untilClose: "直到手動關閉",
+                untilClose: "從不",
                 delete: "刪除",
                 confirmDelete: "確認刪除",
                 clickAgain: "再次點按以刪除",
@@ -587,11 +648,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "動態島",
                 floatingWindow: "浮動視窗",
                 underCursor: "游標下方",
-                closeAfter: "預覽關閉時間",
+                closeAfter: "自動關閉預覽時間",
                 focusLost: "焦點切換時",
                 fiveSeconds: "5 秒",
                 fifteenSeconds: "15 秒",
-                untilClose: "直到手動關閉",
+                untilClose: "從不",
                 delete: "刪除",
                 confirmDelete: "確認刪除",
                 clickAgain: "再次點按以刪除",
@@ -628,11 +689,11 @@ struct CaptureInterfaceStrings {
                 dynamicIsland: "Dynamic Island",
                 floatingWindow: "Плаваюче вікно",
                 underCursor: "Під курсором",
-                closeAfter: "Закривати перегляд через",
+                closeAfter: "Автоматично закривати перегляд через",
                 focusLost: "Зміна фокуса",
                 fiveSeconds: "5 секунд",
                 fifteenSeconds: "15 секунд",
-                untilClose: "До закриття",
+                untilClose: "Ніколи",
                 delete: "Видалити",
                 confirmDelete: "Підтвердити видалення",
                 clickAgain: "Натисніть ще раз, щоб видалити",

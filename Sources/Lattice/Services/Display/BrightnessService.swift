@@ -444,10 +444,6 @@ final class BrightnessService: ObservableObject {
         showKeyboardLightNotice(target)
     }
 
-    func setKeyboardLightSaturatedForTesting(_ saturated: Bool) {
-        keyboardLightSaturated = saturated
-    }
-
     private func showKeyboardLightNotice(_ level: Float) {
         guard NotchSupport.routes(.keyboardLight), SessionActivity.shared.isActive,
               level.isFinite, (0...1).contains(level) else { return }

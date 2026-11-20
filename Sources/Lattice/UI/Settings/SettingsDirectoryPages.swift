@@ -143,25 +143,33 @@ extension SettingsDirectory {
                                         (.soundOutputSwitcher, [s.soundOutputSwitcherTitle]),
                                         (.mixer, [s.mixerSection, s.volumeMixerEnable, s.mixerOutputLevelLabel]),
                                         (.audioPriority, [s.audioPriorityOutputList, s.manageAudioOutputPriorityTitle]),
-                                        (.musicBlock, [s.musicBlockTitle, s.musicBlockSection]),
                                       ]),
                 SettingsDirectoryItem(page: .keyboard,
                                       title: settingsPages.keyboardTitle,
                                       icon: "keyboard",
                                       keywords: [quitProtection.description, "⌘Q", "⌘W",
+                                                 SettingsOrganizationStrings.text(.quitBehavior, language),
+                                                 SettingsOrganizationStrings.text(.closeBehavior, language),
+                                                 SettingsOrganizationStrings.text(.keyboardInput, language),
                                                  quitProtection.hold, quitProtection.doublePress,
                                                  quitProtection.extraModifier,
+                                                 s.musicBlockTitle, s.musicBlockSection,
                                                  s.keyDebounceName, s.keyDebounceEnable,
                                                  FeatureStrings.superKey(language).pageTitle,
-                                                 s.cleaningMenuItem]
+                                                 s.cleaningMenuItem,
+                                                 SettingsOrganizationStrings.text(.keyboardCleaningMode, language)]
                                                 + SuperKeySource.allCases.map {
                                                     FeatureStrings.superKey(language).sourceLabel($0)
                                                 },
                                       featureKeywords: [
-                                        (.quitWindowProtection, [quitProtection.description, "⌘Q", "⌘W"]),
-                                        (.keyboardDebounce, [s.keyDebounceName, s.keyDebounceEnable, "debounce"]),
+                                        (.quitWindowProtection, [quitProtection.description, "⌘Q", "⌘W",
+                                                                 SettingsOrganizationStrings.text(.quitBehavior, language),
+                                                                 SettingsOrganizationStrings.text(.closeBehavior, language)]),
+                                        (.musicBlock, [s.musicBlockTitle, s.musicBlockSection]),
+                                        (.keyboardDebounce, [s.keyDebounceName, s.keyDebounceEnable, "debounce",
+                                                             SettingsOrganizationStrings.text(.keyboardInput, language)]),
                                         (.superKey, [FeatureStrings.superKey(language).pageTitle, "super key"]),
-                                        (.cleaningMode, [s.cleaningMenuItem]),
+                                        (.cleaningMode, [s.cleaningMenuItem, SettingsOrganizationStrings.text(.keyboardCleaningMode, language)]),
                                       ]),
                 SettingsDirectoryItem(page: .mouse, title: s.tabMouse, icon: "computermouse",
                                       featureKeywords: [

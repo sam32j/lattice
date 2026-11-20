@@ -42,17 +42,15 @@ extension WindowLayoutSettings {
     }
 
     func gapPresetTitle(_ value: Int) -> String {
-        let name: String
         switch value {
         case 0: return text.gapNone
-        case 8: name = text.gapTiny
-        case 16: name = text.gapSmall
-        case 32: name = text.gapMedium
-        case 64: name = text.gapLarge
-        case 128: name = text.gapExtraLarge
+        case 8: return text.gapTiny
+        case 16: return text.gapSmall
+        case 32: return text.gapMedium
+        case 64: return text.gapLarge
+        case 128: return text.gapExtraLarge
         default: return "\(value) px"
         }
-        return "\(name) (\(value) px)"
     }
 
     var marginSlider: some View {
@@ -64,25 +62,17 @@ extension WindowLayoutSettings {
         WindowLayoutService.shared.syncWithPreferences()
     }
 
-    static let halfActions: [WindowLayoutAction] = [
-        .leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerHalf,
+    static let splitActions: [WindowLayoutAction] = [
+        .leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow,
     ]
-    static let thirdActions: [WindowLayoutAction] = [
-        .leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds, .centerTwoThirds,
-        .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds,
-    ]
-    static let quarterRowActions: [WindowLayoutAction] = [
+    static let quarterActions: [WindowLayoutAction] = [
+        .topLeft, .topRight, .bottomLeft, .bottomRight,
+        .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
         .topQuarter, .upperMiddleQuarter, .lowerMiddleQuarter, .bottomQuarter,
     ]
-    static let quarterColumnActions: [WindowLayoutAction] = [
-        .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
-    ]
-    static let sixthActions: [WindowLayoutAction] = [
+    static let gridActions: [WindowLayoutAction] = [
         .topLeftSixth, .topCenterSixth, .topRightSixth,
         .bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth,
-    ]
-    static let cornerActions: [WindowLayoutAction] = [
-        .topLeft, .topRight, .bottomLeft, .bottomRight,
     ]
 
     /// The placement families, grouped so the form body stays within the
@@ -91,24 +81,24 @@ extension WindowLayoutSettings {
     var placementSections: some View {
         Divider()
         VStack(alignment: .leading, spacing: 13) {
-            Text(text.halves).font(.headline)
-            Toggle(isOn: $sideRepeatCyclesThirds) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(text.sideRepeatCycle)
-                    Text(text.sideRepeatCycleCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            HStack {
+                Text(text.halves).font(.headline)
+                Spacer()
+                Image(systemName: "info.circle")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 21, height: 21)
+                    .contentShape(Rectangle())
+                    .overlay { StatusTooltip(message: text.repeatCycleTooltip, opensOnClick: true) }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(text.repeatCycleTooltip)
             }
-            ForEach(Self.halfActions) { action in
+            ForEach(Self.splitActions) { action in
                 actionRow(action)
             }
         }
-        actionSection(text.thirds, Self.thirdActions)
-        actionSection(text.quarterRows, Self.quarterRowActions)
-        actionSection(text.quarterColumns, Self.quarterColumnActions)
-        actionSection(text.sixths, Self.sixthActions)
-        actionSection(text.corners, Self.cornerActions)
+        actionSection(text.quarters, Self.quarterActions)
+        actionSection(text.sixths, Self.gridActions)
     }
 
     /// One section per placement family. Building the rows from an array keeps
@@ -144,25 +134,6 @@ extension WindowLayoutSettings {
     func symbol(for action: WindowLayoutAction) -> String {
         action.symbolName
     }
-
-    var resultMessage: String? {
-        switch service.lastResult {
-        case .success(let restored): return restored ? text.restored : text.done
-        case .failure(.missingAccessibility): return text.missingPermission
-        case .failure(.noWindow): return text.noWindow
-        case .failure(.noRestore): return text.noRestore
-        case .failure(.failed): return text.failed
-        case nil: return nil
-        }
-    }
-
-    var resultColor: Color {
-        switch service.lastResult {
-        case .success: return .green
-        case .failure: return .orange
-        case nil: return .secondary
-        }
-    }
 }
 
 private struct WindowLayoutMarginSlider: View {
@@ -176,7 +147,7 @@ private struct WindowLayoutMarginSlider: View {
 
     var body: some View {
         HStack {
-            Label(title, systemImage: "rectangle.inset.filled")
+            Text(title)
             Spacer()
             SettingsValueSlider(title: title, value: $marginPercent,
                 range: WindowLayoutMargin.percentRange, step: 1, readout: "\(marginPixelValue) px", usesSystemAppearance: true)

@@ -9,32 +9,34 @@ extension WindowLayoutSettings {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 13) {
                 SettingsRow(symbol: "macwindow.and.cursorarrow", title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
-                    HStack(spacing: 8) {
+                    PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .onChange(of: edgeSnapEnabled) { _, _ in
+                            WindowLayoutService.shared.syncWithPreferences()
+                        }
+                }
+                if edgeSnapEnabled {
+                    // Reset sits under the switch: its top level with the
+                    // zone picker's, its right edge with the switch's, at
+                    // the regular size of the page's other buttons.
+                    HStack(alignment: .top, spacing: 12) {
+                        WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
+                                                 zoneActionsStorage: $edgeSnapZoneActions,
+                                                 text: text,
+                                                 resetTitle: l10n.s.shortcutReset)
+                            .onChange(of: edgeSnapDisabledZones) { _, _ in
+                                WindowLayoutService.shared.syncWithPreferences()
+                            }
+                        Spacer(minLength: 0)
                         Button(l10n.s.shortcutReset) {
                             edgeSnapDisabledZones = ""
                             edgeSnapZoneActions = ""
                             WindowLayoutService.shared.syncWithPreferences()
                         }
-                        .controlSize(.small)
                         .disabled(isEdgeSnapReset)
-
-                        PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                            .onChange(of: edgeSnapEnabled) { _, _ in
-                                WindowLayoutService.shared.syncWithPreferences()
-                            }
                     }
-                }
-                if edgeSnapEnabled {
-                    WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
-                                             zoneActionsStorage: $edgeSnapZoneActions,
-                                             text: text,
-                                             resetTitle: l10n.s.shortcutReset)
-                        .padding(.leading, settingsRowTextInset)
-                        .onChange(of: edgeSnapDisabledZones) { _, _ in
-                            WindowLayoutService.shared.syncWithPreferences()
-                        }
+                    .padding(.leading, settingsRowTextInset)
                 }
                 if systemTilingEnabled {
                     VStack(alignment: .leading, spacing: 6) {
@@ -55,16 +57,28 @@ extension WindowLayoutSettings {
                 }
             }
 
+            if !service.failedShortcutActions.isEmpty {
+                Text(l10n.s.shortcutUnavailable)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            placementSections
+
             Divider()
             VStack(alignment: .leading, spacing: 13) {
-                Text(text.shortcuts).font(.headline)
-                if !service.failedShortcutActions.isEmpty {
-                    Text(l10n.s.shortcutUnavailable)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
+                Text(text.other).font(.headline)
+                actionRow(.maximize)
+                actionRow(.marginMaximize)
+                // Always adjustable: the snapping panel's Maximize Margin
+                // button uses it with or without a keyboard shortcut.
+                marginSlider
+                    .disclosureIndent()
+                actionRow(.fullScreen)
+                actionRow(.center)
+                actionRow(.restore)
                 HStack {
-                    Text(WindowDirectionalStrings.localized(l10n.language).title)
+                    Label(WindowDirectionalStrings.localized(l10n.language).title, systemImage: "circle.circle")
                     Spacer()
                     CompactShortcutBindingRecorder(
                         recordingID: "window-layout-directional",
@@ -82,19 +96,47 @@ extension WindowLayoutSettings {
                         },
                         onReset: { saveDirectionalShortcut(.windowDirectionalDefault) },
                         onCapture: saveDirectionalShortcut)
-                    if service.directionalShortcutRegistrationFailed {
-                        Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
+                }
+                if service.directionalShortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                 }
             }
 
-            // The pointer moves without Accessibility, so this sits outside
-            // the window shortcuts toggle and works before that grant.
+            Divider()
             VStack(alignment: .leading, spacing: 13) {
+                Text(text.moving).font(.headline)
+
+                VStack(alignment: .leading, spacing: 13) {
+                    Toggle(isOn: $holdToCycleDisplayEnabled.animation(reduceMotion ? nil : .settingsExpansion)) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "inset.filled.rectangle.and.pointer.arrow")
+                                .frame(width: 18)
+                            Text(text.holdToCycleDisplay)
+                        }
+                    }
+
+                    if holdToCycleDisplayEnabled {
+                        HStack {
+                            Text(text.holdDelay)
+                            Spacer()
+                            Picker(text.holdDelay, selection: $holdDelay) {
+                                Text(text.holdDelayDefault).tag("default")
+                                Text(text.holdDelayLonger).tag("longer")
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                        }
+                        .padding(.leading, 18 + 8)
+                    }
+                }
+                .settingsExpansionAnimation(value: holdToCycleDisplayEnabled)
+
                 ShortcutPreferenceRow(role: .pointerNextDisplay,
                                       label: PointerDisplayStrings.localized(l10n.language).title,
+                                      symbolName: "pointer.arrow.motionlines",
+                                      symbolColor: nil,
                                       additionalConflict: {
                                           service.shortcutConflictTitle($0)
                                       }) {
@@ -105,32 +147,11 @@ extension WindowLayoutSettings {
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
-            }
 
-            placementSections
-
-            Divider()
-            VStack(alignment: .leading, spacing: 13) {
-                Text(text.other).font(.headline)
-                actionRow(.maximize)
-                actionRow(.marginMaximize)
-                marginSlider
-                    .disclosureIndent()
-                    .disabled(WindowLayoutAction.resolvedShortcut(storedValue: marginShortcutRaw,
-                        defaultShortcut: WindowLayoutAction.marginMaximize.defaultShortcut) == nil)
-                    .opacity(WindowLayoutAction.resolvedShortcut(storedValue: marginShortcutRaw,
-                        defaultShortcut: WindowLayoutAction.marginMaximize.defaultShortcut) == nil ? 0.55 : 1)
-                actionRow(.fullScreen)
-                actionRow(.center)
-                actionRow(.restore)
-            }
-
-            Divider()
-            VStack(alignment: .leading, spacing: 13) {
-                Text(text.moving).font(.headline)
                 actionRow(.previousDisplay)
                 actionRow(.nextDisplay)
             }
+            .settingsExpansionAnimation(value: holdToCycleDisplayEnabled)
         }
     }
 }
