@@ -29,6 +29,7 @@ private struct PermissionActivationLifetime: ViewModifier {
             .onAppear { permissions.setActivePermissionSurface(surfaceID, visible: true) }
             .onDisappear {
                 coordinator?.cancel()
+                coordinator = nil
                 permissions.setActivePermissionSurface(surfaceID, visible: false)
             }
             .onReceive(permissions.objectWillChange) { _ in
