@@ -23,6 +23,7 @@ extension SettingsDirectory {
                                                  "SF Symbols",
                                                  FeatureStrings.quickToggles(language).pageTitle,
                                                  FeatureStrings.quickToggles(language).ejectTitle,
+                                                 FeatureStrings.quickToggles(language).ejectWithShortcut,
                                                  FeatureStrings.diskExclusions(language).listTitle,
                                                  FeatureStrings.cameraPreview(language).pageTitle],
                                       aliases: ["camera", "mirror", "webcam"]),
