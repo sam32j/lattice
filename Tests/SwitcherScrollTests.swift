@@ -21,17 +21,15 @@ enum SwitcherScrollContract {
         @Published var windows: [Item] = []
         @Published var selectedIndex = 0
         @Published var iconRowLayout: SwitcherIconRowLayout = .empty
-        @Published var simple = false
         @Published var previews: [Int: Int] = [:]
         var sessionItems: [Item] = []
         var searchQuery = ""
         var screenWidth: CGFloat = 1440
         var sessionScope: SwitcherSessionScope = .allApps
-        func seed(_ counts: [Int], selected: Int, simple: Bool = false) {
+        func seed(_ counts: [Int], selected: Int) {
             windows = counts.enumerated().flatMap { p, n in (0..<n).map { Item(id: "\(p)-\($0)", pid: p) } }
             sessionItems = windows
             selectedIndex = selected
-            self.simple = simple
             recompute()
         }
         func recompute() {
@@ -63,13 +61,6 @@ enum SwitcherScrollContract {
         let onCommit: () -> Void
         let onClose: () -> Void
         var body: some View { Color.clear.frame(width: SwitcherIconRowLayout.previewCardWidth, height: SwitcherIconRowLayout.previewCardHeight) }
-    }
-    struct SwitcherWindowTitleChip: View {
-        let window: Item
-        let isSelected: Bool
-        let onSelect: () -> Void
-        let onHover: (Bool) -> Void
-        var body: some View { Color.clear.frame(width: SwitcherIconRowLayout.simpleTitleChipMaxWidth, height: 25 * SwitcherIconRowLayout.scale) }
     }
     static func run(_ suite: TestSuite) {
         MainActor.assumeIsolated { runOnMain(suite) }
@@ -123,18 +114,13 @@ enum SwitcherScrollContract {
                     guard let localIndex = appWindows.firstIndex(where: { $0.id == selected.id }) else {
                         return false
                     }
-                    let width = model.simple ? SwitcherIconRowLayout.simpleTitleChipMaxWidth
-                        : SwitcherIconRowLayout.previewCardWidth
-                    let spacing = model.simple ? SwitcherIconRowLayout.simpleTitleSpacing
-                        : SwitcherIconRowLayout.spacing
-                    let padding = model.simple ? SwitcherIconRowLayout.simpleTitleScrollPadding : 0
+                    let width = SwitcherIconRowLayout.previewCardWidth
+                    let spacing = SwitcherIconRowLayout.spacing
+                    let padding: CGFloat = 0
                     let clip = scroll.contentView.bounds
-                    let expectedWidth = model.simple
-                        ? model.iconRowLayout.contentWidth(simpleMode: true, windowRow: false)
-                            - 2 * SwitcherIconRowLayout.simpleTitlePanelPadding
-                        : model.iconRowLayout.previewContentWidth
+                    let expectedWidth = model.iconRowLayout.previewContentWidth
                     guard abs(clip.width - expectedWidth) <= 1 else { return false }
-                    if !model.simple && appWindows.count == 2 && model.screenWidth >= 800 {
+                    if appWindows.count == 2 && model.screenWidth >= 1024 {
                         return clip.minX <= 0.5 && clip.maxX >= width * 2 + spacing - 0.5
                     }
                     let start = padding + CGFloat(localIndex) * (width + spacing)
@@ -146,17 +132,17 @@ enum SwitcherScrollContract {
                 }
                 let selected = model.windows[model.selectedIndex]
                 let localIndex = model.windows.filter { $0.pid == selected.pid }.firstIndex { $0.id == selected.id }!
-                let width = model.simple ? SwitcherIconRowLayout.simpleTitleChipMaxWidth : SwitcherIconRowLayout.previewCardWidth
-                let spacing = model.simple ? SwitcherIconRowLayout.simpleTitleSpacing : SwitcherIconRowLayout.spacing
-                let padding = model.simple ? SwitcherIconRowLayout.simpleTitleScrollPadding : 0
+                let width = SwitcherIconRowLayout.previewCardWidth
+                let spacing = SwitcherIconRowLayout.spacing
+                let padding: CGFloat = 0
                 let start = padding + CGFloat(localIndex) * (width + spacing)
                 let clip = scroll.contentView.bounds
-                if !model.simple && model.windows.filter({ $0.pid == selected.pid }).count == 2
-                    && model.screenWidth >= 800 {
+                if model.windows.filter({ $0.pid == selected.pid }).count == 2
+                    && model.screenWidth >= 1024 {
                     suite.expect(clip.minX <= 0.5 && clip.maxX >= width * 2 + spacing - 0.5,
                                  "\(name)/\(step): both windows must be visible together")
                 }
-                if !model.simple && model.sessionScope == .frontmostApp && model.screenWidth >= 1440 {
+                if model.sessionScope == .frontmostApp && model.screenWidth >= 1710 {
                     let count = model.windows.filter { $0.pid == selected.pid }.count
                     let naturalWidth = SwitcherIconRowLayout.naturalPreviewWidth(cardCount: count)
                     suite.expect(clip.minX <= 0.5 && clip.maxX >= naturalWidth - 0.5,
@@ -168,18 +154,18 @@ enum SwitcherScrollContract {
             }
             body(model, check, { settle() })
         }
-        for simple in [false, true] {
-            let mode = simple ? "titles" : "previews"
+        do {
+            let mode = "previews"
             run("\(mode) instant navigation", instantSelection: true) { model, check, _ in
                 model.screenWidth = 640
-                model.seed([8, 7], selected: 7, simple: simple); check("initial overflow")
+                model.seed([8, 7], selected: 7); check("initial overflow")
                 model.select(index: 0); check("first")
                 model.select(index: 7); check("last")
                 model.select(index: 8); check("next app")
                 model.select(index: 14); check("next app last")
             }
             run("\(mode) search") { model, check, _ in
-                model.seed([3,1,1,1,1,1,1], selected: 2, simple: simple); check("initial")
+                model.seed([3,1,1,1,1,1,1], selected: 2); check("initial")
                 model.search("a"); check("narrowed without changing selection")
                 model.search(""); check("cleared search")
                 model.select(index: 0); check("first")
@@ -187,17 +173,17 @@ enum SwitcherScrollContract {
             }
             run("\(mode) boundary close") { model, check, _ in
                 model.screenWidth = 640
-                model.seed([8,8], selected: 7, simple: simple); check("initial")
+                model.seed([8,8], selected: 7); check("initial")
                 model.closeWindow(model.windows[7]); check("next app at unchanged index")
             }
             run("\(mode) replacing search result") { model, check, _ in
                 model.screenWidth = 640
-                model.seed([8,8], selected: 7, simple: simple); check("initial")
+                model.seed([8,8], selected: 7); check("initial")
                 model.search("keep"); check("new selection at unchanged index")
             }
             run("\(mode) navigation") { model, check, _ in
                 model.screenWidth = 640
-                model.seed([8,7], selected: 7, simple: simple); check("initial overflow")
+                model.seed([8,7], selected: 7); check("initial overflow")
                 model.select(index: 0); check("wrap first")
                 model.select(index: 7); check("wrap last")
                 model.select(index: 8); check("second app first")
@@ -205,32 +191,31 @@ enum SwitcherScrollContract {
                 model.closeWindow(model.windows[10]); check("remove earlier card")
             }
             run("\(mode) pending reveal") { model, check, settle in
-                model.seed([3,1,1,1,1,1,1], selected: 2, simple: simple); check("initial")
+                model.seed([3,1,1,1,1,1,1], selected: 2); check("initial")
                 model.search("a")
                 model.select(index: 0); check("new selection wins")
                 model.search("")
                 model.windows = []
                 model.selectedIndex = 0
                 settle()
-                model.seed([8], selected: 7, simple: simple); check("new session wins")
+                model.seed([8], selected: 7); check("new session wins")
             }
             for size in Defaults.allowedPreviewSizes {
                 UserDefaults.standard.set(size, forKey: DefaultsKey.switcherPreviewSize)
-                if !simple {
-                    run("focused app \(size)") { model, check, _ in
-                        model.sessionScope = .frontmostApp
-                        model.seed([4], selected: 1); check("four previews")
-                        model.select(index: 3); check("last window")
-                        model.screenWidth = 640
-                        model.recompute(); check("narrow display overflow")
-                        model.select(index: 0); check("overflow wraps to first")
-                    }
+                run("focused app \(size)") { model, check, _ in
+                    model.sessionScope = .frontmostApp
+                    model.screenWidth = 1710
+                    model.seed([4], selected: 1); check("four previews")
+                    model.select(index: 3); check("last window")
+                    model.screenWidth = 640
+                    model.recompute(); check("narrow display overflow")
+                    model.select(index: 0); check("overflow wraps to first")
                 }
                 run("\(mode) \(size)") { model, check, _ in
-                    model.screenWidth = 800
-                    model.seed([2], selected: 1, simple: simple); check("single app pair")
+                    model.screenWidth = 1024
+                    model.seed([2], selected: 1); check("single app pair")
                     model.select(index: 0); check("pair first")
-                    model.seed([3,1,1,1,1,1,1], selected: 2, simple: simple); check("initial")
+                    model.seed([3,1,1,1,1,1,1], selected: 2); check("initial")
                     model.search("a"); check("narrowed")
                     model.screenWidth = 640
                     model.recompute(); check("smaller display")
