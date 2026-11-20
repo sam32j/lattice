@@ -192,10 +192,14 @@ struct NotchCompanionMark: View {
         case .music:
             NotchMusicCover(artwork: music.artwork, side: geometry.compactMusicArtworkSide,
                             radius: geometry.compactMusicArtworkRadius, source: music.playback?.track)
-        case .timer, .keepAwake, .watch, .videoDownloader:
+        case .timer:
+            NotchTimerCompanionMark()
+        case .keepAwake, .watch, .videoDownloader:
             EmptyView()
         }
     }
+
+    static let timerSpacing: CGFloat = 4
 
     private var downloadIndicator: some View {
         HStack(spacing: 5) {
@@ -253,8 +257,33 @@ struct NotchCompanionMark: View {
             let playback = NotchMusicService.shared.playback
             let title = playback?.track.title ?? FeatureStrings.radialMenu(language).mediaNowPlaying
             return [title, playback?.track.artist].compactMap { $0 }.joined(separator: ", ")
-        case .timer, .keepAwake, .watch:
+        case .timer:
+            let timer = NotchTimerService.shared
+            return companion.title(language) + ", " + NotchTimerSupport.clockText(for: timer.session, at: timer.now)
+        case .keepAwake, .watch:
             return companion.title(language)
+        }
+    }
+}
+
+/// A timer beside an event: its state mark and its reading.
+struct NotchTimerCompanionMark: View {
+    @ObservedObject private var timer = NotchTimerService.shared
+
+    var body: some View {
+        let session = timer.session
+        let symbol = session.completed ? "checkmark.circle" : session.isPaused ? "pause.circle" : "timer"
+        let tint: Color = session.completed ? .green
+            : session.mode == .pomodoro && session.phase != .focus ? .blue : .orange
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            HStack(spacing: NotchCompanionMark.timerSpacing) {
+                Image(systemName: symbol).font(.system(size: 12, weight: .semibold))
+                Text(NotchTimerSupport.compactText(for: session, at: timer.now,
+                                                   locale: Locale(identifier: L10n.shared.language.rawValue)))
+                    .font(.system(size: 13, weight: .medium)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(tint)
         }
     }
 }
