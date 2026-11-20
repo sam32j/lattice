@@ -122,4 +122,25 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         case .system: return FeatureStrings.notch(language).system
         }
     }
+
+    /// Device Controls named short enough to sit beside the Island's back
+    /// control on its App Volumes subpage.
+    static func deviceControlsShortTitle(language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Controls"
+        case .ptBR: return "Controles"
+        case .tr: return "Denetimler"
+        case .ru: return "Управление"
+        case .es: return "Controles"
+        case .sk: return "Ovládanie"
+        case .de: return "Steuerung"
+        case .fr: return "Commandes"
+        case .it: return "Controlli"
+        case .ja: return "コントロール"
+        case .ko: return "제어"
+        case .zhHans: return "控制"
+        case .zhTW, .zhHK: return "控制"
+        case .uk: return "Керування"
+        }
+    }
 }

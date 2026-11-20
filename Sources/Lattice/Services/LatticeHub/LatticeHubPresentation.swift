@@ -164,16 +164,7 @@ extension LatticeHubService {
     func closeUtility() {
         opensUtilityDirectly = false
         SystemNavigationState.shared.reset()
-        if isVisible {
-            // Floating HUD drives its own crossfade; an implicit SwiftUI
-            // animation here also animates layout and fights the panel resize.
-            activeUtility = nil
-        } else {
-            // The Dynamic Island still uses its usual page transition.
-            withAnimation(.easeInOut(duration: 0.22)) {
-                activeUtility = nil
-            }
-        }
+        activeUtility = nil
     }
 
     func refocusAfterModal() {
