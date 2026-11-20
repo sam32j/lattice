@@ -611,6 +611,8 @@ enum WindowLayoutFeatureTests {
         suite.expect(WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0, y: 0, width: 1, height: 1)) == .maximize
                 && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 1)) == .rightHalf
                 && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)) == .bottomRight
+                && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0, y: 1.0 / 3, width: 0.5, height: 1.0 / 3)) == .leftThird
+                && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0.5, y: 1.0 / 3, width: 0.5, height: 1.0 / 3)) == .rightThird
                 && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)) == .center,
                "a normalized placement holds the edges it touches; only the whole frame is Maximize")
         let pane = CGRect(x: 0, y: 0, width: 100, height: 100)

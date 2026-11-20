@@ -1866,6 +1866,8 @@ final class WindowLayoutService: ObservableObject {
         let generation = edgeSnapSequenceGeneration
         // NSScreen is main-thread only, so the geometry is captured before leaving.
         let screenFrames = edgeSnapQuartzScreenFrames()
+        // Read with the Quartz frames, in one step, so both describe the same screens.
+        let visibleFrames = NSScreen.screens.map(\.visibleFrame)
         let zones = enabledEdgeSnapZones
         let protectsTop = WindowEdgeSnapSupport.isSystemTopWindowOverviewDragEnabled
         let onScreen = onScreenWindowIDs()
@@ -1885,7 +1887,7 @@ final class WindowLayoutService: ObservableObject {
                                                        pointerStart: pointerStart,
                                                        protectsSystemTopEdge: protectsTop,
                                                        quartzScreenFrames: screenFrames,
-                                                       visibleScreenFrames: NSScreen.screens.map(\.visibleFrame),
+                                                       visibleScreenFrames: visibleFrames,
                                                        enabledZones: zones,
                                                        lastSampleAt: 0,
                                                        mismatchCount: 0,
