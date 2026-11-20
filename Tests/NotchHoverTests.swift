@@ -1430,7 +1430,13 @@ enum NotchHoverTests {
             expect(!other.musicStripAnswers(.cover) && !other.musicStripAnswers(.bars),
                    "anything else on the island takes the strip's place for the pointer")
         }
-        for opens in [false, true] {
+        // Click-to-open has no hover picker: its activities are in the right-click menu.
+        let clicking = strip(true)
+        UserDefaults.standard.enabled = false
+        clicking.compactActivities = [.music, .timer]
+        clicking.hover(true)
+        expect(!clicking.showsCompactActivityPicker, "click-to-open shows no activity picker on hover")
+        for opens in [true] {
             let picking = strip(true)
             UserDefaults.standard.enabled = opens
             picking.compactActivities = [.music, .timer]
