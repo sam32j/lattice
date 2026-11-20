@@ -1215,6 +1215,13 @@ struct WindowSnappingControlView: View {
     }
 
     private func updatePreviewOnGridChange() {
+        // A drag started on the old grid would span cells the new one does
+        // not have; it ends here and the next press starts a fresh one.
+        if isDragging || dragAnchor != nil {
+            dragAnchor = nil
+            dragCurrent = nil
+            isDragging = false
+        }
         if let hovered = hoveredCoord {
             let dims = division.dimensions(orientation: orientation)
             let clampedCol = min(hovered.col, dims.cols - 1)
@@ -1350,7 +1357,9 @@ struct WindowSnappingControlView: View {
                     title: QuickAction.center.title,
                     symbol: "scope",
                     action: .center,
-                    previewRect: NormalizedRect(x: 0.175, y: 0.15, width: 0.65, height: 0.70)
+                    // Center keeps the window's own size, which the panel
+                    // does not know, so it shows no outline rather than a wrong one.
+                    previewRect: nil
                 )
             }
 
@@ -1768,7 +1777,7 @@ private final class PresetThumbnailView: NSView {
             removeTrackingArea(existing)
         }
         let options: NSTrackingArea.Options = [
-            .activeInKeyWindow,
+            // The panel never becomes key, so hover tracks always.
             .activeAlways,
             .mouseMoved,
             .mouseEnteredAndExited,
@@ -2012,7 +2021,7 @@ private struct MiniScreenCanvasRepresentable: NSViewRepresentable {
                 removeTrackingArea(existing)
             }
             let options: NSTrackingArea.Options = [
-                .activeInKeyWindow,
+                // The panel never becomes key, so hover tracks always.
                 .activeAlways,
                 .mouseMoved,
                 .mouseEnteredAndExited,
