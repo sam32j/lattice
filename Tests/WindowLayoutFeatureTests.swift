@@ -283,8 +283,14 @@ enum WindowLayoutFeatureTests {
                "every layout action keeps a distinct shortcut id")
         // A strip that borrowed another placement's glyph would show two
         // different places as the same picture wherever the actions are listed.
+        // The center row's split cycle (center row, its two thirds, middle
+        // third) shares one glyph, as the center column's cycle does.
+        let centerRowCycle: Set<WindowLayoutAction> = [.centerRow, .centerRowTwoThirds, .middleThird]
         for (action, _, _) in verticalLayouts {
-            suite.expect(WindowLayoutAction.allCases.allSatisfy { $0 == action || $0.symbolName != action.symbolName },
+            suite.expect(WindowLayoutAction.allCases.allSatisfy {
+                    $0 == action || $0.symbolName != action.symbolName
+                        || (centerRowCycle.contains($0) && centerRowCycle.contains(action))
+                },
                    "\(action.rawValue) draws a glyph no other placement uses")
         }
         for language in AppLanguage.allCases {
@@ -1199,7 +1205,10 @@ enum WindowLayoutFeatureTests {
                                                        destinationVisibleFrame: portraitFrame)
                     == portraitWindow,
                "display transfer keeps size and edge insets across rotated frames")
-        suite.expect(WindowLayoutAction.shortcutActions.count == WindowLayoutAction.allCases.count,
+        // The center row's two-thirds step is only reached by cycling the
+        // center row; every other action can be bound on its own.
+        suite.expect(Set(WindowLayoutAction.shortcutActions)
+                == Set(WindowLayoutAction.allCases).subtracting([.centerRowTwoThirds]),
                "every window layout action can register a global shortcut")
         suite.expect(WindowLayoutAction.shortcutActions.contains(.previousDisplay)
                 && WindowLayoutAction.shortcutActions.contains(.nextDisplay),
