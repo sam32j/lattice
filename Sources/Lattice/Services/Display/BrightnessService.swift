@@ -338,9 +338,11 @@ final class BrightnessService: ObservableObject {
             refreshKeyboardLight()
             return
         }
-        keyboardLightLevel = target
-        keyboardLightEnabled = target > 0
-        keyboardLightSaturated = keyboardLightBridge.isBacklightSaturated()
+        if keyboardLightLevel != target { keyboardLightLevel = target }
+        let isEnabled = target > 0
+        if keyboardLightEnabled != isEnabled { keyboardLightEnabled = isEnabled }
+        let saturated = keyboardLightBridge.isBacklightSaturated()
+        if keyboardLightSaturated != saturated { keyboardLightSaturated = saturated }
         showKeyboardLightNotice(target)
     }
 
@@ -353,8 +355,9 @@ final class BrightnessService: ObservableObject {
         guard keyboardLightEnabled != nil,
               let target = BrightnessSupport.sliderKeyboardLightLevel(level)
         else { return }
-        keyboardLightLevel = target
-        keyboardLightEnabled = target > 0
+        if keyboardLightLevel != target { keyboardLightLevel = target }
+        let isEnabled = target > 0
+        if keyboardLightEnabled != isEnabled { keyboardLightEnabled = isEnabled }
         // A step with no drag around it (VoiceOver, arrow keys) settles now.
         if keyboardDragStart == nil, target > 0 { lastKeyboardLightLevel = target }
         guard keyboardLevelWork == nil else { return }
@@ -371,12 +374,22 @@ final class BrightnessService: ObservableObject {
 
     private func commitKeyboardLightLevel() {
         guard let target = keyboardLightLevel, let keyboardLightBridge else { return }
-        guard keyboardLightBridge.setBrightness(target) else {
-            refreshKeyboardLight()
-            return
-        }
-        keyboardLightSaturated = keyboardLightBridge.isBacklightSaturated()
+        let fadeMs: Int32 = keyboardDragStart != nil ? 0 : 350
         showKeyboardLightNotice(target)
+        workQueue.async { [weak self] in
+            let ok = keyboardLightBridge.setBrightness(target, fadeMs: fadeMs)
+            let saturated = ok ? keyboardLightBridge.isBacklightSaturated() : false
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard ok else {
+                    self.refreshKeyboardLight()
+                    return
+                }
+                if self.keyboardLightSaturated != saturated {
+                    self.keyboardLightSaturated = saturated
+                }
+            }
+        }
     }
 
     /// The slider's own begin and end events bracket a drag. A pause while
@@ -413,15 +426,17 @@ final class BrightnessService: ObservableObject {
         guard let bridge = keyboardLightBridge,
               let level = bridge.brightness() as Float?,
               level >= 0, level <= 1 else {
-            keyboardLightLevel = nil
-            keyboardLightEnabled = nil
-            keyboardLightSaturated = false
+            if keyboardLightLevel != nil { keyboardLightLevel = nil }
+            if keyboardLightEnabled != nil { keyboardLightEnabled = nil }
+            if keyboardLightSaturated { keyboardLightSaturated = false }
             return
         }
-        keyboardLightLevel = level
+        if keyboardLightLevel != level { keyboardLightLevel = level }
         if level > 0 { lastKeyboardLightLevel = level }
-        keyboardLightEnabled = level > 0
-        keyboardLightSaturated = bridge.isBacklightSaturated()
+        let isEnabled = level > 0
+        if keyboardLightEnabled != isEnabled { keyboardLightEnabled = isEnabled }
+        let saturated = bridge.isBacklightSaturated()
+        if keyboardLightSaturated != saturated { keyboardLightSaturated = saturated }
     }
 
     func stepKeyboardLight(direction: Int) {
@@ -678,8 +693,8 @@ final class BrightnessService: ObservableObject {
         }
         stateLock.lock()
         pendingLevels[id] = PendingWrite(value: clamped, smooth: smooth)
-        lastApplied[id] = RememberedLevel(value: clamped,
-                                          fingerprint: Self.displayFingerprint(id))
+        let fingerprint = lastApplied[id]?.fingerprint ?? Self.displayFingerprint(id)
+        lastApplied[id] = RememberedLevel(value: clamped, fingerprint: fingerprint)
         levelKnownAt[id] = Date()
         let schedule = !drainScheduled
         if schedule { drainScheduled = true }
@@ -2962,10 +2977,10 @@ private final class KeyboardLightBridge {
         return isSaturated(client, saturatedSelector, keyboardID).boolValue
     }
 
-    func setBrightness(_ value: Float) -> Bool {
+    func setBrightness(_ value: Float, fadeMs: Int32 = 350) -> Bool {
         _ = suspendIdleDimming(client, suspendSelector, true, keyboardID)
         defer { _ = suspendIdleDimming(client, suspendSelector, false, keyboardID) }
-        return setBrightnessValue(client, setSelector, min(max(value, 0), 1), 350,
+        return setBrightnessValue(client, setSelector, min(max(value, 0), 1), fadeMs,
                                   true, keyboardID).boolValue
     }
 

@@ -15,7 +15,16 @@ enum QuickTogglesSupport {
     static let standardHideDesktopIconsKey = "StandardHideDesktopIcons"
     static let hideDesktopKey = "HideDesktop"
 
-    static let emptyTrashSource = "tell application \"Finder\" to empty trash"
+    /// Emptying an already empty Trash is a no-op, not a Finder error.
+    static let emptyTrashSource = "tell application \"Finder\" to if (count of items of trash) > 0 then empty trash"
+    static let trashItemCountSource = "tell application \"Finder\" to count items of trash"
+
+    /// Reads the Finder's item count; nil when the answer is not a number, so
+    /// an unreadable Trash still goes through the confirmation.
+    static func trashIsEmpty(countOutput: String) -> Bool? {
+        guard let count = Int(countOutput.trimmingCharacters(in: .whitespacesAndNewlines)) else { return nil }
+        return count == 0
+    }
 
     /// Apple Event consent errors: not permitted, or the prompt was dismissed.
     static let permissionErrorNumbers: Set<Int> = [-1743, -1744]

@@ -116,6 +116,22 @@ extension KeepAwakeManager {
         syncWithPreferences()
     }
 
+    /// Writes a remembered pick only when it changes. Every write announces
+    /// a defaults change app-wide, and the island answers with a full
+    /// preference sync 0.3 s later on the main thread; restarting the same
+    /// pick from the Hub froze the Stay Awake toggle's slide partway through.
+    static func rememberPick(_ value: Any, forKey key: String) {
+        let defaults = UserDefaults.standard
+        if let current = defaults.object(forKey: key) as? NSObject, let new = value as? NSObject,
+           current.isEqual(new) { return }
+        switch value {
+        case let flag as Bool: defaults.set(flag, forKey: key)
+        case let number as Int: defaults.set(number, forKey: key)
+        case let number as Double: defaults.set(number, forKey: key)
+        default: assertionFailure("rememberPick stores only Bool, Int and Double")
+        }
+    }
+
     /// `minutes <= 0` activates indefinitely.
     func activate(minutes: Int) {
         automationSuppressedUntilConditionsClear = false
@@ -125,8 +141,8 @@ extension KeepAwakeManager {
         sessionMinutes = isActive ? minutes : nil
         guard isActive else { return }
         // Every entry point records the pick, so each switch restarts the same session.
-        UserDefaults.standard.set(minutes, forKey: DefaultsKey.defaultDuration)
-        UserDefaults.standard.set(false, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
+        Self.rememberPick(minutes, forKey: DefaultsKey.defaultDuration)
+        Self.rememberPick(false, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
     }
 
     func activate(until date: Date) {
@@ -136,8 +152,8 @@ extension KeepAwakeManager {
         // An end time replaces any running preset, so no duration chip stays selected.
         sessionMinutes = nil
         guard isActive else { return }
-        UserDefaults.standard.set(true, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
-        UserDefaults.standard.set(date.timeIntervalSinceReferenceDate, forKey: DefaultsKey.keepAwakeUntilTime)
+        Self.rememberPick(true, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
+        Self.rememberPick(date.timeIntervalSinceReferenceDate, forKey: DefaultsKey.keepAwakeUntilTime)
     }
 
     /// Restarts the last pick: the saved end time while it is still ahead,

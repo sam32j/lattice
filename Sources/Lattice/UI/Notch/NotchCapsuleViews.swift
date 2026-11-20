@@ -369,7 +369,9 @@ private struct NotchCapsuleCompanionMark: View {
                     NotchCapsuleCalendarStrip.clockMark(countdown, now: context.date)
                 }
             }
-        case .timer, .keepAwake, .watch, .videoDownloader:
+        case .timer:
+            NotchTimerCompanionMark()
+        case .keepAwake, .watch, .videoDownloader:
             EmptyView()
         }
     }

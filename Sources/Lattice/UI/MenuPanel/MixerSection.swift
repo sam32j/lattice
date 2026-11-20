@@ -24,9 +24,6 @@ struct MixerSection: View {
     private var headphonesDisconnectVolumePercent = Defaults.defaultMixerHeadphonesDisconnectVolumePercent
     @AppStorage(DefaultsKey.preciseVolumeRollerEnabled)
     private var preciseVolumeRollerEnabled = false
-    @AppStorage("audioOutputLastUnmutedVolume")
-    private var lastUnmutedOutputVolume: Double = 0.5
-    @State private var draggingOutputVolume: Double? = nil
     @State private var showInactiveApps = false
     @State private var lastVolumeChangeTimes: [String: CFAbsoluteTime] = [:]
     @State private var activeSliderTrackingAppIDs: Set<String> = []
@@ -131,38 +128,7 @@ struct MixerSection: View {
     }
 
     private var outputVolumeRow: some View {
-        HStack(spacing: 8) {
-            Text(l10n.s.mixerOutputLevelLabel)
-                .font(.body)
-                .lineLimit(1)
-
-            Spacer(minLength: 8)
-
-            Button {
-                toggleOutputMute()
-            } label: {
-                Image(systemName: isSystemOutputMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isSystemOutputMuted ? Color.red : Color.secondary)
-                    .frame(width: 18, alignment: .center)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isSystemOutputMuted ? l10n.s.actionUnmute : l10n.s.actionMute)
-
-            DeviceControlsSlider(
-                title: l10n.s.mixerOutputLevelLabel,
-                value: systemOutputVolumeBinding,
-                range: 0...1,
-                step: 0.01,
-                readout: "\(Int((displayedSystemOutputVolume * 100).rounded()))%",
-                onEditingChanged: { editing in
-                    if !editing {
-                        draggingOutputVolume = nil
-                    }
-                }
-            )
-            .frame(width: 140)
-        }
+        MixerOutputVolumeRow()
     }
 
     private var systemSoundsRow: some View {
@@ -315,6 +281,7 @@ struct MixerSection: View {
                         }
                         MixerSettingsAppRow(
                             app: app,
+                            outputDevices: mixer.outputDevices,
                             isPinned: arrangement.isPinned(app.persistenceID),
                             active: app.isPlaying,
                             onTogglePin: {
@@ -373,6 +340,7 @@ struct MixerSection: View {
                             }
                             MixerSettingsAppRow(
                                 app: app,
+                                outputDevices: mixer.outputDevices,
                                 isPinned: arrangement.isPinned(app.persistenceID),
                                 active: false,
                                 onTogglePin: {
@@ -480,56 +448,6 @@ struct MixerSection: View {
         )
     }
 
-    private var isSystemOutputMuted: Bool {
-        mixer.systemOutputMuted == true || (mixer.systemOutputVolume ?? 0) <= 0.001
-    }
-
-    private var displayedSystemOutputVolume: Double {
-        if let draggingOutputVolume { return draggingOutputVolume }
-        if mixer.systemOutputMuted == true { return 0 }
-        return mixer.systemOutputVolume ?? 0
-    }
-
-    private func toggleOutputMute() {
-        NotchService.shared.noteOwnLevelAdjustment(.volume)
-        if isSystemOutputMuted {
-            let restoreVal = lastUnmutedOutputVolume > 0.001 ? lastUnmutedOutputVolume : (mixer.systemOutputVolume ?? 0.5)
-            let finalVal = restoreVal > 0.001 ? restoreVal : 0.5
-            mixer.requestOutputAdjustment(volume: finalVal, muted: false)
-        } else {
-            if let cur = mixer.systemOutputVolume, cur > 0.001 {
-                lastUnmutedOutputVolume = cur
-            }
-            mixer.requestOutputAdjustment(muted: true)
-        }
-    }
-
-    private func setSystemOutputVolume(_ value: Double) {
-        if inNotch {
-            // The slider shows the level; the island's header need not repeat it.
-            NotchService.shared.noteOwnVolumeAdjustment()
-        }
-        // Both panels share the key queue, so a drag supersedes an older key.
-        mixer.requestOutputAdjustment(volume: value)
-    }
-
-    private var systemOutputVolumeBinding: Binding<Double> {
-        Binding(
-            get: { draggingOutputVolume ?? displayedSystemOutputVolume },
-            set: { newValue in
-                draggingOutputVolume = newValue
-                if isSystemOutputMuted && newValue > 0.001 {
-                    NotchService.shared.noteOwnLevelAdjustment(.volume)
-                    lastUnmutedOutputVolume = newValue
-                    mixer.requestOutputAdjustment(volume: newValue, muted: false)
-                } else {
-                    if newValue > 0.001 { lastUnmutedOutputVolume = newValue }
-                    setSystemOutputVolume(newValue)
-                }
-            }
-        )
-    }
-
     private var systemSoundOutputSelectionBinding: Binding<String> {
         Binding(
             get: {
@@ -589,14 +507,150 @@ struct MixerSection: View {
     }
 }
 
+private struct MixerOutputVolumeRow: View {
+    @Environment(\.notchPresentation) private var inNotch
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var mixer = AppVolumeMixer.shared
+    @State private var lastUnmutedOutputVolume: Double = {
+        let saved = UserDefaults.standard.object(forKey: "audioOutputLastUnmutedVolume") as? Double ?? 0.5
+        return saved > 0.001 ? saved : 0.5
+    }()
+    @State private var draggingOutputVolume: Double? = nil
+    /// While dragging, writes skip publishing on the shared mixer (see
+    /// `requestOutputAdjustment(publishes:)`); the final level publishes on release.
+    @State private var editingOutputVolume = false
+
+    private var isSystemOutputMuted: Bool {
+        if let draggingOutputVolume {
+            return draggingOutputVolume <= 0.001
+        }
+        return mixer.systemOutputMuted == true || (mixer.systemOutputVolume ?? 0) <= 0.001
+    }
+
+    private var displayedSystemOutputVolume: Double {
+        if let draggingOutputVolume { return draggingOutputVolume }
+        if mixer.systemOutputMuted == true { return 0 }
+        return mixer.systemOutputVolume ?? 0
+    }
+
+    private var speakerVariableValue: Double {
+        let v = displayedSystemOutputVolume
+        if v <= 0.001 { return 0 }
+        if v < 0.34 { return 0.25 }
+        if v < 0.67 { return 0.6 }
+        return 1.0
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(l10n.s.mixerOutputLevelLabel)
+                .font(.body)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            Button {
+                toggleOutputMute()
+            } label: {
+                Group {
+                    if isSystemOutputMuted {
+                        Image(systemName: "speaker.fill")
+                    } else {
+                        Image(systemName: "speaker.wave.3.fill", variableValue: speakerVariableValue)
+                    }
+                }
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(isSystemOutputMuted ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+                .frame(width: 18, alignment: .center)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isSystemOutputMuted ? l10n.s.actionUnmute : l10n.s.actionMute)
+
+            DeviceControlsSlider(
+                title: l10n.s.mixerOutputLevelLabel,
+                value: systemOutputVolumeBinding,
+                range: 0...1,
+                step: 0,
+                readout: "\(Int((displayedSystemOutputVolume * 100).rounded()))%",
+                onEditingChanged: { editing in
+                    if editing {
+                        editingOutputVolume = true
+                    } else {
+                        editingOutputVolume = false
+                        if let finalVol = draggingOutputVolume {
+                            publishFinalOutputVolume(finalVol)
+                            if finalVol > 0.001 {
+                                UserDefaults.standard.set(finalVol, forKey: "audioOutputLastUnmutedVolume")
+                            }
+                        }
+                        draggingOutputVolume = nil
+                    }
+                }
+            )
+            .frame(width: 140)
+        }
+    }
+
+    private func toggleOutputMute() {
+        NotchService.shared.noteOwnLevelAdjustment(.volume)
+        let currentlyMuted = mixer.systemOutputMuted == true || (mixer.systemOutputVolume ?? 0) <= 0.001
+        if currentlyMuted {
+            let restoreVal = lastUnmutedOutputVolume > 0.001 ? lastUnmutedOutputVolume : (mixer.systemOutputVolume ?? 0.5)
+            let finalVal = restoreVal > 0.001 ? restoreVal : 0.5
+            mixer.requestOutputAdjustment(volume: finalVal, muted: false)
+        } else {
+            if let cur = mixer.systemOutputVolume, cur > 0.001 {
+                lastUnmutedOutputVolume = cur
+                UserDefaults.standard.set(cur, forKey: "audioOutputLastUnmutedVolume")
+            }
+            mixer.requestOutputAdjustment(muted: true)
+        }
+    }
+
+    private func setSystemOutputVolume(_ value: Double) {
+        if inNotch {
+            // The slider shows the level; the island's header need not repeat it.
+            NotchService.shared.noteOwnVolumeAdjustment()
+        }
+        // Both panels share the key queue, so a drag supersedes an older key.
+        mixer.requestOutputAdjustment(volume: value, publishes: !editingOutputVolume)
+    }
+
+    private func publishFinalOutputVolume(_ volume: Double) {
+        if mixer.systemOutputMuted == true, volume > 0.001 {
+            mixer.requestOutputAdjustment(volume: volume, muted: false)
+        } else {
+            mixer.requestOutputAdjustment(volume: volume)
+        }
+    }
+
+    private var systemOutputVolumeBinding: Binding<Double> {
+        Binding(
+            get: { draggingOutputVolume ?? displayedSystemOutputVolume },
+            set: { newValue in
+                draggingOutputVolume = newValue
+                if newValue > 0.001 { lastUnmutedOutputVolume = newValue }
+                if mixer.systemOutputMuted == true, newValue > 0.001 {
+                    NotchService.shared.noteOwnLevelAdjustment(.volume)
+                    mixer.requestOutputAdjustment(volume: newValue, muted: false,
+                                                  publishes: !editingOutputVolume)
+                } else {
+                    setSystemOutputVolume(newValue)
+                }
+            }
+        )
+    }
+}
+
 /// An individual application row in Audio Output settings, displaying an icon with hover pin overlay,
 /// app title, unified output destination selector (Local Mac, Bluetooth/headphones, AirPlay, Default),
 /// mute button, and 140px volume boost slider in a single compact row.
 struct MixerSettingsAppRow: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var mixer = AppVolumeMixer.shared
     let app: MixerApp
+    let outputDevices: [MixerOutputDevice]
     let isPinned: Bool
     let active: Bool
     let onTogglePin: () -> Void
@@ -605,6 +659,11 @@ struct MixerSettingsAppRow: View {
 
     @State private var isHovered = false
     @State private var isSliderTracking = false
+    @State private var liveVolume: Double?
+    @State private var cachedIcon: NSImage?
+    @State private var cachedIconPID: pid_t?
+
+    private var effectiveVolume: Double { liveVolume ?? app.volume }
 
     private var isAirPlay: Bool {
         app.selectedOutputDeviceUID.map(MixerRoutingSupport.isAirPlaySentinel) == true
@@ -624,7 +683,7 @@ struct MixerSettingsAppRow: View {
         if app.outputDeviceUnavailable {
             return "speaker.badge.exclamationmark"
         }
-        if let device = mixer.outputDevices.first(where: { $0.uid == selectedUID }) {
+        if let device = outputDevices.first(where: { $0.uid == selectedUID }) {
             return deviceIcon(for: device)
         }
         return "hifispeaker.2"
@@ -647,7 +706,7 @@ struct MixerSettingsAppRow: View {
         if MixerRoutingSupport.isAirPlaySentinel(selectedUID) {
             return AirPlayRouteManager.currentSpeakerName ?? "AirPlay"
         }
-        return mixer.outputDevices.first(where: { $0.uid == selectedUID })?.name
+        return outputDevices.first(where: { $0.uid == selectedUID })?.name
     }
 
     private var routeTooltip: String {
@@ -688,14 +747,27 @@ struct MixerSettingsAppRow: View {
                 AppVolumeBoostSlider(
                     title: "\(app.name) volume",
                     value: Binding(
-                        get: { app.volume },
-                        set: {
-                            mixer.setVolume($0, for: app)
-                            onVolumeChanged()
+                        get: { liveVolume ?? app.volume },
+                        set: { nextVol in
+                            if isSliderTracking {
+                                liveVolume = nextVol
+                                AppVolumeMixer.shared.setInteractiveVolume(nextVol, for: app, isEditing: true)
+                            } else {
+                                liveVolume = nil
+                                AppVolumeMixer.shared.setVolume(nextVol, for: app)
+                                onVolumeChanged()
+                            }
                         }
                     ),
                     onEditingChanged: { tracking in
                         isSliderTracking = tracking
+                        if !tracking {
+                            if let finalVol = liveVolume {
+                                liveVolume = nil
+                                AppVolumeMixer.shared.setVolume(finalVol, for: app)
+                            }
+                            onVolumeChanged()
+                        }
                         onSliderTrackingChanged(tracking)
                     }
                 )
@@ -704,6 +776,7 @@ struct MixerSettingsAppRow: View {
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 4)
+        .compositingGroup()
         .opacity(active ? 1.0 : 0.65)
         .contentShape(Rectangle())
         .onHover { hovering in
@@ -731,9 +804,19 @@ struct MixerSettingsAppRow: View {
     private static let iconSize: CGFloat = 30
 
     private var iconContent: some View {
-        Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid, pointSize: Self.iconSize))
+        Image(nsImage: cachedIcon ?? ResponsibleProcess.icon(for: app.ownerPid, pointSize: Self.iconSize))
             .resizable()
             .frame(width: Self.iconSize, height: Self.iconSize)
+            .onAppear {
+                if cachedIconPID != app.ownerPid {
+                    cachedIcon = ResponsibleProcess.icon(for: app.ownerPid, pointSize: Self.iconSize)
+                    cachedIconPID = app.ownerPid
+                }
+            }
+            .onChange(of: app.ownerPid) { _, newPID in
+                cachedIcon = ResponsibleProcess.icon(for: newPID, pointSize: Self.iconSize)
+                cachedIconPID = newPID
+            }
             .overlay(alignment: .bottomTrailing) {
                 if isPinned || (isHovered && app.persistenceID != nil) {
                     pinBadge
@@ -792,7 +875,7 @@ struct MixerSettingsAppRow: View {
     private var outputDestinationMenu: some View {
         Menu {
             Button {
-                mixer.setOutputDeviceUID(nil, for: app)
+                AppVolumeMixer.shared.setOutputDeviceUID(nil, for: app)
             } label: {
                 if app.selectedOutputDeviceUID == nil {
                     Label("Default (Follow System)", systemImage: "checkmark")
@@ -801,12 +884,12 @@ struct MixerSettingsAppRow: View {
                 }
             }
 
-            let nonAirPlayDevices = mixer.outputDevices.filter { !$0.isAirPlay }
+            let nonAirPlayDevices = outputDevices.filter { !$0.isAirPlay }
             if !nonAirPlayDevices.isEmpty {
                 Divider()
                 ForEach(nonAirPlayDevices) { device in
                     Button {
-                        mixer.setOutputDeviceUID(device.uid, for: app)
+                        AppVolumeMixer.shared.setOutputDeviceUID(device.uid, for: app)
                     } label: {
                         if app.selectedOutputDeviceUID == device.uid {
                             Label(device.name, systemImage: "checkmark")
@@ -835,16 +918,17 @@ struct MixerSettingsAppRow: View {
 
     private var speakerButton: some View {
         Button {
-            if (app.volume * 100).rounded() == 100 {
-                mixer.toggleMute(app)
+            liveVolume = nil
+            if (effectiveVolume * 100).rounded() == 100 {
+                AppVolumeMixer.shared.toggleMute(app)
             } else {
-                mixer.setVolume(1.0, for: app)
+                AppVolumeMixer.shared.setVolume(1.0, for: app)
             }
             onVolumeChanged()
         } label: {
-            Image(systemName: hudSpeakerIcon(for: app.volume))
+            Image(systemName: hudSpeakerIcon(for: effectiveVolume))
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(hudSpeakerColor(for: app.volume))
+                .foregroundStyle(hudSpeakerColor(for: effectiveVolume))
                 .frame(width: 18, alignment: .center)
                 .contentShape(Rectangle())
         }

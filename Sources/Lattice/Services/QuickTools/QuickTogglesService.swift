@@ -30,6 +30,7 @@ final class QuickTogglesService: ObservableObject {
     private let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.quick-toggles", qos: .userInitiated)
     private var trashConfirmationPending = false
     private let darkModeHotkey = QuickToolHotkey(id: 26)
+    private let ejectDisksHotkey = QuickToolHotkey(id: 27)
 
     private init() {
         syncWithPreferences()
@@ -44,6 +45,13 @@ final class QuickTogglesService: ObservableObject {
             self?.toggleDarkMode()
         }
         darkModeHotkey.sync(enabled: enabled, shortcut: shortcut, storageKey: DefaultsKey.darkModeShortcut)
+
+        let ejectEnabled = defaults.bool(forKey: DefaultsKey.ejectDisksShortcutEnabled)
+        let ejectShortcut = GlobalShortcut.saved(for: DefaultsKey.ejectDisksShortcut, fallback: .ejectDisksDefault)
+        ejectDisksHotkey.onPress = { [weak self] in
+            self?.ejectAllDisks()
+        }
+        ejectDisksHotkey.sync(enabled: ejectEnabled, shortcut: ejectShortcut, storageKey: DefaultsKey.ejectDisksShortcut)
     }
 
     func state(for action: QuickToggleAction) -> RunState? {
@@ -108,8 +116,8 @@ final class QuickTogglesService: ObservableObject {
     // MARK: - Trash
 
     /// Asks first (emptying is permanent), then tells the Finder to empty
-    /// the Trash. Runs on the main thread up to the confirmation; the Apple
-    /// Event goes to the work queue.
+    /// the Trash; an already empty Trash does nothing. Apple Events go to the
+    /// work queue; the confirmation runs on the main thread.
     func emptyTrash(fromNotch: Bool = false) {
         guard QuickToggleAction.emptyTrash.isAvailable,
               states[.emptyTrash] != .running, !trashConfirmationPending else { return }
@@ -138,22 +146,38 @@ final class QuickTogglesService: ObservableObject {
         // inside the source button's mouse event. The in-flight click can
         // interfere with AppKit's guarded red destructive button and focus.
         trashConfirmationPending = true
-        DispatchQueue.main.async { [weak self] in
-            defer {
-                self?.trashConfirmationPending = false
-                if fromNotch {
-                    notch.endIslandConfirmation()
-                } else if let panel = owner as? NSPanel, panel.isVisible {
-                    hub.installMonitors(for: panel)
-                    panel.makeKey()
-                }
+        // An empty Trash is a no-op: no confirmation, no failure mark. The
+        // count is an Apple Event, so it leaves the main thread; a denied or
+        // unreadable count falls through to the usual confirmation.
+        workQueue.async { [weak self] in
+            let empty = Permissions.automationStatus(for: .finder) != .denied
+                && QuickTogglesSupport.trashIsEmpty(
+                    countOutput: AppleScriptRunner.runDetailed(QuickTogglesSupport.trashItemCountSource).output) == true
+            DispatchQueue.main.async {
+                self?.presentTrashConfirmation(skip: empty, fromNotch: fromNotch, owner: owner,
+                                               title: title, message: message, action: action, cancel: cancel)
             }
-            guard let self, owner?.isVisible != false else { return }
-            guard NotchIslandAlert.confirmDestructive(
-                title: title, message: message, action: action,
-                cancel: cancel, above: owner) else { return }
-            self.emptyTrashConfirmed()
         }
+    }
+
+    private func presentTrashConfirmation(skip: Bool, fromNotch: Bool, owner: NSWindow?,
+                                          title: String, message: String, action: String, cancel: String) {
+        let notch = NotchService.shared
+        let hub = LatticeHubService.shared
+        defer {
+            trashConfirmationPending = false
+            if fromNotch {
+                notch.endIslandConfirmation()
+            } else if let panel = owner as? NSPanel, panel.isVisible {
+                hub.installMonitors(for: panel)
+                panel.makeKey()
+            }
+        }
+        guard !skip, owner?.isVisible != false else { return }
+        guard NotchIslandAlert.confirmDestructive(
+            title: title, message: message, action: action,
+            cancel: cancel, above: owner) else { return }
+        emptyTrashConfirmed()
     }
 
     /// The variant for surfaces that already asked in their own words (the

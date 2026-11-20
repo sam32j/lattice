@@ -44,8 +44,15 @@ final class LatticeHubService: ObservableObject {
     @Published var opensUtilityDirectly = false
     @Published var activeUtility: LatticeHubItem? {
         didSet {
-            if let activeUtility {
+            if let activeUtility,
+               UserDefaults.standard.string(forKey: DefaultsKey.recentHubUtility) != activeUtility.rawValue {
                 UserDefaults.standard.set(activeUtility.rawValue, forKey: DefaultsKey.recentHubUtility)
+            }
+            guard activeUtility != oldValue else { return }
+            let island = NotchService.shared
+            if island.expanded, !island.showingSections,
+               [.hub, .controls, .mixer].contains(island.selected) {
+                island.refreshPresentation(transitionContent: .page)
             }
         }
     }
@@ -362,16 +369,8 @@ final class LatticeHubService: ObservableObject {
             if item == .system {
                 SystemNavigationState.shared.reset()
             }
-            if isVisible {
-                // Normal Hub navigation still uses its familiar crossfade.
-                opensUtilityDirectly = false
-                activeUtility = item
-            } else {
-                opensUtilityDirectly = false
-                withAnimation(.easeInOut(duration: 0.22)) {
-                    activeUtility = item
-                }
-            }
+            opensUtilityDirectly = false
+            activeUtility = item
         }
     }
 

@@ -15,7 +15,7 @@ struct NotchFileDropActions {
 
 /// `depart` keeps the leaving content on screen while the shape closes
 /// around it, fading out before the next content takes its place.
-enum NotchContentTransition { case none, reveal, dismiss, depart, replace }
+enum NotchContentTransition { case none, reveal, dismiss, depart, replace, page }
 
 /// The window reserves the transition's bounds once. Core Animation moves
 /// the silhouette independently of SwiftUI layout and the application run loop.
@@ -359,14 +359,21 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             return
         }
         if canAnimate { canvas.transitionContent(revealing ? .reveal : transitionContent) }
-        else if animated && changesFrame && (revealing || transitionContent == .reveal) {
+        else if animated && changesFrame && (revealing || transitionContent == .reveal || transitionContent == .page) {
             // Reduce Motion, or a panel that was ordered out, puts the island
             // at its new size at once. Shown at once, the page reached the
             // screen in the resting shape, flushed ahead of the resize, or
             // ahead of the surface drawn beneath it. A fade is not motion.
             canvas.transitionContent(.reveal, shapeSnaps: true)
         } else { canvas.restoreContent() }
-        guard changesFrame else { configureQuickAccess(); return }
+        guard changesFrame else {
+            configureQuickAccess()
+            if transitionContent == .page {
+                canvas.layoutSubtreeIfNeeded()
+                CATransaction.flush()
+            }
+            return
+        }
         // An ordered-out panel still has its last expanded shape. Start the
         // reveal at the screen edge, even when reopening at that same size.
         let previousSize = revealing
@@ -1090,6 +1097,10 @@ final class NotchPanel: NSPanel, NotchWaveHold {
     static let normalLevel = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
     static let fullscreenLevel = NSWindow.Level.floating
     var acceptsKeyFocus = false
+    /// Whether scrolling or touching the island may make it key. The closed
+    /// island never takes the keyboard: once key, the app being typed in lost
+    /// its text focus, and closing the island did not give it back.
+    var takesKeyForInput: () -> Bool = { true }
     /// The native confirmation owns key focus until it closes. Several Island
     /// input paths (including scroll/touch and frame restoration) call makeKey()
     /// independently of the event monitors, so enforce this at the window.
@@ -1098,6 +1109,8 @@ final class NotchPanel: NSPanel, NotchWaveHold {
     /// Only override a stale background-app cursor on the visible surface.
     var nonKeyCursorSurfaceContains: ((CGPoint) -> Bool)?
     var handleScroll: ((NSEvent) -> Bool)?
+    /// A right-click the island answers itself, such as the closed island's activity menu.
+    var handleSecondaryClick: ((NSEvent) -> Bool)?
     var handleIndirectTouches: ((NSEvent, NSView) -> Bool)?
     var visibilityDidChange: (() -> Void)?
     /// Set while the panel is offscreen only to change displays. The music
@@ -1150,9 +1163,12 @@ final class NotchPanel: NSPanel, NotchWaveHold {
             // than inheriting the I-beam from a text field beneath it.
             NSCursor.arrow.set()
         }
+        if event.type == .rightMouseDown, handleSecondaryClick?(event) == true { return }
         if event.type == .scrollWheel {
-            acceptsKeyFocus = true
-            if !isKeyWindow { makeKey() }
+            if takesKeyForInput() {
+                acceptsKeyFocus = true
+                if !isKeyWindow { makeKey() }
+            }
             if handleScroll?(event) == true || HorizontalWheelScrolling.handle(event) { return }
         }
         super.sendEvent(event)
@@ -1198,11 +1214,11 @@ private final class NotchQuickAccessContainer: NSView {
     required init?(coder: NSCoder) { nil }
 
     override func touchesBegan(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {
@@ -1647,6 +1663,7 @@ private final class NotchCanvas: NSView {
         if let from { setBackdropContour(inCanvas(from)) }
         // Only the material follows the display link; content layout and the
         // native window remain fixed for the duration of the animation.
+        backdropDisplayLink?.invalidate()
         let link = displayLink(target: backdropTick, selector: #selector(NotchBackdropTick.fire(_:)))
         backdropDisplayLink = link
         link.add(to: .main, forMode: .common)
@@ -1755,14 +1772,18 @@ private final class NotchCanvas: NSView {
             // Mask only the content pixels. A black overlay would obscure the
             // glass; alphaValue would remove the hosting view's AX/hit frame.
             let animation = CAKeyframeAnimation(keyPath: "opacity")
-            let start: Float = kind == .dismiss || currentOpacity == 1 ? 0 : currentOpacity
+            let start: Float = (kind == .dismiss || kind == .page || currentOpacity == 1) ? 0 : currentOpacity
             // Give the silhouette a head start before revealing full-width
             // content; content arriving small and out of focus can show
             // sooner than sharp content could. Reversals continue from the
             // opacity already on screen. A shape that snaps into place only
             // needs its first frames drawn.
-            let keyTimes: [NSNumber] = kind == .dismiss ? [0, 0.65, 1] : shapeSnaps ? [0, 0.25, 1] : [0, 0.35, 1]
-            let duration: CFTimeInterval = kind == .dismiss ? 0.40 : shapeSnaps ? 0.2 : 0.45
+            let keyTimes: [NSNumber] = kind == .dismiss ? [0, 0.65, 1]
+                : kind == .page ? [0, 0.08, 1]
+                : shapeSnaps ? [0, 0.25, 1] : [0, 0.35, 1]
+            let duration: CFTimeInterval = kind == .dismiss ? 0.40
+                : kind == .page ? 0.22
+                : shapeSnaps ? 0.2 : 0.45
             animation.values = [start, start, 1]
             animation.keyTimes = keyTimes
             animation.duration = duration
@@ -2089,11 +2110,11 @@ private final class NotchHostingView: NSHostingView<AnyView> {
     }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func touchesBegan(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {

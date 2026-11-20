@@ -23,7 +23,10 @@ enum NotchDestinationContract {
     }
     enum NSWorkspace { static let shared = Workspace() }
     final class Workspace { var frontmostApplication: RunningApplication? }
-    struct RunningApplication { let processIdentifier: Int32 }
+    struct RunningApplication {
+        let processIdentifier: Int32
+        func activate() {}
+    }
     final class Host { func containsHover(_ point: CGPoint) -> Bool { false } }
     enum NSEvent { static let mouseLocation = CGPoint.zero }
     final class AppDelegate { func closePopover(preservingNotch: Bool) {} }

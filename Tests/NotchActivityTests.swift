@@ -738,15 +738,15 @@ enum NotchActivityTests {
         }
         suite.expect(companions(of: .timer) == [.downloads, .agents, .calendar, .music],
                      "a running timer offers every supported pair instead of silently choosing one")
-        suite.expect(companions(of: .timer, running: false) == [.downloads],
-                     "a paused or finished timer keeps its status mark beside agents, an event or music")
+        suite.expect(companions(of: .timer, running: false) == [.downloads, .agents, .calendar, .music],
+                     "a paused or finished timer pairs too, keeping its status beside a download, agents, an event or music")
         suite.expect(companions(of: .timer, timer: false).isEmpty && companions(of: .calendar, calendar: false).isEmpty,
                      "an activity that is not showing offers no pair")
-        suite.expect(companions(of: .calendar, running: false) == [.downloads, .agents, .music],
-                     "an event's clock keeps its side beside a download, agents or music, whatever the timer does")
+        suite.expect(companions(of: .calendar, running: false) == [.downloads, .agents, .music, .timer],
+                     "an event's clock keeps its side beside a download, agents, music or a timer")
         suite.expect([NotchCompactActivity.downloads, .agents, .music].allSatisfy { companions(of: $0).isEmpty },
                      "downloads, agents and music need both wings and cannot lead a pair")
-        suite.expect(NotchActivityCombination(primary: .calendar, companion: .music).title(.enUS) == "Music + Calendar"
+        suite.expect(NotchActivityCombination(primary: .calendar, companion: .music).title(.enUS) == "Now Playing + Calendar"
                      && NotchActivityCombination(primary: .timer, companion: .calendar).title(.enUS) == "Calendar + Timer",
                      "a pair is named in the order the island shows it, the companion left of the camera first")
         let screen = CGRect(x: 0, y: 0, width: 1470, height: 956)

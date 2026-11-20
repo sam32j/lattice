@@ -444,7 +444,12 @@ enum NotchLayout {
                                   end: CGPoint,
                                   span: CGFloat) {
         if span <= 0.0001 {
-            path.addLine(to: end)
+            // Three curves collapsed onto the end, never a single line: Core
+            // Animation blends keyframe outlines segment by segment, and a
+            // shoulder shrinking to nothing (closing to the bare notch) left
+            // the last outline 4 segments short, so the final frame of the
+            // close blended into a wavy smear below the island.
+            for _ in 0..<3 { path.addCurve(to: end, control1: end, control2: end) }
             return
         }
         let uIn = CGPoint(x: (corner.x - start.x) / span, y: (corner.y - start.y) / span)
@@ -1049,39 +1054,123 @@ final class NotchMirrorModel: ObservableObject {
     }
 }
 
-/// A choice outlives the gaps in what was chosen, such as a song changing
-/// or an agent between turns: the island shows the next activity meanwhile
-/// and returns to the chosen one. It ends when nothing is left to show, so
-/// work returning later starts from the automatic order again.
+/// What the closed island shows. `preferred` is the activity chosen to
+/// show; `plus` is a timer or event joined beside it, which keeps its reading
+/// right of the camera while the chosen activity takes the left. A choice
+/// outlives the gaps in what was chosen, such as a song changing or an agent
+/// between turns: the island shows the next activity meanwhile, still with
+/// the plus when it pairs, and returns to the chosen one. A plus that ends is
+/// dropped. Hiding clears the island until a new activity starts. Everything
+/// ends when nothing is left to show.
 struct NotchActivitySelection {
     private(set) var preferred: NotchCompactActivity?
-    private(set) var companion: NotchCompactActivity?
+    private(set) var plus: NotchCompactActivity?
+    /// What was live when the island was hidden; nil while it shows.
+    private(set) var hiddenLive: Set<NotchCompactActivity>?
+    /// The activity the person chose; a companion attached beside it may lead
+    /// the pair on screen, but detaching always leaves this one.
+    private(set) var anchor: NotchCompactActivity?
 
+    var isHidden: Bool { hiddenLive != nil }
+
+    /// Choosing an activity shows it alone, replacing any pair.
+    mutating func select(_ activity: NotchCompactActivity, available: [NotchCompactActivity]) {
+        guard available.contains(activity) else { return }
+        preferred = activity
+        plus = nil
+        anchor = activity
+        hiddenLive = nil
+    }
+
+    /// Attaches `companion` beside `main`. The clock keeps its reading right of
+    /// the camera (`plus`) whichever was chosen first; two clocks put the event
+    /// on the left and the timer on the right.
+    mutating func pair(_ companion: NotchCompactActivity, with main: NotchCompactActivity) {
+        guard NotchSupport.canPair(main, companion) else { return }
+        let clocks: Set<NotchCompactActivity> = [.timer, .calendar]
+        if clocks.contains(main), clocks.contains(companion) {
+            preferred = .calendar
+            plus = .timer
+        } else if clocks.contains(main) {
+            preferred = companion
+            plus = main
+        } else {
+            preferred = main
+            plus = companion
+        }
+        anchor = main
+        hiddenLive = nil
+    }
+
+    /// Detaches the companion: the chosen activity stays, alone.
+    mutating func unpair() {
+        guard let kept = anchor ?? preferred ?? plus else { return }
+        preferred = kept
+        plus = nil
+        hiddenLive = nil
+    }
+
+    /// A pair named the way the island shows it: `primary` keeps its reading
+    /// right of the camera, `companion` is the chosen activity on the left.
     /// `companions` are the pairs `activity` supports now.
     mutating func select(_ activity: NotchCompactActivity, companion: NotchCompactActivity? = nil,
                          available: [NotchCompactActivity], companions: [NotchCompactActivity] = []) {
-        guard available.contains(activity) else { return }
-        if let companion, !companions.contains(companion) { return }
-        preferred = activity
-        self.companion = companion
+        guard let companion else { select(activity, available: available); return }
+        guard available.contains(activity), available.contains(companion), companions.contains(companion) else { return }
+        preferred = companion
+        plus = activity
+        anchor = companion
+        hiddenLive = nil
+    }
+
+    /// The plus menu: joins `activity` beside `main`, or removes it when it is
+    /// already there. `pairs` says whether `activity` can lead a pair with `main`.
+    mutating func togglePlus(_ activity: NotchCompactActivity, main: NotchCompactActivity, pairs: Bool) {
+        if plus == activity { plus = nil; return }
+        guard pairs, activity != main else { return }
+        preferred = main
+        plus = activity
+        anchor = main
+        hiddenLive = nil
+    }
+
+    mutating func hide(available: [NotchCompactActivity]) {
+        guard !available.isEmpty else { return }
+        hiddenLive = Set(available)
     }
 
     mutating func reconcile(available: [NotchCompactActivity]) {
-        guard available.isEmpty else { return }
-        preferred = nil
-        companion = nil
+        guard !available.isEmpty else {
+            preferred = nil
+            plus = nil
+            anchor = nil
+            hiddenLive = nil
+            return
+        }
+        if let plus, !available.contains(plus) { self.plus = nil }
+        if var hidden = hiddenLive {
+            // An activity that ends and starts again is new; music between
+            // songs is not.
+            hidden = hidden.filter { available.contains($0) || $0 == .music }
+            hiddenLive = available.contains { !hidden.contains($0) } ? nil : hidden
+        }
     }
 
-    /// The chosen pair's companion while it is there to pair with.
-    /// `companions` are the pairs the preferred activity supports now.
-    func companion(available companions: [NotchCompactActivity]) -> NotchCompactActivity? {
-        guard preferred != nil, let companion, companions.contains(companion) else { return nil }
-        return companion
-    }
-
+    /// The activity the island is about, before any plus joins it.
     func current(available: [NotchCompactActivity]) -> NotchCompactActivity? {
+        guard !isHidden else { return nil }
         if let preferred, available.contains(preferred) { return preferred }
         return available.first
+    }
+
+    /// What the island draws: the plus leads when it pairs with the current
+    /// activity, which then takes the left.
+    func display(available: [NotchCompactActivity],
+                 pairs: (_ primary: NotchCompactActivity, _ companion: NotchCompactActivity) -> Bool)
+        -> (primary: NotchCompactActivity?, companion: NotchCompactActivity?) {
+        guard let current = current(available: available) else { return (nil, nil) }
+        if let plus, plus != current, available.contains(plus), pairs(plus, current) { return (plus, current) }
+        return (current, nil)
     }
 }
 
@@ -1923,32 +2012,45 @@ enum NotchSupport {
                           calendar: calendar, music: music, keepAwake: keepAwake).first
     }
 
-    /// Keep Awake comes last: a session can run all day, even more than
-    /// music plays, and it only says that the Mac stays awake. A watch
-    /// follows the timer: the person started both and is waiting on them.
+    /// The automatic order: an event that has begun, then a timer that just
+    /// finished or was started after the event's countdown appeared, then the
+    /// countdown, then a timer that was already running before it appeared.
+    /// A watch follows: the person started it and is waiting on it. Keep Awake
+    /// comes last: a session can run all day and only says the Mac stays awake.
     static func compactActivities(timer: Bool, watch: Bool = false, downloads: Bool, agents: Bool,
-                                  calendar: Bool, music: Bool, keepAwake: Bool = false, videoDownloader: Bool = false) -> [NotchCompactActivity] {
+                                  calendar: Bool, music: Bool, keepAwake: Bool = false, videoDownloader: Bool = false,
+                                  calendarArrived: Bool = false, timerLeadsCalendar: Bool = true) -> [NotchCompactActivity] {
+        let arrived = calendar && calendarArrived
         let candidates: [(Bool, NotchCompactActivity)] = [
-            (videoDownloader, .videoDownloader), (timer, .timer), (watch, .watch), (downloads, .downloads), (agents, .agents),
-            (calendar, .calendar), (music, .music), (keepAwake, .keepAwake)
+            (arrived, .calendar), (timer && timerLeadsCalendar, .timer), (calendar && !arrived, .calendar),
+            (timer && !timerLeadsCalendar, .timer), (watch, .watch), (videoDownloader, .videoDownloader),
+            (downloads, .downloads), (agents, .agents), (music, .music), (keepAwake, .keepAwake)
         ]
         return candidates.compactMap { $0.0 ? $0.1 : nil }
     }
 
+    /// Whether two activities can share the closed island: a clock (timer or
+    /// event) with a download, agents, music or the other clock. Watch, Keep
+    /// Awake and video downloads need the whole strip.
+    static func canPair(_ a: NotchCompactActivity, _ b: NotchCompactActivity) -> Bool {
+        guard a != b else { return false }
+        let clocks: Set<NotchCompactActivity> = [.timer, .calendar]
+        let rich: Set<NotchCompactActivity> = [.music, .downloads, .agents]
+        return (clocks.contains(a) && (clocks.contains(b) || rich.contains(b))) || (clocks.contains(b) && rich.contains(a))
+    }
+
     /// Supported, explicit pairs for the activity that keeps its reading
-    /// right of the camera. A paused or finished timer needs its own mark
-    /// beside agents, an event or music; downloads already carry their
-    /// status. An event's clock always runs, so a download, agents or music
-    /// can take the side its title had.
-    static func compactCompanions(of primary: NotchCompactActivity, timer: Bool, running: Bool, downloads: Bool,
+    /// right of the camera: a timer, running or not, or an event's clock,
+    /// beside a download, agents, music or each other. `running` is kept for
+    /// callers; a paused or finished timer pairs too.
+    static func compactCompanions(of primary: NotchCompactActivity, timer: Bool, running _: Bool, downloads: Bool,
                                   agents: Bool, calendar: Bool, music: Bool) -> [NotchCompactActivity] {
         let pairs: [(Bool, NotchCompactActivity)]
         switch primary {
         case .timer where timer:
-            pairs = [(downloads, .downloads), (running && agents, .agents), (running && calendar, .calendar),
-                     (running && music, .music)]
+            pairs = [(downloads, .downloads), (agents, .agents), (calendar, .calendar), (music, .music)]
         case .calendar where calendar:
-            pairs = [(downloads, .downloads), (agents, .agents), (music, .music)]
+            pairs = [(downloads, .downloads), (agents, .agents), (music, .music), (timer, .timer)]
         default:
             pairs = []
         }

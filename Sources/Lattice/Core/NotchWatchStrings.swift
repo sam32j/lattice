@@ -60,7 +60,7 @@ extension FeatureStrings {
     static func notchWatch(_ language: AppLanguage) -> NotchWatchStrings {
         switch language {
         case .enUS: return NotchWatchStrings(
-            title: "Watch",
+            title: "Screen Watcher",
             description: "Turn any part of any window into a live activity in the Dynamic Island, with an alert when it changes, finishes or shows what you are waiting for.",
             setupHint: "Choose any part of a window, like a progress bar, a build status or a score. The island reads it for you and tells you when it changes.",
             choose: "Choose Area",
@@ -90,7 +90,7 @@ extension FeatureStrings {
             sinceFormat: "Watching since %@",
             sound: "Play a sound")
         case .ptBR: return NotchWatchStrings(
-            title: "Observar",
+            title: "Observador de Tela",
             description: "Transforme qualquer parte de qualquer janela em uma atividade ao vivo no Dynamic Island, com aviso quando mudar, terminar ou mostrar o que você espera.",
             setupHint: "Escolha qualquer parte de uma janela, como uma barra de progresso, o status de um build ou um placar. A ilha lê para você e avisa quando mudar.",
             choose: "Escolher área",
@@ -120,7 +120,7 @@ extension FeatureStrings {
             sinceFormat: "Observando desde %@",
             sound: "Tocar um som")
         case .es: return NotchWatchStrings(
-            title: "Observar",
+            title: "Vigilante de pantalla",
             description: "Convierte cualquier parte de cualquier ventana en una actividad en directo en el Dynamic Island, con un aviso cuando cambie, termine o muestre lo que esperas.",
             setupHint: "Elige cualquier parte de una ventana, como una barra de progreso, el estado de una compilación o un marcador. La isla la lee por ti y te avisa cuando cambia.",
             choose: "Elegir área",
@@ -150,7 +150,7 @@ extension FeatureStrings {
             sinceFormat: "Observando desde las %@",
             sound: "Reproducir un sonido")
         case .sk: return NotchWatchStrings(
-            title: "Sledovať",
+            title: "Sledovanie obrazovky",
             description: "Premeňte ľubovoľnú časť ľubovoľného okna na živú aktivitu v Dynamic Island s upozornením, keď sa zmení, skončí alebo ukáže, na čo čakáte.",
             setupHint: "Vyberte ľubovoľnú časť okna, napríklad priebeh, stav zostavy alebo skóre. Ostrov ju za vás číta a upozorní vás, keď sa zmení.",
             choose: "Vybrať oblasť",
@@ -180,7 +180,7 @@ extension FeatureStrings {
             sinceFormat: "Sleduje sa od %@",
             sound: "Prehrať zvuk")
         case .de: return NotchWatchStrings(
-            title: "Beobachten",
+            title: "Bildschirmwächter",
             description: "Mach jeden Teil eines beliebigen Fensters zu einer Live-Aktivität im Dynamic Island, mit Hinweis, wenn er sich ändert, fertig ist oder zeigt, worauf du wartest.",
             setupHint: "Wähle einen Teil eines Fensters, etwa einen Fortschrittsbalken, den Status eines Builds oder einen Spielstand. Die Insel liest ihn für dich und meldet sich, wenn er sich ändert.",
             choose: "Bereich wählen",
@@ -210,7 +210,7 @@ extension FeatureStrings {
             sinceFormat: "Beobachtet seit %@",
             sound: "Ton abspielen")
         case .fr: return NotchWatchStrings(
-            title: "Surveiller",
+            title: "Surveillance d’écran",
             description: "Transformez n’importe quelle partie d’une fenêtre en activité en direct dans le Dynamic Island, avec une alerte quand elle change, se termine ou affiche ce que vous attendez.",
             setupHint: "Choisissez une partie d’une fenêtre, comme une barre de progression, l’état d’une compilation ou un score. L’île la lit pour vous et vous prévient quand elle change.",
             choose: "Choisir une zone",
@@ -240,7 +240,7 @@ extension FeatureStrings {
             sinceFormat: "Surveillée depuis %@",
             sound: "Jouer un son")
         case .it: return NotchWatchStrings(
-            title: "Osserva",
+            title: "Osservatore schermo",
             description: "Trasforma qualsiasi parte di qualsiasi finestra in un’attività dal vivo nel Dynamic Island, con un avviso quando cambia, finisce o mostra ciò che aspetti.",
             setupHint: "Scegli una parte di una finestra, come una barra di avanzamento, lo stato di una build o un punteggio. L’isola la legge per te e ti avvisa quando cambia.",
             choose: "Scegli area",
@@ -270,7 +270,7 @@ extension FeatureStrings {
             sinceFormat: "Osservata dalle %@",
             sound: "Riproduci un suono")
         case .ru: return NotchWatchStrings(
-            title: "Наблюдение",
+            title: "Наблюдение за экраном",
             description: "Превратите любую часть любого окна в живую активность в Dynamic Island с оповещением, когда она изменится, завершится или покажет то, чего вы ждёте.",
             setupHint: "Выберите любую часть окна, например индикатор выполнения, статус сборки или счёт. Остров прочитает её за вас и сообщит, когда она изменится.",
             choose: "Выбрать область",
@@ -300,7 +300,7 @@ extension FeatureStrings {
             sinceFormat: "Наблюдение с %@",
             sound: "Воспроизвести звук")
         case .tr: return NotchWatchStrings(
-            title: "İzle",
+            title: "Ekran İzleyici",
             description: "Herhangi bir pencerenin herhangi bir bölümünü Dynamic Island’da canlı bir etkinliğe dönüştürün. Değiştiğinde, bittiğinde ya da beklediğinizi gösterdiğinde haber verir.",
             setupHint: "Bir pencerenin herhangi bir bölümünü seçin, örneğin bir ilerleme çubuğu, bir derlemenin durumu ya da bir skor. Ada onu sizin için okur ve değiştiğinde haber verir.",
             choose: "Alan Seç",
@@ -330,7 +330,7 @@ extension FeatureStrings {
             sinceFormat: "İzleniyor, başlangıç: %@",
             sound: "Ses çal")
         case .ja: return NotchWatchStrings(
-            title: "ウォッチ",
+            title: "画面ウォッチャー",
             description: "どのウインドウのどの部分でも Dynamic Island のライブアクティビティにして、変化したとき、終わったとき、待っている内容が表示されたときに知らせます。",
             setupHint: "進行状況バー、ビルドの状態、スコアなど、ウインドウの好きな部分を選んでください。アイランドが代わりに読み取り、変化したら知らせます。",
             choose: "範囲を選択",
@@ -360,7 +360,7 @@ extension FeatureStrings {
             sinceFormat: "%@ からウォッチ中",
             sound: "サウンドを再生")
         case .ko: return NotchWatchStrings(
-            title: "지켜보기",
+            title: "화면 감시",
             description: "어떤 윈도우의 어떤 부분이든 Dynamic Island의 실시간 현황으로 만들고, 바뀌거나 끝나거나 기다리던 내용이 나타나면 알려 줍니다.",
             setupHint: "진행 막대, 빌드 상태, 점수처럼 윈도우의 원하는 부분을 선택하세요. 아일랜드가 대신 읽고 바뀌면 알려 줍니다.",
             choose: "영역 선택",
@@ -390,7 +390,7 @@ extension FeatureStrings {
             sinceFormat: "%@부터 지켜보는 중",
             sound: "사운드 재생")
         case .uk: return NotchWatchStrings(
-            title: "Спостереження",
+            title: "Спостереження за екраном",
             description: "Перетворіть будь-яку частину будь-якого вікна на живу активність у Dynamic Island зі сповіщенням, коли вона зміниться, завершиться або покаже те, на що ви чекаєте.",
             setupHint: "Виберіть будь-яку частину вікна, наприклад індикатор поступу, стан збірки чи рахунок. Острів прочитає її за вас і повідомить, коли вона зміниться.",
             choose: "Вибрати область",
@@ -420,7 +420,7 @@ extension FeatureStrings {
             sinceFormat: "Спостереження з %@",
             sound: "Відтворити звук")
         case .zhHans: return NotchWatchStrings(
-            title: "观察",
+            title: "屏幕观察",
             description: "把任意窗口的任意部分变成Dynamic Island中的实时活动，在它变化、完成或出现你等待的内容时提醒你。",
             setupHint: "选择窗口的任意部分，比如进度条、构建状态或比分。岛会替你读取，并在它变化时提醒你。",
             choose: "选择区域",
@@ -450,7 +450,7 @@ extension FeatureStrings {
             sinceFormat: "自 %@ 起观察",
             sound: "播放声音")
         case .zhTW: return NotchWatchStrings(
-            title: "觀察",
+            title: "螢幕觀察",
             description: "把任何視窗的任何部分變成Dynamic Island中的即時動態，在它變化、完成或出現你等待的內容時提醒你。",
             setupHint: "選擇視窗的任何部分，例如進度列、建置狀態或比數。島會替你讀取，並在它變化時提醒你。",
             choose: "選擇區域",
@@ -480,7 +480,7 @@ extension FeatureStrings {
             sinceFormat: "自 %@ 起觀察",
             sound: "播放聲音")
         case .zhHK: return NotchWatchStrings(
-            title: "觀察",
+            title: "螢幕觀察",
             description: "把任何視窗的任何部分變成Dynamic Island中的即時動態，在它變化、完成或出現你等待的內容時提醒你。",
             setupHint: "選擇視窗的任何部分，例如進度列、建置狀態或比數。島會替你讀取，並在它變化時提醒你。",
             choose: "選擇區域",

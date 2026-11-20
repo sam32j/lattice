@@ -165,7 +165,7 @@ struct HubControlButton: View {
     /// replace symbols. Dark Mode changes orientation without animating.
     @ViewBuilder private var controlSymbol: some View {
         if actionRawValue == HubControlAction.micMute.rawValue {
-            AnimatedMicMuteSymbol(muted: MicMuteService.shared.isMuted, fontSize: iconSize)
+            AnimatedMicMuteSymbol(muted: isActive, fontSize: iconSize)
         } else if actionRawValue == HubControlAction.darkMode.rawValue {
             Image(systemName: icon)
                 .font(.system(size: iconSize, weight: .semibold))
@@ -200,6 +200,12 @@ struct HubControlButton: View {
                 .background {
                     RoundedRectangle(cornerRadius: max(7, height * 0.28), style: .continuous)
                         .fill(isActive ? tint : (isHovered ? Color.primary.opacity(0.12) : Color.primary.opacity(0.06)))
+                }
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: isActive)
+                .transaction {
+                    if !reduceMotion, actionRawValue == HubControlAction.micMute.rawValue {
+                        $0.disablesAnimations = false
+                    }
                 }
         }
         .buttonStyle(.plain)

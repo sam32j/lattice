@@ -1312,53 +1312,128 @@ enum NotchTests {
         selection.select(.downloads, available: [.agents, .music])
         suite.expect(selection.preferred == .music, "a late click on a removed choice is ignored")
         let all: [NotchCompactActivity] = [.timer, .downloads, .agents, .calendar, .music, .keepAwake]
-        let pairs: [NotchCompactActivity] = [.downloads, .agents, .calendar, .music]
-        for companion in pairs {
-            selection.select(.timer, companion: companion, available: all, companions: pairs)
-            selection.reconcile(available: all)
-            suite.expect(selection.current(available: all) == .timer && selection.companion(available: pairs) == companion,
-                         "each supported pair is an explicit, stable choice")
-            selection.select(.timer, available: all)
-            suite.expect(selection.companion(available: pairs) == nil, "choosing Timer always means Timer alone")
-            selection.select(.timer, companion: companion, available: all, companions: pairs)
-            selection.select(.music, available: all)
-            suite.expect(selection.companion(available: pairs) == nil && selection.preferred == .music,
-                         "an individual choice always replaces the combination")
-            selection.select(.timer, companion: companion, available: all, companions: pairs)
-            selection.reconcile(available: all.filter { $0 != companion })
-            suite.expect(selection.preferred == .timer && selection.companion(available: []) == nil,
-                         "a missing companion leaves the timer alone")
-            suite.expect(selection.companion(available: pairs) == companion,
-                         "a companion that returns pairs with the timer again")
-            selection.reconcile(available: all.filter { $0 != .timer })
-            suite.expect(selection.current(available: all.filter { $0 != .timer }) == .downloads,
-                         "a dismissed timer leaves the island to the automatic order")
-            selection.reconcile(available: [])
-            suite.expect(selection.preferred == nil && selection.companion(available: pairs) == nil,
-                         "an empty island clears the entire combination")
+        func pairs(_ primary: NotchCompactActivity, _ companion: NotchCompactActivity) -> Bool {
+            switch primary {
+            case .timer: return [.downloads, .agents, .calendar, .music].contains(companion)
+            case .calendar: return [.downloads, .agents, .music, .timer].contains(companion)
+            default: return false
+            }
         }
+        func shown(_ available: [NotchCompactActivity]) -> (NotchCompactActivity?, NotchCompactActivity?) {
+            let display = selection.display(available: available, pairs: pairs)
+            return (display.primary, display.companion)
+        }
+        for main in [NotchCompactActivity.downloads, .agents, .music] {
+            for plus in [NotchCompactActivity.timer, .calendar] {
+                selection = NotchActivitySelection()
+                selection.select(main, available: all)
+                selection.togglePlus(plus, main: main, pairs: pairs(plus, main))
+                selection.reconcile(available: all)
+                suite.expect(shown(all) == (plus, main),
+                             "a plus joins the chosen activity, keeping its reading right of the camera")
+                selection.select(main, available: all)
+                suite.expect(shown(all) == (main, nil), "choosing an activity directly shows it alone")
+                selection.togglePlus(plus, main: main, pairs: true)
+                let other: NotchCompactActivity = plus == .timer ? .calendar : .timer
+                selection.togglePlus(other, main: main, pairs: pairs(other, main))
+                suite.expect(shown(all) == (other, main), "the other plus replaces the first")
+                selection.togglePlus(other, main: main, pairs: true)
+                suite.expect(shown(all) == (main, nil) && selection.plus == nil, "choosing the plus again removes it")
+                selection.togglePlus(plus, main: main, pairs: true)
+                selection.select(plus, available: all)
+                suite.expect(shown(all) == (plus, nil), "choosing the plus on its own replaces the whole pair")
+                selection.select(main, available: all)
+                selection.togglePlus(plus, main: main, pairs: true)
+                let next: NotchCompactActivity = main == .music ? .agents : .music
+                selection.select(next, available: all)
+                suite.expect(shown(all) == (next, nil), "another choice replaces the whole pair")
+                selection.pair(plus, with: next)
+                selection.reconcile(available: all.filter { $0 != plus })
+                suite.expect(selection.plus == nil && shown(all) == (next, nil),
+                             "a plus that ends is dropped and does not join again when it returns")
+            }
+        }
+        selection = NotchActivitySelection()
+        selection.select(.music, available: all)
+        selection.togglePlus(.timer, main: .music, pairs: true)
+        let withoutMusic = all.filter { $0 != .music }
+        suite.expect(shown(withoutMusic) == (.timer, nil) || shown(withoutMusic).0 == .timer,
+                     "when the chosen activity pauses, the next activity shows with the plus where they pair")
+        suite.expect(shown([.calendar, .timer, .keepAwake]) == (.timer, .calendar),
+                     "an event filling in for a paused choice keeps a timer plus beside it")
+        suite.expect(shown([.keepAwake, .timer]) == (.keepAwake, nil),
+                     "an activity that cannot pair shows alone")
+        selection = NotchActivitySelection()
+        selection.select(.timer, available: all)
+        selection.togglePlus(.calendar, main: .timer, pairs: pairs(.calendar, .timer))
+        suite.expect(shown(all) == (.calendar, .timer), "a timer can take an event's clock as its plus")
+        selection.select(.agents, available: all)
+        suite.expect(shown(all) == (.agents, nil), "choosing another activity directly shows it alone")
+        selection.pair(.calendar, with: .agents)
+        selection.hide(available: all)
+        suite.expect(shown(all) == (nil, nil) && selection.isHidden, "hiding clears the closed island")
+        selection.reconcile(available: all)
+        suite.expect(selection.isHidden, "the same activities stay hidden")
+        selection.reconcile(available: all + [.watch])
+        suite.expect(!selection.isHidden && shown(all + [.watch]) == (.calendar, .agents),
+                     "a new activity brings the island back as it was")
+        selection.hide(available: all)
+        selection.reconcile(available: all.filter { $0 != .timer })
+        selection.reconcile(available: all)
+        suite.expect(!selection.isHidden, "an activity that ends and starts again counts as new")
+        selection.hide(available: all)
+        selection.reconcile(available: all.filter { $0 != .music })
+        selection.reconcile(available: all)
+        suite.expect(selection.isHidden, "music between songs does not bring the island back")
+        // The context menu's attach and detach.
+        selection = NotchActivitySelection()
+        selection.select(.timer, available: all)
+        selection.pair(.music, with: .timer)
+        suite.expect(shown(all) == (.timer, .music), "music attached beside a timer takes the left wing")
+        selection = NotchActivitySelection()
+        selection.select(.music, available: all)
+        selection.pair(.timer, with: .music)
+        suite.expect(shown(all) == (.timer, .music), "a timer attached beside music normalizes the same way")
+        selection.unpair()
+        suite.expect(shown(all) == (.music, nil), "detaching leaves the chosen activity alone")
+        selection = NotchActivitySelection()
+        selection.select(.timer, available: all)
+        selection.pair(.music, with: .timer)
+        selection.unpair()
+        suite.expect(shown(all) == (.timer, nil), "detaching from a chosen timer leaves the timer")
+        selection.pair(.calendar, with: .timer)
+        suite.expect(shown(all) == (.timer, .calendar), "two clocks put the event left and the timer right")
+        for standalone in [NotchCompactActivity.watch, .keepAwake, .videoDownloader] {
+            suite.expect(!NotchSupport.canPair(standalone, .music) && !NotchSupport.canPair(standalone, .timer)
+                         && !NotchSupport.canPair(.timer, standalone), "\(standalone) needs the whole strip")
+        }
+        suite.expect(NotchSupport.canPair(.timer, .calendar) && NotchSupport.canPair(.music, .calendar)
+                     && !NotchSupport.canPair(.music, .agents) && !NotchSupport.canPair(.timer, .timer),
+                     "pairs need a clock")
+        selection = NotchActivitySelection()
+        selection.select(.watch, available: all + [.watch])
+        selection.pair(.timer, with: .watch)
+        suite.expect(shown(all + [.watch]) == (.watch, nil), "nothing attaches beside a standalone activity")
+        selection.reconcile(available: [])
+        suite.expect(!selection.isHidden && selection.preferred == nil && selection.plus == nil,
+                     "an empty island clears everything")
         selection.select(.music, available: all)
         selection.select(.agents, companion: .music, available: all, companions: [])
-        suite.expect(selection.preferred == .music && selection.companion(available: pairs) == nil,
+        suite.expect(selection.preferred == .music && selection.plus == nil,
                      "unsupported pairs cannot displace the current choice")
-        let eventPairs: [NotchCompactActivity] = [.downloads, .agents, .music]
-        for companion in eventPairs {
-            selection.select(.calendar, companion: companion, available: all, companions: eventPairs)
-            selection.reconcile(available: all)
-            suite.expect(selection.current(available: all) == .calendar
-                         && selection.companion(available: eventPairs) == companion,
-                         "an event leads a pair of its own, keeping its clock beside the camera")
-            suite.expect(selection.preferred == .calendar
-                         && selection.companion(available: eventPairs.filter { $0 != companion }) == nil
-                         && selection.companion(available: eventPairs) == companion,
-                         "a companion that pauses leaves the event alone until it returns")
-            selection.reconcile(available: all.filter { $0 != .calendar })
-            suite.expect(selection.current(available: all.filter { $0 != .calendar }) == .timer,
-                         "the event's countdown ending leaves the island to the automatic order")
-            selection.reconcile(available: [])
-            suite.expect(selection.preferred == nil && selection.companion(available: eventPairs) == nil,
-                         "an empty island clears the event's pair")
-        }
+        selection.select(.timer, companion: .music, available: all, companions: [.music])
+        suite.expect(shown(all) == (.timer, .music), "the hover picker's pair maps to the activity plus a timer")
+        suite.expect(NotchSupport.compactActivities(timer: true, watch: true, downloads: true, agents: true,
+                                                    calendar: true, music: true, keepAwake: true, videoDownloader: true,
+                                                    calendarArrived: false, timerLeadsCalendar: false)
+                     == [.calendar, .timer, .watch, .videoDownloader, .downloads, .agents, .music, .keepAwake],
+                     "a timer running before an event's countdown appeared follows the countdown")
+        suite.expect(NotchSupport.compactActivities(timer: true, downloads: false, agents: false, calendar: true,
+                                                    music: false, timerLeadsCalendar: true) == [.timer, .calendar],
+                     "a finished or newer timer leads the countdown")
+        suite.expect(NotchSupport.compactActivities(timer: true, downloads: false, agents: false, calendar: true,
+                                                    music: false, calendarArrived: true) == [.calendar, .timer],
+                     "an event that has begun leads everything")
         for height: CGFloat in [16, 22, 32, 40, 64] {
             for width: CGFloat in [200, 320, 560] {
                 for combinations in [false, true] {
@@ -1443,9 +1518,33 @@ enum NotchTests {
                "stopping the island releases its shortcut")
     }
 
+    /// Core Animation blends keyframe outlines segment by segment, so every
+    /// size the island moves through must build the same segments.
+    private static func outlineStructureContracts(_ suite: TestSuite) {
+        func structure(_ size: CGSize, cutout: CGFloat) -> [CGPathElementType] {
+            var kinds: [CGPathElementType] = []
+            NotchShape(attached: true, radius: NotchLayout.surfaceRadius(height: size.height), cutoutWidth: cutout)
+                .path(in: CGRect(origin: .zero, size: size)).cgPath
+                .applyWithBlock { kinds.append($0.pointee.type) }
+            return kinds
+        }
+        let reference = structure(CGSize(width: 480, height: 330), cutout: 208)
+        var sizes: [CGSize] = []
+        for width in stride(from: 150.0, through: 520, by: 7) {
+            for height in [0.5, 1, 20, 32, 37.5, 38, 43, 80, 200, 336] { sizes.append(CGSize(width: width, height: height)) }
+        }
+        sizes += [CGSize(width: 208, height: 38), CGSize(width: 208, height: 37.5), CGSize(width: 209, height: 38)]
+        for cutout: CGFloat in [0, 180, 208] {
+            let mismatched = sizes.filter { structure($0, cutout: cutout) != reference }
+            suite.expect(mismatched.isEmpty,
+                         "every island size builds the same outline segments (cutout \(cutout)); differs at \(mismatched.prefix(3))")
+        }
+    }
+
     static func run(_ suite: TestSuite) {
         NotchPresetSizeTests.run(suite)
         shortcutContracts(suite)
+        outlineStructureContracts(suite)
         let previewStrip: CGFloat = 37
         suite.expect(NotchTranslucentTint.opacity(atDepth: previewStrip, stripHeight: previewStrip,
                                                   openness: 1, increasedContrast: false) == 1

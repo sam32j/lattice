@@ -1264,6 +1264,7 @@ def main():
           + "}\n}\n"
           + "extension MixerOutputAdjustmentContract.Panel {\n"
           + "typealias NotchService = MixerOutputAdjustmentContract.NotchService\n"
+          + "var editingOutputVolume: Bool { false }\n"
           + declaration("Sources/Lattice/UI/MenuPanel/MixerSection.swift", "    private func setSystemOutputVolume(")
             .replace("private func", "func", 1)
           + "}\n")
@@ -1417,6 +1418,8 @@ def main():
     write("QuickTogglesAlert.swift", "import AppKit\nextension QuickTogglesAlertTests {\nfinal class Host: Fixture {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func emptyTrash(fromNotch:")
               .replace("QuickToggleAction.emptyTrash.isAvailable", "available")
+              .replace("NotchIslandAlert.confirmDestructive(", "QuickTogglesAlertTests.confirmDestructiveFixture(")
+          + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    private func presentTrashConfirmation(")
               .replace("NotchIslandAlert.confirmDestructive(", "QuickTogglesAlertTests.confirmDestructiveFixture(")
           + "}\n}\n")
     write("OverlayPanelDeclaration.swift", "import AppKit\n"
@@ -1608,6 +1611,7 @@ def main():
               "    var musicStripNamesSong:", "    private func fitNamedMusicStrip(", "    private func nameCapsuleSong(",
               "    private func endMusicStripSong(", "    private func musicStripHolds(",
               "    func musicStripStandIn("])
+          .replace("musicLeadsAcrossTrackChange || ", "")
           .replace("NotchSupport.routes(notice.event)", "routesNotices")
           .replace("NotchSupport.hiddenShowsActivity()", "hiddenShowsActivity")
           .replace("NotchSupport.closeDelay()", "NotchSupport.sanitizedCloseDelay(UserDefaults.standard.closeDelay)")
@@ -1637,6 +1641,8 @@ def main():
     music_visibility = music_visibility.replace("UserDefaults.standard", "ReviewDefaults.current!")
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
     music_visibility = music_visibility.replace("videoDownloader: hasVideoDownloadActivity", "videoDownloader: false")
+    music_visibility = music_visibility.replace("calendarArrived: calendarHasArrived, timerLeadsCalendar: timerLeadsCalendar",
+                                                "calendarArrived: false, timerLeadsCalendar: true")
     music_visibility = music_visibility.replace("playback?.isPlaying == true)",
                                                 "playback?.isPlaying == true, in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace(
@@ -1750,6 +1756,7 @@ def main():
           + declaration(notch, "    private func switchCompactSelection(").replace("private func", "func", 1)
           + declaration(notch, "    func refreshPresentation(")
               .replace("NotchSupport.coversMenus()", "UserDefaults.standard.coversMenus")
+              .replace("        noteTimerActivityStart()\n", "")
           + declaration(notch, "    private func applyMenuSpace(").replace("private func", "func", 1)
           + declaration(notch, "    func presentCapture(")
               .replace("content: AnyView, actions: AnyView? = nil", "content: Bool, actions: Bool? = nil")
@@ -2601,6 +2608,7 @@ def main():
     keep_awake_methods = [
         "    func prepareForFeatureDisable()",
         "    func refreshPasswordlessStatus(",
+        "    static func rememberPick(",
         "    func activate(minutes:",
         "    func activate(until date:",
         "    func startLastPick(",

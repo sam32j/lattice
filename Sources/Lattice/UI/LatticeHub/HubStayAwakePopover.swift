@@ -12,6 +12,12 @@ struct HubStayAwakePopover: View {
     @Environment(\.dismiss) private var dismiss
     @State private var pickingTime = false
     @State private var selectedTime = Date().addingTimeInterval(3600)
+    /// Lid-sleep setup usually finishes within milliseconds. Showing its
+    /// progress row and disabling the switch for that instant resized the
+    /// popover twice and flashed it black, so both wait until setup has run
+    /// long enough to be worth showing.
+    @State private var showsSetupProgress = false
+    private static let setupProgressDelay: TimeInterval = 0.4
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -53,12 +59,12 @@ struct HubStayAwakePopover: View {
                     Text(text.preventLidSleep).font(.callout)
                     Spacer(minLength: 0)
                     Toggle(text.preventLidSleep, isOn: $awake.clamshellPreferred)
-                        .labelsHidden().toggleStyle(.switch).controlSize(.small)
-                        .disabled(!PowerSampler.hasInternalBattery || awake.clamshellSetupInProgress)
+                        .labelsHidden().toggleStyle(HubPopoverSwitchStyle())
+                        .disabled(!PowerSampler.hasInternalBattery || showsSetupProgress)
                         .accessibilityHint(PowerSampler.hasInternalBattery ? ""
                             : text.unsupportedLid)
                 }
-                if awake.clamshellSetupInProgress {
+                if showsSetupProgress {
                     ProgressView(l10n.s.configuring).controlSize(.small)
                 }
                 if awake.clamshellSetupFailed {
@@ -68,8 +74,20 @@ struct HubStayAwakePopover: View {
             .padding(16)
             .frame(width: 320)
         }
-        .onAppear { awake.reconcileHubSession() }
+        .onAppear {
+            awake.reconcileHubSession()
+            if awake.clamshellSetupInProgress { scheduleSetupProgress() }
+        }
+        .onChange(of: awake.clamshellSetupInProgress) { _, inProgress in
+            if inProgress { scheduleSetupProgress() } else { showsSetupProgress = false }
+        }
         .onExitCommand { dismiss() }
+    }
+
+    private func scheduleSetupProgress() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.setupProgressDelay) {
+            if awake.clamshellSetupInProgress { showsSetupProgress = true }
+        }
     }
 
     private func statusChip(now: Date) -> some View {
@@ -166,5 +184,34 @@ struct HubStayAwakePopover: View {
         KeepAwakeHubStatus.text(active: awake.isActive, failed: awake.assertionFailed,
                                 paused: awake.sessionPausedForScreenLock, end: awake.endDate,
                                 sessionMinutes: awake.sessionMinutes, now: now, language: l10n.language)
+    }
+}
+
+/// A switch drawn in SwiftUI. The native one repaints with its window's key
+/// state, and this popover's window takes and gives up key status around a
+/// click, so the native switch flashed between the accent colour and a dark
+/// inactive grey every time it was flipped.
+struct HubPopoverSwitchStyle: ToggleStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                Capsule()
+                    .fill(configuration.isOn ? Color.accentColor : Color.primary.opacity(0.18))
+                Circle()
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.25), radius: 0.8, y: 0.5)
+                    .padding(1.5)
+            }
+            .frame(width: 30, height: 17)
+            .opacity(isEnabled ? 1 : 0.45)
+            .animation(.easeOut(duration: 0.16), value: configuration.isOn)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
     }
 }

@@ -341,6 +341,7 @@ final class AppVolumeMixer: ObservableObject {
     func start() {
         stopped = false
         processMonitoringEnabled = AppFeature.mixer.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.volumeMixerEnabled)
         if processMonitoringEnabled {
             publishHiddenApps()
             // Created here, on the main thread, before any refresh reads the
@@ -390,6 +391,7 @@ final class AppVolumeMixer: ObservableObject {
     /// Tears every tap down so all apps return to untouched system output, and
     /// hands back the one system setting the mixer changes on its own.
     func stopAll() {
+        flushPersistedVolumes()
         stopped = true
         builds.invalidateAll()
         for engine in engines.values { engine.stop() }
@@ -650,13 +652,18 @@ final class AppVolumeMixer: ObservableObject {
     /// UI feedback is immediate; one HAL write runs at a time and a burst
     /// retains only its newest requested level. Device changes never inherit
     /// a write intended for the previous output.
-    func requestOutputAdjustment(volume: Double? = nil, muted: Bool? = nil,
+    /// `publishes: false` is for a slider that is being dragged: the level is
+    /// still written to the output, but `systemOutputVolume`/`systemOutputMuted`
+    /// are left alone so every view observing the mixer doesn't re-render on
+    /// each tick. The dragging row shows its own value and must make one
+    /// publishing request when the drag ends.
+    func requestOutputAdjustment(volume: Double? = nil, muted: Bool? = nil, publishes: Bool = true,
                                  completion: @escaping (Bool) -> Void = { _ in }) {
-        enqueueOutputAdjustment(volume: volume, muted: muted) { completion($0.handled) }
+        enqueueOutputAdjustment(volume: volume, muted: muted, publishes: publishes) { completion($0.handled) }
     }
 
     private func enqueueOutputAdjustment(volume: Double? = nil, muted: Bool? = nil,
-                                         step: OutputStep? = nil,
+                                         step: OutputStep? = nil, publishes: Bool = true,
                                          completion: @escaping (OutputKeyResult) -> Void) {
         guard let device = outputControlListenerDevice,
               volume?.isFinite != false,
@@ -679,7 +686,7 @@ final class AppVolumeMixer: ObservableObject {
         if let volume {
             let value = min(1, max(0, volume))
             adjustment.volume = value
-            if step == nil { systemOutputVolume = value }
+            if step == nil, publishes, systemOutputVolume != value { systemOutputVolume = value }
             // Many outputs still play faintly at a scalar of zero; macOS mutes
             // there, so do the same. A level the percent labels show as 0%
             // counts: a key steps from the level the output reports, so a
@@ -687,12 +694,12 @@ final class AppVolumeMixer: ObservableObject {
             if systemOutputMuted != nil, muted == nil {
                 let mutes = MixerRoutingSupport.mutesOutput(atVolume: value)
                 adjustment.muted = mutes
-                if step == nil { systemOutputMuted = mutes }
+                if step == nil, publishes, systemOutputMuted != mutes { systemOutputMuted = mutes }
             }
         }
         if let muted {
             adjustment.muted = muted
-            if step == nil { systemOutputMuted = muted }
+            if step == nil, publishes, systemOutputMuted != muted { systemOutputMuted = muted }
         }
         pendingOutputAdjustment = adjustment
         previous?.completion(.superseded)
@@ -1163,14 +1170,49 @@ final class AppVolumeMixer: ObservableObject {
     /// route keeps running at unity gain.
     private func isUnity(_ volume: Double) -> Bool { MixerRoutingSupport.isUnity(volume) }
 
-    func setVolume(_ volume: Double, for app: MixerApp) {
+    /// Fast-path volume setter used while a slider or scroll gesture is actively
+    /// tracking (`isEditing == true`). Updates live audio engine gain in O(1)
+    /// without tearing down the CoreAudio aggregate tap if the thumb passes
+    /// through 100%, and avoids mutating `@Published apps` on every sub-percent
+    /// tick. When `isEditing` ends (`false`), commits the full `setVolume` path.
+    func setInteractiveVolume(_ volume: Double, for app: MixerApp, isEditing: Bool) {
+        guard isEditing else {
+            setVolume(volume, for: app)
+            return
+        }
         guard !app.isBypassed else { return }
-        engineRecovery.clear(app.id)
         let clamped = Defaults.sanitizedAppVolume(volume)
         persistVolume(clamped, for: app)
         if clamped > 0.001 { lastAudibleVolume[app.id] = clamped }
+
+        if engines[app.id] != nil {
+            var liveApp = apps.first(where: { $0.id == app.id }) ?? app
+            liveApp.volume = clamped
+            applyRouting(for: liveApp, keepLiveEngineAtUnity: true)
+            return
+        }
+
+        // No live engine yet — only kick off engine creation once volume leaves 100%.
+        if abs(clamped - 1.0) > 0.001 {
+            setVolume(clamped, for: app)
+        }
+    }
+
+    func setVolume(_ volume: Double, for app: MixerApp) {
+        guard !app.isBypassed else { return }
+        let clamped = Defaults.sanitizedAppVolume(volume)
+        if let index = apps.firstIndex(where: { $0.id == app.id }),
+           abs(apps[index].volume - clamped) <= 0.000_01,
+           engines[app.id] != nil || !appNeedsEngine(apps[index]) {
+            return
+        }
+        engineRecovery.clear(app.id)
+        persistVolume(clamped, for: app)
+        if clamped > 0.001 { lastAudibleVolume[app.id] = clamped }
         if let index = apps.firstIndex(where: { $0.id == app.id }) {
-            apps[index].volume = clamped
+            if apps[index].volume != clamped {
+                apps[index].volume = clamped
+            }
             let updated = apps[index]
             applyRouting(for: updated)
         } else {
@@ -1362,14 +1404,14 @@ final class AppVolumeMixer: ObservableObject {
     /// aggregate, so an engine that goes away for even a moment hands the app
     /// straight back to the speakers at full volume. Replacements are built
     /// first and the old engine is stopped only once the new one is running.
-    private func applyRouting(for app: MixerApp) {
+    private func applyRouting(for app: MixerApp, keepLiveEngineAtUnity: Bool = false) {
         guard !stopped else { return }
         guard !app.isBypassed else {
             discardEngine(for: app.id)
             return
         }
         guard let targetOutputDeviceUID = app.effectiveOutputDeviceUID,
-              appNeedsEngine(app) else {
+              appNeedsEngine(app) || (keepLiveEngineAtUnity && engines[app.id] != nil) else {
             // No volume or routing adjustment remains.
             discardEngine(for: app.id)
             clearPermissionIfNoActiveAdjustments()
@@ -2297,7 +2339,11 @@ final class AppVolumeMixer: ObservableObject {
 
     // MARK: - Persistence
 
+    private var pendingPersistedVolumes: [String: Double]?
+    private var persistVolumesWork: DispatchWorkItem?
+
     private func savedVolumes() -> [String: Double] {
+        if let pending = pendingPersistedVolumes { return pending }
         let raw = UserDefaults.standard.dictionary(forKey: DefaultsKey.appVolumes) ?? [:]
         var sanitized: [String: Double] = [:]
         for (id, value) in raw {
@@ -2491,6 +2537,20 @@ final class AppVolumeMixer: ObservableObject {
         } else {
             volumes[id] = volume
         }
+        pendingPersistedVolumes = volumes
+        persistVolumesWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.flushPersistedVolumes()
+        }
+        persistVolumesWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
+    }
+
+    private func flushPersistedVolumes() {
+        persistVolumesWork?.cancel()
+        persistVolumesWork = nil
+        guard let volumes = pendingPersistedVolumes else { return }
+        pendingPersistedVolumes = nil
         UserDefaults.standard.set(volumes, forKey: DefaultsKey.appVolumes)
     }
 
