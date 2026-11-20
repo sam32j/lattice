@@ -239,6 +239,9 @@ struct GlobalShortcut: Equatable, Hashable {
     // A for Appearance, on the same free control-option-command layer.
     static let darkModeDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_A),
                                                 modifiers: [.control, .option, .command])
+    // J for Eject, on the same free control-option-command layer.
+    static let ejectDisksDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_J),
+                                                  modifiers: [.control, .option, .command])
 
     static func saved(for key: String, fallback: GlobalShortcut,
                       in defaults: UserDefaults = .standard) -> GlobalShortcut {
@@ -731,6 +734,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     case pointerNextDisplay
     case notch
     case darkMode
+    case ejectDisks
 
     var id: String { storageKey }
 
@@ -766,6 +770,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .pointerNextDisplay: return DefaultsKey.pointerDisplayShortcut
         case .notch: return DefaultsKey.notchShortcut
         case .darkMode: return DefaultsKey.darkModeShortcut
+        case .ejectDisks: return DefaultsKey.ejectDisksShortcut
         }
     }
 
@@ -801,6 +806,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .pointerNextDisplay: return .pointerNextDisplayDefault
         case .notch: return .notchDefault
         case .darkMode: return .darkModeDefault
+        case .ejectDisks: return .ejectDisksDefault
         }
     }
 
@@ -864,6 +870,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .pointerNextDisplay: return PointerDisplayStrings.localized(L10n.shared.language).title
         case .notch: return FeatureStrings.notch(L10n.shared.language).title
         case .darkMode: return FeatureStrings.brightness(L10n.shared.language).toggleSystemAppearanceShortcut
+        case .ejectDisks: return FeatureStrings.quickToggles(L10n.shared.language).ejectWithShortcut
         }
     }
 
@@ -923,6 +930,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .pointerNextDisplay: return [DefaultsKey.pointerDisplayEnabled]
         case .notch: return [DefaultsKey.notchEnabled, DefaultsKey.notchShortcutEnabled]
         case .darkMode: return [DefaultsKey.darkModeShortcutEnabled]
+        case .ejectDisks: return [DefaultsKey.ejectDisksShortcutEnabled]
         }
     }
 
@@ -956,6 +964,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .pointerNextDisplay: return .windowLayout
         case .notch: return .notch
         case .darkMode: return .brightness
+        case .ejectDisks: return .quickLauncher
         }
     }
 
@@ -997,7 +1006,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     }
 
     func isAvailable(using isAvailable: (AppFeature) -> Bool) -> Bool {
-        if self == .darkMode { return true }
+        if self == .darkMode || self == .ejectDisks { return true }
         return self != .screenOCR && self != .colorPicker
             && (isKeyboardBrightness ? BrightnessService.keyboardLightIsSupported
                 : availabilityFeatures.contains(where: isAvailable))

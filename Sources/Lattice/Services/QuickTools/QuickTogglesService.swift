@@ -30,6 +30,7 @@ final class QuickTogglesService: ObservableObject {
     private let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.quick-toggles", qos: .userInitiated)
     private var trashConfirmationPending = false
     private let darkModeHotkey = QuickToolHotkey(id: 26)
+    private let ejectDisksHotkey = QuickToolHotkey(id: 27)
 
     private init() {
         syncWithPreferences()
@@ -44,6 +45,13 @@ final class QuickTogglesService: ObservableObject {
             self?.toggleDarkMode()
         }
         darkModeHotkey.sync(enabled: enabled, shortcut: shortcut, storageKey: DefaultsKey.darkModeShortcut)
+
+        let ejectEnabled = defaults.bool(forKey: DefaultsKey.ejectDisksShortcutEnabled)
+        let ejectShortcut = GlobalShortcut.saved(for: DefaultsKey.ejectDisksShortcut, fallback: .ejectDisksDefault)
+        ejectDisksHotkey.onPress = { [weak self] in
+            self?.ejectAllDisks()
+        }
+        ejectDisksHotkey.sync(enabled: ejectEnabled, shortcut: ejectShortcut, storageKey: DefaultsKey.ejectDisksShortcut)
     }
 
     func state(for action: QuickToggleAction) -> RunState? {
