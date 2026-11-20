@@ -15,8 +15,6 @@ struct DiskExclusionStrings {
     let emptyTitle: String
     let emptyDescription: String
     let caption: String
-    /// The field for a disk that is not connected yet.
-    let customPlaceholder: String
 }
 
 extension FeatureStrings {
@@ -53,8 +51,7 @@ extension DiskExclusionStrings {
         removeButton: "Remove",
         emptyTitle: "No Disks Available",
         emptyDescription: "Connect an external disk to exclude it from being ejected.",
-        caption: "Disks in this list are never unmounted when using Eject all disks.",
-        customPlaceholder: "Drive or volume name"
+        caption: "Disks in this list are never unmounted when using Eject all disks."
     )
 
     static let ptBR = DiskExclusionStrings(
@@ -68,8 +65,7 @@ extension DiskExclusionStrings {
         removeButton: "Remover",
         emptyTitle: "Nenhum disco disponível",
         emptyDescription: "Conecte um disco externo para excluí-lo da ejeção.",
-        caption: "Os discos nesta lista nunca são desmontados ao ejetar todos os discos.",
-        customPlaceholder: "Nome do disco ou volume"
+        caption: "Os discos nesta lista nunca são desmontados ao ejetar todos os discos."
     )
 
     static let tr = DiskExclusionStrings(
@@ -83,8 +79,7 @@ extension DiskExclusionStrings {
         removeButton: "Kaldır",
         emptyTitle: "Kullanılabilir Disk Yok",
         emptyDescription: "Çıkarılmasını önlemek için harici bir disk bağlayın.",
-        caption: "Bu listedeki sürücüler Tüm diskleri çıkar kullanılırken hiçbir zaman çıkarılmaz.",
-        customPlaceholder: "Sürücü veya birim adı"
+        caption: "Bu listedeki sürücüler Tüm diskleri çıkar kullanılırken hiçbir zaman çıkarılmaz."
     )
 
     static let ru = DiskExclusionStrings(
@@ -98,8 +93,7 @@ extension DiskExclusionStrings {
         removeButton: "Удалить",
         emptyTitle: "Нет доступных дисков",
         emptyDescription: "Подключите внешний диск, чтобы исключить его из извлечения.",
-        caption: "Диски из этого списка никогда не извлекаются при действии «Извлечь все диски».",
-        customPlaceholder: "Имя диска или тома"
+        caption: "Диски из этого списка никогда не извлекаются при действии «Извлечь все диски»."
     )
 
     static let es = DiskExclusionStrings(
@@ -113,8 +107,7 @@ extension DiskExclusionStrings {
         removeButton: "Quitar",
         emptyTitle: "No hay discos disponibles",
         emptyDescription: "Conecta un disco externo para excluirlo de la expulsión.",
-        caption: "Los discos de esta lista nunca se expulsan al expulsar todos los discos.",
-        customPlaceholder: "Nombre del disco o volumen"
+        caption: "Los discos de esta lista nunca se expulsan al expulsar todos los discos."
     )
 
     static let sk = DiskExclusionStrings(
@@ -128,8 +121,7 @@ extension DiskExclusionStrings {
         removeButton: "Odstrániť",
         emptyTitle: "Žiadne dostupné disky",
         emptyDescription: "Pripojte externý disk a vylúčte ho z vysunutia.",
-        caption: "Disky v tomto zozname sa nikdy neodpoja pri použití Vysunúť všetky disky.",
-        customPlaceholder: "Názov disku alebo zväzku"
+        caption: "Disky v tomto zozname sa nikdy neodpoja pri použití Vysunúť všetky disky."
     )
 
     static let de = DiskExclusionStrings(
@@ -143,8 +135,7 @@ extension DiskExclusionStrings {
         removeButton: "Entfernen",
         emptyTitle: "Keine Volumes verfügbar",
         emptyDescription: "Schließe ein externes Laufwerk an, um es vom Auswerfen auszuschließen.",
-        caption: "Laufwerke in dieser Liste werden beim Auswerfen aller Festplatten niemals ausgeworfen.",
-        customPlaceholder: "Laufwerks- oder Volumename"
+        caption: "Laufwerke in dieser Liste werden beim Auswerfen aller Festplatten niemals ausgeworfen."
     )
 
     static let fr = DiskExclusionStrings(
@@ -158,8 +149,7 @@ extension DiskExclusionStrings {
         removeButton: "Retirer",
         emptyTitle: "Aucun disque disponible",
         emptyDescription: "Connectez un disque externe pour l’exclure de l’éjection.",
-        caption: "Les disques de cette liste ne sont jamais éjectés lors de l’éjection de tous les disques.",
-        customPlaceholder: "Nom du disque ou volume"
+        caption: "Les disques de cette liste ne sont jamais éjectés lors de l’éjection de tous les disques."
     )
 
     static let it = DiskExclusionStrings(
@@ -173,8 +163,7 @@ extension DiskExclusionStrings {
         removeButton: "Rimuovi",
         emptyTitle: "Nessun disco disponibile",
         emptyDescription: "Collega un disco esterno per escluderlo dall’espulsione.",
-        caption: "I dischi in questo elenco non vengono mai espulsi quando si espellono tutti i dischi.",
-        customPlaceholder: "Nome del disco o volume"
+        caption: "I dischi in questo elenco non vengono mai espulsi quando si espellono tutti i dischi."
     )
 
     static let ja = DiskExclusionStrings(
@@ -188,8 +177,7 @@ extension DiskExclusionStrings {
         removeButton: "削除",
         emptyTitle: "利用可能なディスクがありません",
         emptyDescription: "取り出しから除外する外部ディスクを接続してください。",
-        caption: "このリストにあるドライブは「すべてのディスクを取り出す」を実行しても取り出されません。",
-        customPlaceholder: "ドライブまたはボリューム名"
+        caption: "このリストにあるドライブは「すべてのディスクを取り出す」を実行しても取り出されません。"
     )
 
     static let ko = DiskExclusionStrings(
@@ -203,8 +191,7 @@ extension DiskExclusionStrings {
         removeButton: "제거",
         emptyTitle: "사용 가능한 디스크 없음",
         emptyDescription: "추출에서 제외할 외장 디스크를 연결하십시오.",
-        caption: "이 목록에 있는 드라이브는 모든 디스크 추출 시 추출되지 않습니다.",
-        customPlaceholder: "드라이브 또는 볼륨 이름"
+        caption: "이 목록에 있는 드라이브는 모든 디스크 추출 시 추출되지 않습니다."
     )
 
     static let zhHans = DiskExclusionStrings(
@@ -218,8 +205,7 @@ extension DiskExclusionStrings {
         removeButton: "移除",
         emptyTitle: "无可用磁盘",
         emptyDescription: "连接外部磁盘以将其排除在推出操作之外。",
-        caption: "使用“推出所有磁盘”时，此列表中的驱动器绝不会被推出。",
-        customPlaceholder: "驱动器或宗卷名称"
+        caption: "使用“推出所有磁盘”时，此列表中的驱动器绝不会被推出。"
     )
 
     static let zhTW = DiskExclusionStrings(
@@ -233,8 +219,7 @@ extension DiskExclusionStrings {
         removeButton: "移除",
         emptyTitle: "無可用磁碟",
         emptyDescription: "連接外接磁碟以將其排除在退出操作之外。",
-        caption: "使用「退出所有磁碟」時，此列表中的磁碟機絕不會被退出。",
-        customPlaceholder: "磁碟機或卷宗名稱"
+        caption: "使用「退出所有磁碟」時，此列表中的磁碟機絕不會被退出。"
     )
 
     static let zhHK = DiskExclusionStrings(
@@ -248,8 +233,7 @@ extension DiskExclusionStrings {
         removeButton: "移除",
         emptyTitle: "無可用磁碟",
         emptyDescription: "連接外置磁碟以將其排除在退出操作之外。",
-        caption: "使用「推出所有磁碟」時，此清單中的磁碟機絕不會被推出。",
-        customPlaceholder: "磁碟機或宗卷名稱"
+        caption: "使用「推出所有磁碟」時，此清單中的磁碟機絕不會被推出。"
     )
 
     static let uk = DiskExclusionStrings(
@@ -263,7 +247,6 @@ extension DiskExclusionStrings {
         removeButton: "Видалити",
         emptyTitle: "Немає доступних дисків",
         emptyDescription: "Підключіть зовнішній диск, щоб виключити його з виймання.",
-        caption: "Диски з цього списку ніколи не демонтуються при використанні «Вийняти всі диски».",
-        customPlaceholder: "Назва диска або тому"
+        caption: "Диски з цього списку ніколи не демонтуються при використанні «Вийняти всі диски»."
     )
 }
