@@ -48,7 +48,7 @@ extension CameraPreviewFeatureStrings {
         noCameraMessage: "No camera detected",
         permName: "Camera",
         permExplain: "Shows your camera only in the preview window, so you can check how you look before a call. Nothing is recorded or leaves your Mac.",
-        openWithShortcut: "Open Camera Preview with shortcut"
+        openWithShortcut: "Open camera preview with shortcut"
     )
 
     static let ptBR = CameraPreviewFeatureStrings(
@@ -60,7 +60,7 @@ extension CameraPreviewFeatureStrings {
         noCameraMessage: "Nenhuma câmera detectada",
         permName: "Câmera",
         permExplain: "Mostra a sua câmera somente na janela de prévia, para você conferir como está antes de uma chamada. Nada é gravado nem sai do seu Mac.",
-        openWithShortcut: "Abrir o Prévia da Câmera com atalho"
+        openWithShortcut: "Abrir a prévia da câmera com atalho"
     )
 
     static let tr = CameraPreviewFeatureStrings(
@@ -72,7 +72,7 @@ extension CameraPreviewFeatureStrings {
         noCameraMessage: "Kamera bulunamadı",
         permName: "Kamera",
         permExplain: "Kameranızı yalnızca önizleme penceresinde gösterir; böylece aramadan önce nasıl göründüğünüzü kontrol edebilirsiniz. Hiçbir şey kaydedilmez ve Mac’inizden çıkmaz.",
-        openWithShortcut: "Kamera Önizlemesi’ni kestirmeyle aç"
+        openWithShortcut: "Kamera önizlemesini kestirmeyle aç"
     )
 
     static let ru = CameraPreviewFeatureStrings(
@@ -96,7 +96,7 @@ extension CameraPreviewFeatureStrings {
         noCameraMessage: "No se detectó ninguna cámara",
         permName: "Cámara",
         permExplain: "Muestra tu cámara solo en la ventana de vista previa, para que compruebes cómo te ves antes de una llamada. No se graba nada y nada sale de tu Mac.",
-        openWithShortcut: "Abrir Vista previa de la cámara con atajo"
+        openWithShortcut: "Abrir vista previa de la cámara con atajo"
     )
 
     static let sk = CameraPreviewFeatureStrings(
@@ -108,7 +108,7 @@ extension CameraPreviewFeatureStrings {
         noCameraMessage: "Kamera nebola zistená",
         permName: "Kamera",
         permExplain: "Zobrazuje vašu kameru iba v okne náhľadu, aby ste si pred hovorom mohli skontrolovať, ako vyzeráte. Nič sa nenahráva ani neopúšťa váš Mac.",
-        openWithShortcut: "Otvoriť Náhľad kamery skratkou"
+        openWithShortcut: "Otvoriť náhľad kamery skratkou"
     )
 
     static let de = CameraPreviewFeatureStrings(
@@ -132,7 +132,7 @@ extension CameraPreviewFeatureStrings {
         noCameraMessage: "Aucune caméra détectée",
         permName: "Caméra",
         permExplain: "Affiche votre caméra uniquement dans la fenêtre d’aperçu, pour vérifier votre apparence avant un appel. Rien n’est enregistré et rien ne quitte votre Mac.",
-        openWithShortcut: "Ouvrir l’Aperçu de la caméra avec un raccourci"
+        openWithShortcut: "Ouvrir l’aperçu de la caméra avec un raccourci"
     )
 
     static let it = CameraPreviewFeatureStrings(
@@ -144,7 +144,7 @@ extension CameraPreviewFeatureStrings {
         noCameraMessage: "Nessuna fotocamera rilevata",
         permName: "Fotocamera",
         permExplain: "Mostra la tua fotocamera solo nella finestra di anteprima, così controlli il tuo aspetto prima di una chiamata. Nulla viene registrato e nulla lascia il tuo Mac.",
-        openWithShortcut: "Apri Anteprima della fotocamera con abbreviazione"
+        openWithShortcut: "Apri anteprima della fotocamera con abbreviazione"
     )
 
     static let ja = CameraPreviewFeatureStrings(
