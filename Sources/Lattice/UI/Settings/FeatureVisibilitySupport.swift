@@ -72,8 +72,8 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
             return .keyboard
         case .scratchpad:
             return .scratchpad
-        case .switcher: return .switcher
-        case .dock, .dockClick: return .dock
+        // The App Switcher is a section of the Dock & Applications page.
+        case .switcher, .dock, .dockClick: return .dock
         case .autoQuit: return .windowLayout
         case .clipboardHistory, .pastePlain: return .clipboard
         case .quickLauncher, .cameraPreview: return .general
@@ -144,7 +144,7 @@ extension AppFeature {
     /// Settings destination before the project compiles.
     var settingsDestination: FeatureSettingsDestination {
         switch self {
-        case .switcher: return FeatureSettingsDestination(.switcher, sectionAnchor: .switcher)
+        case .switcher: return FeatureSettingsDestination(.dock, sectionAnchor: .switcher)
         case .dockPreview: return FeatureSettingsDestination(.dock, sectionAnchor: .dock)
         case .dockClick: return FeatureSettingsDestination(.dock, sectionAnchor: .dockClick)
         case .spacesOrder: return FeatureSettingsDestination(.windowLayout, sectionAnchor: .spacesOrder)
@@ -259,8 +259,7 @@ enum FeatureVisibilitySupport {
         switch page {
         case .energy: return [.keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper]
         case .monitor: return monitorFeatures
-        case .switcher: return [.switcher]
-        case .dock: return [.dockPreview, .dockClick]
+        case .dock: return [.dockPreview, .dockClick, .switcher]
         case .windowLayout: return [.windowLayout, .windowMaximizer, .autoQuit, .spacesOrder]
         case .wallpaper: return [.wallpaper]
         case .clipboard: return [.clipboardHistory, .pastePlain]

@@ -3,18 +3,22 @@
 
 import SwiftUI
 
-/// The Switcher page: the app switcher chosen from three drawn layouts, its
-/// shortcuts and options as rows and chips, then its window previews.
-struct SwitcherSettings: View {
+/// The App Switcher section of the Dock & Applications page: header
+/// enablement, three illustrative layouts, automatic system-shortcut
+/// replacement, and streamlined dropdown/switch controls. The page around it
+/// supplies the scroll view and the permission cards.
+struct SwitcherSettingsSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var secureInput = SecureInputMonitor.shared
     @AppStorage(DefaultsKey.switcherEnabled) private var switcherEnabled = true
     @AppStorage(DefaultsKey.switcherShortcut) private var switcherShortcutStorage = GlobalShortcut.switcherDefault.storageValue
-    @AppStorage(DefaultsKey.switcherTakeOverSystemShortcuts) private var switcherTakeOverSystemShortcuts = false
+    @AppStorage(DefaultsKey.switcherWindowShortcut) private var switcherWindowShortcutStorage = GlobalShortcut.switcherWindowDefault.storageValue
     @AppStorage(DefaultsKey.switcherIconRowMode) private var switcherIconRowMode = false
     @AppStorage(DefaultsKey.switcherSimpleMode) private var switcherSimpleMode = false
+    @AppStorage(DefaultsKey.switcherPreviewSize) private var switcherPreviewSize = "normal"
+    @AppStorage(DefaultsKey.minimalWindowPreviews) private var minimalPreviews = false
     @AppStorage(DefaultsKey.switcherMergeTabs) private var switcherMergeTabs = false
     @AppStorage(DefaultsKey.switcherWindowlessApps) private var switcherWindowlessApps = SwitcherWindowlessApps.fallback.rawValue
     @AppStorage(DefaultsKey.switcherMinimizedPlacement) private var switcherMinimizedPlacement = WindowSwitchMinimizedPlacement.normal.rawValue
@@ -23,92 +27,256 @@ struct SwitcherSettings: View {
     @AppStorage(DefaultsKey.switcherScreenPlacement) private var switcherScreenPlacement = SwitcherScreenPlacement.fallback.rawValue
     @AppStorage(DefaultsKey.switcherCurrentDisplayOnly) private var switcherCurrentDisplayOnly = false
     @AppStorage(DefaultsKey.switcherCurrentSpaceOnly) private var switcherCurrentSpaceOnly = false
-    @AppStorage(DefaultsKey.switcherSearchPinEnabled) private var switcherSearchPinEnabled = false
-    @AppStorage(DefaultsKey.switcherShowShortcutHints) private var switcherShowShortcutHints = true
     @AppStorage(DefaultsKey.switcherAppearanceDelay) private var switcherAppearanceDelay = SwitcherSupport.defaultAppearanceDelayMilliseconds
-    @AppStorage(DefaultsKey.switcherInstantSelection) private var switcherInstantSelection = false
-    @AppStorage(DefaultsKey.switcherMaxColumns) private var switcherMaxColumns = 0
+
     private var pages: SettingsPageStrings { FeatureStrings.settingsPages(l10n.language) }
+    private var copy: SwitcherSettingsCopy { SwitcherSettingsCopy.text(l10n.language) }
     private var switcherEngaged: Bool { switcherEnabled && AppFeature.switcher.isAvailable }
-    /// Only then does the macOS switcher on ⌘Tab need explaining: without the
-    /// take-over, or without the Accessibility grant the tap needs, it answers
-    /// anyway and keeps answering after secure input ends.
-    private var switcherReplacesSystemShortcuts: Bool {
-        switcherEngaged && switcherTakeOverSystemShortcuts && permissions.accessibility
-    }
-    private var switcherWindowlessAppsSelection: Binding<String> {
-        Binding(
-            get: {
-                SwitcherWindowlessApps.mode(
-                    storedValue: switcherWindowlessApps,
-                    takeOverSystemShortcuts: switcherTakeOverSystemShortcuts).rawValue
-            },
-            set: { value in
-                if !switcherTakeOverSystemShortcuts { switcherWindowlessApps = value }
-            }
-        )
+
+    private var switcherUsesSystemShortcuts: Bool {
+        let apps = GlobalShortcut.saved(for: DefaultsKey.switcherShortcut, fallback: .switcherDefault)
+        let windows = GlobalShortcut.saved(for: DefaultsKey.switcherWindowShortcut, fallback: .switcherWindowDefault)
+        let _ = switcherShortcutStorage
+        let _ = switcherWindowShortcutStorage
+        return AppSwitcher.replacesNativeHotkeys(appsShortcut: apps, windowShortcut: windows)
     }
 
-    private var switcherInstalled: Bool {
-        AppFeature.switcher.isAvailable
+    private var switcherReplacesSystemShortcuts: Bool {
+        switcherEngaged && switcherUsesSystemShortcuts && permissions.accessibility
     }
+
+    private var showsSecureInputWarning: Bool {
+        switcherReplacesSystemShortcuts && secureInput.holder != .off
+    }
+
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                enableSwitcherCard
-                    .settingsSectionAnchor(.switcher, cornerRadius: 16)
-
-                Group {
-                    switcherCard
-                    switcherOptionsCard
-                    WindowPreviewsCard(sizeKey: DefaultsKey.switcherPreviewSize,
-                                       excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps)
-                    if switcherEngaged {
-                        if !permissions.accessibility {
-                            SettingsCard(title: l10n.s.permissionRequired) {
-                                PermissionRow(kind: .accessibility)
-                            }
-                        }
-                        if !permissions.screenRecording,
-                           SwitcherSupport.capturesPreviews(simpleMode: switcherSimpleMode) {
-                            SettingsCard {
-                                PermissionRow(kind: .screenRecording)
-                            }
-                        }
-                    }
-                }
-                .disabled(!switcherInstalled)
-                .opacity(switcherInstalled ? 1 : 0.55)
-            }
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .padding(22)
-        }
-        .toggleStyle(.switch)
-        .observesSecureInput(isActive: switcherReplacesSystemShortcuts)
-        .settingsExpansionAnimation(value: [switcherEngaged, permissions.accessibility, permissions.screenRecording,
-            switcherSimpleMode, switcherIconRowMode, switcherTakeOverSystemShortcuts, secureInput.holder != .off])
-        .settingsExpansionAnimation(value: switcherMinimizedPlacement)
+        switcherCard
+            .settingsSectionAnchor(.switcher, cornerRadius: 16)
+            .toggleStyle(.switch)
+            .observesSecureInput(isActive: switcherReplacesSystemShortcuts)
+            .settingsExpansionAnimation(value: [
+                switcherEngaged,
+                permissions.accessibility,
+                permissions.screenRecording,
+                switcherSimpleMode,
+                switcherIconRowMode,
+                switcherWindowlessApps == SwitcherWindowlessApps.all.rawValue,
+                showsSecureInputWarning,
+            ])
     }
 
     // MARK: - App switcher
 
-    private var enableSwitcherCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: "rectangle.on.rectangle", title: l10n.s.switcherEnable,
-                        caption: l10n.s.switcherEnableCaption) {
-                PermissionGatedToggle(l10n.s.switcherEnable, isOn: Binding(
-                    get: { switcherEngaged },
-                    set: { enabled in
-                        switcherEnabled = enabled
-                        FeatureRuntime.shared.setAvailable([.switcher], enabled)
-                        AppSwitcher.shared.syncWithPreferences()
+    private var switcherCard: some View {
+        SettingsCard(symbol: "rectangle.on.rectangle",
+                     title: l10n.s.switcherSection,
+                     caption: switcherHeaderCaption,
+                     headerSpacing: 0,
+                     headerAccessory: {
+                         PermissionGatedToggle(l10n.s.switcherSection, isOn: Binding(
+                             get: { switcherEngaged },
+                             set: { enabled in
+                                 switcherEnabled = enabled
+                                 settingsApplyFeatureSwitch(enabled: enabled) {
+                                     let isEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.switcherEnabled)
+                                     FeatureRuntime.shared.setAvailable([.switcher], isEnabled)
+                                     AppSwitcher.shared.syncWithPreferences()
+                                 }
+                             }
+                         ), requiring: [.accessibility, .screenRecording], feature: .switcher)
+                         .labelsHidden()
+                     }) {
+            VStack(alignment: .leading, spacing: 14) {
+                layoutAndShortcutsSection
+                Divider()
+                displayAndPreviewsSection
+                Divider()
+                windowsAndAppsSection
+            }
+            .padding(.leading, settingsRowTextInset)
+            .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+            .settingsCollapsible(isExpanded: switcherEngaged)
+        }
+    }
+
+    private var layoutAndShortcutsSection: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(spacing: 10) {
+                SwitcherLayoutChoice(layout: .windows,
+                                     title: pages.switcherLayoutWindows,
+                                     caption: copy.layoutWindowsCaption,
+                                     selected: layout == .windows) {
+                    choose(.windows)
+                }
+                SwitcherLayoutChoice(layout: .icons,
+                                     title: pages.switcherLayoutIcons,
+                                     caption: copy.layoutIconsCaption,
+                                     selected: layout == .icons) {
+                    choose(.icons)
+                }
+                SwitcherLayoutChoice(layout: .simple,
+                                     title: pages.switcherLayoutSimple,
+                                     caption: copy.layoutSimpleCaption,
+                                     selected: layout == .simple) {
+                    choose(.simple)
+                }
+            }
+
+            ShortcutPreferenceRow(role: .switcher, label: copy.switchAppsShortcut) {
+                AppSwitcher.shared.syncWithPreferences()
+            }
+            // A collapsed follow-up row still takes the stack's spacing, so each
+            // one carries its own gap inside the part that collapses.
+            VStack(alignment: .leading, spacing: 0) {
+                ShortcutPreferenceRow(role: .switcherWindow, label: copy.switchWindowsShortcut) {
+                    AppSwitcher.shared.syncWithPreferences()
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    SecureInputRow(blocking: .switcher)
+                        .padding(.top, 17)
+                }
+                .settingsCollapsible(isExpanded: showsSecureInputWarning)
+            }
+
+            SettingsControlRow(title: l10n.s.switcherAppearanceDelay) {
+                Picker(l10n.s.switcherAppearanceDelay, selection: switcherAppearanceDelayBinding) {
+                    if ![0, 100, 250].contains(switcherAppearanceDelayBinding.wrappedValue) {
+                        Text("\(switcherAppearanceDelayBinding.wrappedValue) ms")
+                            .tag(switcherAppearanceDelayBinding.wrappedValue)
                     }
-                ), requiring: [.accessibility, .screenRecording], feature: .switcher)
+                    Text(copy.delayInstant).tag(0)
+                    Text(l10n.s.dockPreviewDelayDefault).tag(100)
+                    Text(l10n.s.dockPreviewDelayLonger).tag(250)
+                }
                 .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
             }
         }
+    }
+
+    private var displayAndPreviewsSection: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            SettingsControlRow(title: l10n.s.switcherScreenPlacementLabel) {
+                Picker(l10n.s.switcherScreenPlacementLabel, selection: $switcherScreenPlacement) {
+                    Text(l10n.s.switcherScreenPlacementPointer).tag(SwitcherScreenPlacement.pointer.rawValue)
+                    Text(l10n.s.switcherScreenPlacementMenuBar).tag(SwitcherScreenPlacement.menuBar.rawValue)
+                    Text(l10n.s.switcherScreenPlacementActiveWindow).tag(SwitcherScreenPlacement.activeWindow.rawValue)
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+            }
+
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 13) {
+                    SettingsControlRow(title: l10n.s.previewSizeLabel) {
+                        Picker(l10n.s.previewSizeLabel, selection: $switcherPreviewSize) {
+                            Text(l10n.s.previewSizeSmall).tag("small")
+                            Text(l10n.s.previewSizeNormal).tag("normal")
+                            Text(l10n.s.previewSizeLarge).tag("large")
+                            Text(l10n.s.previewSizeXLarge).tag("xlarge")
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .fixedSize()
+                        .onChange(of: switcherPreviewSize) { _, _ in
+                            AppSwitcher.shared.syncWithPreferences()
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        SettingsControlRow(title: l10n.s.minimalWindowPreviews) {
+                            Toggle(l10n.s.minimalWindowPreviews, isOn: $minimalPreviews)
+                                .labelsHidden()
+                        }
+
+                        // Only Window previews groups: Large icons always shows
+                        // every window of the selected app, and the simple list is
+                        // one icon per app already.
+                        VStack(alignment: .leading, spacing: 0) {
+                            SettingsControlRow(title: l10n.s.switcherMergeTabs) {
+                                Toggle(l10n.s.switcherMergeTabs, isOn: $switcherMergeTabs)
+                                    .labelsHidden()
+                            }
+                            .padding(.top, 13)
+                        }
+                        .settingsCollapsible(isExpanded: layout == .windows)
+                    }
+                }
+            }
+        }
+    }
+
+    private var windowsAndAppsSection: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            SettingsControlRow(title: l10n.s.switcherCurrentDisplayOnly) {
+                Toggle(l10n.s.switcherCurrentDisplayOnly, isOn: $switcherCurrentDisplayOnly)
+                    .labelsHidden()
+            }
+
+            SettingsControlRow(title: l10n.s.switcherCurrentSpaceOnly) {
+                Toggle(l10n.s.switcherCurrentSpaceOnly, isOn: $switcherCurrentSpaceOnly)
+                    .labelsHidden()
+            }
+
+            SettingsControlRow(title: l10n.s.switcherShowFullscreenWindows) {
+                Toggle(l10n.s.switcherShowFullscreenWindows, isOn: $switcherShowFullscreenWindows)
+                    .labelsHidden()
+                    .onChange(of: switcherShowFullscreenWindows) { _, _ in
+                        AppSwitcher.shared.syncWithPreferences()
+                    }
+            }
+
+            SettingsControlRow(title: l10n.s.switcherMinimizedPlacementLabel) {
+                Picker(l10n.s.switcherMinimizedPlacementLabel, selection: $switcherMinimizedPlacement) {
+                    Text(l10n.s.switcherMinimizedPlacementNormal).tag(WindowSwitchMinimizedPlacement.normal.rawValue)
+                    Text(l10n.s.switcherMinimizedPlacementEnd).tag(WindowSwitchMinimizedPlacement.end.rawValue)
+                    Text(l10n.s.switcherMinimizedPlacementHidden).tag(WindowSwitchMinimizedPlacement.hidden.rawValue)
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+                .onChange(of: switcherMinimizedPlacement) { _, _ in
+                    switcherTreatHiddenAppsLikeMinimized = true
+                    AppSwitcher.shared.syncWithPreferences()
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 0) {
+                SettingsControlRow(title: l10n.s.switcherWindowlessApps) {
+                    Toggle(l10n.s.switcherWindowlessApps, isOn: hidesWindowlessAppsBinding)
+                        .labelsHidden()
+                }
+
+                // Finder runs with no window most of the time, so it can stay
+                // listed while other windowless apps are hidden.
+                VStack(alignment: .leading, spacing: 0) {
+                    SettingsControlRow(title: l10n.s.switcherWindowlessAppsFinder) {
+                        Toggle(l10n.s.switcherWindowlessAppsFinder, isOn: keepsWindowlessFinderBinding)
+                            .labelsHidden()
+                    }
+                    .padding(.top, 13)
+                }
+                .settingsCollapsible(isExpanded: windowlessMode != .all)
+            }
+
+            SwitcherAppRulesList()
+        }
+    }
+
+    // MARK: - State
+
+    private var switcherHeaderCaption: String? {
+        guard switcherEngaged else { return nil }
+        if !permissions.accessibility {
+            return "\(l10n.s.permissionRequired): \(l10n.s.permissionAccessibility)"
+        }
+        if !permissions.screenRecording {
+            return "\(l10n.s.permissionRequired): \(l10n.s.permissionScreenRecording)"
+        }
+        return nil
     }
 
     private var layout: SwitcherLayout {
@@ -130,245 +298,30 @@ struct SwitcherSettings: View {
         AppSwitcher.shared.syncWithPreferences()
     }
 
-    private var switcherCard: some View {
-        SettingsCard(title: l10n.s.switcherSection) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(FeatureStrings.notchEditor(l10n.language).layout)
-                    .font(.subheadline.weight(.medium))
-                HStack(spacing: 10) {
-                    SwitcherLayoutChoice(layout: .windows, title: pages.switcherLayoutWindows,
-                                         caption: pages.switcherLayoutWindowsCaption, selected: layout == .windows) {
-                        choose(.windows)
-                    }
-                    SwitcherLayoutChoice(layout: .icons, title: pages.switcherLayoutIcons,
-                                         caption: l10n.s.switcherIconRowModeCaption, selected: layout == .icons) {
-                        choose(.icons)
-                    }
-                    SwitcherLayoutChoice(layout: .simple, title: pages.switcherLayoutSimple,
-                                         caption: l10n.s.switcherSimpleModeCaption, selected: layout == .simple) {
-                        choose(.simple)
-                    }
-                }
-            }
-            Divider()
-            ShortcutPreferenceRow(role: .switcher,
-                                  label: l10n.s.switcherShortcutHintApps,
-                                  symbolName: "app.dashed") {
-                AppSwitcher.shared.syncWithPreferences()
-            }
-            ShortcutPreferenceRow(role: .switcherWindow,
-                                  label: l10n.s.switcherShortcutHintWindows,
-                                  symbolName: "macwindow.on.rectangle") {
-                AppSwitcher.shared.syncWithPreferences()
-            }
-            Text(l10n.s.switcherWindowShortcutCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            SettingsRow(symbol: "command", title: l10n.s.switcherTakeOverSystemShortcuts,
-                        caption: l10n.s.switcherTakeOverSystemShortcutsCaption) {
-                Toggle(l10n.s.switcherTakeOverSystemShortcuts, isOn: $switcherTakeOverSystemShortcuts)
-                    .labelsHidden()
-                    .onChange(of: switcherTakeOverSystemShortcuts) { _, _ in
-                        AppSwitcher.shared.syncWithPreferences()
-                    }
-            }
-            if switcherReplacesSystemShortcuts, secureInput.holder != .off {
-                SecureInputRow(blocking: .switcher)
-                    .padding(.leading, settingsRowTextInset)
-            }
-            Text(String(format: l10n.s.switcherUsageHintFormat,
-                        (GlobalShortcut(storageValue: switcherShortcutStorage) ?? .switcherDefault).displayString))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    private var windowlessMode: SwitcherWindowlessApps {
+        SwitcherWindowlessApps.mode(storedValue: switcherWindowlessApps)
     }
 
-    private var switcherOptionsCard: some View {
-        SettingsCard(title: l10n.s.keepAwakeOptions) {
-            SettingsRow(symbol: "timer", title: l10n.s.switcherAppearanceDelay,
-                        caption: l10n.s.switcherAppearanceDelayCaption) {
-                HStack(spacing: 8) {
-                    Slider(value: switcherAppearanceDelayBinding,
-                           in: Double(SwitcherSupport.appearanceDelayMillisecondsRange.lowerBound)
-                               ... Double(SwitcherSupport.appearanceDelayMillisecondsRange.upperBound),
-                           step: 25)
-                        .frame(width: 140)
-                    Text("\(sanitizedSwitcherAppearanceDelay) ms")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 56, alignment: .trailing)
-                }
-            }
-            SettingsRow(symbol: "square.grid.3x2", title: l10n.s.switcherMaxColumns,
-                        caption: l10n.s.switcherMaxColumnsCaption) {
-                HStack(spacing: 8) {
-                    Slider(value: switcherMaxColumnsBinding,
-                           in: Double(SwitcherSupport.maxColumnsRange.lowerBound - 1)
-                               ... Double(SwitcherSupport.maxColumnsRange.upperBound),
-                           step: 1)
-                        .frame(width: 140)
-                        .accessibilityValue(switcherMaxColumnsLabel)
-                    Text(switcherMaxColumnsLabel)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 56, alignment: .trailing)
-                }
-            }
-            SettingsRow(symbol: "cursorarrow.rays", title: l10n.s.switcherInstantSelection,
-                        caption: l10n.s.switcherInstantSelectionCaption) {
-                Toggle(l10n.s.switcherInstantSelection, isOn: $switcherInstantSelection).labelsHidden()
-            }
-            SettingsRow(symbol: "magnifyingglass", title: l10n.s.switcherSearchPin,
-                        caption: l10n.s.switcherSearchPinCaption) {
-                Toggle(l10n.s.switcherSearchPin, isOn: $switcherSearchPinEnabled).labelsHidden()
-            }
-            if switcherSimpleMode || switcherIconRowMode {
-                SettingsRow(symbol: "keyboard", title: l10n.s.switcherShowShortcutHints,
-                            caption: l10n.s.switcherShowShortcutHintsCaption) {
-                    Toggle(l10n.s.switcherShowShortcutHints, isOn: $switcherShowShortcutHints).labelsHidden()
-                }
-            }
-            SettingsRow(symbol: "square.stack", title: l10n.s.switcherMergeTabs,
-                        caption: l10n.s.switcherMergeTabsCaption) {
-                Toggle(l10n.s.switcherMergeTabs, isOn: $switcherMergeTabs).labelsHidden()
-            }
-            SettingsRow(symbol: "arrow.down.right.and.arrow.up.left", title: l10n.s.switcherShowFullscreenWindows) {
-                Toggle(l10n.s.switcherShowFullscreenWindows, isOn: $switcherShowFullscreenWindows)
-                    .labelsHidden()
-                    .onChange(of: switcherShowFullscreenWindows) { _, _ in
-                        AppSwitcher.shared.syncWithPreferences()
-                    }
-            }
-            Divider()
-            chipRow(symbol: "arrow.down.to.line", title: l10n.s.switcherMinimizedPlacementLabel, caption: nil,
-                    selection: $switcherMinimizedPlacement,
-                    choices: [(WindowSwitchMinimizedPlacement.normal.rawValue, l10n.s.switcherMinimizedPlacementNormal),
-                              (WindowSwitchMinimizedPlacement.end.rawValue, l10n.s.switcherMinimizedPlacementEnd),
-                              (WindowSwitchMinimizedPlacement.hidden.rawValue, l10n.s.switcherMinimizedPlacementHidden)])
-                .onChange(of: switcherMinimizedPlacement) { _, _ in
-                    AppSwitcher.shared.syncWithPreferences()
-                }
-            if switcherMinimizedPlacement != WindowSwitchMinimizedPlacement.normal.rawValue {
-                SettingsRow(symbol: "eye.slash", title: l10n.s.switcherTreatHiddenAppsLikeMinimized) {
-                    Toggle(l10n.s.switcherTreatHiddenAppsLikeMinimized,
-                           isOn: $switcherTreatHiddenAppsLikeMinimized)
-                        .labelsHidden()
-                        .onChange(of: switcherTreatHiddenAppsLikeMinimized) { _, _ in
-                            AppSwitcher.shared.syncWithPreferences()
-                        }
-                }
-            }
-            chipRow(symbol: "display.2", title: l10n.s.switcherScreenPlacementLabel,
-                    caption: l10n.s.switcherScreenPlacementCaption,
-                    selection: $switcherScreenPlacement,
-                    choices: [(SwitcherScreenPlacement.pointer.rawValue, l10n.s.switcherScreenPlacementPointer),
-                              (SwitcherScreenPlacement.menuBar.rawValue, l10n.s.switcherScreenPlacementMenuBar),
-                              (SwitcherScreenPlacement.activeWindow.rawValue, l10n.s.switcherScreenPlacementActiveWindow)])
-            SettingsRow(symbol: "display", title: l10n.s.switcherCurrentDisplayOnly,
-                        caption: l10n.s.switcherCurrentDisplayOnlyCaption) {
-                Toggle(l10n.s.switcherCurrentDisplayOnly, isOn: $switcherCurrentDisplayOnly).labelsHidden()
-            }
-            SettingsRow(symbol: "rectangle.3.group", title: l10n.s.switcherCurrentSpaceOnly,
-                        caption: l10n.s.switcherCurrentSpaceOnlyCaption) {
-                Toggle(l10n.s.switcherCurrentSpaceOnly, isOn: $switcherCurrentSpaceOnly).labelsHidden()
-            }
-            Divider()
-            chipRow(symbol: "app.dashed", title: l10n.s.switcherWindowlessApps,
-                    caption: l10n.s.switcherWindowlessAppsCaption,
-                    selection: switcherWindowlessAppsSelection,
-                    choices: [(SwitcherWindowlessApps.off.rawValue, l10n.s.switcherWindowlessAppsOff),
-                              (SwitcherWindowlessApps.finder.rawValue, l10n.s.switcherWindowlessAppsFinder),
-                              (SwitcherWindowlessApps.all.rawValue, l10n.s.switcherWindowlessAppsAll)])
-                .disabled(switcherTakeOverSystemShortcuts)
-            // Replacing ⌘Tab keeps every running app in the switcher, as the
-            // system one does, so the choices above hold on All apps. Say why
-            // rather than leave them looking broken.
-            if switcherTakeOverSystemShortcuts {
-                Text(String(format: l10n.s.switcherWindowlessAppsLockedFormat,
-                            l10n.s.switcherTakeOverSystemShortcuts))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, settingsRowTextInset)
-            }
-            // Per-app rules can be prepared while the switcher is off, as
-            // before the redesign; the card's disabled state stops here.
-            SwitcherAppRulesList()
-                .environment(\.isEnabled, true)
-        }
-    }
-
-    /// An icon, a title and one chip per choice, so the options read at a
-    /// glance instead of hiding in a menu.
-    private func chipRow(symbol: String, title: String, caption: String?, selection: Binding<String>,
-                         choices: [(String, String)]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SettingsRow(symbol: symbol, title: title, caption: caption) { EmptyView() }
-            // The three screen choices outgrow the card at the default window
-            // width in most languages; wrapping keeps every label whole.
-            FlowLayoutLite(spacing: 8) {
-                ForEach(choices, id: \.0) { value, label in
-                    let selected = selection.wrappedValue == value
-                    Button {
-                        selection.wrappedValue = value
-                    } label: {
-                        Text(label)
-                            .font(.system(size: 11, weight: .medium))
-                            .lineLimit(1)
-                            .foregroundStyle(selected ? Color.accentColor : .primary)
-                            .padding(.horizontal, 10)
-                            .frame(height: 28)
-                            .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06),
-                                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
-                            }
-                            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selected ? .isSelected : [])
-                }
-            }
-            .padding(.leading, settingsRowTextInset)
-        }
-    }
-
-    // MARK: - State
-
-    private var sanitizedSwitcherAppearanceDelay: Int {
-        SwitcherSupport.sanitizedAppearanceDelay(milliseconds: switcherAppearanceDelay)
-    }
-
-    private var sanitizedSwitcherMaxColumns: Int? {
-        SwitcherSupport.sanitizedMaxColumns(switcherMaxColumns)
-    }
-
-    private var switcherMaxColumnsLabel: String {
-        sanitizedSwitcherMaxColumns.map(String.init) ?? l10n.s.switcherMaxColumnsAuto
-    }
-
-    /// The slider's leftmost step, one below the range, stands for Auto.
-    private var switcherMaxColumnsBinding: Binding<Double> {
-        let auto = SwitcherSupport.maxColumnsRange.lowerBound - 1
-        return Binding(
-            get: { Double(sanitizedSwitcherMaxColumns ?? auto) },
-            set: {
-                let value = Int($0.rounded())
-                switcherMaxColumns = value <= auto ? 0 : SwitcherSupport.sanitizedMaxColumns(value) ?? 0
-            }
+    /// The stored value keeps its three modes; the toggles are two views of
+    /// it. Hiding off lists every app; hiding on lists Finder alone or none.
+    private var hidesWindowlessAppsBinding: Binding<Bool> {
+        Binding(
+            get: { windowlessMode != .all },
+            set: { switcherWindowlessApps = ($0 ? SwitcherWindowlessApps.finder : .all).rawValue }
         )
     }
 
-    private var switcherAppearanceDelayBinding: Binding<Double> {
+    private var keepsWindowlessFinderBinding: Binding<Bool> {
         Binding(
-            get: { Double(sanitizedSwitcherAppearanceDelay) },
-            set: {
-                switcherAppearanceDelay = SwitcherSupport.sanitizedAppearanceDelay(
-                    milliseconds: Int($0.rounded()))
-            }
+            get: { windowlessMode == .finder },
+            set: { switcherWindowlessApps = ($0 ? SwitcherWindowlessApps.finder : .off).rawValue }
+        )
+    }
+
+    private var switcherAppearanceDelayBinding: Binding<Int> {
+        Binding(
+            get: { SwitcherSupport.sanitizedAppearanceDelay(milliseconds: switcherAppearanceDelay) },
+            set: { switcherAppearanceDelay = SwitcherSupport.sanitizedAppearanceDelay(milliseconds: $0) }
         )
     }
 }
@@ -386,9 +339,14 @@ private struct SwitcherLayoutChoice: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
+                // The sketches stay narrow enough for three tiles to share
+                // the page's standard column; a wider one pushed every card on
+                // the page past the margins other pages keep.
                 sketch
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 12)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 64)
+                    .frame(height: 68)
                     .background(Color.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 Text(title)
                     .font(.system(size: 12, weight: .semibold))
@@ -414,60 +372,67 @@ private struct SwitcherLayoutChoice: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
+    /// Drawn like the switcher itself: gray selections, no accent color, and
+    /// for Large icons the selected app's window under its icon.
     @ViewBuilder
     private var sketch: some View {
         switch layout {
         case .windows:
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 ForEach(0..<3, id: \.self) { index in
                     window(selected: index == 0)
-                        .frame(width: 34, height: 26)
+                        .frame(width: 22, height: 16)
+                        .padding(3)
+                        .background(selection(index == 0, cornerRadius: 5))
                 }
             }
         case .icons:
-            HStack(spacing: 10) {
-                ForEach(0..<4, id: \.self) { index in
-                    VStack(spacing: 4) {
-                        window(selected: index == 0)
-                            .frame(width: 26, height: 18)
-                            .opacity(index == 0 ? 1 : 0)
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(index == 0 ? Color.accentColor : Color.white.opacity(0.35))
-                            .frame(width: 16, height: 16)
+            VStack(spacing: 5) {
+                HStack(spacing: 6) {
+                    ForEach(0..<4, id: \.self) { index in
+                        icon(selected: index == 0)
                     }
                 }
+                HStack(spacing: 6) {
+                    window(selected: true)
+                        .frame(width: 22, height: 15)
+                        .padding(2)
+                        .background(selection(true, cornerRadius: 4))
+                    Spacer(minLength: 0)
+                }
+                .frame(width: 4 * 18 + 3 * 6)
             }
         case .simple:
-            // The real one: the selected app's title in a strip, then one
-            // icon per app in a row underneath.
-            VStack(spacing: 7) {
-                Capsule()
-                    .fill(Color.white.opacity(0.9))
-                    .frame(width: 44, height: 4)
-                HStack(spacing: 8) {
-                    ForEach(0..<4, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(index == 0 ? Color.accentColor : Color.white.opacity(0.35))
-                            .frame(width: 16, height: 16)
-                    }
+            HStack(spacing: 6) {
+                ForEach(0..<4, id: \.self) { index in
+                    icon(selected: index == 0)
                 }
             }
         }
     }
 
+    private func icon(selected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+            .fill(Color.white.opacity(selected ? 0.85 : 0.4))
+            .frame(width: 13, height: 13)
+            .padding(2.5)
+            .background(selection(selected, cornerRadius: 5))
+    }
+
+    private func selection(_ selected: Bool, cornerRadius: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(Color.white.opacity(selected ? 0.2 : 0))
+    }
+
     private func window(selected: Bool) -> some View {
         RoundedRectangle(cornerRadius: 3, style: .continuous)
-            .fill(Color.white.opacity(selected ? 0.9 : 0.4))
+            .fill(Color.white.opacity(selected ? 0.85 : 0.4))
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(Color.black.opacity(0.35))
-                    .frame(height: 4)
+                    .frame(height: 3)
                     .padding(.horizontal, 1)
                     .padding(.top, 1)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 1.5)
             }
     }
 }
@@ -477,3 +442,17 @@ private struct SwitcherLayoutChoice: View {
 private enum SwitcherLayout: Hashable {
     case windows, icons, simple
 }
+
+#if LATTICE_DEVELOPMENT
+/// Rendering probe only: the three layout tiles as the Settings page draws them.
+struct SwitcherLayoutTilesPreview: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            SwitcherLayoutChoice(layout: .windows, title: "Window previews", caption: "Live thumbnails.", selected: false) {}
+            SwitcherLayoutChoice(layout: .icons, title: "Large icons", caption: "Icons, previews below.", selected: true) {}
+            SwitcherLayoutChoice(layout: .simple, title: "Simple list", caption: "Icons only.", selected: false) {}
+        }
+        .padding(12)
+    }
+}
+#endif
