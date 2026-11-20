@@ -24,13 +24,12 @@ struct LatticeHubView: View {
     @StateObject var dragSession = HubDragSession()
     @AppStorage(DefaultsKey.notchSize) private var islandSize = NotchSize.spacious.rawValue
 
-    // Keep the common header outside the page switch. The two page bodies
-    // overlap at their natural heights; neither is animated vertically.
+    // Keep the common header outside the page switch. The active page stays
+    // pinned at its top while the native panel animates its bottom edge.
     private enum FloatingHUDPage {
         case root
         case utility(LatticeHubItem)
     }
-    @State private var outgoingHUDPage: FloatingHUDPage?
     @State private var hudFadeProgress = 1.0
     @State private var hudFadeGeneration = 0
 
@@ -135,7 +134,7 @@ struct LatticeHubView: View {
                         if utility == .system, systemNav.selectedMetric != nil {
                             return utility.title(language: l10n.language)
                         } else if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
-                            return utility.title(language: l10n.language)
+                            return LatticeHubItem.deviceControlsShortTitle(language: l10n.language)
                         } else {
                             return SettingsFollowupStrings.text(.allTools, l10n.language)
                         }
@@ -143,12 +142,10 @@ struct LatticeHubView: View {
                     NotchBandBackButton(title: backTitle, showsTitle: true, action: {
                         if let custom = NotchService.shared.customBackAction, custom() { return }
                         if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
-                            DeviceControlsNavigationState.shared.currentSubpage = .main
+                            NotchService.shared.showDeviceControlsSubpage(.main)
                         } else if utility == .system, systemNav.selectedMetric != nil {
-                            withAnimation(.easeInOut(duration: 0.22)) {
-                                systemNav.reset()
-                                NotchService.shared.refreshPresentation()
-                            }
+                            systemNav.reset()
+                            NotchService.shared.refreshPresentation(transitionContent: .page)
                             SystemMonitor.shared.scheduleCPUWarmUpIfNeeded()
                         } else {
                             if utility == .deviceControls {
@@ -266,30 +263,22 @@ struct LatticeHubView: View {
     @ViewBuilder
     private var mainContent: some View {
         if notchSize == nil {
-            // Both pages participate in height measurement, but neither
-            // slides. The native panel animates its bottom edge independently.
-            // Removing the outgoing page after the fade lets the panel shrink.
-            ZStack(alignment: .topLeading) {
-                floatingHUDPage(for: launcher.activeUtility.map(FloatingHUDPage.utility) ?? .root)
-                    .opacity(hudFadeProgress)
-                    .allowsHitTesting(outgoingHUDPage == nil)
-                if let outgoingHUDPage {
-                    floatingHUDPage(for: outgoingHUDPage)
-                        .opacity(1 - hudFadeProgress)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
+            floatingHUDPage(for: launcher.activeUtility.map(FloatingHUDPage.utility) ?? .root)
+                .opacity(hudFadeProgress)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .onChange(of: launcher.activeUtility) { _, _ in
+                    crossfadeFloatingHUD()
                 }
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .onChange(of: launcher.activeUtility) { previous, _ in
-                crossfadeFloatingHUD(from: previous)
-            }
-            .onDisappear {
-                hudFadeGeneration += 1
-                outgoingHUDPage = nil
-                hudFadeProgress = 1
-            }
+                .onChange(of: deviceControlsNav.currentSubpage) { _, _ in
+                    if launcher.activeUtility == .deviceControls {
+                        crossfadeFloatingHUD()
+                    }
+                }
+                .onDisappear {
+                    hudFadeGeneration += 1
+                    hudFadeProgress = 1
+                }
         } else {
             if let utility = launcher.activeUtility, utility.isAvailable() {
                 LatticeHubHostedUtility(item: utility, notchSize: notchSize) { launcher.closeUtility() }
@@ -336,37 +325,29 @@ struct LatticeHubView: View {
         }
     }
 
-    private func crossfadeFloatingHUD(from previous: LatticeHubItem?) {
+    private func crossfadeFloatingHUD() {
         hudFadeGeneration += 1
         let generation = hudFadeGeneration
         if launcher.opensUtilityDirectly {
             // The hotkey prepared the destination before the panel appeared.
-            // Never crossfade in an outgoing root/utility page in that case.
-            outgoingHUDPage = nil
+            // Never animate an opening page fade in that case.
             hudFadeProgress = 1
             return
         }
         guard !reduceMotion else {
-            outgoingHUDPage = nil
             hudFadeProgress = 1
             return
         }
 
-        // No animation transaction wraps this layout change. Only the two
-        // opacity values animate; each page stays fixed at the panel's top.
+        // No animation transaction wraps the layout change. Only the incoming
+        // page's opacity animates while the native panel resizes smoothly.
         updateHUDWithoutAnimation {
-            outgoingHUDPage = previous.map(FloatingHUDPage.utility) ?? .root
             hudFadeProgress = 0
         }
         DispatchQueue.main.async {
             guard hudFadeGeneration == generation else { return }
-            withAnimation(.easeInOut(duration: 0.18), completionCriteria: .logicallyComplete) {
+            withAnimation(.easeInOut(duration: 0.18)) {
                 hudFadeProgress = 1
-            } completion: {
-                guard hudFadeGeneration == generation else { return }
-                updateHUDWithoutAnimation {
-                    outgoingHUDPage = nil
-                }
             }
         }
     }
