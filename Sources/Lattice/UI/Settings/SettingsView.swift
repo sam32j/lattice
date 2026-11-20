@@ -137,28 +137,17 @@ struct SettingsView: View {
 
     @ToolbarContentBuilder
     var settingsNavigationToolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .navigation) {
-            let strings = SettingsNavigationStrings.localized(l10n.language)
-            Button {
-                router.goBack(isPageVisible: isPageVisible)
-            } label: {
-                Label(strings.back, systemImage: "chevron.backward")
-            }
-            .disabled(!router.canGoBack(isPageVisible: isPageVisible))
-            .help(strings.back)
-
-            Button {
-                router.goForward(isPageVisible: isPageVisible)
-            } label: {
-                Label(strings.forward, systemImage: "chevron.forward")
-            }
-            .disabled(!router.canGoForward(isPageVisible: isPageVisible))
-            .help(strings.forward)
-        }
+        // One standard group: macOS 26 draws both chevrons in one frosted
+        // glass capsule, as System Settings does.
+        ToolbarItemGroup(placement: .navigation) { settingsNavigationButtons }
         // Recreate only the native title item when its text changes. Reusing
         // the previous item can retain an obsolete width until a scroll redraw.
 #if compiler(>=6.2)
         if #available(macOS 26, *) {
+            // Items side by side in one placement share one glass background;
+            // the spacer keeps the title's hidden background from hiding the
+            // back/forward capsule too.
+            ToolbarSpacer(.fixed, placement: .navigation)
             ToolbarItem(id: "settings-title-\(detailTitle)", placement: .navigation) {
                 toolbarTitle
             }
@@ -174,6 +163,26 @@ struct SettingsView: View {
             toolbarTitle
         }
 #endif
+    }
+
+    @ViewBuilder
+    var settingsNavigationButtons: some View {
+        let strings = SettingsNavigationStrings.localized(l10n.language)
+        Button {
+            router.goBack(isPageVisible: isPageVisible)
+        } label: {
+            Label(strings.back, systemImage: "chevron.backward")
+        }
+        .disabled(!router.canGoBack(isPageVisible: isPageVisible))
+        .help(strings.back)
+
+        Button {
+            router.goForward(isPageVisible: isPageVisible)
+        } label: {
+            Label(strings.forward, systemImage: "chevron.forward")
+        }
+        .disabled(!router.canGoForward(isPageVisible: isPageVisible))
+        .help(strings.forward)
     }
 
     var defaultTitleItem: ToolbarDefaultItemKind? {
