@@ -599,6 +599,25 @@ enum WindowLayoutFeatureTests {
                    enabledZones: [.topLeft]
                ) == CGPoint(x: 20, y: 1),
                "an active top corner still protects its own snap gesture")
+        // Stage Manager pulls the usable area in by 75 pt on the left, so x=200
+        // is already the top-left corner the snap target reads.
+        suite.expect(WindowEdgeSnapSupport.locationAvoidingSystemTopDrag(
+                   CGPoint(x: 200, y: 0),
+                   screenFrames: [quartzScreenFrame],
+                   visibleFrames: [CGRect(x: 75, y: 0, width: 1365, height: 875)],
+                   enabledZones: [.topLeft]
+               ) == CGPoint(x: 200, y: 1),
+               "top-edge protection uses the same corner bounds as the snap target")
+        suite.expect(WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0, y: 0, width: 1, height: 1)) == .maximize
+                && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 1)) == .rightHalf
+                && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)) == .bottomRight
+                && WindowLayoutGeometry.anchorAction(for: NormalizedRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5)) == .center,
+               "a normalized placement holds the edges it touches; only the whole frame is Maximize")
+        let pane = CGRect(x: 0, y: 0, width: 100, height: 100)
+        let sliver = WindowLayoutGeometry.rect(for: NormalizedRect(x: 0.875, y: 0.875, width: 0.125, height: 0.125),
+                                               visibleFrame: pane, windowGap: 64, screenGap: 0)
+        suite.expect(pane.contains(sliver) && sliver.width >= 1 && sliver.height >= 1,
+               "a gap wider than a small pane keeps the pane inside the frame")
 
         let leftSnapScreen = WindowEdgeSnapScreen(
             frame: CGRect(x: -1280, y: 0, width: 1280, height: 800),

@@ -144,8 +144,10 @@ enum WindowEdgeSnapRuntimeTests {
                                       pointerStart: pointerStart, pointerNow: pointerNow)
         }
         static func locationAvoidingSystemTopDrag(_ point: CGPoint, screenFrames: [CGRect],
+                                                  visibleFrames: [CGRect] = [],
                                                   enabledZones: Set<WindowEdgeSnapZone>) -> CGPoint {
             EdgeSnapGeometry.locationAvoidingSystemTopDrag(point, screenFrames: screenFrames,
+                                                           visibleFrames: visibleFrames,
                                                            enabledZones: enabledZones)
         }
         static func target(at point: CGPoint, screens: [WindowEdgeSnapScreen], velocity: CGVector,

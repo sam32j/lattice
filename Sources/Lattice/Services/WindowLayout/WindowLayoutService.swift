@@ -410,7 +410,7 @@ final class WindowLayoutService: ObservableObject {
         if setFrame(frame,
                     targetRect: targetRect,
                     screenVisibleFrame: visible,
-                    action: .maximize,
+                    action: WindowLayoutGeometry.anchorAction(for: normalizedRect),
                     on: target.window,
                     windowKey: target.key) {
             lastActions.removeValue(forKey: target.key)
@@ -807,6 +807,8 @@ final class WindowLayoutService: ObservableObject {
     // republishes the result the panel feedback listens to.
     private func concludeSettle(_ context: SettleContext, success: Bool) {
         assistiveModeSuspensions.removeValue(forKey: context.windowID)?.resume()
+        // Restore's availability follows the settled frame, success or rollback.
+        defer { refreshSnappingSession() }
         if success {
             if let cyclePress = context.cyclePress {
                 settledFrames[context.windowKey] = WindowLayoutSettledFrame(requested: context.frame,
@@ -1621,6 +1623,7 @@ final class WindowLayoutService: ObservableObject {
                 event.location = WindowEdgeSnapSupport.locationAvoidingSystemTopDrag(
                     originalLocation,
                     screenFrames: drag.quartzScreenFrames,
+                    visibleFrames: drag.visibleScreenFrames,
                     enabledZones: drag.enabledZones
                 )
             }
@@ -1882,6 +1885,7 @@ final class WindowLayoutService: ObservableObject {
                                                        pointerStart: pointerStart,
                                                        protectsSystemTopEdge: protectsTop,
                                                        quartzScreenFrames: screenFrames,
+                                                       visibleScreenFrames: NSScreen.screens.map(\.visibleFrame),
                                                        enabledZones: zones,
                                                        lastSampleAt: 0,
                                                        mismatchCount: 0,
@@ -1931,6 +1935,7 @@ final class WindowLayoutService: ObservableObject {
                                   pointerStart: pointerStart,
                                   protectsSystemTopEdge: WindowEdgeSnapSupport.isSystemTopWindowOverviewDragEnabled,
                                   quartzScreenFrames: edgeSnapQuartzScreenFrames(),
+                                  visibleScreenFrames: NSScreen.screens.map(\.visibleFrame),
                                   enabledZones: enabledEdgeSnapZones,
                                   lastSampleAt: 0,
                                   mismatchCount: 0,
@@ -3245,6 +3250,8 @@ private struct WindowEdgeSnapDrag {
     let pointerStart: CGPoint
     let protectsSystemTopEdge: Bool
     let quartzScreenFrames: [CGRect]
+    /// Each screen's usable area, in the same order; only its sides are read.
+    let visibleScreenFrames: [CGRect]
     let enabledZones: Set<WindowEdgeSnapZone>
     var lastSampleAt: TimeInterval
     var mismatchCount: Int

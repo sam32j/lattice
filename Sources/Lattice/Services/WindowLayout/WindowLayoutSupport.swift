@@ -581,24 +581,59 @@ enum WindowLayoutGeometry {
         )
         guard windowGap > 0 else { return raw.integral }
         let half = windowGap / 2
+        // Half a gap comes off each side that meets another pane, never more
+        // than the pane has: a gap wider than a small pane shrinks it to one
+        // point inside its own bounds instead of pushing it out of the frame.
+        func insets(leading: Bool, trailing: Bool, span: CGFloat) -> (CGFloat, CGFloat) {
+            var lead: CGFloat = leading ? half : 0
+            var trail: CGFloat = trailing ? half : 0
+            let room = max(0, span - 1)
+            if lead + trail > room, lead + trail > 0 {
+                let scale = room / (lead + trail)
+                lead *= scale
+                trail *= scale
+            }
+            return (lead, trail)
+        }
+        let (left, right) = insets(leading: raw.minX - frame.minX > 1, trailing: frame.maxX - raw.maxX > 1,
+                                   span: raw.width)
+        let (bottom, top) = insets(leading: raw.minY - frame.minY > 1, trailing: frame.maxY - raw.maxY > 1,
+                                   span: raw.height)
         var result = raw
-        if result.minX - frame.minX > 1 {
-            result.origin.x += half
-            result.size.width -= half
-        }
-        if frame.maxX - result.maxX > 1 {
-            result.size.width -= half
-        }
-        if result.minY - frame.minY > 1 {
-            result.origin.y += half
-            result.size.height -= half
-        }
-        if frame.maxY - result.maxY > 1 {
-            result.size.height -= half
-        }
-        result.size.width = max(1, result.size.width)
-        result.size.height = max(1, result.size.height)
+        result.origin.x += left
+        result.size.width = max(1, raw.width - left - right)
+        result.origin.y += bottom
+        result.size.height = max(1, raw.height - bottom - top)
         return result.integral
+    }
+
+    /// The named action whose anchoring and acceptance fit a normalized
+    /// placement: it holds the edges the placement touches, so a window that
+    /// keeps a larger minimum size grows away from them and stays in the
+    /// usable frame, and acceptance checks those edges instead of overlap
+    /// alone. Only a placement covering the whole frame uses Maximize.
+    static func anchorAction(for normalizedRect: NormalizedRect) -> WindowLayoutAction {
+        let edge: CGFloat = 0.001
+        let left = normalizedRect.x <= edge
+        let right = normalizedRect.x + normalizedRect.width >= 1 - edge
+        let top = normalizedRect.y <= edge
+        let bottom = normalizedRect.y + normalizedRect.height >= 1 - edge
+        switch (left, right, top, bottom) {
+        case (true, true, true, true): return .maximize
+        case (true, false, true, true): return .leftHalf
+        case (false, true, true, true): return .rightHalf
+        case (false, false, true, true): return .centerHalf
+        case (true, true, true, false): return .topHalf
+        case (true, true, false, true): return .bottomHalf
+        case (true, true, false, false): return .middleThird
+        case (true, false, true, false): return .topLeft
+        case (false, true, true, false): return .topRight
+        case (false, false, true, false): return .topCenterSixth
+        case (true, false, false, true): return .bottomLeft
+        case (false, true, false, true): return .bottomRight
+        case (false, false, false, true): return .bottomCenterSixth
+        default: return .center
+        }
     }
 
     /// The visible frame pulled in by the screen gap on every side. The inset
