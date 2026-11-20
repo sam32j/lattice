@@ -101,12 +101,6 @@ enum SettingsFeatureTests {
                 DefaultsKey.windowReserveStageManagerSpace] as? Bool == reserved,
                 "Stage Manager reservation survives a settings backup round trip")
         }
-        let marginBackup = SettingsBackupSupport.payload(appVersion: "test") { key in
-            key == DefaultsKey.windowLayoutMarginPercent ? 12.0 : nil
-        }
-        suite.expect(SettingsBackupSupport.sanitizedSettings(from: marginBackup)?[
-            DefaultsKey.windowLayoutMarginPercent] as? Double == 12,
-            "custom maximize margin survives a settings backup round trip")
         suite.expect(backupKeys.contains(DefaultsKey.switcherEnabled)
                 && backupKeys.contains(DefaultsKey.menuBarCPU)
                 && backupKeys.contains(DefaultsKey.language)
@@ -238,8 +232,7 @@ enum SettingsFeatureTests {
                 && backupKeys.contains(DefaultsKey.windowEdgeSnapZoneActions)
                 && backupKeys.contains(DefaultsKey.windowGestureModifiers)
                 && backupKeys.contains(DefaultsKey.windowGestureRaiseWindow)
-                && backupKeys.contains(DefaultsKey.windowLayoutShortcutPreviousDisplay)
-                && backupKeys.contains(DefaultsKey.windowLayoutShortcutMarginMaximize),
+                && backupKeys.contains(DefaultsKey.windowLayoutShortcutPreviousDisplay),
                "window layout choices travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.screenshotFreeze)
                 && backupKeys.contains(DefaultsKey.screenshotFullScreenShortcutEnabled)
@@ -338,9 +331,6 @@ enum SettingsFeatureTests {
         suite.expect(backupKeys.contains(DefaultsKey.windowMaximizeExcludedApps)
                 && (Defaults.registeredDefaults[DefaultsKey.windowMaximizeExcludedApps] as? [String]) == [],
                "the green button exception list starts empty and travels with the settings backup")
-        suite.expect(backupKeys.contains(DefaultsKey.switcherPreviewExcludedApps)
-                && (Defaults.registeredDefaults[DefaultsKey.switcherPreviewExcludedApps] as? [String]) == [],
-               "the switcher's own paused apps start empty and travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.panelShowToggles),
                "the Hub menu visibility travels with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.panelShowFanControl)
@@ -467,9 +457,8 @@ enum SettingsFeatureTests {
                 restored: restored, carried: [localJavaPath]) == restored,
                    "repeated window layout restores do not duplicate local paths")
         }
-        suite.expect(Set(SettingsBackupSupport.thumbnailPauseListKeys)
-                == [DefaultsKey.windowPreviewExcludedApps, DefaultsKey.switcherPreviewExcludedApps],
-               "both thumbnail pause lists are treated as holding machine-local paths")
+        suite.expect(SettingsBackupSupport.thumbnailPauseListKeys == [DefaultsKey.windowPreviewExcludedApps],
+               "Dock Preview's app list is treated as holding machine-local paths")
         for key in SettingsBackupSupport.thumbnailPauseListKeys {
             let backup = SettingsBackupSupport.payload(appVersion: "test") { requested in
                 requested == key ? ["com.apple.Safari", localJavaPath] : nil
@@ -563,18 +552,6 @@ enum SettingsFeatureTests {
         }
         suite.expect(thumbnailCaptureAt != nil && clearAt != nil && thumbnailCaptureAt! < clearAt!,
                "the thumbnail pause lists' machine-local entries are read before a restore clears them")
-        suite.expect(SettingsBackupSupport.sharedSwitcherPauseList(in: [
-                    DefaultsKey.windowPreviewExcludedApps: ["com.apple.Safari"]]) == ["com.apple.Safari"]
-                && SettingsBackupSupport.sharedSwitcherPauseList(in: [
-                    DefaultsKey.windowPreviewExcludedApps: ["com.apple.Safari"],
-                    DefaultsKey.switcherPreviewExcludedApps: [String]()]) == nil,
-               "a backup from before the switcher kept its own paused apps gives it Dock Preview's list")
-        let sharedPauseAt = backupServiceLines.firstIndex {
-            isCodeLine($0) && $0.contains("SettingsBackupSupport.sharedSwitcherPauseList(")
-        }
-        suite.expect([sharedPauseAt, writeAt, putBackAt].allSatisfy { $0 != nil }
-                && writeAt! < sharedPauseAt! && sharedPauseAt! < putBackAt!,
-               "a restore copies an old backup's shared paused apps before this Mac's paths go back")
         suite.expect(SettingsBackupSupport.sanitizedSettings(from: [SettingsBackupSupport.settingsKey: [String: Any]()]) == nil,
                "a file without the version envelope is rejected")
         let tampered: [String: Any] = [
@@ -666,7 +643,7 @@ enum SettingsFeatureTests {
             SettingsBackupSupport.formatVersionKey: 1,
             SettingsBackupSupport.settingsKey: [
                 DefaultsKey.switcherAppRules: [
-                    "com.example.editor": SwitcherAppRule.windowsOnly.rawValue,
+                    "com.example.editor": SwitcherAppRule.hidden.rawValue,
                 ] as [String: Any],
             ] as [String: Any],
         ]
@@ -674,8 +651,8 @@ enum SettingsFeatureTests {
             DefaultsKey.switcherAppRules
         ] as? [String: Any]
         suite.expect(restoredSwitcherRules?["com.example.editor"] as? String
-                == SwitcherAppRule.windowsOnly.rawValue,
-               "per-app Switcher rules keep their bundle identity and behavior through backup import")
+                == SwitcherAppRule.hidden.rawValue,
+               "Hide in switcher keeps its apps through backup import")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.preciseVolumeRollerEnabled] as? Bool == false,
                "precise volume roller is opt-in")
 

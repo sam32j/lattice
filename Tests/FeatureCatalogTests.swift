@@ -2075,9 +2075,11 @@ enum FeatureCatalogTests {
                 == FeatureSettingsDestination(.dock, sectionAnchor: .dock)
                 && AppFeature.dockClick.settingsDestination
                 == FeatureSettingsDestination(.dock, sectionAnchor: .dockClick)
-                && FeatureVisibilitySupport.features(for: .switcher) == [.switcher]
+                && AppFeature.switcher.settingsDestination
+                == FeatureSettingsDestination(.dock, sectionAnchor: .switcher)
+                && FeatureVisibilitySupport.features(for: .dock) == [.dockPreview, .dockClick, .switcher]
                 && pageVisible(.dock, available: [.dockClick]),
-               "Dock Preview and Dock clicks have their own page, apart from the switcher")
+               "Dock Preview, Dock clicks and the App Switcher share the Dock & Applications page")
         func dockNeedsAccessibility(available: Set<AppFeature>, on: Set<String>) -> Bool {
             FeatureVisibilitySupport.isPermissionNeeded(
                 on: .dock, activeFeatures: Array(activeSet(.accessibility, available: available, on: on)))
@@ -2086,15 +2088,28 @@ enum FeatureCatalogTests {
                 .allSatisfy { dockNeedsAccessibility(available: [.dockClick], on: [$0]) }
                 && dockNeedsAccessibility(available: [.dockPreview], on: [DefaultsKey.dockPreviewEnabled])
                 && !dockNeedsAccessibility(available: [.dockPreview], on: [DefaultsKey.dockClickMinimize])
-                && !dockNeedsAccessibility(available: allFeatures, on: [DefaultsKey.switcherEnabled]),
-               "the Dock page asks for Accessibility while Dock Preview or any Dock click action is on")
+                && dockNeedsAccessibility(available: allFeatures, on: [DefaultsKey.switcherEnabled]),
+               "the Dock & Applications page asks for Accessibility while Dock Preview, a Dock click action or the switcher is on")
         suite.expect(AppFeature.mixer.settingsDestination
-                == FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer)
+                == FeatureSettingsDestination(.audio, sectionAnchor: .mixer)
                 && AppFeature.soundOutputSwitcher.settingsDestination
-                    == FeatureSettingsDestination(.audioOutput, sectionAnchor: .soundOutputSwitcher)
+                    == FeatureSettingsDestination(.audio, sectionAnchor: .soundOutputSwitcher)
                 && AppFeature.audioPriority.settingsDestination
-                    == FeatureSettingsDestination(.audioInput, sectionAnchor: .audioPriority),
-               "Mixer and output switcher belong to Audio Output, audio priority belongs to Audio Input")
+                    == FeatureSettingsDestination(.audio, sectionAnchor: .audioPriority)
+                && AppFeature.micMute.settingsDestination
+                    == FeatureSettingsDestination(.audio, sectionAnchor: .micMute),
+               "Mixer, output switcher, audio priority and mic mute all belong to the one Audio page")
+        suite.expect(AudioSettingsSide(anchor: AppFeature.mixer.settingsDestination.sectionAnchor) == .output
+                && AudioSettingsSide(anchor: AppFeature.soundOutputSwitcher.settingsDestination.sectionAnchor) == .output
+                && AudioSettingsSide(anchor: .audioOutputPriority) == .output
+                && AudioSettingsSide(anchor: AppFeature.audioPriority.settingsDestination.sectionAnchor) == .input
+                && AudioSettingsSide(anchor: AppFeature.micMute.settingsDestination.sectionAnchor) == .input
+                && AudioSettingsSide(anchor: nil) == nil
+                && AudioSettingsSide(anchor: .keepAwake) == nil,
+               "audio deep links pick the Input or Output segment that holds their section")
+        suite.expect(SettingsSectionAnchor.allCases.filter { AudioSettingsSide(anchor: $0) != nil }
+                .allSatisfy { $0.page == .audio },
+               "every segment-selecting anchor lives on the Audio page")
         suite.expect(AppFeature.windowMaximizer.settingsDestination
                 == FeatureSettingsDestination(.windowLayout, sectionAnchor: .windowMaximizer)
                 && pageVisible(.windowLayout, available: [.windowMaximizer])
