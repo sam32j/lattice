@@ -687,14 +687,21 @@ enum WindowEdgeSnapSupport {
     /// edge, but the system never receives the exact coordinate that opens its
     /// window overview. Callers must only use this after proving that a window,
     /// rather than content inside it, is moving.
+    /// `visibleFrames`, in the same order as `screenFrames`, lets the corner
+    /// widths follow the usable area the way the snap target does, so a
+    /// point the target reads as a top corner is protected as one.
     static func locationAvoidingSystemTopDrag(_ point: CGPoint,
                                               screenFrames: [CGRect],
+                                              visibleFrames: [CGRect] = [],
                                               enabledZones: Set<WindowEdgeSnapZone> =
                                                   WindowEdgeSnapZone.allEnabled) -> CGPoint {
-        guard let screen = screenFrames.first(where: {
+        guard let index = screenFrames.firstIndex(where: {
             point.x >= $0.minX && point.x <= $0.maxX
                 && abs(point.y - $0.minY) < 0.5
-        }), enabledZones.contains(topZone(atX: point.x, in: screen)) else { return point }
+        }) else { return point }
+        let screen = screenFrames[index]
+        let visible = index < visibleFrames.count ? visibleFrames[index] : screen
+        guard enabledZones.contains(topZone(atX: point.x, in: screen, visible: visible)) else { return point }
         return CGPoint(x: point.x, y: screen.minY + 1)
     }
 
@@ -878,10 +885,14 @@ enum WindowEdgeSnapSupport {
         min(max(frame.width * 0.18, 96), 180)
     }
 
-    private static func topZone(atX x: CGFloat, in frame: CGRect) -> WindowEdgeSnapZone {
+    /// The same corner bounds `target` uses: the corner widths start at the
+    /// usable area's sides, which Stage Manager can pull in.
+    private static func topZone(atX x: CGFloat, in frame: CGRect, visible: CGRect) -> WindowEdgeSnapZone {
         let cornerWidth = horizontalCornerWidth(for: frame)
-        if x <= frame.minX + cornerWidth { return .topLeft }
-        if x >= frame.maxX - cornerWidth { return .topRight }
+        let visibleLeft = max(visible.minX, frame.minX)
+        let visibleRight = min(visible.maxX, frame.maxX)
+        if x <= visibleLeft + cornerWidth { return .topLeft }
+        if x >= visibleRight - cornerWidth { return .topRight }
         return .top
     }
 
