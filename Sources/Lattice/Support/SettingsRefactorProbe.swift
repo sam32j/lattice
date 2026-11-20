@@ -71,7 +71,7 @@ enum SettingsRefactorProbe {
             ("mouse", AnyView(MouseSettings())),
             ("keyboard", AnyView(KeyboardSettings())),
             ("cleaning", AnyView(CleaningModeSettings())),
-            ("audio-input", AnyView(AudioInputSettings())),
+            ("audio", AnyView(AudioSettings())),
             ("data-permissions", AnyView(DataPermissionsSettings())),
             ("displays-disabled", AnyView(DisplaySettings().settingsSectionFocus(for: .energy))),
             ("bluetooth", AnyView(DisplaySettings(focus: .bluetoothSleep).settingsSectionFocus(for: .energy))),
