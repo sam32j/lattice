@@ -719,3 +719,108 @@ extension FeatureStrings {
         }
     }
 }
+
+/// The closed island's right-click menu in click-to-open mode.
+enum NotchActivityMenuStrings {
+    static func attach(to title: String, language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Attach to \(title)"
+        case .ptBR: "Anexar a \(title)"
+        case .tr: "\(title) Öğesine Ekle"
+        case .ru: "Прикрепить к «\(title)»"
+        case .es: "Acoplar a \(title)"
+        case .sk: "Pripojiť k \(title)"
+        case .de: "An \(title) anheften"
+        case .fr: "Attacher à \(title)"
+        case .it: "Collega a \(title)"
+        case .ja: "\(title)に追加"
+        case .ko: "\(title)에 연결"
+        case .zhHans: "附加到\(title)"
+        case .zhTW: "附加到\(title)"
+        case .zhHK: "附加到\(title)"
+        case .uk: "Прикріпити до «\(title)»"
+        }
+    }
+
+    /// On the companion's row: leaves the chosen activity alone.
+    static func detach(from title: String, language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Detach from \(title)"
+        case .ptBR: "Desanexar de \(title)"
+        case .tr: "\(title) Yanından Ayır"
+        case .ru: "Открепить от \(title)"
+        case .es: "Desacoplar de \(title)"
+        case .sk: "Odpojiť od \(title)"
+        case .de: "Von \(title) trennen"
+        case .fr: "Détacher de \(title)"
+        case .it: "Separa da \(title)"
+        case .ja: "\(title)から切り離す"
+        case .ko: "\(title)에서 분리"
+        case .zhHans: "取消与\(title)并排"
+        case .zhTW: "取消與\(title)並排"
+        case .zhHK: "取消與\(title)並排"
+        case .uk: "Відкріпити від \(title)"
+        }
+    }
+
+    /// On the chosen activity's row: removes the companion beside it.
+    static func detach(_ title: String, language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Detach \(title)"
+        case .ptBR: "Desanexar \(title)"
+        case .tr: "\(title) Öğesini Ayır"
+        case .ru: "Открепить «\(title)»"
+        case .es: "Desacoplar \(title)"
+        case .sk: "Odpojiť \(title)"
+        case .de: "\(title) trennen"
+        case .fr: "Détacher \(title)"
+        case .it: "Separa \(title)"
+        case .ja: "\(title)を切り離す"
+        case .ko: "\(title) 분리"
+        case .zhHans: "取消并排\(title)"
+        case .zhTW: "取消並排\(title)"
+        case .zhHK: "取消並排\(title)"
+        case .uk: "Відкріпити «\(title)»"
+        }
+    }
+
+    static func showAlone(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Show Alone"
+        case .ptBR: "Mostrar Sozinho"
+        case .tr: "Tek Başına Göster"
+        case .ru: "Показать отдельно"
+        case .es: "Mostrar solo"
+        case .sk: "Zobraziť samostatne"
+        case .de: "Allein anzeigen"
+        case .fr: "Afficher seul"
+        case .it: "Mostra da solo"
+        case .ja: "単独で表示"
+        case .ko: "단독으로 표시"
+        case .zhHans: "单独显示"
+        case .zhTW: "單獨顯示"
+        case .zhHK: "單獨顯示"
+        case .uk: "Показати окремо"
+        }
+    }
+
+    static func hide(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Hide Live Activity"
+        case .ptBR: "Ocultar Atividade ao Vivo"
+        case .tr: "Canlı Etkinliği Gizle"
+        case .ru: "Скрыть Live-активность"
+        case .es: "Ocultar actividad en vivo"
+        case .sk: "Skryť živú aktivitu"
+        case .de: "Live-Aktivität ausblenden"
+        case .fr: "Masquer l’activité en direct"
+        case .it: "Nascondi Attività Live"
+        case .ja: "ライブアクティビティを非表示"
+        case .ko: "실시간 현황 가리기"
+        case .zhHans: "隐藏实时活动"
+        case .zhTW: "隱藏即時動態"
+        case .zhHK: "隱藏即時動態"
+        case .uk: "Сховати Live-активність"
+        }
+    }
+}
