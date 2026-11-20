@@ -152,7 +152,7 @@ enum DeviceControlsTests {
     private static func testAppVolumeBoostSliderMetrics(_ suite: TestSuite) {
         let totalWidth: CGFloat = 200
         let mainWidth = AppVolumeSliderMetrics.mainBarWidth(totalWidth: totalWidth)
-        suite.expect(mainWidth == 200 - 16 - 28 - 4, "mainBarWidth is total - insets - stub - gap")
+        suite.expect(mainWidth == 200 - 16 - 44 - 4, "mainBarWidth is total - insets - stub - gap")
 
         // 0 position -> 0%
         suite.expect(AppVolumeSliderMetrics.value(for: 0, totalWidth: totalWidth) == 0.0, "x=0 yields 0 volume")

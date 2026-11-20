@@ -81,8 +81,14 @@ struct DeviceControlsAppVolumesView: View {
             }
         }
         .onAppear {
-            mixer.refreshApps()
+            if mixer.apps.isEmpty {
+                mixer.refreshApps()
+            }
         }
+    }
+
+    private var availableOutputDevices: [MixerOutputDevice] {
+        mixer.outputDevices.filter { !MixerRoutingSupport.isAirPlaySentinel($0.uid) }
     }
 
     // MARK: - Subpage Header & Filter
@@ -140,6 +146,7 @@ struct DeviceControlsAppVolumesView: View {
                     app: app,
                     active: isActiveApp(app),
                     isPinned: arrangement.isPinned(app.persistenceID),
+                    availableOutputDevices: availableOutputDevices,
                     onTogglePin: {
                         updateArrangement { $0.togglePin(app.persistenceID ?? "") }
                     },
@@ -157,23 +164,27 @@ struct DeviceControlsAppVolumesView: View {
                 )
             }
         }
-        .panelCard(padded: false)
+        .panelCard(interactive: false, padded: false)
     }
 }
 
 private struct DeviceControlsAppRow: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var mixer = AppVolumeMixer.shared
     let app: MixerApp
     let active: Bool
     let isPinned: Bool
+    let availableOutputDevices: [MixerOutputDevice]
     let onTogglePin: () -> Void
     var onSliderTrackingChanged: (Bool) -> Void = { _ in }
 
     /// Only the pointer on the icon previews Pin; anywhere else on the row
     /// the playing dot stays visible.
     @State private var isIconHovered = false
+    @State private var isSliderEditing = false
+    @State private var liveVolume: Double?
+
+    private var effectiveVolume: Double { liveVolume ?? app.volume }
 
     private static let iconSize: CGFloat = 30
 
@@ -200,16 +211,17 @@ private struct DeviceControlsAppRow: View {
             HStack(spacing: 8) {
                 // Speaker icon: doubles as reset button (aligned with app icon)
                 Button {
-                    if (app.volume * 100).rounded() == 100 {
-                        mixer.toggleMute(app)
+                    liveVolume = nil
+                    if (effectiveVolume * 100).rounded() == 100 {
+                        AppVolumeMixer.shared.toggleMute(app)
                     } else {
-                        mixer.setVolume(1.0, for: app)
+                        AppVolumeMixer.shared.setVolume(1.0, for: app)
                         NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
                     }
                 } label: {
-                    Image(systemName: speakerIcon(for: app.volume))
+                    Image(systemName: speakerIcon(for: effectiveVolume))
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(speakerColor(for: app.volume))
+                        .foregroundStyle(speakerColor(for: effectiveVolume))
                         .frame(width: 32, height: 24, alignment: .center)
                         .contentShape(Rectangle())
                 }
@@ -227,16 +239,32 @@ private struct DeviceControlsAppRow: View {
                     AppVolumeBoostSlider(
                         title: "\(app.name) volume",
                         value: Binding(
-                            get: { app.volume },
-                            set: { mixer.setVolume($0, for: app) }
+                            get: { liveVolume ?? app.volume },
+                            set: { nextVol in
+                                if isSliderEditing {
+                                    liveVolume = nextVol
+                                    AppVolumeMixer.shared.setInteractiveVolume(nextVol, for: app, isEditing: true)
+                                } else {
+                                    liveVolume = nil
+                                    AppVolumeMixer.shared.setVolume(nextVol, for: app)
+                                }
+                            }
                         ),
-                        onEditingChanged: onSliderTrackingChanged
+                        onEditingChanged: { editing in
+                            isSliderEditing = editing
+                            onSliderTrackingChanged(editing)
+                            if !editing, let finalVol = liveVolume {
+                                liveVolume = nil
+                                AppVolumeMixer.shared.setVolume(finalVol, for: app)
+                            }
+                        }
                     )
                 }
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
+        .compositingGroup()
         .opacity(active ? 1.0 : 0.65)
         .contentShape(Rectangle())
     }
@@ -347,10 +375,6 @@ private struct DeviceControlsAppRow: View {
         }
     }
 
-    private var availableOutputDevices: [MixerOutputDevice] {
-        mixer.outputDevices.filter { !MixerRoutingSupport.isAirPlaySentinel($0.uid) }
-    }
-
     private func outputPicker(for app: MixerApp) -> some View {
         Picker("Output", selection: outputSelectionBinding(for: app)) {
             Text(l10n.s.mixerOutputDefault)
@@ -365,7 +389,7 @@ private struct DeviceControlsAppRow: View {
             // needs its own row, or the picker has nothing to show it with.
             if let selected = app.selectedOutputDeviceUID, !app.outputDeviceUnavailable,
                !availableOutputDevices.contains(where: { $0.uid == selected }),
-               let route = mixer.outputDevices.first(where: { $0.uid == selected }) {
+               let route = AppVolumeMixer.shared.outputDevices.first(where: { $0.uid == selected }) {
                 Text(route.name)
                     .tag(selected)
             }
@@ -390,7 +414,7 @@ private struct DeviceControlsAppRow: View {
         Binding(
             get: { app.selectedOutputDeviceUID ?? MixerRoutingSupport.systemDefaultSelectionID },
             set: { selection in
-                mixer.setOutputDeviceUID(
+                AppVolumeMixer.shared.setOutputDeviceUID(
                     selection == MixerRoutingSupport.systemDefaultSelectionID ? nil : selection,
                     for: app
                 )
