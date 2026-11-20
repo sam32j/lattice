@@ -446,19 +446,16 @@ enum SwitcherModelFeatureTests {
                     "the stored App Switcher milliseconds drive the panel timer in seconds")
         suite.expect(SwitcherSupport.usesIconRowLayout(iconRowMode: false, simpleMode: true),
                "App Switcher simple mode always uses the app icon row")
-        suite.expect(SwitcherSupport.usesWindowRow(simpleMode: true,
-                                             mergeWindowsByApp: false,
-                                             sessionScope: .allApps)
-               && !SwitcherSupport.usesWindowRow(simpleMode: true,
-                                                  mergeWindowsByApp: true,
-                                                  sessionScope: .allApps)
-               && SwitcherSupport.usesWindowRow(simpleMode: true,
-                                                 mergeWindowsByApp: true,
-                                                 sessionScope: .frontmostApp)
-               && !SwitcherSupport.usesWindowRow(simpleMode: false,
-                                                  mergeWindowsByApp: false,
-                                                  sessionScope: .allApps),
-               "App Switcher groups all-app sessions but keeps window-scoped simple sessions per-window")
+        suite.expect(!SwitcherSupport.usesWindowRow(simpleMode: true, sessionScope: .allApps)
+               && SwitcherSupport.usesWindowRow(simpleMode: true, sessionScope: .frontmostApp)
+               && !SwitcherSupport.usesWindowRow(simpleMode: false, sessionScope: .allApps),
+               "App Switcher simple row shows one icon per app, and a window-scoped session its windows")
+        suite.expect(SwitcherSearchLayout.topInset(contentPadding: 0, showsField: false) == 0
+               && SwitcherSearchLayout.topInset(contentPadding: 0) > 0,
+               "App Switcher reserves no search header while the simple row is at rest")
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.switcherMergeTabs] as? Bool == false
+               && Defaults.registeredDefaults["switcherSearchPinEnabled"] == nil,
+               "one entry per app stays off by default and the retired pin-search preference is gone")
         // The session-start layout pass reads usesWindowRow, which now depends
         // on the session scope; teardown resets the scope to .allApps, so the
         // scope must be assigned before the layout pass or a window-scoped
@@ -512,30 +509,31 @@ enum SwitcherModelFeatureTests {
                "preview warming enumerates windows on a queue of its own, never on a shared task thread")
         suite.expect(SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: true,
                                                                         mergeWindowsByApp: true,
-                                                                        simpleMode: true)
+                                                                        iconRowLayout: false)
                && !SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: true,
                                                                              mergeWindowsByApp: true,
-                                                                             simpleMode: false)
+                                                                             iconRowLayout: true)
                && !SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: false,
                                                                              mergeWindowsByApp: true,
-                                                                             simpleMode: true)
+                                                                             iconRowLayout: false)
                && !SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: true,
                                                                              mergeWindowsByApp: false,
-                                                                             simpleMode: true),
-               "App Switcher preserves backing windows only for the grouped simple row")
-        suite.expect(!SwitcherSupport.capturesPreviews(simpleMode: true),
-               "App Switcher simple mode never captures window previews")
-        suite.expect(!SwitcherSupport.needsScreenRecording(switcherEnabled: true,
-                                                      simpleMode: true,
-                                                      dockPreviewEnabled: false),
-               "App Switcher simple mode alone does not request Screen Recording")
-        suite.expect(SwitcherSupport.needsScreenRecording(switcherEnabled: true,
-                                                    simpleMode: false,
-                                                    dockPreviewEnabled: false)
-               && SwitcherSupport.needsScreenRecording(switcherEnabled: false,
-                                                        simpleMode: true,
-                                                        dockPreviewEnabled: true),
-               "window previews still request Screen Recording where needed")
+                                                                             iconRowLayout: false),
+               "App Switcher groups, and keeps every backing window for inline cycling, only in the Window previews grid")
+        // The layout shapes ⌘Tab only; the window shortcut is always the
+        // Window previews grid, with thumbnails, in every layout.
+        suite.expect(!SwitcherSupport.capturesPreviews(simpleMode: true, sessionScope: .allApps)
+               && SwitcherSupport.capturesPreviews(simpleMode: true, sessionScope: .frontmostApp)
+               && SwitcherSupport.capturesPreviews(simpleMode: false, sessionScope: .allApps),
+               "App Switcher simple ⌘Tab skips thumbnails, but the window shortcut always shows them")
+        suite.expect(SwitcherSupport.usesIconRowLayout(iconRowMode: true, simpleMode: false, sessionScope: .allApps)
+               && !SwitcherSupport.usesIconRowLayout(iconRowMode: true, simpleMode: false, sessionScope: .frontmostApp)
+               && !SwitcherSupport.usesIconRowLayout(iconRowMode: false, simpleMode: true, sessionScope: .frontmostApp),
+               "App Switcher window shortcut uses the Window previews grid whatever the layout")
+        suite.expect(SwitcherSupport.needsScreenRecording(switcherEnabled: true, dockPreviewEnabled: false)
+               && SwitcherSupport.needsScreenRecording(switcherEnabled: false, dockPreviewEnabled: true)
+               && !SwitcherSupport.needsScreenRecording(switcherEnabled: false, dockPreviewEnabled: false),
+               "the switcher requests Screen Recording whenever it is on, since the window shortcut shows thumbnails")
         suite.expect(SwitcherSupport.shouldPausePreviewCapture(
             frontmostBundleIdentifier: "com.example.focused",
             excludedBundleIdentifiers: ["com.example.focused"]),
@@ -1246,19 +1244,13 @@ enum SwitcherModelFeatureTests {
                "per-app switcher rules start empty, so existing choices stay unchanged")
         suite.expect(registeredDefaults[DefaultsKey.switcherCurrentSpaceOnly] as? Bool == false,
                "the switcher keeps showing every desktop unless the user opts out (issue #337)")
-        suite.expect(registeredDefaults[DefaultsKey.switcherTakeOverSystemShortcuts] as? Bool == false
-               && SettingsBackupSupport.exportKeys().contains(
-                    DefaultsKey.switcherTakeOverSystemShortcuts)
-               && registeredDefaults[DefaultsKey.switcherNativeHotkeysSuppressed] == nil
+        suite.expect(registeredDefaults[DefaultsKey.switcherNativeHotkeysSuppressed] == nil
                && !SettingsBackupSupport.exportKeys().contains(
                     DefaultsKey.switcherNativeHotkeysSuppressed)
                && registeredDefaults[DefaultsKey.systemShortcutsSuppressed] == nil
                && !SettingsBackupSupport.exportKeys().contains(
                     DefaultsKey.systemShortcutsSuppressed),
-               "native shortcut takeover is opt-in while both crash markers stay on this Mac")
-        suite.expect(registeredDefaults[DefaultsKey.switcherSearchPinEnabled] as? Bool == false
-               && SettingsBackupSupport.exportKeys().contains(DefaultsKey.switcherSearchPinEnabled),
-               "the optional pinned search starts off and travels with the user's settings backup")
+               "both crash markers stay local on this Mac")
         suite.expect(registeredDefaults[DefaultsKey.switcherMinimizedPlacement] as? String
                == WindowSwitchMinimizedPlacement.normal.rawValue
                && SettingsBackupSupport.exportKeys().contains(DefaultsKey.switcherMinimizedPlacement),
@@ -1396,23 +1388,14 @@ enum SwitcherModelFeatureTests {
                "the target display is captured before window enumeration can delay the session")
 
         // MARK: Switcher entries for apps with no window (issue #351)
-        suite.expect(SwitcherWindowlessApps.mode(storedValue: nil,
-                                           takeOverSystemShortcuts: false) == .finder
-               && SwitcherWindowlessApps.mode(storedValue: "",
-                                              takeOverSystemShortcuts: false) == .finder
-               && SwitcherWindowlessApps.mode(storedValue: "bogus",
-                                              takeOverSystemShortcuts: false) == .finder,
+        suite.expect(SwitcherWindowlessApps.mode(storedValue: nil) == .finder
+               && SwitcherWindowlessApps.mode(storedValue: "") == .finder
+               && SwitcherWindowlessApps.mode(storedValue: "bogus") == .finder,
                "an unset or unreadable windowless apps choice falls back to what the app shipped with")
-        suite.expect(SwitcherWindowlessApps.mode(storedValue: "off",
-                                           takeOverSystemShortcuts: false) == .off
-               && SwitcherWindowlessApps.mode(storedValue: "finder",
-                                              takeOverSystemShortcuts: false) == .finder
-               && SwitcherWindowlessApps.mode(storedValue: "all",
-                                              takeOverSystemShortcuts: false) == .all,
+        suite.expect(SwitcherWindowlessApps.mode(storedValue: "off") == .off
+               && SwitcherWindowlessApps.mode(storedValue: "finder") == .finder
+               && SwitcherWindowlessApps.mode(storedValue: "all") == .all,
                "every windowless apps choice survives a round trip through preferences")
-        suite.expect(SwitcherWindowlessApps.mode(storedValue: "off",
-                                           takeOverSystemShortcuts: true) == .all,
-               "native shortcut takeover keeps every running app reachable")
         suite.expect(SwitcherWindowlessApps.migrated(showsWindowlessFinder: true) == .finder
                && SwitcherWindowlessApps.migrated(showsWindowlessFinder: false) == .off,
                "the old windowless Finder toggle maps onto the choice that keeps its behavior")
@@ -1422,19 +1405,17 @@ enum SwitcherModelFeatureTests {
         let otherApp = SwitcherAppCandidate(pid: 503, bundleIdentifier: "com.example.notes")
         let windowlessCandidates = [desktopApp, plainApp, otherApp]
         let sanitizedAppRules = SwitcherAppRule.rules(storedValue: [
-            " com.example.editor ": SwitcherAppRule.showWithoutWindows.rawValue,
-            "com.example.notes": SwitcherAppRule.hidden.rawValue,
+            " com.example.notes ": SwitcherAppRule.hidden.rawValue,
+            "com.example.editor": "showWithoutWindows",
+            "com.example.mail": "windowsOnly",
             "com.example.broken": "unknown",
-            "": SwitcherAppRule.windowsOnly.rawValue,
+            "": SwitcherAppRule.hidden.rawValue,
         ])
-        suite.expect(sanitizedAppRules == [
-            "com.example.editor": .showWithoutWindows,
-            "com.example.notes": .hidden,
-        ], "per-app switcher rules trim identities and drop unreadable entries")
+        suite.expect(sanitizedAppRules == ["com.example.notes": .hidden],
+               "Hide in switcher trims identities, and rules from earlier builds other than Never show drop away")
         suite.expect(SwitcherAppRule.storedValue(sanitizedAppRules) == [
-            "com.example.editor": SwitcherAppRule.showWithoutWindows.rawValue,
             "com.example.notes": SwitcherAppRule.hidden.rawValue,
-        ], "per-app switcher rules keep only portable bundle identities and known choices")
+        ], "Hide in switcher keeps only portable bundle identities")
         suite.expect(SwitcherSupport.windowlessAppPIDs(mode: .off,
                                                  candidates: windowlessCandidates,
                                                  pidsWithWindows: [],
@@ -1472,48 +1453,23 @@ enum SwitcherModelFeatureTests {
                                                  desktopAppBundleIdentifier: Defaults.finderBundleIdentifier).isEmpty,
                "the desktop app with a window of its own does not also get an entry for itself")
         suite.expect(SwitcherSupport.windowlessAppPIDs(
-                mode: .off,
-                candidates: windowlessCandidates,
-                pidsWithWindows: [],
-                pidsWithWithheldWindows: [],
-                desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
-                appRules: ["com.example.editor": .showWithoutWindows]) == [502],
-               "an app rule can add one windowless app without turning the global list on")
-        suite.expect(SwitcherSupport.windowlessAppPIDs(
-                mode: .off,
-                candidates: windowlessCandidates,
-                pidsWithWindows: [502],
-                pidsWithWithheldWindows: [],
-                desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
-                appRules: ["com.example.editor": .showWithoutWindows]).isEmpty,
-               "an explicit show rule never duplicates an app that already has a window entry")
-        suite.expect(SwitcherSupport.windowlessAppPIDs(
                 mode: .all,
                 candidates: windowlessCandidates,
                 pidsWithWindows: [],
                 pidsWithWithheldWindows: [],
                 desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
-                appRules: ["com.example.editor": .windowsOnly,
-                           "com.example.notes": .hidden]) == [501],
-               "window-only and hidden rules both keep an app-only entry out of the global list")
-        suite.expect(SwitcherSupport.windowlessAppPIDs(
-                mode: .off,
-                candidates: windowlessCandidates,
-                pidsWithWindows: [],
-                pidsWithWithheldWindows: [502],
-                desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
-                appRules: ["com.example.editor": .showWithoutWindows]).isEmpty,
-               "a show rule never restores an app whose windows were withheld on another desktop")
+                appRules: ["com.example.notes": .hidden]) == [501, 502],
+               "an app in Hide in switcher stays out even when apps without windows are listed")
         suite.expect(SwitcherSupport.hidesApp(
                     bundleIdentifier: "com.example.notes",
                     appRules: ["com.example.notes": .hidden])
                && !SwitcherSupport.hidesApp(
-                    bundleIdentifier: "com.example.notes",
-                    appRules: ["com.example.notes": .windowsOnly])
+                    bundleIdentifier: "com.example.editor",
+                    appRules: ["com.example.notes": .hidden])
                && !SwitcherSupport.hidesApp(
                     bundleIdentifier: nil,
                     appRules: ["com.example.notes": .hidden]),
-               "only the hidden rule removes an identified app's real windows")
+               "Hide in switcher removes a listed app's real windows and nobody else's")
 
         // MARK: The visible cap spends its slots across apps (issue #172)
         suite.expect(SwitcherSupport.visibleSelectionIndices(appPIDs: [7, 7, 9], limit: 5) == [0, 1, 2],
@@ -2972,7 +2928,6 @@ enum SwitcherModelFeatureTests {
             DefaultsKey.windowLayoutShortcutBottomCenterSixth,
             DefaultsKey.windowLayoutShortcutBottomRightSixth,
             DefaultsKey.windowLayoutShortcutPreviousDisplay,
-            DefaultsKey.windowLayoutShortcutMarginMaximize,
         ]
         suite.expect(unassignedLayoutShortcutKeys.allSatisfy {
                    registeredDefaults[$0] as? String == WindowLayoutAction.clearedShortcutStorageValue
@@ -3196,7 +3151,10 @@ enum SwitcherModelFeatureTests {
                "Dock Preview header shows the window count before a card is selected")
         suite.expect(DockPreviewSupport.windowPositionText(selectedWindowID: 22, windowIDs: [11, 22, 33]) == "2/3",
                "Dock Preview header shows selected window position")
-        let iconRowLayout = SwitcherIconRowLayout.compute(count: 6, screenVisibleFrame: screen)
+        // Measured with the hint bar on, the layout math it still supports;
+        // the switcher itself no longer shows one.
+        let iconRowLayout = SwitcherIconRowLayout.compute(appCount: 6, selectedWindowCount: 1,
+                                                          screenVisibleFrame: screen, showsShortcutHints: true)
         suite.expect(iconRowLayout.visibleIconCount == 6,
                "App Switcher icon-row mode can show all icons when they fit")
         suite.expect(iconRowLayout.panelSize.width <= screen.width * 0.96 + SwitcherIconRowLayout.padding * 2,
@@ -3210,19 +3168,16 @@ enum SwitcherModelFeatureTests {
                + SwitcherIconRowLayout.padding * 2,
                "App Switcher icon-row mode reserves preview, icon row and shortcut hint height")
         suite.expect(iconRowLayout.simplePanelSize.height
-               == SwitcherIconRowLayout.simpleTitleHeight
-               + SwitcherIconRowLayout.simpleTitleGap
-               + SwitcherIconRowLayout.rowHeight
+               == SwitcherIconRowLayout.rowHeight
                + SwitcherIconRowLayout.hintGap
                + SwitcherIconRowLayout.hintHeight
                + SwitcherIconRowLayout.padding * 2,
-               "App Switcher simple mode replaces previews with a compact title rail")
+               "App Switcher simple mode is the icon row alone, with no strip above it")
         suite.expect(iconRowLayout.simplePanelSize.width
                == max(iconRowLayout.appRowSurfaceWidth,
-                      iconRowLayout.simpleTitleSurfaceWidth,
                       SwitcherIconRowLayout.hintBarWidth)
                + SwitcherIconRowLayout.padding * 2,
-               "App Switcher simple mode fits its app row, title rail and shortcut hints")
+               "App Switcher simple mode fits its app row and shortcut hints")
         let compactIconRowLayout = SwitcherIconRowLayout.compute(
             appCount: 1,
             selectedWindowCount: 1,
@@ -3236,20 +3191,17 @@ enum SwitcherModelFeatureTests {
                "App Switcher removes the shortcut hint bar and its vertical space")
         suite.expect(compactIconRowLayout.simplePanelSize.width
                == max(compactIconRowLayout.appRowSurfaceWidth,
-                      compactIconRowLayout.simpleTitleSurfaceWidth)
+                      SwitcherSearchLayout.minimumPanelWidth - SwitcherIconRowLayout.padding * 2)
                     + SwitcherIconRowLayout.padding * 2,
-               "App Switcher without shortcut hints still fits its title rail")
+               "App Switcher without shortcut hints still fits its row and the search field")
         // Two apps leave the icon row narrower than the hint bar, the case that
         // used to lay rows out against a width the panel was never sized for.
         let twoAppLayout = SwitcherIconRowLayout.compute(appCount: 2,
                                                          selectedWindowCount: 1,
                                                          screenVisibleFrame: screen,
                                                          showsShortcutHints: false)
-        suite.expect(twoAppLayout.appRowSurfaceWidth < SwitcherIconRowLayout.hintBarWidth
-               && twoAppLayout.contentWidth(simpleMode: true, windowRow: false)
-                    == twoAppLayout.simplePanelSize.width - SwitcherIconRowLayout.padding * 2
-               && twoAppLayout.contentWidth(simpleMode: true, windowRow: true)
-                    == twoAppLayout.simpleWindowPanelSize.width - SwitcherIconRowLayout.padding * 2,
+        suite.expect(twoAppLayout.contentWidth(simpleMode: true)
+                    == twoAppLayout.simplePanelSize.width - SwitcherIconRowLayout.padding * 2,
                "App Switcher rows fit the panel with fewer apps than the hint bar is wide")
         // Stepping through apps must not resize the panel. The window is
         // re-centred on every selection change, so a width that follows the
@@ -3344,6 +3296,21 @@ enum SwitcherModelFeatureTests {
         suite.expect(fewApps == SwitcherIconRowLayout.compute(appCount: 5, selectedWindowCount: 1,
                                                               screenVisibleFrame: ultrawide),
                "App Switcher icon row under the cap is identical to Auto")
+        // Like the system switcher, a crowded Auto row shrinks its tiles so
+        // every app stays on one row instead of paging sideways.
+        let laptopScreen = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let roomy = SwitcherIconRowLayout.compute(appCount: 4, selectedWindowCount: 1, screenVisibleFrame: laptopScreen)
+        let crowded = SwitcherIconRowLayout.compute(appCount: 16, selectedWindowCount: 1, screenVisibleFrame: laptopScreen)
+        let packed = SwitcherIconRowLayout.compute(appCount: 200, selectedWindowCount: 1, screenVisibleFrame: laptopScreen)
+        suite.expect(roomy.tileScale == 1
+               && crowded.tileScale < 1 && crowded.tileScale >= SwitcherIconRowLayout.minimumTileScale
+               && !crowded.isWrapped && crowded.visibleIconCount == 16
+               && crowded.panelSize.width <= laptopScreen.width
+               && crowded.iconAreaHeight < roomy.iconAreaHeight,
+               "App Switcher shrinks a crowded icon row to fit every app on one row")
+        suite.expect(packed.tileScale == SwitcherIconRowLayout.minimumTileScale
+               && packed.visibleIconCount < 200 && !packed.isWrapped,
+               "App Switcher stops shrinking at the minimum and pages the rest")
         let shortScreen = CGRect(x: 0, y: 0, width: 5120, height: 700)
         let scrollingRows = SwitcherIconRowLayout.compute(appCount: 60, selectedWindowCount: 1,
                                                           screenVisibleFrame: shortScreen, maxColumns: 4)
@@ -3483,9 +3450,9 @@ enum SwitcherModelFeatureTests {
             + SwitcherIconRowLayout.iconTileSpacing
             + SwitcherIconRowLayout.iconTitleHeight
             + SwitcherIconRowLayout.iconTileVerticalPadding * 2
-        suite.expectClose(Double(SwitcherIconRowLayout.rowHeight - selectedIconTileHeight),
-                    Double(SwitcherIconRowLayout.iconTileVerticalMargin * 2),
-                    "App Switcher Small keeps the selection outline inside its icon row")
+        suite.expect(selectedIconTileHeight <= SwitcherIconRowLayout.rowHeight
+               && SwitcherIconRowLayout.rowBand >= SwitcherIconRowLayout.iconTitleHeight,
+               "App Switcher Small keeps the selection and the selected name inside its icon row")
         // Small is for smaller previews with less space between them, so its
         // card stays no bigger than the 172.5x150.5 it was before whole points
         // and every gap stays under the Normal one.
@@ -3513,10 +3480,9 @@ enum SwitcherModelFeatureTests {
         suite.expectClose(Double(SwitcherGridCard.height - SwitcherGridCard.thumbnailHeight),
                     Double(smallGridCardChrome),
                     "an App Switcher grid card spends the same chrome at every preview size")
+        // The title is laid over the thumbnail, so padding is the only chrome.
         suite.expectClose(Double(smallGridCardChrome),
-                    Double(SwitcherGridCard.padding * 2
-                            + SwitcherGridCard.titleSpacing
-                            + SwitcherGridCard.titleHeight),
+                    Double(SwitcherGridCard.padding * 2),
                     "the grid card's chrome is exactly the parts it is made of, not a number standing in for them")
         suite.expect(SwitcherGridCard.titleHeight >= 31,
                "the grid card title band holds a 13pt line over a 10.5pt line without clipping")
@@ -3529,8 +3495,11 @@ enum SwitcherModelFeatureTests {
                "App Switcher icon-row mode caps Extra High preview scaling")
         suite.expect(xlargeIconRowLayout.panelSize.height < 540,
                "App Switcher icon-row mode stays compact with Extra High previews")
-        suite.expect(xlargeIconRowLayout.panelSize.width < 950,
-               "App Switcher icon-row mode avoids a giant empty backdrop with six apps")
+        suite.expectClose(Double(xlargeIconRowLayout.panelSize.width),
+                    Double(max(xlargeIconRowLayout.appRowSurfaceWidth,
+                               xlargeIconRowLayout.previewSurfaceWidth)
+                           + SwitcherIconRowLayout.padding * 2),
+                    "App Switcher icon-row mode avoids a giant empty backdrop with six apps")
         let xlargeSingleWindowLayout = SwitcherIconRowLayout.compute(appCount: 1,
                                                                      selectedWindowCount: 1,
                                                                      screenVisibleFrame: screen)
@@ -3571,52 +3540,6 @@ enum SwitcherModelFeatureTests {
                    "a Dock Preview size chosen after the first launch leaves the switcher at its default size")
             previewSizeDefaults.removePersistentDomain(forName: previewSizeSuite)
         }
-        let excludedAppsSuite = "io.github.sam32j.lattice.tests.switcher-preview-excluded-apps.\(UUID().uuidString)"
-        if let excludedAppsDefaults = UserDefaults(suiteName: excludedAppsSuite) {
-            excludedAppsDefaults.set(["com.example.vault"], forKey: DefaultsKey.windowPreviewExcludedApps)
-            Defaults.migrateSwitcherPreviewExcludedApps(in: excludedAppsDefaults)
-            let upgradedSwitcherApps = excludedAppsDefaults.stringArray(forKey: DefaultsKey.switcherPreviewExcludedApps)
-            excludedAppsDefaults.set([String](), forKey: DefaultsKey.switcherPreviewExcludedApps)
-            Defaults.migrateSwitcherPreviewExcludedApps(in: excludedAppsDefaults)
-            suite.expect(upgradedSwitcherApps == ["com.example.vault"]
-                    && excludedAppsDefaults.stringArray(forKey: DefaultsKey.switcherPreviewExcludedApps) == [],
-                   "an upgrade keeps the switcher paused in the apps it shared with Dock Preview, once")
-            excludedAppsDefaults.removePersistentDomain(forName: excludedAppsSuite)
-            Defaults.migrateSwitcherPreviewExcludedApps(in: excludedAppsDefaults)
-            excludedAppsDefaults.set(["com.example.vault"], forKey: DefaultsKey.windowPreviewExcludedApps)
-            Defaults.migrateSwitcherPreviewExcludedApps(in: excludedAppsDefaults)
-            suite.expect(excludedAppsDefaults.stringArray(forKey: DefaultsKey.switcherPreviewExcludedApps) == [],
-                   "an app paused in Dock Preview after the first launch leaves the switcher list alone")
-            excludedAppsDefaults.removePersistentDomain(forName: excludedAppsSuite)
-        }
-        let previewDefaults = PreviewProvider.UserDefaults.standard
-        previewDefaults.lists = [DefaultsKey.windowPreviewExcludedApps: ["com.example.vault"],
-                                 DefaultsKey.switcherPreviewExcludedApps: ["com.example.game"]]
-        PreviewProvider.NSWorkspace.shared.frontmostApplication = .init(bundleIdentifier: "com.example.vault")
-        suite.expect(!PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
-                && !PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps),
-               "a disabled Dock app in front does not pause captures for other Dock apps")
-        PreviewProvider.NSWorkspace.shared.frontmostApplication = .init(bundleIdentifier: "com.example.game")
-        suite.expect(!PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
-                && PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps),
-               "an app on the switcher's list pauses only switcher captures")
-        let javaRuntime = "/Users/tester/Library/Application Support/minecraft/runtime/java-runtime-delta/bin/java"
-        previewDefaults.lists[DefaultsKey.switcherPreviewExcludedApps] = ["com.example.game", javaRuntime]
-        PreviewProvider.NSWorkspace.shared.frontmostApplication = .init(
-            bundleIdentifier: nil, executableURL: URL(fileURLWithPath: javaRuntime))
-        suite.expect(PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps)
-                && !PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.windowPreviewExcludedApps),
-               "a game's Java runtime on the switcher's list pauses switcher captures while it is in front")
-        // A game on LWJGL 2 (Minecraft 1.12.2 and older) starts AWT, which
-        // registers the JVM under the bundle identifier of Java's launcher.
-        let legacyRuntime = "/Users/tester/Library/Application Support/minecraft/runtime/jre-legacy/bin/java"
-        previewDefaults.lists[DefaultsKey.switcherPreviewExcludedApps] = ["com.example.game", legacyRuntime]
-        PreviewProvider.NSWorkspace.shared.frontmostApplication = .init(
-            bundleIdentifier: "net.java.openjdk.cmd", executableURL: URL(fileURLWithPath: legacyRuntime))
-        suite.expect(PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps)
-                && !PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.windowPreviewExcludedApps),
-               "a legacy game's Java runtime on the switcher's list pauses switcher captures while it is in front, "
-                   + "though AWT registered it under Java's bundle identifier")
         let defaultSwitcherHints = SwitcherSupport.shortcutHints(for: .switcherDefault,
                                                                  windowShortcut: .switcherWindowDefault)
         // Grave and J print the cap the active keyboard layout carries, not the
@@ -4990,7 +4913,8 @@ enum SwitcherModelFeatureTests {
             }
             for size in Defaults.allowedPreviewSizes {
                 UserDefaults.standard.set(size, forKey: DefaultsKey.switcherPreviewSize)
-                for width in [640.0, 800.0, 1440.0] {
+                // 1024 points is the narrowest display a Mac offers.
+                for width in [1024.0, 1280.0, 1440.0] {
                     for hints in [false, true] {
                         let frame = CGRect(x: 0, y: 0, width: width, height: 900)
                         let pair = SwitcherIconRowLayout.compute(appCount: 2, selectedWindowCount: 2,
@@ -5047,25 +4971,31 @@ enum SwitcherModelFeatureTests {
         suite.expect(simpleWindowLayout.appRowContentWidth
                >= CGFloat(groupedSwitcherItems.count) * SwitcherIconRowLayout.windowTileWidth,
                "App Switcher simple window row gives every window title its own tile width")
-        suite.expectClose(Double(simpleWindowLayout.simplePanelSize.height
-                           - simpleWindowLayout.simpleWindowPanelSize.height),
-                    Double(SwitcherIconRowLayout.simpleTitleHeight
-                           + SwitcherIconRowLayout.simpleTitleGap),
-                    "App Switcher simple window row removes the redundant grouped title strip")
-        let groupedWindowShortcutLayout = SwitcherIconRowLayout.compute(
-            appCount: 1,
-            selectedWindowCount: 2,
-            screenVisibleFrame: screen,
-            showsShortcutHints: false
-        )
-        suite.expect(groupedWindowShortcutLayout.simpleTitleSurfaceWidth
-               >= SwitcherIconRowLayout.simpleTitleChipMaxWidth * 2
-                    + SwitcherIconRowLayout.simpleTitleSpacing,
-               "App Switcher grouped window shortcut leaves both window titles visible")
-        suite.expectClose(Double(groupedWindowShortcutLayout.simplePanelSize.width),
-                    Double(groupedWindowShortcutLayout.simpleTitleSurfaceWidth
-                           + SwitcherIconRowLayout.padding * 2),
-                    "App Switcher grouped simple panel follows its window title width")
+        // Grouped or not, the simple panel is the row alone: no title strip.
+        let groupedSimpleLayout = SwitcherIconRowLayout.compute(appCount: 1, selectedWindowCount: 2,
+                                                                screenVisibleFrame: screen,
+                                                                showsShortcutHints: false)
+        suite.expect(groupedSimpleLayout.simplePanelSize.height
+               == groupedSimpleLayout.iconAreaHeight + SwitcherIconRowLayout.padding * 2,
+               "App Switcher grouped simple panel draws no window-title strip")
+        let switcherViewSource = (try? String(contentsOfFile: "Sources/Lattice/UI/Switcher/SwitcherView.swift",
+                                              encoding: .utf8)) ?? ""
+        suite.expect(!switcherViewSource.isEmpty && !switcherViewSource.contains("selectedAppTitlePanel"),
+               "App Switcher simple layout has no title strip above its row")
+        let appSwitcherSource = (try? String(contentsOfFile: "Sources/Lattice/Services/Switcher/AppSwitcher.swift",
+                                             encoding: .utf8)) ?? ""
+        suite.expect(appSwitcherSource.contains("var isSearchPinned: Bool { !searchQuery.isEmpty || isSearchActivated }")
+               && appSwitcherSource.contains("if sessionActive, !isSearchPinned {")
+               && appSwitcherSource.contains("if searchQuery.isEmpty { isSearchActivated = false }"),
+               "App Switcher pins while the search has text or was clicked into, and unpins once a query is erased")
+        // ⌘` scrolls the preview strip under a still pointer; the card that
+        // lands there must not take the selection back with a hover.
+        let windowStepBody = sourceBody(of: appSwitcherSource, from: "private func advanceWindowInSelectedApp(",
+                                        to: "selectedIndex = ")
+        suite.expect(windowStepBody.contains("holdHoverSelectionForKeyboardNavigation()")
+               && sourceBody(of: appSwitcherSource, from: "private func advanceSelection(", to: "if SwitcherSupport")
+                    .contains("holdHoverSelectionForKeyboardNavigation()"),
+               "App Switcher keyboard navigation holds hover selection until the pointer moves")
         let issue128Layout = SwitcherIconRowLayout.compute(appCount: 7,
                                                            selectedWindowCount: 2,
                                                            screenVisibleFrame: screen)
@@ -5803,20 +5733,12 @@ enum SwitcherModelFeatureTests {
                                             modifiers: [.command, .shift]),
         ]
         suite.expect(SwitcherSupport.nativeHotkeysToSuppress(
-                    takeOverSystemShortcuts: false,
-                    appsShortcut: .switcherDefault,
-                    windowShortcut: .switcherWindowDefault,
-                    nativeShortcuts: nativeSwitcherShortcuts).isEmpty,
-               "the App Switcher never changes macOS shortcuts without explicit opt-in")
-        suite.expect(SwitcherSupport.nativeHotkeysToSuppress(
-                    takeOverSystemShortcuts: true,
                     appsShortcut: .switcherDefault,
                     windowShortcut: .switcherWindowDefault,
                     nativeShortcuts: nativeSwitcherShortcuts)
                == Set(SwitcherNativeSymbolicHotKey.allCases),
-               "opt-in covers both app and window switcher directions")
+               "automatic takeover covers both app and window switcher directions")
         suite.expect(SwitcherSupport.nativeHotkeysToSuppress(
-                    takeOverSystemShortcuts: true,
                     appsShortcut: GlobalShortcut(keyCode: Int64(kVK_Tab), modifiers: [.option]),
                     windowShortcut: GlobalShortcut(keyCode: Int64(kVK_ANSI_Grave), modifiers: [.option]),
                     nativeShortcuts: nativeSwitcherShortcuts).isEmpty,
@@ -5826,7 +5748,6 @@ enum SwitcherModelFeatureTests {
                            modifiers: $0.modifiers.subtracting(.command).union(.option))
         }
         suite.expect(SwitcherSupport.nativeHotkeysToSuppress(
-                    takeOverSystemShortcuts: true,
                     appsShortcut: GlobalShortcut(keyCode: Int64(kVK_Tab), modifiers: [.option]),
                     windowShortcut: GlobalShortcut(keyCode: Int64(kVK_ANSI_Grave), modifiers: [.option]),
                     nativeShortcuts: remappedNativeShortcuts)
@@ -5853,14 +5774,12 @@ enum SwitcherModelFeatureTests {
                == GlobalShortcut(keyCode: Int64(kVK_ANSI_Grave), modifiers: [.command, .shift]),
                "the reverse window switcher resolves to Command-Shift-Backtick in the live table")
         suite.expect(SwitcherSupport.nativeHotkeysToSuppress(
-                    takeOverSystemShortcuts: true,
                     appsShortcut: .switcherDefault,
                     windowShortcut: .switcherWindowDefault,
                     nativeShortcuts: mappedSwitcherShortcuts)
                == Set(SwitcherNativeSymbolicHotKey.allCases),
                "with the real ids, Command-Shift-Backtick is taken over together with Command-Backtick")
         let threeKeyTakeover = SwitcherSupport.nativeHotkeysToSuppress(
-            takeOverSystemShortcuts: true,
             appsShortcut: GlobalShortcut(keyCode: Int64(kVK_ANSI_3), modifiers: [.command]),
             windowShortcut: .switcherWindowDefault,
             nativeShortcuts: mappedSwitcherShortcuts)
@@ -5877,31 +5796,37 @@ enum SwitcherModelFeatureTests {
             LiveSystemShortcut(id: 28, shortcut: GlobalShortcut(keyCode: Int64(kVK_ANSI_3), modifiers: [.command, .shift]), enabled: true),
             LiveSystemShortcut(id: 220, shortcut: GlobalShortcut(keyCode: Int64(kVK_ANSI_Grave), modifiers: [.command, .shift]), enabled: true),
         ]
-        suite.expect(SwitcherSupport.nativeHotkeyIDs(takeOverSystemShortcuts: true,
-                                               secureInputEnabled: false,
+        suite.expect(SwitcherSupport.nativeHotkeyIDs(secureInputEnabled: false,
                                                appsShortcut: .switcherDefault,
                                                windowShortcut: .switcherWindowDefault,
                                                liveEntries: liveSwitcherEntries) == [1, 2, 27, 220],
                "the switcher asks the shared take-over for exactly its four ids, never the screenshot key")
-        suite.expect(SwitcherSupport.nativeHotkeyIDs(takeOverSystemShortcuts: false,
-                                               secureInputEnabled: false,
-                                               appsShortcut: .switcherDefault,
-                                               windowShortcut: .switcherWindowDefault,
+        suite.expect(SwitcherSupport.nativeHotkeyIDs(secureInputEnabled: false,
+                                               appsShortcut: GlobalShortcut(keyCode: Int64(kVK_Tab), modifiers: [.option]),
+                                               windowShortcut: GlobalShortcut(keyCode: Int64(kVK_ANSI_Grave), modifiers: [.option]),
                                                liveEntries: liveSwitcherEntries).isEmpty,
-               "without opt-in the switcher asks for nothing")
-        suite.expect(SwitcherSupport.nativeHotkeyIDs(takeOverSystemShortcuts: true,
-                                               secureInputEnabled: false,
+               "non-colliding shortcuts ask for nothing")
+        suite.expect(SwitcherSupport.nativeHotkeyIDs(secureInputEnabled: false,
                                                appsShortcut: .switcherDefault,
                                                windowShortcut: .switcherWindowDefault,
                                                liveEntries: liveSwitcherEntries.filter { $0.id != 220 })
                == [1, 2, 27],
                "an id missing from the live table is never asked for")
-        suite.expect(SwitcherSupport.nativeHotkeyIDs(takeOverSystemShortcuts: true,
-                                               secureInputEnabled: true,
+        suite.expect(SwitcherSupport.nativeHotkeyIDs(secureInputEnabled: true,
                                                appsShortcut: .switcherDefault,
                                                windowShortcut: .switcherWindowDefault,
                                                liveEntries: liveSwitcherEntries).isEmpty,
                "while Secure Event Input hides every key from the tap, ⌘Tab and ⌘` stay with macOS")
+        suite.expect(SwitcherSupport.recordingSuppressionIDs(for: .switcher,
+                                                       secureInputEnabled: false,
+                                                       liveEntries: liveSwitcherEntries) == [1, 2]
+               && SwitcherSupport.recordingSuppressionIDs(for: .switcherWindow,
+                                                          secureInputEnabled: false,
+                                                          liveEntries: liveSwitcherEntries) == [27, 220]
+               && SwitcherSupport.recordingSuppressionIDs(for: .switcher,
+                                                          secureInputEnabled: true,
+                                                          liveEntries: liveSwitcherEntries).isEmpty,
+               "recording a switcher shortcut pauses only its matching native symbolic hotkeys while Secure Input is off")
         // That rule reaches macOS only through the switcher's two callers of
         // the shared take-over, and stays right only while a watch tells the
         // switcher about each change for exactly as long as it takes keys over.
@@ -6185,51 +6110,37 @@ enum SwitcherModelFeatureTests {
                                               selectedIndex: 0,
                                               closingItemIDs: []) == nil,
                "App Switcher release activates nothing with an empty list")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "w", keyCode: 13, pinSearchEnabled: false) == .closeWindow
-               && SwitcherSupport.letterAction(typedCharacter: "q", keyCode: 12, pinSearchEnabled: false) == .quitApp,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "w", keyCode: 13) == .closeWindow
+               && SwitcherSupport.letterAction(typedCharacter: "q", keyCode: 12) == .quitApp,
                "App Switcher panel closes a window with W and quits an app with Q")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "W", keyCode: 13, pinSearchEnabled: false) == .closeWindow,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "W", keyCode: 13) == .closeWindow,
                "App Switcher panel treats the letter the same in either case")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "e", keyCode: 14, pinSearchEnabled: false) == nil
-               && SwitcherSupport.letterAction(typedCharacter: "1", keyCode: 18, pinSearchEnabled: false) == nil,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "e", keyCode: 14) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "1", keyCode: 18) == nil,
                "App Switcher panel leaves every other key to the search field")
         // A French keyboard types z where the US one types w, and its own w
         // sits on another key: both answer by the letter, not the position.
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "z", keyCode: 13, pinSearchEnabled: false) == nil
-               && SwitcherSupport.letterAction(typedCharacter: "w", keyCode: 6, pinSearchEnabled: false) == .closeWindow,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "z", keyCode: 13) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "w", keyCode: 6) == .closeWindow,
                "App Switcher panel follows the letters printed on the keyboard")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "a", keyCode: 12, pinSearchEnabled: false) == nil
-               && SwitcherSupport.letterAction(typedCharacter: "q", keyCode: 0, pinSearchEnabled: false) == .quitApp,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "a", keyCode: 12) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "q", keyCode: 0) == .quitApp,
                "App Switcher panel quits from the Q key wherever the layout puts it")
         // Cyrillic and Greek type no Latin letter at all, so the key position
         // stands in, the same place macOS puts their command shortcuts.
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "ц", keyCode: 13, pinSearchEnabled: false) == .closeWindow
-               && SwitcherSupport.letterAction(typedCharacter: "й", keyCode: 12, pinSearchEnabled: false) == .quitApp,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "ц", keyCode: 13) == .closeWindow
+               && SwitcherSupport.letterAction(typedCharacter: "й", keyCode: 12) == .quitApp,
                "App Switcher panel falls back to the key position on non-Latin layouts")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: nil, keyCode: 13, pinSearchEnabled: false) == .closeWindow
-               && SwitcherSupport.letterAction(typedCharacter: "", keyCode: 12, pinSearchEnabled: false) == .quitApp,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: nil, keyCode: 13) == .closeWindow
+               && SwitcherSupport.letterAction(typedCharacter: "", keyCode: 12) == .quitApp,
                "App Switcher panel falls back to the key position when a key types nothing")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "ç", keyCode: 13, pinSearchEnabled: false) == nil,
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "ç", keyCode: 13) == nil,
                "App Switcher panel counts an accented letter as a letter of its own")
-        // S only pins the search field once the opt-in preference is on, so
-        // existing users who search by typing "s" first see no change.
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "s", keyCode: 1, pinSearchEnabled: false) == nil
-               && SwitcherSupport.letterAction(typedCharacter: "ß", keyCode: 1, pinSearchEnabled: false) == nil,
-               "App Switcher panel leaves S to the search field when the pin preference is off")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "s", keyCode: 1, pinSearchEnabled: true) == .pinSearch
-               && SwitcherSupport.letterAction(typedCharacter: "ß", keyCode: 1, pinSearchEnabled: true) == .pinSearch,
-               "App Switcher panel pins the search field from S once the preference is on, even when the modifier turns it into a special character")
-        // Caps Lock alongside the session's ⌥ turns S into "Í" instead of "ß" —
-        // an accented letter that folds cleanly to "i", an unrelated letter, so
-        // the pin must still fire from the key's position (issue: ⌥S + Caps Lock).
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "Í", keyCode: 1, pinSearchEnabled: true) == .pinSearch,
-               "App Switcher panel pins the search field from S even when Caps Lock folds it to an unrelated letter")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "Í", keyCode: 1, pinSearchEnabled: false) == nil,
-               "App Switcher panel leaves S to the search field when the pin preference is off, even under Caps Lock")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "o", keyCode: 1, pinSearchEnabled: true) == nil,
-               "App Switcher panel follows a remapped Latin letter instead of the physical S position")
-        suite.expect(SwitcherSupport.letterAction(typedCharacter: "ы", keyCode: 1, pinSearchEnabled: true) == .pinSearch,
-               "App Switcher panel falls back to the physical S position on a non-Latin layout")
+        // S is an ordinary search letter: the pin-search command is gone.
+        suite.expect(SwitcherSupport.letterAction(typedCharacter: "s", keyCode: 1) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "ß", keyCode: 1) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "ы", keyCode: 1) == nil,
+               "App Switcher panel sends S to the search field like any other letter")
         let switcherPanelFrame = CGRect(x: 400, y: 300, width: 600, height: 400)
         suite.expect(SwitcherSupport.shouldDismissForClick(panelIsVisible: true,
                                                      panelFrame: switcherPanelFrame,
@@ -6465,16 +6376,4 @@ enum SwitcherModelFeatureTests {
 extension SwitcherModelFeatureTests {
     /// Hosts the production pause check with in-memory preferences and a
     /// scripted frontmost app.
-    enum PreviewProvider {
-        final class UserDefaults {
-            static let standard = UserDefaults()
-            var lists: [String: [String]] = [:]
-            func stringArray(forKey key: String) -> [String]? { lists[key] }
-        }
-        final class NSWorkspace {
-            struct App { let bundleIdentifier: String?; var executableURL: URL? = nil }
-            static let shared = NSWorkspace()
-            var frontmostApplication: App?
-        }
-    }
 }

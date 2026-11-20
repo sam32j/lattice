@@ -639,10 +639,10 @@ MUTATIONS = [
      "while Secure Event Input hides every key from the tap, ⌘Tab and ⌘` stay with macOS"),
     ("the live take-over ignores secure input", "switcher-model",
      "Sources/Lattice/Services/Switcher/AppSwitcher.swift",
-     "                takeOverSystemShortcuts: takeOver,\n"
-     "                secureInputEnabled: IsSecureEventInputEnabled(),\n",
-     "                takeOverSystemShortcuts: takeOver,\n"
-     "                secureInputEnabled: false,\n",
+     "                secureInputEnabled: IsSecureEventInputEnabled(),\n"
+     "                appsShortcut: apps,\n",
+     "                secureInputEnabled: false,\n"
+     "                appsShortcut: apps,\n",
      "the live take-over and launch recovery both pass the secure input flag"),
     ("secure input turning on keeps the keys taken", "switcher-model",
      "Sources/Lattice/Services/Switcher/AppSwitcher.swift",

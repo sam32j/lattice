@@ -3,14 +3,159 @@
 
 import Foundation
 
+struct SwitcherSettingsCopy {
+    let switchAppsShortcut: String
+    let switchWindowsShortcut: String
+    let delayInstant: String
+    let layoutWindowsCaption: String
+    let layoutIconsCaption: String
+    let layoutSimpleCaption: String
+
+    static func text(_ language: AppLanguage) -> Self {
+        switch language {
+        case .enUS:
+            return Self(
+                switchAppsShortcut: "Switch apps",
+                switchWindowsShortcut: "Switch app windows",
+                delayInstant: "Instant",
+                layoutWindowsCaption: "Live thumbnails for every open window.",
+                layoutIconsCaption: "App icons with window previews below.",
+                layoutSimpleCaption: "App icons only, like ⌘Tab."
+            )
+        case .ptBR:
+            return Self(
+                switchAppsShortcut: "Alternar apps",
+                switchWindowsShortcut: "Alternar janelas do app",
+                delayInstant: "Instantâneo",
+                layoutWindowsCaption: "Miniaturas ao vivo para cada janela aberta.",
+                layoutIconsCaption: "Ícones dos apps com prévias das janelas abaixo.",
+                layoutSimpleCaption: "Apenas ícones dos apps, como no ⌘Tab."
+            )
+        case .tr:
+            return Self(
+                switchAppsShortcut: "Uygulamalar arasında geçiş yap",
+                switchWindowsShortcut: "Uygulama pencereleri arasında geçiş yap",
+                delayInstant: "Anında",
+                layoutWindowsCaption: "Açık her pencere için canlı önizleme.",
+                layoutIconsCaption: "Altında pencere önizlemeleriyle uygulama simgeleri.",
+                layoutSimpleCaption: "⌘Tab gibi yalnızca uygulama simgeleri."
+            )
+        case .ru:
+            return Self(
+                switchAppsShortcut: "Переключить приложения",
+                switchWindowsShortcut: "Переключить окна приложения",
+                delayInstant: "Мгновенно",
+                layoutWindowsCaption: "Живые миниатюры для каждого открытого окна.",
+                layoutIconsCaption: "Значки приложений с миниатюрами окон под ними.",
+                layoutSimpleCaption: "Только значки приложений, как в ⌘Tab."
+            )
+        case .es:
+            return Self(
+                switchAppsShortcut: "Cambiar de app",
+                switchWindowsShortcut: "Cambiar ventanas de la app",
+                delayInstant: "Instantáneo",
+                layoutWindowsCaption: "Miniaturas en vivo de cada ventana abierta.",
+                layoutIconsCaption: "Iconos de apps con vistas previas debajo.",
+                layoutSimpleCaption: "Solo iconos de apps, como ⌘Tab."
+            )
+        case .sk:
+            return Self(
+                switchAppsShortcut: "Prepnúť aplikácie",
+                switchWindowsShortcut: "Prepnúť okná aplikácie",
+                delayInstant: "Okamžite",
+                layoutWindowsCaption: "Živé náhľady pre každé otvorené okno.",
+                layoutIconsCaption: "Ikony aplikácií s náhľadmi okien pod nimi.",
+                layoutSimpleCaption: "Iba ikony aplikácií, ako pri ⌘Tab."
+            )
+        case .de:
+            return Self(
+                switchAppsShortcut: "Apps wechseln",
+                switchWindowsShortcut: "App-Fenster wechseln",
+                delayInstant: "Sofort",
+                layoutWindowsCaption: "Live-Vorschauen für jedes geöffnete Fenster.",
+                layoutIconsCaption: "App-Symbole mit Fenstervorschauen darunter.",
+                layoutSimpleCaption: "Nur App-Symbole, wie bei ⌘Tab."
+            )
+        case .fr:
+            return Self(
+                switchAppsShortcut: "Changer d’app",
+                switchWindowsShortcut: "Changer de fenêtre d’app",
+                delayInstant: "Instantané",
+                layoutWindowsCaption: "Aperçus en direct pour chaque fenêtre ouverte.",
+                layoutIconsCaption: "Icônes d’apps avec aperçus des fenêtres en dessous.",
+                layoutSimpleCaption: "Icônes d’apps uniquement, comme ⌘Tab."
+            )
+        case .it:
+            return Self(
+                switchAppsShortcut: "Cambia app",
+                switchWindowsShortcut: "Cambia finestre dell’app",
+                delayInstant: "Istantaneo",
+                layoutWindowsCaption: "Anteprime dal vivo per ogni finestra aperta.",
+                layoutIconsCaption: "Icone delle app con anteprime delle finestre sotto.",
+                layoutSimpleCaption: "Solo icone delle app, come ⌘Tab."
+            )
+        case .ja:
+            return Self(
+                switchAppsShortcut: "アプリを切り替え",
+                switchWindowsShortcut: "アプリのウインドウを切り替え",
+                delayInstant: "なし",
+                layoutWindowsCaption: "開いているすべてのウインドウをプレビュー表示。",
+                layoutIconsCaption: "アプリアイコンの下にウインドウプレビューを表示。",
+                layoutSimpleCaption: "⌘Tabと同じく、アプリアイコンのみを表示。"
+            )
+        case .ko:
+            return Self(
+                switchAppsShortcut: "앱 전환",
+                switchWindowsShortcut: "앱 윈도우 전환",
+                delayInstant: "즉시",
+                layoutWindowsCaption: "열려 있는 모든 윈도우의 실시간 미리보기.",
+                layoutIconsCaption: "앱 아이콘 아래에 윈도우 미리보기 표시.",
+                layoutSimpleCaption: "⌘Tab처럼 앱 아이콘만 표시."
+            )
+        case .zhHans:
+            return Self(
+                switchAppsShortcut: "切换 App",
+                switchWindowsShortcut: "切换当前 App 窗口",
+                delayInstant: "立即",
+                layoutWindowsCaption: "显示每个打开窗口的实时缩略图。",
+                layoutIconsCaption: "显示 App 图标，并在下方展示其窗口预览。",
+                layoutSimpleCaption: "仅显示 App 图标，与 ⌘Tab 相同。"
+            )
+        case .zhTW:
+            return Self(
+                switchAppsShortcut: "切換 App",
+                switchWindowsShortcut: "切換目前 App 視窗",
+                delayInstant: "立即",
+                layoutWindowsCaption: "顯示每個開啟視窗的即時縮圖。",
+                layoutIconsCaption: "顯示 App 圖示，並在下方展示視窗預覽。",
+                layoutSimpleCaption: "僅顯示 App 圖示，與 ⌘Tab 相同。"
+            )
+        case .zhHK:
+            return Self(
+                switchAppsShortcut: "切換 App",
+                switchWindowsShortcut: "切換目前 App 視窗",
+                delayInstant: "即時",
+                layoutWindowsCaption: "顯示每個開啟視窗的即時縮圖。",
+                layoutIconsCaption: "顯示 App 圖示，並在下方展示視窗預覽。",
+                layoutSimpleCaption: "只顯示 App 圖示，與 ⌘Tab 一樣。"
+            )
+        case .uk:
+            return Self(
+                switchAppsShortcut: "Перемкнути програми",
+                switchWindowsShortcut: "Перемкнути вікна програми",
+                delayInstant: "Миттєво",
+                layoutWindowsCaption: "Живі мініатюри для кожного відкритого вікна.",
+                layoutIconsCaption: "Значки програм із мініатюрами вікон під ними.",
+                layoutSimpleCaption: "Лише значки програм, як у ⌘Tab."
+            )
+        }
+    }
+}
+
 struct SwitcherAppRulesStrings {
     let listTitle: String
     let addButton: String
     let removeButton: String
-    let behaviorLabel: String
-    let showWithoutWindows: String
-    let windowsOnly: String
-    let hidden: String
     let caption: String
 }
 
@@ -38,166 +183,107 @@ extension FeatureStrings {
 
 extension SwitcherAppRulesStrings {
     static let enUS = SwitcherAppRulesStrings(
-        listTitle: "Rules by app",
+        listTitle: "Hide in switcher",
         addButton: "Add an app…",
         removeButton: "Remove",
-        behaviorLabel: "Switcher behavior",
-        showWithoutWindows: "Show without windows",
-        windowsOnly: "Windows only",
-        hidden: "Never show",
-        caption: "Choose how each app appears. Apps without a rule use the choice above."
+        caption: "Apps in this list never appear in the switcher."
     )
 
     static let ptBR = SwitcherAppRulesStrings(
-        listTitle: "Regras por app",
+        listTitle: "Ocultar no alternador",
         addButton: "Adicionar app…",
         removeButton: "Remover",
-        behaviorLabel: "Comportamento no alternador",
-        showWithoutWindows: "Mostrar sem janelas",
-        windowsOnly: "Só com janelas",
-        hidden: "Nunca mostrar",
-        caption: "Escolha como cada app aparece. Apps sem regra usam a opção acima."
+        caption: "Os apps desta lista nunca aparecem no alternador."
     )
 
     static let tr = SwitcherAppRulesStrings(
-        listTitle: "Uygulamaya göre kurallar",
+        listTitle: "Değiştiricide gizle",
         addButton: "Uygulama ekle…",
         removeButton: "Kaldır",
-        behaviorLabel: "Değiştirici davranışı",
-        showWithoutWindows: "Pencere olmadan göster",
-        windowsOnly: "Yalnızca pencereler",
-        hidden: "Asla gösterme",
-        caption: "Her uygulamanın nasıl görüneceğini seçin. Kuralı olmayanlar yukarıdaki seçimi kullanır."
+        caption: "Bu listedeki uygulamalar değiştiricide hiç görünmez."
     )
 
     static let ru = SwitcherAppRulesStrings(
-        listTitle: "Правила для приложений",
+        listTitle: "Скрывать в переключателе",
         addButton: "Добавить приложение…",
         removeButton: "Удалить",
-        behaviorLabel: "Поведение в переключателе",
-        showWithoutWindows: "Показывать без окон",
-        windowsOnly: "Только с окнами",
-        hidden: "Никогда не показывать",
-        caption: "Выберите, как показывать каждое приложение. Без правила действует настройка выше."
+        caption: "Приложения из этого списка никогда не появляются в переключателе."
     )
 
     static let es = SwitcherAppRulesStrings(
-        listTitle: "Reglas por app",
+        listTitle: "Ocultar en el selector",
         addButton: "Añadir app…",
         removeButton: "Quitar",
-        behaviorLabel: "Comportamiento en el selector",
-        showWithoutWindows: "Mostrar sin ventanas",
-        windowsOnly: "Solo con ventanas",
-        hidden: "No mostrar nunca",
-        caption: "Elige cómo aparece cada app. Las apps sin regla usan la opción anterior."
+        caption: "Las apps de esta lista nunca aparecen en el selector."
     )
 
     static let sk = SwitcherAppRulesStrings(
-        listTitle: "Pravidlá podľa aplikácie",
+        listTitle: "Skryť v prepínači",
         addButton: "Pridať aplikáciu…",
         removeButton: "Odstrániť",
-        behaviorLabel: "Správanie prepínača",
-        showWithoutWindows: "Zobraziť aj bez okien",
-        windowsOnly: "Len s oknami",
-        hidden: "Nikdy nezobrazovať",
-        caption: "Vyberte, ako sa má zobraziť každá aplikácia. Apky bez pravidla použijú voľbu vyššie."
+        caption: "Aplikácie z tohto zoznamu sa v prepínači nikdy nezobrazia."
     )
 
     static let de = SwitcherAppRulesStrings(
-        listTitle: "Regeln pro App",
+        listTitle: "Im Umschalter ausblenden",
         addButton: "App hinzufügen…",
         removeButton: "Entfernen",
-        behaviorLabel: "Verhalten im Umschalter",
-        showWithoutWindows: "Ohne Fenster anzeigen",
-        windowsOnly: "Nur mit Fenstern",
-        hidden: "Nie anzeigen",
-        caption: "Lege fest, wie jede App erscheint. Apps ohne Regel verwenden die Auswahl darüber."
+        caption: "Apps in dieser Liste erscheinen nie im Umschalter."
     )
 
     static let fr = SwitcherAppRulesStrings(
-        listTitle: "Règles par app",
+        listTitle: "Masquer dans le sélecteur",
         addButton: "Ajouter une app…",
         removeButton: "Retirer",
-        behaviorLabel: "Comportement dans le sélecteur",
-        showWithoutWindows: "Afficher sans fenêtre",
-        windowsOnly: "Avec fenêtres uniquement",
-        hidden: "Ne jamais afficher",
-        caption: "Choisissez comment chaque app apparaît. Sans règle, l’app utilise le choix ci-dessus."
+        caption: "Les apps de cette liste n’apparaissent jamais dans le sélecteur."
     )
 
     static let it = SwitcherAppRulesStrings(
-        listTitle: "Regole per app",
+        listTitle: "Nascondi nel selettore",
         addButton: "Aggiungi app…",
         removeButton: "Rimuovi",
-        behaviorLabel: "Comportamento nel selettore",
-        showWithoutWindows: "Mostra senza finestre",
-        windowsOnly: "Solo con finestre",
-        hidden: "Non mostrare mai",
-        caption: "Scegli come appare ogni app. Le app senza regola usano l’opzione qui sopra."
+        caption: "Le app in questo elenco non compaiono mai nel selettore."
     )
 
     static let ja = SwitcherAppRulesStrings(
-        listTitle: "Appごとのルール",
+        listTitle: "スイッチャーで非表示",
         addButton: "Appを追加…",
         removeButton: "削除",
-        behaviorLabel: "スイッチャーでの表示",
-        showWithoutWindows: "ウインドウなしでも表示",
-        windowsOnly: "ウインドウがある時のみ",
-        hidden: "常に非表示",
-        caption: "Appごとの表示方法を選びます。ルールのないAppには上の設定が使われます。"
+        caption: "このリストのAppはスイッチャーに表示されません。"
     )
 
     static let ko = SwitcherAppRulesStrings(
-        listTitle: "앱별 규칙",
+        listTitle: "전환기에서 가리기",
         addButton: "앱 추가…",
         removeButton: "제거",
-        behaviorLabel: "전환기 표시 방식",
-        showWithoutWindows: "창 없이도 표시",
-        windowsOnly: "창이 있을 때만",
-        hidden: "항상 숨기기",
-        caption: "각 앱의 표시 방식을 선택합니다. 규칙이 없는 앱은 위의 설정을 사용합니다."
+        caption: "이 목록의 앱은 전환기에 표시되지 않습니다."
     )
 
     static let zhHans = SwitcherAppRulesStrings(
-        listTitle: "按 App 设置规则",
+        listTitle: "在切换器中隐藏",
         addButton: "添加 App…",
         removeButton: "移除",
-        behaviorLabel: "切换器显示方式",
-        showWithoutWindows: "无窗口时也显示",
-        windowsOnly: "仅有窗口时显示",
-        hidden: "始终不显示",
-        caption: "选择每个 App 的显示方式。未设置规则的 App 使用上方选项。"
+        caption: "此列表中的 App 不会出现在切换器中。"
     )
 
     static let zhTW = SwitcherAppRulesStrings(
-        listTitle: "各 App 規則",
+        listTitle: "在切換器中隱藏",
         addButton: "加入 App…",
         removeButton: "移除",
-        behaviorLabel: "切換器顯示方式",
-        showWithoutWindows: "沒有視窗時也顯示",
-        windowsOnly: "僅有視窗時顯示",
-        hidden: "一律不顯示",
-        caption: "選擇每個 App 的顯示方式。沒有規則的 App 使用上方選項。"
+        caption: "此列表中的 App 不會出現在切換器中。"
     )
 
     static let zhHK = SwitcherAppRulesStrings(
-        listTitle: "各 App 規則",
+        listTitle: "在切換器中隱藏",
         addButton: "加入 App…",
         removeButton: "移除",
-        behaviorLabel: "切換器顯示方式",
-        showWithoutWindows: "沒有視窗時也顯示",
-        windowsOnly: "僅有視窗時顯示",
-        hidden: "一律不顯示",
-        caption: "選擇每個 App 的顯示方式。沒有規則的 App 使用上方選項。"
+        caption: "此列表中的 App 不會在切換器中出現。"
     )
+
     static let uk = SwitcherAppRulesStrings(
-        listTitle: "Правила за програмами",
+        listTitle: "Приховувати в перемикачі",
         addButton: "Додати програму…",
         removeButton: "Видалити",
-        behaviorLabel: "Поведінка перемикача",
-        showWithoutWindows: "Показувати без вікон",
-        windowsOnly: "Лише вікна",
-        hidden: "Ніколи не показувати",
-        caption: "Виберіть, як кожна програма з’являється. Програми без правила використовують вибір вище."
+        caption: "Програми з цього списку ніколи не з’являються в перемикачі."
     )
 }

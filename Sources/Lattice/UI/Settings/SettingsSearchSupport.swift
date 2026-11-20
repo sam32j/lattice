@@ -166,6 +166,7 @@ enum SettingsSearchSupport {
                 fallbackItem.keywords = []
                 fallbackItem.keywordFeatures = []
                 fallbackItem.keywordRequirements = []
+                fallbackItem.keywordAnchors = []
                 return fallbackItem
             }
             guard FeatureVisibilitySupport.isPageVisible(
@@ -232,11 +233,13 @@ enum SettingsSearchSupport {
                         builders[key] = builder
                         continue
                     }
+                    let keywordAnchor = item.keywordAnchors.indices.contains(index)
+                        ? item.keywordAnchors[index] : nil
                     let suggestionItem = keywordFeature.map { feature in
                         SettingsSearchItem(id: .feature(feature),
-                                           destination: feature == .audioPriority && page == .audioOutput
-                                                ? FeatureSettingsDestination(.audioOutput, sectionAnchor: .audioOutputPriority)
-                                                : feature.settingsDestination,
+                                           destination: keywordAnchor.map {
+                                               FeatureSettingsDestination($0.page, sectionAnchor: $0)
+                                           } ?? feature.settingsDestination,
                                            title: keyword,
                                            icon: feature.symbolName,
                                            feature: feature)
@@ -279,7 +282,7 @@ enum SettingsSearchSupport {
 
     /// Features that sit on a shared page but own a sidebar row of their own.
     /// Search heads their matches with that row instead of the page.
-    static let standaloneSearchGroupFeatures: Set<AppFeature> = [.bluetoothSleep]
+    static let standaloneSearchGroupFeatures: Set<AppFeature> = []
 
     struct SearchGroupBuilder {
         let pageItem: SettingsSearchItem

@@ -33,9 +33,10 @@ private struct SwitcherPendingSessionStart {
 /// The window switcher: a global event tap takes over the configured shortcut,
 /// and while its modifiers are held a non-activating panel cycles through real
 /// windows. Releasing commits, middle-clicking a card or pressing W closes the
-/// highlighted window, and Q quits its app. When the optional pin-search
-/// preference is enabled, S pins the search field open (so typing no longer
-/// needs the modifier held). Esc and a click outside cancel. The panel joins
+/// highlighted window, and Q quits its app. Any other key typed goes to the
+/// always-visible search field, and the panel stays pinned open while the
+/// query has text, so it can be typed with the modifier released. Return or a
+/// click picks, Esc and a click outside cancel. The panel joins
 /// every Space and fullscreen app, so the switcher is available wherever the
 /// user is.
 final class AppSwitcher: ObservableObject {
@@ -60,12 +61,21 @@ final class AppSwitcher: ObservableObject {
     /// index by one when the pointer parks on the last visible icon.
     @Published private(set) var iconRowFirstVisibleIndex = 0
     @Published private(set) var searchQuery = ""
-    /// True once S pinned the search field open. While set, releasing the
-    /// session's modifier no longer commits — search text can then be typed
-    /// with no modifier held, so a letter never comes out as the modifier's
-    /// special character (⌥ on its own types symbols on layouts like US,
-    /// e.g. ⌥S types "ß").
-    @Published private(set) var isSearchPinned = false
+    /// Set by clicking the search field: it goes active and pins the panel
+    /// before anything is typed. Erasing a typed query back to empty clears it.
+    @Published private(set) var isSearchActivated = false
+
+    /// The panel is pinned while the search holds text or was clicked into:
+    /// releasing the session's modifier no longer commits, so the query can be
+    /// typed without it (⌥ held would turn letters into symbols, e.g. ⌥S types
+    /// "ß"). Erasing the query unpins it, and the modifier commits again.
+    var isSearchPinned: Bool { !searchQuery.isEmpty || isSearchActivated }
+
+    /// Clicking the search field: activate it and keep the panel open.
+    func activateSearch() {
+        guard sessionActive, !isSearchActivated else { return }
+        isSearchActivated = true
+    }
     @Published private(set) var totalWindowCount = 0
 
     /// Single source of truth for "a session is open": the stored value lives
@@ -92,6 +102,9 @@ final class AppSwitcher: ObservableObject {
     }
 
     private var panel: NSPanel?
+    private var isReflowing = false
+    private var reflowSettle: DispatchWorkItem?
+    private var reflowShadowTimer: Timer?
     private var sessionItems: [SwitcherItem] = []
 
     // The tap lives on a dedicated thread: an active keyDown tap makes the
@@ -234,7 +247,7 @@ final class AppSwitcher: ObservableObject {
             installTap()
             // A live tap can pick up a shortcut change without rebuilding;
             // apply here so the native hotkeys follow immediately.
-            if !UserDefaults.standard.bool(forKey: DefaultsKey.switcherTakeOverSystemShortcuts) {
+            if !Self.replacesNativeHotkeys(appsShortcut: shortcut, windowShortcut: windowShortcut) {
                 secureInputWatch.stop()
                 restoreNativeHotkeys()
             } else {
@@ -246,11 +259,9 @@ final class AppSwitcher: ObservableObject {
             // the first ⌘Tab.
             let panel = ensurePanel()
             panel.contentViewController?.view.layoutSubtreeIfNeeded()
-            if !capturesPreviews {
-                WindowPreviewProvider.shared.stopWarming()
-            } else {
-                WindowPreviewProvider.shared.startWarming()
-            }
+            // The window shortcut shows thumbnails in every layout, so they
+            // are kept warm whenever the switcher is on.
+            WindowPreviewProvider.shared.startWarming()
         } else {
             secureInputWatch.stop()
             restoreNativeHotkeys()
@@ -457,6 +468,19 @@ final class AppSwitcher: ObservableObject {
         }
     }
 
+    static func replacesNativeHotkeys(appsShortcut: GlobalShortcut,
+                                      windowShortcut: GlobalShortcut) -> Bool {
+        let entries = SymbolicHotKeys.entries(for: SwitcherNativeSymbolicHotKey.ids) ?? []
+        if !entries.isEmpty {
+            return !SwitcherSupport.nativeHotkeyIDs(
+                secureInputEnabled: false,
+                appsShortcut: appsShortcut,
+                windowShortcut: windowShortcut,
+                liveEntries: entries).isEmpty
+        }
+        return appsShortcut == .switcherDefault || windowShortcut == .switcherWindowDefault
+    }
+
     /// Dock's ⌘Tab handler is a symbolic hotkey, not an event the session tap
     /// can swallow. Switch those hotkeys off only while this tap is actually
     /// installed, so a missing Accessibility grant never kills both switchers,
@@ -464,11 +488,8 @@ final class AppSwitcher: ObservableObject {
     /// does either.
     private func applyNativeHotkeySuppression() {
         let (apps, windows) = routeLock.withLock { (routeShortcut, routeWindowShortcut) }
-        let takeOver = UserDefaults.standard.bool(
-            forKey: DefaultsKey.switcherTakeOverSystemShortcuts)
         SystemShortcutTakeover.setWanted(
             SwitcherSupport.nativeHotkeyIDs(
-                takeOverSystemShortcuts: takeOver,
                 secureInputEnabled: IsSecureEventInputEnabled(),
                 appsShortcut: apps,
                 windowShortcut: windows,
@@ -488,11 +509,9 @@ final class AppSwitcher: ObservableObject {
                   featureWanted: AppFeature.switcher.isAvailable
                       && UserDefaults.standard.bool(forKey: DefaultsKey.switcherEnabled),
                   accessibilityGranted: AXIsProcessTrusted(),
-                  sessionIsActive: SessionActivity.shared.isActive),
-              UserDefaults.standard.bool(forKey: DefaultsKey.switcherTakeOverSystemShortcuts)
+                  sessionIsActive: SessionActivity.shared.isActive)
         else { return [] }
         return SwitcherSupport.nativeHotkeyIDs(
-            takeOverSystemShortcuts: true,
             secureInputEnabled: IsSecureEventInputEnabled(),
             appsShortcut: GlobalShortcut.saved(for: DefaultsKey.switcherShortcut,
                                                fallback: .switcherDefault),
@@ -873,19 +892,14 @@ final class AppSwitcher: ObservableObject {
         default:
             let text = printableSearchText(from: event)
             // The first letter typed is a command: W closes the highlighted
-            // window, Q quits its app, S pins the search field open so typing
-            // no longer needs the session's modifier held. Once a search is
-            // under way (or already pinned) every key belongs to the query,
-            // so all three letters can still be typed.
-            if searchQuery.isEmpty, !isSearchPinned,
-               let action = SwitcherSupport.letterAction(typedCharacter: text, keyCode: keyCode, pinSearchEnabled: searchPinEnabled) {
+            // window and Q quits its app. Once a search is under way every key
+            // belongs to the query, so both letters can still be typed.
+            if searchQuery.isEmpty,
+               let action = SwitcherSupport.letterAction(typedCharacter: text, keyCode: keyCode) {
                 // One window per press: holding the key down must never walk
                 // through the list closing or quitting everything on the way.
                 if event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
-                    switch action {
-                    case .closeWindow, .quitApp: runProtectedLetterAction(action)
-                    case .pinSearch: pinSearch()
-                    }
+                    runProtectedLetterAction(action)
                 }
             } else if let text {
                 appendSearchText(text)
@@ -924,11 +938,13 @@ final class AppSwitcher: ObservableObject {
         }) else { return }
         let allApps = requested.scope == .allApps
         let mergeWindowsByApp = UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs)
-        let groupByApp = allApps && mergeWindowsByApp
+        let groupByApp = SwitcherSupport.groupsGridByApp(allApps: allApps,
+                                                         mergeWindowsByApp: mergeWindowsByApp,
+                                                         iconRowLayout: usesIconRowLayout)
         let preservesGroupedWindows = SwitcherSupport.preservesGroupedWindowsDuringEnumeration(
             allApps: allApps,
             mergeWindowsByApp: mergeWindowsByApp,
-            simpleMode: simpleModeEnabled
+            iconRowLayout: usesIconRowLayout
         )
         guard let reportedFrontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier else {
             discardPendingSessionStart(generation: generation)
@@ -1045,7 +1061,7 @@ final class AppSwitcher: ObservableObject {
         sessionItems = list
         totalWindowCount = list.count
         searchQuery = ""
-        isSearchPinned = false
+        isSearchActivated = false
         SwitcherAppIconCache.beginSession()
         self.windows = list
         // Optional.map: a session that starts with no source clears the
@@ -1102,8 +1118,7 @@ final class AppSwitcher: ObservableObject {
         if pending.commitWhenReady {
             commitSession()
         } else if capturesPreviews {
-            WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 640 * PreviewSizing.switcherScale,
-                                                          excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps) { [weak self] windowID, image in
+            WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 640 * PreviewSizing.switcherScale) { [weak self] windowID, image in
                 guard let self,
                       self.sessionActive,
                       self.sessionItems.contains(where: { $0.previewWindowID == windowID }) else { return }
@@ -1153,7 +1168,7 @@ final class AppSwitcher: ObservableObject {
                                        frontmostPID: pid_t) -> Int {
         guard !items.isEmpty else { return 0 }
         guard SwitcherSupport.usesAppGroupsForMainShortcut(
-            iconRowLayout: usesIconRowLayout,
+            iconRowLayout: usesIconRowLayout || groupsGridByApp,
             windowRow: usesWindowRow
         ) else {
             return SwitcherSupport.initialSelectionPosition(pids: items.map(\.pid),
@@ -1252,6 +1267,7 @@ final class AppSwitcher: ObservableObject {
         guard !searchQuery.isEmpty else { return }
         let preferredID = selectedItemID
         searchQuery.removeLast()
+        if searchQuery.isEmpty { isSearchActivated = false }
         applySearchFilter(preferredItemID: preferredID)
     }
 
@@ -1270,12 +1286,6 @@ final class AppSwitcher: ObservableObject {
             !CharacterSet.controlCharacters.contains(scalar)
                 && !CharacterSet.newlines.contains(scalar)
         }))
-    }
-
-    private func pinSearch() {
-        isSearchPinned = true
-        recomputeLayouts(for: windows)
-        resizePanel()
     }
 
     private func applySearchFilter(preferredItemID: String?) {
@@ -1315,11 +1325,23 @@ final class AppSwitcher: ObservableObject {
         }
     }
 
+    /// Keyboard navigation scrolls the strips and slides the preview panel,
+    /// which moves a different card under a pointer that has not moved. That
+    /// card then reports a hover, and without this it steals the selection
+    /// (seen as ⌘` on a third window snapping back to the first). Same guard
+    /// the scroll wheel already uses: hover selects again once the pointer
+    /// itself moves.
+    private func holdHoverSelectionForKeyboardNavigation() {
+        hoverAnchor = NSEvent.mouseLocation
+        hoveredWindowIndex = nil
+    }
+
     private func advanceSelection(by delta: Int, wrapping: Bool = true) {
         cancelIconRowEdgeHover()
         guard !windows.isEmpty else { return }
+        holdHoverSelectionForKeyboardNavigation()
         if SwitcherSupport.usesAppGroupsForMainShortcut(
-            iconRowLayout: usesIconRowLayout,
+            iconRowLayout: usesIconRowLayout || groupsGridByApp,
             windowRow: usesWindowRow
         ), sessionScope == .allApps {
             advanceAppSelection(by: delta, wrapping: wrapping)
@@ -1342,6 +1364,7 @@ final class AppSwitcher: ObservableObject {
     }
 
     private func advanceWindowInSelectedApp(by delta: Int) {
+        holdHoverSelectionForKeyboardNavigation()
         userNavigated = true
         selectedIndex = SwitcherSupport.nextWindowSelectionIndexWithinApp(items: windows,
                                                                           selectedIndex: selectedIndex,
@@ -1386,7 +1409,6 @@ final class AppSwitcher: ObservableObject {
         switch action {
         case .closeWindow: closeSelectedWindow()
         case .quitApp: quitSelectedApp()
-        case .pinSearch: break
         }
     }
 
@@ -1538,33 +1560,81 @@ final class AppSwitcher: ObservableObject {
             return
         }
 
-        sessionItems.removeAll { $0.id == itemID }
-        totalWindowCount = sessionItems.count
         let remaining = Set(state.remainingItemIDs)
-        windows = windows.filter { remaining.contains($0.id) }
-        let remainingPreviews = Set(windows.compactMap(\.previewWindowID))
-        previews = previews.filter { remainingPreviews.contains($0.key) && $0.key != windowID }
-        closingItemIDs.remove(itemID)
-        if sessionSourceContext?.itemID == itemID {
-            sessionStartWindowID = nil
-        }
-
-        guard !state.shouldEndSession else {
-            if sessionItems.isEmpty || searchQuery.isEmpty {
-                endSession()
-            } else {
-                selectedIndex = 0
-                recomputeLayouts(for: windows)
-                resizePanel()
-                resumePendingCommitAfterClose()
+        let endsSession = state.shouldEndSession
+            && (sessionItems.count <= 1 || searchQuery.isEmpty)
+        // The remaining cards slide into place and the glass shrinks around
+        // them in one animation; ending the session needs none.
+        withReflowAnimation(endsSession ? false : true) {
+            sessionItems.removeAll { $0.id == itemID }
+            totalWindowCount = sessionItems.count
+            windows = windows.filter { remaining.contains($0.id) }
+            let remainingPreviews = Set(windows.compactMap(\.previewWindowID))
+            previews = previews.filter { remainingPreviews.contains($0.key) && $0.key != windowID }
+            closingItemIDs.remove(itemID)
+            if sessionSourceContext?.itemID == itemID {
+                sessionStartWindowID = nil
             }
+            guard !endsSession else { return }
+            // Cards slide under a pointer that has not moved; without this
+            // each one it crosses grabs the selection mid-reflow and the
+            // highlight hops between them. The selection is the card that
+            // takes the closed one's place, which is where the pointer is.
+            holdHoverSelectionForKeyboardNavigation()
+            selectedIndex = state.shouldEndSession ? 0 : state.selectedIndex
+            recomputeLayouts(for: windows)
+            resizePanel()
+        }
+        guard !endsSession else {
+            endSession()
             return
         }
-
-        selectedIndex = state.selectedIndex
-        recomputeLayouts(for: windows)
-        resizePanel()
         resumePendingCommitAfterClose()
+    }
+
+    /// How a grid reflow after a close is animated, cards and glass alike.
+    static let reflowAnimation = Animation.smooth(duration: 0.3)
+
+    /// Runs `changes` as one SwiftUI animation. While it runs, `resizePanel`
+    /// holds the window at its larger frame and the SwiftUI glass does the
+    /// resizing, in step with the cards; the window settles to the new size
+    /// once the animation is over. AppKit's own frame animation runs on a
+    /// different clock from SwiftUI's, which is what made the glass and the
+    /// cards move separately (and cards seem to fly in).
+    private func withReflowAnimation(_ animates: Bool, _ changes: () -> Void) {
+        guard animates,
+              panel?.isVisible == true,
+              !usesIconRowLayout,
+              !UserDefaults.standard.bool(forKey: DefaultsKey.switcherInstantSelection)
+        else {
+            changes()
+            return
+        }
+        isReflowing = true
+        withAnimation(Self.reflowAnimation) { changes() }
+        isReflowing = false
+    }
+
+    private func holdFrameDuringReflow(_ target: CGRect) {
+        guard let panel else { return }
+        // Both frames share a center, so the content, which SwiftUI centers in
+        // the window, stays exactly where it was.
+        panel.setFrame(panel.frame.union(target), display: true, animate: false)
+        reflowSettle?.cancel()
+        reflowShadowTimer?.invalidate()
+        // The window shadow follows the glass as it shrinks.
+        reflowShadowTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak panel] _ in
+            panel?.invalidateShadow()
+        }
+        let settle = DispatchWorkItem { [weak self] in
+            guard let self, let panel = self.panel else { return }
+            self.reflowShadowTimer?.invalidate()
+            self.reflowShadowTimer = nil
+            panel.setFrame(self.centeredFrame(for: self.currentPanelSize), display: true, animate: false)
+            panel.invalidateShadow()
+        }
+        reflowSettle = settle
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34, execute: settle)
     }
 
     private func finishTrackingClose(itemID: String) {
@@ -1575,6 +1645,7 @@ final class AppSwitcher: ObservableObject {
     /// Row jump (↑/↓): moves without wrapping so the selection stays put at
     /// the grid edges.
     private func moveSelection(by delta: Int) {
+        holdHoverSelectionForKeyboardNavigation()
         if usesIconRowLayout {
             if iconRowLayout.isWrapped {
                 moveIconRowSelection(movingDown: delta > 0)
@@ -1584,6 +1655,20 @@ final class AppSwitcher: ObservableObject {
             return
         }
         guard delta != 0 else { return }
+        if groupsGridByApp {
+            // A grouped grid's cells are apps: move between them, landing on
+            // each app's representative window.
+            let groups = SwitcherSupport.appGroups(items: windows, currentSpaceOnly: currentSpaceOnly)
+            guard let current = groups.firstIndex(where: { $0.pid == windows[selectedIndex].pid }) else { return }
+            let target = SwitcherSupport.gridSelectionIndex(after: current,
+                                                            itemCount: groups.count,
+                                                            columns: grid.columns,
+                                                            movingDown: delta > 0)
+            guard target != current else { return }
+            userNavigated = true
+            selectedIndex = groups[target].representativeIndex
+            return
+        }
         let target = SwitcherSupport.gridSelectionIndex(after: selectedIndex,
                                                         itemCount: windows.count,
                                                         columns: grid.columns,
@@ -1665,7 +1750,7 @@ final class AppSwitcher: ObservableObject {
         grid = .empty
         iconRowLayout = .empty
         searchQuery = ""
-        isSearchPinned = false
+        isSearchActivated = false
         totalWindowCount = 0
         hoverAnchor = nil
         hoveredWindowIndex = nil
@@ -1730,6 +1815,9 @@ final class AppSwitcher: ObservableObject {
     private func showPanel() {
         let panel = ensurePanel()
         panel.hasShadow = !usesIconRowLayout
+        reflowSettle?.cancel()
+        reflowShadowTimer?.invalidate()
+        reflowShadowTimer = nil
         hoverAnchor = NSEvent.mouseLocation
         panel.setFrame(centeredFrame(for: currentPanelSize), display: true)
         panel.invalidateShadow()
@@ -1764,15 +1852,22 @@ final class AppSwitcher: ObservableObject {
         guard let panel else { return }
         let frame = centeredFrame(for: currentPanelSize)
         panel.hasShadow = !usesIconRowLayout
+        if isReflowing {
+            holdFrameDuringReflow(frame)
+            return
+        }
+        reflowSettle?.cancel()
+        reflowShadowTimer?.invalidate()
+        reflowShadowTimer = nil
         guard panel.frame != frame else { return }
         panel.setFrame(frame, display: true, animate: panel.isVisible && animated)
         panel.invalidateShadow()
     }
 
     private var currentPanelSize: CGSize {
-        let contentSize = usesIconRowLayout && !windows.isEmpty
+        let contentSize = usesIconRowLayout
             ? (simpleModeEnabled
-                ? (usesWindowRow ? iconRowLayout.simpleWindowPanelSize : iconRowLayout.simplePanelSize)
+                ? iconRowLayout.simplePanelSize
                 : iconRowLayout.panelSize)
             : grid.panelSize
         return CGSize(width: contentSize.width, height: contentSize.height + searchTopInset)
@@ -1780,19 +1875,28 @@ final class AppSwitcher: ObservableObject {
 
     var searchTopInset: CGFloat {
         SwitcherSearchLayout.topInset(
-            query: searchQuery,
-            isPinned: isSearchPinned,
-            contentPadding: usesIconRowLayout && !windows.isEmpty
-                ? SwitcherIconRowLayout.padding : SwitcherGrid.padding
+            contentPadding: usesIconRowLayout
+                ? SwitcherIconRowLayout.padding : SwitcherGrid.padding,
+            showsField: !(usesIconRowLayout && simpleModeEnabled) || !searchQuery.isEmpty
         )
+    }
+
+    /// Window previews with "Group windows by app" on: one card per app,
+    /// whose window the window shortcut cycles in place.
+    var groupsGridByApp: Bool {
+        SwitcherSupport.groupsGridByApp(allApps: sessionScope == .allApps,
+                                        mergeWindowsByApp: UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs),
+                                        iconRowLayout: usesIconRowLayout)
     }
 
     private var iconRowModeEnabled: Bool {
         UserDefaults.standard.bool(forKey: DefaultsKey.switcherIconRowMode)
     }
 
+    /// The simple layout applies to the app switcher only: a window session
+    /// is always the Window previews grid.
     private var simpleModeEnabled: Bool {
-        UserDefaults.standard.bool(forKey: DefaultsKey.switcherSimpleMode)
+        sessionScope == .allApps && UserDefaults.standard.bool(forKey: DefaultsKey.switcherSimpleMode)
     }
 
     private var currentSpaceOnly: Bool {
@@ -1802,26 +1906,26 @@ final class AppSwitcher: ObservableObject {
     private var usesWindowRow: Bool {
         SwitcherSupport.usesWindowRow(
             simpleMode: simpleModeEnabled,
-            mergeWindowsByApp: UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs),
             sessionScope: sessionScope
         )
     }
 
-    private var searchPinEnabled: Bool {
-        UserDefaults.standard.bool(forKey: DefaultsKey.switcherSearchPinEnabled)
-    }
+    /// The icon layouts are the bare row, like the system switcher: no
+    /// shortcut-hint pill under it.
+    private var showsShortcutHints: Bool { false }
 
-    private var showsShortcutHints: Bool {
-        UserDefaults.standard.bool(forKey: DefaultsKey.switcherShowShortcutHints)
+    private var iconRowTileWidth: CGFloat {
+        usesWindowRow ? SwitcherIconRowLayout.windowTileWidth : SwitcherIconRowLayout.appTileWidth
     }
 
     private var usesIconRowLayout: Bool {
         SwitcherSupport.usesIconRowLayout(iconRowMode: iconRowModeEnabled,
-                                          simpleMode: simpleModeEnabled)
+                                          simpleMode: simpleModeEnabled,
+                                          sessionScope: sessionScope)
     }
 
     private var capturesPreviews: Bool {
-        SwitcherSupport.capturesPreviews(simpleMode: simpleModeEnabled)
+        SwitcherSupport.capturesPreviews(simpleMode: simpleModeEnabled, sessionScope: sessionScope)
     }
 
     // MARK: - Placement screen
@@ -1882,43 +1986,56 @@ final class AppSwitcher: ObservableObject {
     private func recomputeLayouts(for items: [SwitcherItem]) {
         guard let screen = placementScreen ?? NSScreen.screens.first else { return }
         sessionPlacementVisibleFrame = screen.visibleFrame
-        grid = SwitcherGrid.compute(count: max(items.count, 1), on: screen,
-                                    maxColumns: SwitcherSupport.userMaxColumns,
+        // A search sizes everything for the whole session, not for what still
+        // matches: the panel keeps its shape while results thin out, and the
+        // no-results state shows inside that same panel.
+        let sizing = layoutSizingItems(filtered: items)
+        let gridCellCount = groupsGridByApp
+            ? SwitcherSupport.appGroups(items: sizing, currentSpaceOnly: currentSpaceOnly).count
+            : sizing.count
+        grid = SwitcherGrid.compute(count: max(gridCellCount, 1), on: screen,
+                                    // The column cap has no setting anymore; a value
+                                    // saved before it went away must not narrow the grid.
                                     searchTopInset: searchTopInset)
-        let appGroups = SwitcherSupport.appGroups(items: items)
+        let appGroups = SwitcherSupport.appGroups(items: sizing)
         iconRowLayout = SwitcherIconRowLayout.compute(
-            appCount: usesWindowRow ? items.count : appGroups.count,
+            appCount: usesWindowRow ? sizing.count : appGroups.count,
             selectedWindowCount: usesWindowRow ? 1 : selectedAppWindowCount(in: items),
             maximumWindowCount: usesWindowRow ? 1 : appGroups.map(\.windowCount).max() ?? 1,
             sessionScope: sessionScope,
             screenVisibleFrame: screen.visibleFrame,
             showsShortcutHints: showsShortcutHints,
-            tileWidth: usesWindowRow ? SwitcherIconRowLayout.windowTileWidth
-                                     : SwitcherIconRowLayout.appTileWidth,
-            maxColumns: SwitcherSupport.userMaxColumns,
+            tileWidth: iconRowTileWidth,
+            // One row, like the system switcher: tiles shrink to fit instead.
             searchTopInset: searchTopInset
         )
     }
 
     private func updateIconRowLayoutForCurrentSelection() {
         guard !windows.isEmpty else { return }
-        let appGroups = SwitcherSupport.appGroups(items: windows)
+        let sizing = layoutSizingItems(filtered: windows)
+        let appGroups = SwitcherSupport.appGroups(items: sizing)
         let newLayout = SwitcherIconRowLayout.compute(
-            appCount: usesWindowRow ? windows.count : appGroups.count,
+            appCount: usesWindowRow ? sizing.count : appGroups.count,
             selectedWindowCount: usesWindowRow ? 1 : selectedAppWindowCount(in: windows),
             maximumWindowCount: usesWindowRow ? 1 : appGroups.map(\.windowCount).max() ?? 1,
             sessionScope: sessionScope,
             screenVisibleFrame: placementVisibleFrame,
             showsShortcutHints: showsShortcutHints,
-            tileWidth: usesWindowRow ? SwitcherIconRowLayout.windowTileWidth
-                                     : SwitcherIconRowLayout.appTileWidth,
-            maxColumns: SwitcherSupport.userMaxColumns,
+            tileWidth: iconRowTileWidth,
+            // One row, like the system switcher: tiles shrink to fit instead.
             searchTopInset: searchTopInset
         )
         if iconRowLayout != newLayout {
             iconRowLayout = newLayout
         }
         revealSelectedIconInVisibleRow()
+    }
+
+    /// What the panel is sized for: the whole session while a search filters
+    /// it, so the panel never shrinks or changes shape as results drop out.
+    private func layoutSizingItems(filtered: [SwitcherItem]) -> [SwitcherItem] {
+        searchQuery.isEmpty || sessionItems.isEmpty ? filtered : sessionItems
     }
 
     private var iconRowItemCount: Int {
@@ -2040,8 +2157,13 @@ final class AppSwitcher: ObservableObject {
 
     private func centeredFrame(for size: CGSize) -> NSRect {
         let screen = placementVisibleFrame
+        let offset = SwitcherSupport.verticalPlacementOffset(iconRowLayout: usesIconRowLayout,
+                                                             simpleMode: simpleModeEnabled)
+        // Keep the shifted panel on the screen.
+        let y = min(max(screen.midY - size.height / 2 + offset, screen.minY),
+                    max(screen.minY, screen.maxY - size.height))
         return NSRect(x: screen.midX - size.width / 2,
-                      y: screen.midY - size.height / 2,
+                      y: y,
                       width: size.width,
                       height: size.height)
     }
@@ -2060,7 +2182,11 @@ final class AppSwitcher: ObservableObject {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
-        panel.contentViewController = NSHostingController(rootView: SwitcherView().environmentObject(self))
+        let host = NSHostingController(rootView: SwitcherView().environmentObject(self))
+        // The window is sized by hand (centeredFrame); content sizing would
+        // pin it to the SwiftUI size and fight a reflow's held frame.
+        host.sizingOptions = []
+        panel.contentViewController = host
         self.panel = panel
         return panel
     }
@@ -2103,3 +2229,23 @@ struct SwitcherGrid: Equatable {
                             panelSize: CGSize(width: width, height: height))
     }
 }
+
+#if LATTICE_DEVELOPMENT
+extension AppSwitcher {
+    /// Rendering probe only: loads a fixed list as if a session had just
+    /// enumerated it, so the real views can be drawn without the hotkey.
+    func loadForRendering(_ items: [SwitcherItem], selectedIndex index: Int,
+                          scope: SwitcherSessionScope = .allApps, query: String = "",
+                          session: [SwitcherItem]? = nil) {
+        sessionItems = session ?? items
+        windows = items
+        totalWindowCount = sessionItems.count
+        sessionScope = scope
+        searchQuery = query
+        selectedIndex = index
+        recomputeLayouts(for: items)
+    }
+
+    var renderingPanelSize: CGSize { currentPanelSize }
+}
+#endif

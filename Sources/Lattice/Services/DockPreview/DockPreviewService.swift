@@ -182,7 +182,17 @@ final class DockPreviewService: ObservableObject {
     func preview(_ item: SwitcherItem) {
         guard isVisible, windows.contains(item) else { return }
         cancelPendingHide()
+        guard !DockPreviewReflow.holdsHover(&reflowHoverAnchor) else { return }
         selectedWindowID = item.windowID
+    }
+
+    /// Point after a close at which hover selection resumes: until the pointer
+    /// moves, cards sliding under it during the reflow must not take the
+    /// highlight from the card that took the closed one's place.
+    private var reflowHoverAnchor: CGPoint?
+
+    private func holdHoverDuringReflow() {
+        reflowHoverAnchor = NSEvent.mouseLocation
     }
 
     /// Whether a preview panel (session or pinned) covers the given top-left-
@@ -215,6 +225,7 @@ final class DockPreviewService: ObservableObject {
 
     func endPreview(_ item: SwitcherItem) {
         guard isVisible else { return }
+        guard !DockPreviewReflow.holdsHover(&reflowHoverAnchor) else { return }
         guard selectedWindowID == item.windowID else { return }
         selectedWindowID = nil
     }
@@ -785,8 +796,7 @@ final class DockPreviewService: ObservableObject {
         })
         selectedWindowID = nil
 
-        WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 420 * PreviewSizing.scale,
-                                                     excludedAppsKey: DefaultsKey.windowPreviewExcludedApps) { [weak self] windowID, image in
+        WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 420 * PreviewSizing.scale) { [weak self] windowID, image in
             guard let self, self.isVisible, self.windows.contains(where: { $0.previewWindowID == windowID }) else { return }
             self.previews[windowID] = image
         }
@@ -933,13 +943,18 @@ final class DockPreviewService: ObservableObject {
             selectedWindowID: selectedWindowID
         )
         let remaining = Set(state.remainingWindowIDs)
+        let selection = state.selectedWindowID
+            ?? DockPreviewReflow.successor(of: closedWindowID, in: windows.compactMap(\.windowID))
+        holdHoverDuringReflow()
 
-        windows = windows.filter { item in
-            guard let windowID = item.windowID else { return false }
-            return remaining.contains(windowID)
+        withAnimation(state.shouldEndSession ? nil : DockPreviewReflow.animation) {
+            windows = windows.filter { item in
+                guard let windowID = item.windowID else { return false }
+                return remaining.contains(windowID)
+            }
+            previews = previews.filter { remaining.contains($0.key) }
+            selectedWindowID = selection
         }
-        previews = previews.filter { remaining.contains($0.key) }
-        selectedWindowID = state.selectedWindowID
 
         if state.shouldEndSession {
             endSession()
@@ -1011,8 +1026,7 @@ final class DockPreviewService: ObservableObject {
             panelFrame: frame,
             orientation: preferences.orientation
         )
-        panel.setFrame(frame, display: true, animate: true)
-        panel.contentViewController?.view.layoutSubtreeIfNeeded()
+        DockPreviewReflow.animate(panel, to: frame)
     }
 
     private func beginDockAutohideHold() {
@@ -1561,8 +1575,13 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
 
     func preview(_ item: SwitcherItem) {
         guard windows.contains(item) else { return }
+        guard !DockPreviewReflow.holdsHover(&reflowHoverAnchor) else { return }
         selectedWindowID = item.windowID
     }
+
+    /// See the session panel's anchor: hover waits for the pointer to move
+    /// after a close.
+    private var reflowHoverAnchor: CGPoint?
 
     func endPreview(_ item: SwitcherItem) {
         guard selectedWindowID == item.windowID else { return }
@@ -1759,8 +1778,7 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
                                         missingPreview: Bool) {
         guard windowIDsChanged || missingPreview else { return }
 
-        previewProvider.refreshPreviews(for: items, maxPixelSize: 420 * PreviewSizing.scale,
-                                        excludedAppsKey: DefaultsKey.windowPreviewExcludedApps) { [weak self] windowID, image in
+        previewProvider.refreshPreviews(for: items, maxPixelSize: 420 * PreviewSizing.scale) { [weak self] windowID, image in
             guard let self, self.windows.contains(where: { $0.previewWindowID == windowID }) else { return }
             self.previews[windowID] = image
         }
@@ -1778,10 +1796,15 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
             return
         }
 
-        windows.removeAll { $0.windowID == windowID }
-        previews.removeValue(forKey: windowID)
-        if selectedWindowID == windowID {
-            selectedWindowID = windows.first?.windowID
+        let emptied = windows.allSatisfy { $0.windowID == windowID }
+        let successor = DockPreviewReflow.successor(of: windowID, in: windows.compactMap(\.windowID))
+        reflowHoverAnchor = NSEvent.mouseLocation
+        withAnimation(emptied ? nil : DockPreviewReflow.animation) {
+            windows.removeAll { $0.windowID == windowID }
+            previews.removeValue(forKey: windowID)
+            if selectedWindowID == windowID {
+                selectedWindowID = successor ?? windows.last?.windowID
+            }
         }
         if windows.isEmpty {
             closePreviewPanel()
@@ -1797,8 +1820,7 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
                                                 isPinned: true)
         var frame = panel.frame
         frame.size = size
-        panel.setFrame(clampedPanelFrame(frame), display: true, animate: true)
-        panel.contentViewController?.view.layoutSubtreeIfNeeded()
+        DockPreviewReflow.animate(panel, to: clampedPanelFrame(frame))
     }
 
     private func clampedPanelFrame(_ frame: CGRect) -> CGRect {
@@ -1823,5 +1845,43 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
         let point = rect.center
         return (NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.withMouse)?.visibleFrame
             ?? NSScreen.pointerVisibleFrame
+    }
+}
+
+/// A preview panel's reflow after a window closes. The panel's frame is
+/// AppKit's to animate and the cards' places are SwiftUI's, so both run the
+/// same curve for the same time: the cards slide over as the panel shrinks,
+/// instead of jumping into place while the panel catches up.
+enum DockPreviewReflow {
+    static let duration: TimeInterval = 0.28
+    /// Core Animation's ease-in-ease-out, which the panel's frame uses.
+    static let animation = Animation.timingCurve(0.42, 0, 0.58, 1, duration: duration)
+
+    /// The window that slides into a closed one's place: the next one, or
+    /// nil when the closed window was last.
+    static func successor(of closed: CGWindowID, in windowIDs: [CGWindowID]) -> CGWindowID? {
+        guard let index = windowIDs.firstIndex(of: closed), index + 1 < windowIDs.count else { return nil }
+        return windowIDs[index + 1]
+    }
+
+    /// True while hover is held after a close; clears the hold once the
+    /// pointer has moved more than a few points.
+    static func holdsHover(_ anchor: inout CGPoint?) -> Bool {
+        guard let start = anchor else { return false }
+        let mouse = NSEvent.mouseLocation
+        guard hypot(mouse.x - start.x, mouse.y - start.y) <= 4 else {
+            anchor = nil
+            return false
+        }
+        return true
+    }
+
+    static func animate(_ panel: NSPanel, to frame: CGRect) {
+        guard panel.frame != frame else { return }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = duration
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(frame, display: true)
+        }
     }
 }

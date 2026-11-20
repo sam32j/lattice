@@ -29,18 +29,19 @@ struct PermissionGatedToggle: View {
     private func change(_ value: Bool) {
         coordinator?.cancel()
         let binding = $isOn
+        let pendingFeature = feature
         if value, requiring.contains(.screenRecording), !access.verify(.screenRecording) {
-            if let feature {
-                DeferredPermissionActivation.record(feature: feature)
+            if let pendingFeature {
+                DeferredPermissionActivation.record(feature: pendingFeature)
             }
-        } else if !value, let feature, DeferredPermissionActivation.pendingFeature() == feature {
+        } else if !value, let pendingFeature, DeferredPermissionActivation.pendingFeature() == pendingFeature {
             DeferredPermissionActivation.clear()
         }
         let next = PermissionActivationCoordinator(requirements: requiring,
             verify: access.verify,
             requestAccess: access.request,
             applyEnabled: { enabled in
-                if enabled, let feature, DeferredPermissionActivation.pendingFeature() == feature {
+                if enabled, let pendingFeature, DeferredPermissionActivation.pendingFeature() == pendingFeature {
                     DeferredPermissionActivation.clear()
                 }
                 binding.wrappedValue = enabled

@@ -3,7 +3,7 @@
 
 import SwiftUI
 
-/// Audio Output settings: consolidates Volume Mixer and Output Priority & Switcher.
+/// The Output segment of the Audio page: consolidates Volume Mixer and Output Priority & Switcher.
 struct AudioOutputSettings: View {
     @AppStorage(DefaultsKey.volumeMixerEnabled) private var volumeMixerEnabled = true
     @AppStorage(DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect) private var lowerOnHeadphonesDisconnect = false
@@ -11,18 +11,14 @@ struct AudioOutputSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var priority = AudioPriorityService.shared
 
+    /// The cards only: the Audio page shows them below its segmented control.
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                MixerSection(settingsMode: true)
-                    .settingsSectionAnchor(.mixer, cornerRadius: 16)
+        VStack(alignment: .leading, spacing: 20) {
+            MixerSection(settingsMode: true)
+                .settingsSectionAnchor(.mixer, cornerRadius: 16)
 
-                outputPriorityAndSwitcherCard
-                    .settingsSectionAnchor(.audioOutputPriority, cornerRadius: 16)
-            }
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .padding(22)
+            outputPriorityAndSwitcherCard
+                .settingsSectionAnchor(.audioOutputPriority, cornerRadius: 16)
         }
         .settingsExpansionAnimation(value: [
             volumeMixerEnabled,

@@ -372,8 +372,6 @@ struct Strings {
     let switcherShortcutHintApps: String
     let switcherShortcutHintWindows: String
     let switcherWindowShortcutCaption: String
-    let switcherTakeOverSystemShortcuts: String
-    let switcherTakeOverSystemShortcutsCaption: String
     let switcherAppearanceDelay: String
     let switcherAppearanceDelayCaption: String
     let switcherMaxColumns: String
@@ -384,11 +382,7 @@ struct Strings {
     let switcherMergeTabs: String
     let switcherMergeTabsCaption: String
     let switcherWindowlessApps: String
-    let switcherWindowlessAppsCaption: String
-    let switcherWindowlessAppsOff: String
     let switcherWindowlessAppsFinder: String
-    let switcherWindowlessAppsAll: String
-    let switcherWindowlessAppsLockedFormat: String
     let switcherNoOpenWindow: String
     let switcherOtherDesktop: String
     let dockPreviewName: String
@@ -1132,8 +1126,7 @@ struct Strings {
     let urlCleanerRulesRemoveSiteButton: String
     let urlCleanerRulesRestoreSiteButton: String
     let urlCleanerRemovedFormat: String            // + comma separated names
-    let switcherSearchPin: String
-    let switcherSearchPinCaption: String
+    let switcherSearchPlaceholder: String
     let invertVerticalScroll: String
     let invertHorizontalScroll: String
     let scrollHorizontalName: String
@@ -1161,7 +1154,6 @@ struct Strings {
     let switcherScreenPlacementPointer: String
     let switcherScreenPlacementMenuBar: String
     let switcherScreenPlacementActiveWindow: String
-    let switcherScreenPlacementCaption: String
     let switcherCurrentDisplayOnly: String
     let switcherCurrentDisplayOnlyCaption: String
     let smoothScrollResponseLabel: String
@@ -1278,10 +1270,10 @@ extension Strings {
         tabGeneral: "Geral",
         tabEnergy: "Energia",
         tabMouse: "Mouse e Trackpad",
-        tabSwitcher: "Alternador do Lattice",
+        tabSwitcher: "Alternador de apps",
         tabAbout: "Sobre",
         tabReleaseNotes: "Novidades",
-        minimalWindowPreviews: "Mostrar prévia minimalista",
+        minimalWindowPreviews: "Ocultar título e controles da prévia",
         minimalWindowPreviewsCaption: "Mostra apenas a prévia da janela e oculta título e controles.",
         previewSizeLabel: "Tamanho dos previews",
         previewSizeNormal: "Normal",
@@ -1373,8 +1365,8 @@ extension Strings {
         launcherAddSection: "Adicionar de volta",
         launcherKeysHint: "Setas navegam, Enter abre, 1 a 9 abrem direto",
 
-        switcherSection: "Alternador do Lattice",
-        switcherEnable: "Ativar o alternador do Lattice",
+        switcherSection: "Alternador de apps",
+        switcherEnable: "Ativar o alternador de apps",
         switcherEnableCaption: "Troque de app ou janela, inclusive janelas minimizadas e várias janelas do mesmo app.",
         switcherUsageHint: "Segure o atalho para navegar; solte para ativar a janela. Shift ou ← volta; W fecha a janela; Q encerra o app; Esc cancela.",
         switcherNoWindows: "Nenhuma janela aberta",
@@ -1384,23 +1376,17 @@ extension Strings {
         switcherShortcutHintApps: "Apps",
         switcherShortcutHintWindows: "Janelas",
         switcherWindowShortcutCaption: "Abre um seletor das janelas do app em primeiro plano. Com o seletor aberto, pula entre as janelas do app selecionado.",
-        switcherTakeOverSystemShortcuts: "Substituir ⌘Tab e ⌘` do macOS",
-        switcherTakeOverSystemShortcutsCaption: "Desativa os atalhos correspondentes de apps e janelas do macOS somente enquanto o alternador do Lattice estiver ativo. Todos os apps abertos continuam acessíveis.",
-        switcherAppearanceDelay: "Atraso de exibição",
+        switcherAppearanceDelay: "Atraso ao segurar",
         switcherAppearanceDelayCaption: "Quanto tempo o atalho precisa ficar pressionado antes de o alternador aparecer.",
         switcherMaxColumns: "Máximo de colunas",
         switcherMaxColumnsCaption: "Quebra para mais linhas depois desse número de itens. Útil em monitores ultrawide.",
         switcherMaxColumnsAuto: "Automático",
         switcherInstantSelection: "Seleção instantânea",
         switcherInstantSelectionCaption: "Move o destaque e a rolagem imediatamente ao navegar por apps e janelas.",
-        switcherMergeTabs: "Mostrar uma entrada por app",
-        switcherMergeTabsCaption: "Junta todas as janelas de um app em uma só entrada no alternador, em vez de uma por janela.",
-        switcherWindowlessApps: "Apps sem janela aberta",
-        switcherWindowlessAppsCaption: "Escolhe quais apps que estão abertos sem nenhuma janela aparecem no alternador.",
-        switcherWindowlessAppsOff: "Não mostrar",
-        switcherWindowlessAppsFinder: "Só o Finder",
-        switcherWindowlessAppsAll: "Todos os apps",
-        switcherWindowlessAppsLockedFormat: "Todos os apps abertos continuam acessíveis enquanto “%@” estiver ativado. Desative para escolher.",
+        switcherMergeTabs: "Agrupar janelas por app",
+        switcherMergeTabsCaption: "Uma entrada por app em vez de uma por janela.",
+        switcherWindowlessApps: "Ocultar apps sem janelas",
+        switcherWindowlessAppsFinder: "Não ocultar o Finder",
         switcherNoOpenWindow: "Sem janela aberta",
         switcherOtherDesktop: "Outra Mesa",
         dockPreviewName: "Dock Preview",
@@ -2076,7 +2062,7 @@ extension Strings {
         qrResultTitle: "QR code",
         qrResultCopy: "Copiar",
         qrResultOpen: "Abrir link",
-        switcherCurrentSpaceOnly: "Mostrar só a Mesa atual",
+        switcherCurrentSpaceOnly: "Mostrar apenas janelas da mesa atual",
         switcherCurrentSpaceOnlyCaption: "Mostra as janelas da Mesa atual. Janelas em tela cheia de outras Mesas também aparecem enquanto “Mostrar janelas em tela cheia” estiver ativo.",
         shelfFileMissing: "O arquivo não existe mais",
         previewSizeSmall: "Pequeno",
@@ -2104,8 +2090,7 @@ extension Strings {
         urlCleanerRulesRemoveSiteButton: "Desativar todas as regras deste site",
         urlCleanerRulesRestoreSiteButton: "Ativar todas as regras deste site",
         urlCleanerRemovedFormat: "Removidos %@",
-        switcherSearchPin: "Fixar busca com S",
-        switcherSearchPinCaption: "S inicia uma busca e fixa o alternador aberto, assim digitar não produz mais caracteres especiais quando o atalho usa ⌥, e uma busca que comece com Q ou W não fecha a janela nem encerra o app por engano.",
+        switcherSearchPlaceholder: "Buscar",
         invertVerticalScroll: "Inverter rolagem vertical",
         invertHorizontalScroll: "Inverter rolagem horizontal",
         scrollHorizontalName: "Rolar na horizontal segurando uma tecla",
@@ -2123,18 +2108,17 @@ extension Strings {
         focusFollowsMouseDelay: "Atraso ao passar o mouse",
         focusFollowsMouseRaise: "Trazer a janela para frente",
         focusFollowsMouseWaitForStop: "Esperar o ponteiro parar",
-        switcherMinimizedPlacementLabel: "Janelas minimizadas",
+        switcherMinimizedPlacementLabel: "Mostrar janelas minimizadas",
         switcherTreatHiddenAppsLikeMinimized: "Tratar apps ocultos como janelas minimizadas",
-        switcherMinimizedPlacementNormal: "Ordem normal",
-        switcherMinimizedPlacementEnd: "Colocar no final",
-        switcherMinimizedPlacementHidden: "Ocultar",
+        switcherMinimizedPlacementNormal: "Na ordem recente",
+        switcherMinimizedPlacementEnd: "Depois das outras janelas",
+        switcherMinimizedPlacementHidden: "Nunca",
         switcherShowFullscreenWindows: "Mostrar janelas em tela cheia",
-        switcherScreenPlacementLabel: "Mostrar em",
-        switcherScreenPlacementPointer: "Tela com o ponteiro",
-        switcherScreenPlacementMenuBar: "Tela com a barra de menus",
+        switcherScreenPlacementLabel: "Mostrar alternador em",
+        switcherScreenPlacementPointer: "Tela com o mouse",
+        switcherScreenPlacementMenuBar: "Tela principal",
         switcherScreenPlacementActiveWindow: "Tela com a janela ativa",
-        switcherScreenPlacementCaption: "Em qual tela o alternador abre quando há mais de uma conectada.",
-        switcherCurrentDisplayOnly: "Mostrar só a tela atual",
+        switcherCurrentDisplayOnly: "Mostrar apenas janelas da tela atual",
         switcherCurrentDisplayOnlyCaption: "Mostra apenas as janelas da tela sob o cursor. Se essa tela não tiver janelas, o alternador não abre.",
         smoothScrollResponseLabel: "Resposta",
         smoothScrollCoastLabel: "Inércia",
@@ -2251,10 +2235,10 @@ extension Strings {
         tabGeneral: "General",
         tabEnergy: "Energy",
         tabMouse: "Mouse & Trackpad",
-        tabSwitcher: "Lattice Switcher",
+        tabSwitcher: "App Switcher",
         tabAbout: "About",
         tabReleaseNotes: "What’s New",
-        minimalWindowPreviews: "Show minimal preview",
+        minimalWindowPreviews: "Hide preview title and controls",
         minimalWindowPreviewsCaption: "Only show window preview and hide title and controls.",
         previewSizeLabel: "Preview size",
         previewSizeNormal: "Normal",
@@ -2346,8 +2330,8 @@ extension Strings {
         launcherAddSection: "Available Tools",
         launcherKeysHint: "Arrows navigate, Enter opens, 1 to 9 open directly",
 
-        switcherSection: "Lattice Switcher",
-        switcherEnable: "Enable the Lattice Switcher",
+        switcherSection: "App Switcher",
+        switcherEnable: "Enable the App Switcher",
         switcherEnableCaption: "Switch between apps and windows, including minimized windows and multiple windows from the same app.",
         switcherUsageHint: "Hold the shortcut to navigate; release to activate the window. Shift or ← goes back; W closes the window; Q quits the app; Esc cancels.",
         switcherNoWindows: "No open windows",
@@ -2357,29 +2341,23 @@ extension Strings {
         switcherShortcutHintApps: "Apps",
         switcherShortcutHintWindows: "Windows",
         switcherWindowShortcutCaption: "Opens a switcher for the frontmost app’s windows. While the switcher is open, jumps between the selected app’s windows.",
-        switcherTakeOverSystemShortcuts: "Replace macOS ⌘Tab and ⌘`",
-        switcherTakeOverSystemShortcutsCaption: "Disables the matching macOS app and window shortcuts only while Lattice’s switcher is active. All running apps stay reachable.",
-        switcherAppearanceDelay: "Appearance delay",
+        switcherAppearanceDelay: "Hold delay",
         switcherAppearanceDelayCaption: "How long the shortcut must be held before the switcher appears.",
         switcherMaxColumns: "Maximum columns",
         switcherMaxColumnsCaption: "Wraps onto more rows after this many items. Useful on ultrawide displays.",
         switcherMaxColumnsAuto: "Auto",
         switcherInstantSelection: "Instant selection",
         switcherInstantSelectionCaption: "Moves the highlight and scroll position immediately as you browse apps and windows.",
-        switcherMergeTabs: "Show one entry per app",
-        switcherMergeTabsCaption: "Collapses all of an app’s windows into one entry in the switcher, instead of one entry per window.",
-        switcherWindowlessApps: "Apps with no open window",
-        switcherWindowlessAppsCaption: "Chooses which running apps with no window at all show up in the switcher.",
-        switcherWindowlessAppsOff: "Do not show",
-        switcherWindowlessAppsFinder: "Finder only",
-        switcherWindowlessAppsAll: "All apps",
-        switcherWindowlessAppsLockedFormat: "All running apps stay reachable while “%@” is on. Turn it off to choose.",
+        switcherMergeTabs: "Group windows by app",
+        switcherMergeTabsCaption: "One entry per app instead of one per window.",
+        switcherWindowlessApps: "Hide apps without windows",
+        switcherWindowlessAppsFinder: "Don’t hide Finder",
         switcherNoOpenWindow: "No open window",
         switcherOtherDesktop: "Other desktop",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Enable Dock Preview",
         dockPreviewEnableCaption: "Hover over app icon to view and switch between windows.",
-        dockPreviewCurrentSpaceOnly: "Only show windows from the current desktop",
+        dockPreviewCurrentSpaceOnly: "Only show windows from current desktop",
         dockPreviewCurrentSpaceOnlyCaption: "Hide windows from other desktops.",
         dockPreviewCurrentSpaceOnlyInfo: "Selecting a window on another desktop automatically switches to it.",
         dockPreviewBackgroundOpacity: "Panel background",
@@ -3049,7 +3027,7 @@ extension Strings {
         qrResultTitle: "QR code",
         qrResultCopy: "Copy",
         qrResultOpen: "Open link",
-        switcherCurrentSpaceOnly: "Show only the current desktop",
+        switcherCurrentSpaceOnly: "Only show windows from current desktop",
         switcherCurrentSpaceOnlyCaption: "Lists windows from the current desktop. Fullscreen windows from other desktops also appear while “Show fullscreen windows” is on.",
         shelfFileMissing: "The file no longer exists",
         previewSizeSmall: "Small",
@@ -3077,8 +3055,7 @@ extension Strings {
         urlCleanerRulesRemoveSiteButton: "Turn off every rule for this site",
         urlCleanerRulesRestoreSiteButton: "Turn on every rule for this site",
         urlCleanerRemovedFormat: "Removed %@",
-        switcherSearchPin: "Pin search with S",
-        switcherSearchPinCaption: "S starts a search and pins the switcher open, so typing no longer produces special characters when your shortcut uses ⌥, and a search starting with Q or W no longer closes the window or quits the app by mistake.",
+        switcherSearchPlaceholder: "Search",
         invertVerticalScroll: "Invert vertical scrolling",
         invertHorizontalScroll: "Invert horizontal scrolling",
         scrollHorizontalName: "Scroll sideways while holding a key",
@@ -3096,18 +3073,17 @@ extension Strings {
         focusFollowsMouseDelay: "Hover delay",
         focusFollowsMouseRaise: "Bring the window to the front",
         focusFollowsMouseWaitForStop: "Wait for the pointer to stop",
-        switcherMinimizedPlacementLabel: "Minimized windows",
+        switcherMinimizedPlacementLabel: "Show minimized windows",
         switcherTreatHiddenAppsLikeMinimized: "Treat hidden apps like minimized windows",
-        switcherMinimizedPlacementNormal: "Normal ordering",
-        switcherMinimizedPlacementEnd: "Place at end",
-        switcherMinimizedPlacementHidden: "Hide",
+        switcherMinimizedPlacementNormal: "In recent order",
+        switcherMinimizedPlacementEnd: "After other windows",
+        switcherMinimizedPlacementHidden: "Never",
         switcherShowFullscreenWindows: "Show fullscreen windows",
-        switcherScreenPlacementLabel: "Show on",
-        switcherScreenPlacementPointer: "Display with the pointer",
-        switcherScreenPlacementMenuBar: "Display with the menu bar",
-        switcherScreenPlacementActiveWindow: "Display with the active window",
-        switcherScreenPlacementCaption: "Which display the switcher opens on when more than one is connected.",
-        switcherCurrentDisplayOnly: "Show only the current display",
+        switcherScreenPlacementLabel: "Show switcher on",
+        switcherScreenPlacementPointer: "Screen containing mouse",
+        switcherScreenPlacementMenuBar: "Primary screen",
+        switcherScreenPlacementActiveWindow: "Screen with active window",
+        switcherCurrentDisplayOnly: "Only show windows from current display",
         switcherCurrentDisplayOnlyCaption: "Lists only windows on the display under the pointer. If that display has no windows, the switcher does not open.",
         smoothScrollResponseLabel: "Response",
         smoothScrollCoastLabel: "Coast",

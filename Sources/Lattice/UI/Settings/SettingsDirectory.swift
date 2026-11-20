@@ -18,6 +18,9 @@ struct SettingsDirectoryItem: Identifiable {
     /// Parallel to `keywords`: the Boolean preference a follow-up row is
     /// shown under, so search only offers rows that are on screen.
     var keywordRequirements: [String?] = []
+    /// Parallel to `keywords`: the section a keyword row lands on when it is
+    /// not its feature's usual destination, like input priority on Audio.
+    var keywordAnchors: [SettingsSectionAnchor?] = []
     /// Search aliases that match the containing page, but do not produce separate child suggestion rows.
     var aliases: [String] = []
     var id: SettingsPage { page }
@@ -28,11 +31,13 @@ struct SettingsDirectoryItem: Identifiable {
          keywords: [String] = [],
          aliases: [String] = [],
          featureKeywords: [(feature: AppFeature, titles: [String])] = [],
-         followupKeywords: [(feature: AppFeature, shownWhen: String, titles: [String])] = []) {
+         followupKeywords: [(feature: AppFeature, shownWhen: String, titles: [String])] = [],
+         anchoredKeywords: [(feature: AppFeature, anchor: SettingsSectionAnchor, titles: [String])] = []) {
         self.page = page
         self.title = title
         self.icon = icon
         self.keywords = keywords + featureKeywords.flatMap(\.titles) + followupKeywords.flatMap(\.titles)
+            + anchoredKeywords.flatMap(\.titles)
         self.aliases = aliases
         keywordFeatures = Array(repeating: nil, count: keywords.count)
             + featureKeywords.flatMap { entry in
@@ -41,9 +46,18 @@ struct SettingsDirectoryItem: Identifiable {
             + followupKeywords.flatMap { entry in
                 Array(repeating: Optional(entry.feature), count: entry.titles.count)
             }
+            + anchoredKeywords.flatMap { entry in
+                Array(repeating: Optional(entry.feature), count: entry.titles.count)
+            }
         keywordRequirements = Array(repeating: nil, count: keywords.count + featureKeywords.flatMap(\.titles).count)
             + followupKeywords.flatMap { entry in
                 Array(repeating: Optional(entry.shownWhen), count: entry.titles.count)
+            }
+            + Array(repeating: nil, count: anchoredKeywords.flatMap(\.titles).count)
+        let unanchored = self.keywords.count - anchoredKeywords.flatMap(\.titles).count
+        keywordAnchors = Array(repeating: nil, count: unanchored)
+            + anchoredKeywords.flatMap { entry in
+                Array(repeating: Optional(entry.anchor), count: entry.titles.count)
             }
     }
 }
@@ -54,7 +68,7 @@ struct SettingsDirectoryItem: Identifiable {
 enum SettingsDirectory {
     /// Shared pages whose tools cover the page without a separate overview row.
     private static let toolOnlyPages: Set<SettingsPage> = [
-        .energy, .switcher, .dock, .clipboard,
+        .energy, .dock, .clipboard,
     ]
 
     /// Keep the directory's destinations, but show the most useful groups
@@ -128,6 +142,7 @@ enum SettingsDirectory {
                                    keywords: item.keywords,
                                    keywordFeatures: item.keywordFeatures,
                                    keywordRequirements: item.keywordRequirements,
+                                   keywordAnchors: item.keywordAnchors,
                                    aliases: item.aliases)
             }
         let hub = FeatureStrings.hub(language)

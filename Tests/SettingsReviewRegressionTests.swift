@@ -92,12 +92,14 @@ enum SettingsReviewRegressionTests {
                      "searching 'Port' matches Process Manager with single 'Ports' suggestion and no outdated indices")
 
         let bluetoothGroups = SettingsSearchSupport.groupedMatchingItems(query: "Bluetooth", items: searchItems, isAvailable: { _ in true })
-        let bluetoothGroup = bluetoothGroups.first { $0.pageItem.id == .feature(.bluetoothSleep) }
+        let bluetoothGroup = bluetoothGroups.first { group in
+            group.suggestions.contains { $0.title == FeatureStrings.bluetoothSleep(.enUS).enable }
+        }
         let sleepRow = bluetoothGroup?.suggestions.first { $0.title == FeatureStrings.bluetoothSleep(.enUS).enable }
-        suite.expect(sleepRow != nil && bluetoothGroup?.pageItem.title == FeatureStrings.bluetoothSleep(.enUS).pageTitle,
-                     "searching 'Bluetooth' lists the sleep switch under Bluetooth Control")
-        suite.expect(!bluetoothGroups.contains { $0.pageItem.id == .page(.energy) },
-                     "searching 'Bluetooth' never files Bluetooth under Displays")
+        suite.expect(sleepRow != nil && bluetoothGroup?.pageItem.destination.page == .energy,
+                     "searching 'Bluetooth' lists the sleep switch under Display & Energy")
+        suite.expect(!bluetoothGroups.contains { $0.pageItem.id == .feature(.bluetoothSleep) },
+                     "Bluetooth no longer heads a search group of its own")
 
         let brightness = FeatureStrings.brightness(.enUS)
         let bluetooth = FeatureStrings.bluetoothSleep(.enUS)

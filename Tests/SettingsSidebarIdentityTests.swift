@@ -21,10 +21,30 @@ enum SettingsSidebarIdentityTests {
                             keyboardLightSupported: true, isAvailable: { _ in true })
         let deviceControls = withKeyboard.first { $0.id == 2 }?.items ?? []
         let deviceControlIDs = deviceControls.map(\.id)
-        suite.expect(deviceControlIDs == [.page(.audioInput), .page(.audioOutput),
+        suite.expect(deviceControlIDs == [.page(.audio),
                                           .page(.keyboard), .page(.mouse),
-                                          .feature(.brightness), .feature(.bluetoothSleep)],
-                     "Device Controls contains Audio Input, Audio Output, Keyboard, Mouse, Displays, and Bluetooth Behavior")
+                                          .feature(.brightness)],
+                     "Device Controls contains Audio, Keyboard, Mouse, and Display & Energy, with Bluetooth on that page")
+        let audioRow = deviceControls.first { $0.id == .page(.audio) }
+        suite.expect(audioRow?.title == "Audio" && audioRow?.icon == "speaker.wave.2",
+                     "Device Controls shows one Audio entry with a speaker symbol")
+        let audioPage = Directory.sections(.enUS, language: .enUS).flatMap(\.items).first { $0.page == .audio }
+        let audioAnchors = Dictionary(
+            zip(audioPage?.keywords ?? [], audioPage?.keywordAnchors ?? []).map { ($0, $1) },
+            uniquingKeysWith: { first, _ in first })
+        let strings = Strings.enUS
+        suite.expect(audioPage.map {
+                    $0.keywordAnchors.count == $0.keywords.count
+                        && $0.keywordFeatures.count == $0.keywords.count
+                        && $0.keywordRequirements.count == $0.keywords.count
+                } == true
+                && audioAnchors["Audio Input"] == .micMute
+                && audioAnchors["Audio Output"] == .mixer
+                && audioAnchors[strings.manageAudioInputPriorityTitle] == .audioPriority
+                && audioAnchors[strings.manageAudioOutputPriorityTitle] == .audioOutputPriority
+                && audioAnchors[strings.microphoneControlEnable] == .micMute
+                && audioAnchors[strings.volumeMixerEnable] == .mixer,
+                     "Audio search keywords land on the Input or Output section that holds them")
         suite.expect(!withKeyboard.flatMap(\.items).contains {
             $0.id == .setting(.keyboardBrightnessShortcuts)
         }, "Keyboard Light is moved into Keyboard settings and not in the sidebar")
@@ -35,9 +55,11 @@ enum SettingsSidebarIdentityTests {
             $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
         }, "Utilities section items are sorted alphabetically")
         let desktop = sections.first { $0.id == 1 }?.items ?? []
-        suite.expect(desktop.map(\.id) == [.page(.dock), .feature(.switcher), .page(.windowLayout),
-                                           .page(.screenshot)],
-                     "Desktop & Screen exposes one Capture entry for screenshots and recording")
+        suite.expect(desktop.map(\.id) == [.page(.dock), .page(.windowLayout), .page(.screenshot)],
+                     "Desktop & Screen exposes one Capture entry, and the switcher lives in Dock & Applications")
+        suite.expect(SettingsSidebarSupport.selection(
+            for: AppFeature.switcher.settingsDestination, in: desktop) == .page(.dock),
+            "switcher links select Dock & Applications in the sidebar")
         suite.expect(SettingsSidebarSupport.selection(
             for: FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder),
             in: desktop) == .page(.screenshot),
@@ -52,7 +74,7 @@ enum SettingsSidebarIdentityTests {
         suite.expect(off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenshot) } == true
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenRecorder) } == false
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.dock) } == true
-                     && off.first { $0.id == 1 }?.items.contains { $0.id == .feature(.switcher) } == true
+                     && off.first { $0.id == 1 }?.items.contains { $0.id == .feature(.switcher) } == false
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.windowLayout) } == true,
                      "Capture stays in the sidebar even when both capture features are uninstalled")
         suite.expect(off.flatMap(\.items).contains { $0.id == .page(.notch) },
@@ -75,8 +97,8 @@ enum SettingsSidebarIdentityTests {
             $0.id == .feature(.fanControl) || $0.id == .feature(.extraBrightness)
         }, "unsupported hardware controls are absent from the actual sidebar")
         suite.expect(unsupported.flatMap(\.items).contains { $0.id == .feature(.brightness) }
-                     && unsupported.flatMap(\.items).contains { $0.id == .feature(.bluetoothSleep) },
-                     "Displays and Bluetooth remain reachable independently of optional hardware controls")
+                     && !unsupported.flatMap(\.items).contains { $0.id == .feature(.bluetoothSleep) },
+                     "Display & Energy, which holds Bluetooth, remains reachable independently of optional hardware controls")
         FeatureHardwareBoundary.unsupported = []
         let clipboardFiles = sections.first { $0.id == 3 }?.items.map(\.id) ?? []
         suite.expect(clipboardFiles.contains(.page(.scratchpad))

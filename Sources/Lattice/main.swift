@@ -19,6 +19,7 @@ if CommandLine.arguments.contains("--capture-editor-presentation-test") {
     CaptureEditorPresentationProbe.runAndExit()
 }
 if CommandLine.arguments.contains("--kill-process-rendering") { KillProcessRenderingProbe.runAndExit() }
+if CommandLine.arguments.contains("--switcher-rendering") { MainActor.assumeIsolated { SwitcherRenderingProbe.runAndExit() } }
 if CommandLine.arguments.contains("--settings-presentation-preview") {
     SettingsPresentationProbe.runAndExit()
 }

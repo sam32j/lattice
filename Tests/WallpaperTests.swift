@@ -82,6 +82,115 @@ enum WallpaperContract {
                 && $0.imageURL.path == fullStill.path
                 && $0.previewURL.path == thumb.path
         }, "madesktop with a full-size still uses the still and keeps the thumb as preview")
+        suite.expect(apple.filter { $0.title == "Peak" }.count == 1,
+                     "a downloaded dynamic asset is listed once beside its madesktop")
+
+        // subfolders (Solid Colors) and downloaded assets with no madesktop
+        let solids = appleRoot.appendingPathComponent("Solid Colors", isDirectory: true)
+        try? FileManager.default.createDirectory(at: solids, withIntermediateDirectories: true)
+        try? png.write(to: solids.appendingPathComponent("Teal.png"))
+        let horizon = appleRoot.appendingPathComponent(".wallpapers/Horizon", isDirectory: true)
+        try? FileManager.default.createDirectory(at: horizon, withIntermediateDirectories: true)
+        try? png.write(to: horizon.appendingPathComponent("Horizon.heic"))
+        try? png.write(to: horizon.appendingPathComponent("Horizon Thumbnail.png"))
+
+        // aerial catalog: names from the string table, thumbnails required,
+        // portrait variants skipped, appearance-only names take their label
+        let aerials = appleRoot.appendingPathComponent("aerials", isDirectory: true)
+        let manifest = aerials.appendingPathComponent("manifest", isDirectory: true)
+        let tables = manifest.appendingPathComponent("TVIdleScreenStrings.bundle/Contents/Resources",
+                                                     isDirectory: true)
+        let aerialThumbs = aerials.appendingPathComponent("thumbnails", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tables, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: aerialThumbs, withIntermediateDirectories: true)
+        let catalog: [String: Any] = ["assets": [
+            ["id": "A1", "localizedNameKey": "BAY", "preferredOrder": 1,
+             "url-4K-SDR-240FPS": "https://sylvan.apple.com/a1.mov"],
+            ["id": "A2", "localizedNameKey": "LIGHT", "accessibilityLabel": "macOS",
+             "variant": ["appearance": "light", "orientation": "landscape"]],
+            ["id": "A3", "localizedNameKey": "LIGHT", "accessibilityLabel": "macOS",
+             "variant": ["appearance": "light", "orientation": "portrait"]],
+            ["id": "A4", "localizedNameKey": "NOTHUMB"],
+        ]]
+        try? JSONSerialization.data(withJSONObject: catalog)
+            .write(to: manifest.appendingPathComponent("entries.json"))
+        try? PropertyListSerialization.data(
+            fromPropertyList: ["en": ["BAY": "Bay", "LIGHT": "Light", "NOTHUMB": "Missing"],
+                               "de": ["BAY": "Bucht"]],
+            format: .binary, options: 0)
+            .write(to: tables.appendingPathComponent("Localizable.nocache.loctable"))
+        for id in ["A1", "A2", "A3"] {
+            try? png.write(to: aerialThumbs.appendingPathComponent("\(id).png"))
+        }
+        let aerialVideos = aerials.appendingPathComponent("videos", isDirectory: true)
+        try? FileManager.default.createDirectory(at: aerialVideos, withIntermediateDirectories: true)
+        try? png.write(to: aerialVideos.appendingPathComponent("A2.mov"))
+        let everything = WallpaperSupport.enumerateAppleEntries(at: appleRoot, aerialsRoot: aerials)
+        let bay = everything.first { $0.aerialAssetID == "A1" }
+        suite.expect(bay?.pendingVideo?.url.absoluteString == "https://sylvan.apple.com/a1.mov"
+                        && bay?.pendingVideo?.destination.lastPathComponent == "A1.mov"
+                        && bay?.needsDownload == true,
+                     "an aerial without its cached video offers the download")
+        suite.expect(everything.first { $0.aerialAssetID == "A2" }?.needsDownload == false,
+                     "an aerial whose video is cached needs no download")
+        suite.expect(!WallpaperSupport.isAppleDownloadURL(URL(string: "https://apple.com.evil.net/x.mov")!)
+                        && !WallpaperSupport.isAppleDownloadURL(URL(string: "http://sylvan.apple.com/x.mov")!),
+                     "downloads only come from HTTPS Apple hosts")
+        suite.expect(everything.contains { $0.title == "Teal" && $0.source == .apple },
+                     "Desktop Pictures subfolders are listed")
+        suite.expect(everything.contains { $0.title == "Horizon" && $0.previewURL.lastPathComponent == "Horizon Thumbnail.png" },
+                     "downloaded dynamic assets without a madesktop are listed with their thumbnail")
+        let aerialTitles = everything.filter { $0.aerialAssetID != nil }.map(\.title).sorted()
+        suite.expect(aerialTitles == ["Bay", "macOS Light"],
+                     "aerials need a thumbnail, skip portrait variants and name appearance-only variants")
+        suite.expect(WallpaperSupport.aerialEntries(at: aerials, languages: ["de"]).first { $0.aerialAssetID == "A1" }?.title == "Bucht",
+                     "aerial names follow the app language, falling back to English")
+        var aerialRoot: [String: Any] = ["AllSpacesAndDisplays": ["Type": "linked"] as [String: Any]]
+        let aerialPatched = WallpaperSupport.patchStoreRoot(&aerialRoot, aerialAssetID: "A1")
+        let aerialChoice = (((aerialRoot["AllSpacesAndDisplays"] as? [String: Any])?["Linked"]
+            as? [String: Any])?["Content"] as? [String: Any])?["Choices"] as? [[String: Any]]
+        let aerialConfig = (aerialChoice?.first?["Configuration"] as? Data)
+            .flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) } as? [String: String]
+        suite.expect(aerialPatched
+                        && aerialChoice?.first?["Provider"] as? String == "com.apple.wallpaper.choice.aerials"
+                        && aerialConfig == ["assetID": "A1"],
+                     "aerials are set through the store by asset ID")
+
+        // dynamic pictures macOS has not downloaded come from the system catalog
+        let catalogURL = appleRoot.appendingPathComponent("catalog.xml")
+        let sha = Data([1, 2, 3])
+        try? PropertyListSerialization.data(fromPropertyList: ["Assets": [
+            ["DesktopPictureID": "Dune", "__BaseURL": "https://updates.cdn-apple.com/x/",
+             "__RelativePath": "dune.zip", "_ContentVersion": 1, "_Measurement": sha],
+            ["DesktopPictureID": "Dune", "__BaseURL": "https://updates.cdn-apple.com/x/",
+             "__RelativePath": "dune2.zip", "_ContentVersion": 2, "_Measurement": sha],
+            ["DesktopPictureID": "Evil", "__BaseURL": "https://example.com/",
+             "__RelativePath": "evil.zip"],
+            ["DesktopPictureID": "Plain", "__BaseURL": "http://updates.cdn-apple.com/",
+             "__RelativePath": "plain.zip"],
+        ]], format: .xml, options: 0).write(to: catalogURL)
+        let pictureCatalog = WallpaperSupport.desktopPictureCatalog(at: catalogURL)
+        suite.expect(pictureCatalog.keys.sorted() == ["Dune"]
+                        && pictureCatalog["Dune"]?.url.lastPathComponent == "dune2.zip"
+                        && pictureCatalog["Dune"]?.sha1 == sha,
+                     "the picture catalog keeps HTTPS apple.com zips, newest version first")
+        try? png.write(to: thumbs.appendingPathComponent("Dune.heic"))
+        try? PropertyListSerialization.data(fromPropertyList: ["mobileAssetID": "Dune"], format: .xml, options: 0)
+            .write(to: appleRoot.appendingPathComponent("Dune.madesktop"))
+        let downloadsFolder = appleRoot.appendingPathComponent("Downloads", isDirectory: true)
+        let downloads = WallpaperSupport.Downloads(catalog: pictureCatalog, folder: downloadsFolder)
+        let pending = WallpaperSupport.enumerateAppleEntries(at: appleRoot, downloads: downloads)
+            .first { $0.title == "Dune" }
+        suite.expect(pending?.remoteAsset?.pictureID == "Dune"
+                        && pending?.imageURL.deletingLastPathComponent().path == downloadsFolder.path
+                        && pending?.previewURL.lastPathComponent == "Dune.heic",
+                     "a picture not downloaded is listed with its thumbnail and where to fetch it")
+        try? FileManager.default.createDirectory(at: downloadsFolder, withIntermediateDirectories: true)
+        try? png.write(to: WallpaperSupport.downloadedStillURL(pictureID: "Dune", in: downloadsFolder))
+        let kept = WallpaperSupport.enumerateAppleEntries(at: appleRoot, downloads: downloads)
+            .first { $0.title == "Dune" }
+        suite.expect(kept != nil && kept?.remoteAsset == nil,
+                     "a picture Lattice downloaded is set from its kept copy")
 
         let ownFolder = appleRoot.appendingPathComponent("Mine", isDirectory: true)
         try? FileManager.default.createDirectory(at: ownFolder, withIntermediateDirectories: true)
@@ -121,6 +230,35 @@ enum WallpaperContract {
                      "own filter keeps only own entries")
         suite.expect(WallpaperSupport.filtered(merged, by: .apple).allSatisfy { $0.source == .apple },
                      "apple filter keeps only Apple entries")
+
+        func ownEntry(_ path: String) -> WallpaperSupport.Entry {
+            let url = URL(fileURLWithPath: path)
+            return WallpaperSupport.Entry(id: path, imageURL: url, previewURL: url,
+                                          title: WallpaperSupport.title(for: url), source: .own)
+        }
+        let appleOnly = WallpaperSupport.Entry(id: "/System/a.heic",
+                                               imageURL: URL(fileURLWithPath: "/System/a.heic"),
+                                               previewURL: URL(fileURLWithPath: "/System/a.heic"),
+                                               title: "a", source: .apple)
+        let groups = WallpaperSupport.ownGroups([
+            ownEntry("/Pics/Walls/one.jpg"),
+            ownEntry("/Pics/Walls/Nested/two.jpg"),
+            ownEntry("/Pics/Walls/Nested/Deep/three.jpg"),
+            ownEntry("/Loose/four.png"),
+            ownEntry("/Pics/WallsExtra/five.jpg"),
+            appleOnly,
+        ], folderRoots: ["/Pics/Walls/Nested", "/Pics/Walls", "/Pics/WallsExtra/"])
+        suite.expect(groups.map(\.path) == ["/Pics/Walls/Nested", "/Pics/Walls", "/Pics/WallsExtra", "/Loose"],
+                     "imported groups follow folder import order, loose parents last")
+        suite.expect(groups.first?.entries.map(\.title) == ["two", "three"]
+                        && groups[1].entries.map(\.title) == ["one"],
+                     "imported pictures join their deepest imported folder")
+        suite.expect(!groups.contains { $0.entries.contains { $0.source == .apple } },
+                     "imported groups leave Apple stills out")
+        suite.expect(WallpaperSupport.displayPath("/Users/me/Pictures", home: "/Users/me") == "~/Pictures"
+                        && WallpaperSupport.displayPath("/Users/me", home: "/Users/me") == "~"
+                        && WallpaperSupport.displayPath("/Users/meow/x", home: "/Users/me") == "/Users/meow/x",
+                     "display paths abbreviate only the home folder")
 
         suite.expect(WallpaperSupport.targetScreenIDs(allDisplays: true,
                                                       screenIDs: [1, 2, 3],

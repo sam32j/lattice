@@ -7,6 +7,8 @@ import Foundation
 enum DockClickMode: CaseIterable {
     case off, toggleWindows, hideApps, cycleWindows
 
+    static let activeCases: [Self] = [.toggleWindows, .hideApps, .cycleWindows]
+
     static func selected(in defaults: UserDefaults) -> Self {
         if defaults.bool(forKey: DefaultsKey.dockClickCycleWindows) { return .cycleWindows }
         if defaults.bool(forKey: DefaultsKey.dockClickHide) { return .hideApps }

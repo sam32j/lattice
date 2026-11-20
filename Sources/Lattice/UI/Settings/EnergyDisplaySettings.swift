@@ -5,11 +5,9 @@ import SwiftUI
 
 struct EnergyDisplaySettings: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var brightness = BrightnessService.shared
-    @ObservedObject private var toggles = QuickTogglesService.shared
     @AppStorage(DefaultsKey.brightnessControlEnabled) private var brightnessEnabled = false
     @AppStorage(DefaultsKey.brightnessKeysEnabled) private var brightnessKeysEnabled = false
     @AppStorage(DefaultsKey.brightnessKeyStep)
@@ -34,23 +32,6 @@ struct EnergyDisplaySettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            SettingsCard(title: SettingsOrganizationStrings.text(.appearance, l10n.language)) {
-                SettingsRow(symbol: "circle.lefthalf.filled", title: SettingsOrganizationStrings.text(.darkMode, l10n.language)) {
-                    Toggle(SettingsOrganizationStrings.text(.darkMode, l10n.language),
-                           isOn: Binding(get: {
-                        toggles.systemAppearanceIsDark ?? (colorScheme == .dark)
-                    }, set: { desired in
-                        if desired != (toggles.systemAppearanceIsDark ?? (colorScheme == .dark)) {
-                            toggles.toggleDarkMode()
-                        }
-                    }))
-                    .labelsHidden()
-                }
-                ShortcutPreferenceRow(role: .darkMode, label: strings.toggleSystemAppearanceShortcut) {
-                    QuickTogglesService.shared.syncWithPreferences()
-                }
-                .padding(.leading, settingsRowTextInset)
-            }
             SettingsCard(symbol: "display.2", title: strings.enable, headerSpacing: 0, headerAccessory: {
                 Toggle(strings.enable, isOn: $brightnessEnabled)
                     .labelsHidden()

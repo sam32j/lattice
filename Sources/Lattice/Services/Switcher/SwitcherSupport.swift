@@ -168,7 +168,6 @@ struct SwitcherSearchRecord: Equatable {
 enum SwitcherLetterAction: Equatable {
     case closeWindow
     case quitApp
-    case pinSearch
 }
 
 /// Whether a switcher session lists every app or only the frontmost app's windows.
@@ -214,9 +213,7 @@ enum SwitcherWindowlessApps: String, CaseIterable, Equatable {
 
     /// Preferences are stored as plain strings, so an unknown or missing value
     /// resolves to the behavior the app shipped with instead of nothing.
-    static func mode(storedValue: String?,
-                     takeOverSystemShortcuts: Bool) -> SwitcherWindowlessApps {
-        if takeOverSystemShortcuts { return .all }
+    static func mode(storedValue: String?) -> SwitcherWindowlessApps {
         guard let storedValue, let mode = SwitcherWindowlessApps(rawValue: storedValue) else {
             return fallback
         }
@@ -254,11 +251,13 @@ enum SwitcherScreenPlacement: String, CaseIterable, Equatable {
     }
 }
 
-/// A per-app override for the switcher's regular window and windowless-app
-/// choices. Apps without an override keep following `SwitcherWindowlessApps`.
+/// What the user set for one app in "Hide in switcher". Apps without an
+/// entry follow the global choices, `SwitcherWindowlessApps` included.
 enum SwitcherAppRule: String, CaseIterable, Equatable {
-    case showWithoutWindows
-    case windowsOnly
+    /// The app never appears in the switcher. The only rule left: whether an
+    /// app with no windows is listed is the global "Hide apps without windows"
+    /// choice. Rules saved by earlier builds ("showWithoutWindows",
+    /// "windowsOnly") no longer parse, so those apps fall back to it.
     case hidden
 
     static func rules(storedValue: [String: Any]?) -> [String: SwitcherAppRule] {
@@ -318,7 +317,8 @@ enum SwitcherGridCard {
     /// One 13pt line over one 10.5pt line, 2pt apart, descenders included.
     static let titleHeight: CGFloat = 31
     static var thumbnailWidth: CGFloat { width - padding * 2 }
-    static var thumbnailHeight: CGFloat { height - padding * 2 - titleSpacing - titleHeight }
+    /// The title sits over the thumbnail, so the picture takes the card.
+    static var thumbnailHeight: CGFloat { height - padding * 2 }
     /// The title band sits inside the thumbnail's width so a long name stops
     /// short of the card's rounded corners.
     static var titleWidth: CGFloat { thumbnailWidth - 8 }
@@ -332,11 +332,17 @@ enum SwitcherGridCard {
 /// icon-row panel. Reserve only the space not already provided by its padding.
 enum SwitcherSearchLayout {
     static let chipHeight: CGFloat = 28
+    static let minimumWidth: CGFloat = 180
     static let edgeInset: CGFloat = 12
     static let contentGap: CGFloat = 8
+    /// The narrowest panel that still holds the resting search field.
+    static var minimumPanelWidth: CGFloat { minimumWidth + edgeInset * 2 }
 
-    static func topInset(query: String, isPinned: Bool, contentPadding: CGFloat) -> CGFloat {
-        guard !query.isEmpty || isPinned else { return 0 }
+    /// The header the search field takes. The window layouts always show the
+    /// field, so typing never makes them jump; the simple layout shows it only
+    /// once something is typed, like the system switcher at rest.
+    static func topInset(contentPadding: CGFloat, showsField: Bool = true) -> CGFloat {
+        guard showsField else { return 0 }
         return max(0, edgeInset + chipHeight + contentGap - contentPadding)
     }
 }
@@ -347,7 +353,6 @@ struct SwitcherIconRowLayout: Equatable {
     let appRowSurfaceWidth: CGFloat
     let previewContentWidth: CGFloat
     let previewSurfaceWidth: CGFloat
-    let simpleTitleSurfaceWidth: CGFloat
     let panelSize: CGSize
     let showsShortcutHints: Bool
     /// Icons per row and how many rows there are. One row unless the user
@@ -356,50 +361,78 @@ struct SwitcherIconRowLayout: Equatable {
     let columns: Int
     let rows: Int
     let visibleRows: Int
+    /// How much the row's tiles are shrunk so every app fits on one row, the
+    /// way the system switcher shrinks its icons. 1 when they fit as they are;
+    /// never below `minimumTileScale`, past which the row pages sideways.
+    var tileScale: CGFloat = 1
 
     var isWrapped: Bool { rows > 1 }
 
     /// The rows the icon surface shows at once, stacked without gaps: each
     /// row already carries its own vertical margins.
-    var iconAreaHeight: CGFloat { Self.iconAreaHeight(visibleRows: visibleRows) }
+    var iconAreaHeight: CGFloat { Self.iconAreaHeight(visibleRows: visibleRows) * tileScale }
+
+    /// The smallest the tiles get before the row starts paging instead.
+    static let minimumTileScale: CGFloat = 0.5
 
     static func iconAreaHeight(visibleRows: Int) -> CGFloat { CGFloat(max(1, visibleRows)) * rowHeight }
 
     static var scale: CGFloat { min(PreviewSizing.switcherScale, 1.15) }
-    static var iconSize: CGFloat { 68 * scale }
-    static var selectedIconSize: CGFloat { 78 * scale }
+    /// Measured off the system ⌘Tab switcher on a 1710-point display: about
+    /// 100 points of icon artwork in a 116-point selection square, 132 points
+    /// apart. An app icon's image carries a transparent margin (its artwork
+    /// is 824 of 1024 pixels), so the frame is drawn larger than the artwork
+    /// and the square hugs the artwork, not the frame. Like ⌘Tab's, the icons
+    /// do not follow the thumbnail Preview size; crowded rows shrink as a
+    /// whole (`tileScale`) instead, so this is the size a few open apps get.
+    static let iconSize: CGFloat = 124
+    static let iconArtworkFraction: CGFloat = 824.0 / 1024.0
+    static var iconArtworkSize: CGFloat { (iconSize * iconArtworkFraction).rounded() }
+    static let selectionMargin: CGFloat = 8
+    static var selectedIconSize: CGFloat { iconArtworkSize + selectionMargin * 2 }
+    /// The radii nest like the system's: the icon's own curve, the selection
+    /// square's one margin further out, the container's one band further out
+    /// again, so every corner runs parallel to the icon inside it.
+    static var iconCornerRadius: CGFloat { (iconArtworkSize * 0.185).rounded() }
+    static var selectionCornerRadius: CGFloat { iconCornerRadius + selectionMargin }
     static let iconTileSpacing: CGFloat = 5
-    static let iconTitleHeight: CGFloat = 14
+    static let iconTitleHeight: CGFloat = 16
     static let iconTileVerticalPadding: CGFloat = 5
-    static let iconTileVerticalMargin: CGFloat = 3
+    /// Measured off the system switcher: a band above and below the selection
+    /// square (about 27 points), with the selected name centered in the lower
+    /// one. No padding beyond that, so the row is no taller than ⌘Tab's.
+    static let rowBand: CGFloat = 27
     static var iconLabelWidth: CGFloat { max(selectedIconSize + 12, 86 * scale) }
     /// Text and padding stay legible instead of shrinking with preview size, so
     /// the row follows the tile's real height and never clips its selection.
-    static var rowHeight: CGFloat {
-        selectedIconSize + iconTileSpacing + iconTitleHeight
-            + 2 * (iconTileVerticalPadding + iconTileVerticalMargin)
-    }
-    static var appTileWidth: CGFloat { iconLabelWidth + 12 }
-    static var windowLabelWidth: CGFloat { 120 * scale }
+    static var rowHeight: CGFloat { selectedIconSize + rowBand * 2 }
+    /// App tiles are just the selection square: only the selected app is
+    /// named, and its name may run wider than its tile.
+    static var appTileWidth: CGFloat { selectedIconSize }
+    /// A window tile holds the fixed-size icon square with its title under
+    /// it, so it is sized from the square, not from the thumbnail Preview size.
+    static var windowLabelWidth: CGFloat { selectedIconSize + 16 }
     static var windowTileWidth: CGFloat { windowLabelWidth + 12 }
-    static var previewCardWidth: CGFloat { 220 * scale }
-    static var previewCardHeight: CGFloat { 164 * scale }
+    /// Large enough to read a window's content, not just recognise it.
+    static var previewCardWidth: CGFloat { 300 * scale }
+    static var previewCardHeight: CGFloat { 204 * scale }
     static var appEntryIconSize: CGFloat { 66 * scale }
-    static var previewHeight: CGFloat { previewCardHeight + 76 * scale }
+    /// The selected app's thumbnails float in their own panel under the row.
+    /// The selected icon already names the app, so the panel needs no header.
+    static var previewHeight: CGFloat { previewCardHeight + previewPanelPadding * 2 }
     static var hintHeight: CGFloat { 28 * scale }
     static var hintGap: CGFloat { 8 * scale }
     static var hintBarWidth: CGFloat { 300 * scale }
-    static var rowHorizontalPadding: CGFloat { 8 * scale }
+    /// From the glass edge to the first selection square, as measured on the
+    /// system switcher. It keeps the outer squares clear of the rim, which
+    /// bends whatever sits right against it.
+    static let rowHorizontalPadding: CGFloat = 24
     static var previewPanelPadding: CGFloat { 12 * scale }
     static var padding: CGFloat { 20 * scale }
-    static var spacing: CGFloat { 12 * scale }
+    static var containerCornerRadius: CGFloat { selectionCornerRadius + rowBand }
+    static var previewPanelCornerRadius: CGFloat { 24 * scale }
+    static var spacing: CGFloat { 16 * scale }
     static var previewGap: CGFloat { 10 * scale }
-    static var simpleTitleHeight: CGFloat { 66 * scale }
-    static var simpleTitleGap: CGFloat { 10 * scale }
-    static var simpleTitleChipMaxWidth: CGFloat { 180 * scale }
-    static var simpleTitlePanelPadding: CGFloat { 10 * scale }
-    static let simpleTitleSpacing: CGFloat = 6
-    static let simpleTitleScrollPadding: CGFloat = 1
 
     /// The width `cardCount` preview cards lay out to, including the spacing
     /// the row puts between them. The preview viewport is sized from this and
@@ -419,29 +452,21 @@ struct SwitcherIconRowLayout: Equatable {
     /// The widest row the panel has to hold. Panel sizing and the rows
     /// themselves both measure against this one value, so a row can never come
     /// out wider than the window drawing it and get clipped (issues #710, #730).
-    func contentWidth(simpleMode: Bool, windowRow: Bool) -> CGFloat {
+    func contentWidth(simpleMode: Bool) -> CGFloat {
         let hintWidth = showsShortcutHints ? Self.hintBarWidth : 0
         guard simpleMode else {
             return max(0, panelSize.width - Self.padding * 2)
         }
         return max(appRowSurfaceWidth,
-                   windowRow ? 0 : simpleTitleSurfaceWidth,
-                   hintWidth)
+                   hintWidth,
+                   SwitcherSearchLayout.minimumPanelWidth - Self.padding * 2)
     }
 
-    /// App-only mode keeps the same icon row and shortcut preference, but
-    /// removes the entire preview area so no blank space remains where captures were.
+    /// The simple layout is the icon row alone, like the system switcher:
+    /// no previews and no strip above it, whether or not windows are grouped.
+    /// Each tile names its app or window underneath.
     var simplePanelSize: CGSize {
-        CGSize(width: contentWidth(simpleMode: true, windowRow: false) + Self.padding * 2,
-               height: Self.simpleTitleHeight + Self.simpleTitleGap
-                        + iconAreaHeight + shortcutHintHeight
-                        + Self.padding * 2)
-    }
-
-    /// A flat window row names every entry under its icon, so it needs no
-    /// separate title strip above the row.
-    var simpleWindowPanelSize: CGSize {
-        CGSize(width: contentWidth(simpleMode: true, windowRow: true) + Self.padding * 2,
+        CGSize(width: contentWidth(simpleMode: true) + Self.padding * 2,
                height: iconAreaHeight + shortcutHintHeight + Self.padding * 2)
     }
 
@@ -454,7 +479,6 @@ struct SwitcherIconRowLayout: Equatable {
                                              appRowSurfaceWidth: 0,
                                              previewContentWidth: 0,
                                              previewSurfaceWidth: 0,
-                                             simpleTitleSurfaceWidth: 0,
                                              panelSize: .zero,
                                              showsShortcutHints: true,
                                              columns: 1,
@@ -466,7 +490,7 @@ struct SwitcherIconRowLayout: Equatable {
                         maximumWindowCount: Int = 1,
                         sessionScope: SwitcherSessionScope = .allApps,
                         screenVisibleFrame: CGRect,
-                        showsShortcutHints: Bool = true,
+                        showsShortcutHints: Bool = false,
                         tileWidth: CGFloat = appTileWidth,
                         maxColumns userMax: Int? = nil,
                         searchTopInset: CGFloat = 0) -> SwitcherIconRowLayout {
@@ -477,12 +501,19 @@ struct SwitcherIconRowLayout: Equatable {
         let maxAppContentWidth = max(tileWidth, maxContentWidth - rowHorizontalPadding * 2)
         let fitByWidth = max(1, Int((maxAppContentWidth + spacing) / (tileWidth + spacing)))
         let cap = SwitcherSupport.cappedColumnCount(fitByWidth: fitByWidth, userMax: userMax)
-        // Only a user cap wraps: Auto keeps the single row that pages sideways.
+        // Only a user cap wraps: Auto keeps a single row, like the system
+        // switcher, and shrinks its tiles until every app fits.
         let wraps = userMax != nil && appCount > cap
         let columns = wraps ? cap : appCount
         let rows = wraps ? (appCount + columns - 1) / columns : 1
         let rowIcons = wraps ? columns : appCount
-        let naturalAppRowWidth = CGFloat(rowIcons) * tileWidth + CGFloat(max(0, rowIcons - 1)) * spacing
+        let unscaledAppRowWidth = CGFloat(rowIcons) * tileWidth + CGFloat(max(0, rowIcons - 1)) * spacing
+        let tileScale = wraps || unscaledAppRowWidth <= maxAppContentWidth
+            ? 1
+            : max(minimumTileScale, maxAppContentWidth / unscaledAppRowWidth)
+        let naturalAppRowWidth = unscaledAppRowWidth * tileScale
+        let fitsScaled = max(1, Int((maxAppContentWidth + spacing * tileScale)
+                                    / ((tileWidth + spacing) * tileScale)))
         let naturalPreviewWidth = Self.naturalPreviewWidth(cardCount: windowCount)
         let maxPreviewContentWidth = max(previewCardWidth, maxContentWidth - previewPanelPadding * 2)
         let appRowWidth = min(naturalAppRowWidth, maxAppContentWidth)
@@ -499,39 +530,35 @@ struct SwitcherIconRowLayout: Equatable {
                                      appRowSurfaceWidth - previewPanelPadding * 2))
         let previewWidth = min(naturalPreviewWidth, previewCeiling)
         let previewSurfaceWidth = min(previewWidth + previewPanelPadding * 2, maxContentWidth)
-        let naturalSimpleTitleWidth = CGFloat(windowCount) * simpleTitleChipMaxWidth
-            + CGFloat(max(0, windowCount - 1)) * simpleTitleSpacing
-            + simpleTitleScrollPadding * 2
-            + simpleTitlePanelPadding * 2
-        let simpleTitleSurfaceWidth = min(naturalSimpleTitleWidth, maxContentWidth)
         let hintWidth = showsShortcutHints ? min(hintBarWidth, maxContentWidth) : 0
         let contentWidth = min(max(appRowSurfaceWidth,
                                    previewCeiling + previewPanelPadding * 2,
-                                   hintWidth), maxContentWidth)
+                                   hintWidth,
+                                   SwitcherSearchLayout.minimumPanelWidth - padding * 2), maxContentWidth)
         // Wrapped rows scroll down instead of paging sideways, so every icon
         // counts as visible: that keeps the edge-hover paging switched off.
-        let visibleIconCount = wraps ? appCount : min(appCount, fitByWidth)
+        let visibleIconCount = wraps ? appCount : min(appCount, fitsScaled)
         let width = contentWidth + padding * 2
         let shortcutHintHeight = showsShortcutHints ? hintGap + hintHeight : 0
-        // Rows beyond what the screen holds scroll. Budget for the taller of
-        // the two things above the icons, so either mode fits.
-        let aboveIcons = max(previewHeight + previewGap, simpleTitleHeight + simpleTitleGap)
+        // Rows beyond what the screen holds scroll. Budget for the previews
+        // above the icons; the simple layout has nothing there and fits too.
+        let aboveIcons = previewHeight + previewGap
         let rowBudget = screenVisibleFrame.height * 0.85 - aboveIcons - shortcutHintHeight - padding * 2
             - searchTopInset
         let visibleRows = max(1, min(rows, Int(rowBudget / rowHeight)))
-        let height = previewHeight + previewGap + Self.iconAreaHeight(visibleRows: visibleRows)
+        let height = previewHeight + previewGap + Self.iconAreaHeight(visibleRows: visibleRows) * tileScale
             + shortcutHintHeight + padding * 2
         return SwitcherIconRowLayout(visibleIconCount: visibleIconCount,
                                      appRowContentWidth: appRowWidth,
                                      appRowSurfaceWidth: appRowSurfaceWidth,
                                      previewContentWidth: previewWidth,
                                      previewSurfaceWidth: previewSurfaceWidth,
-                                     simpleTitleSurfaceWidth: simpleTitleSurfaceWidth,
                                      panelSize: CGSize(width: width, height: height),
                                      showsShortcutHints: showsShortcutHints,
                                      columns: wraps ? columns : visibleIconCount,
                                      rows: rows,
-                                     visibleRows: visibleRows)
+                                     visibleRows: visibleRows,
+                                     tileScale: tileScale)
     }
 
     static func compute(count rawCount: Int, screenVisibleFrame: CGRect) -> SwitcherIconRowLayout {
@@ -585,9 +612,6 @@ enum SwitcherSupport {
         return min(max(value, maxColumnsRange.lowerBound), maxColumnsRange.upperBound)
     }
 
-    static var userMaxColumns: Int? {
-        sanitizedMaxColumns(UserDefaults.standard.integer(forKey: DefaultsKey.switcherMaxColumns))
-    }
 
     /// The screen still wins: a cap wider than what fits never overflows it.
     static func cappedColumnCount(fitByWidth: Int, userMax: Int?) -> Int {
@@ -673,16 +697,35 @@ enum SwitcherSupport {
         iconRowMode || simpleMode
     }
 
-    static func capturesPreviews(simpleMode: Bool) -> Bool {
-        !simpleMode
+    /// Whether a session draws window thumbnails. The window shortcut always
+    /// opens the Window previews grid, whatever the layout: switching
+    /// windows means seeing them. The layout choice shapes ⌘Tab alone.
+    static func capturesPreviews(simpleMode: Bool, sessionScope: SwitcherSessionScope) -> Bool {
+        sessionScope == .frontmostApp || !simpleMode
     }
 
-    /// The simple switcher follows the existing one-entry-per-app choice.
-    /// With grouping off or a window-scoped session, its row represents windows directly.
+    /// How far the panel sits above (positive) or below the screen's center,
+    /// in points. The simple row sits a little high, the way the system
+    /// switcher does; Large icons sits lower, since its thumbnails extend
+    /// below the row and would otherwise push the icons up.
+    static func verticalPlacementOffset(iconRowLayout: Bool, simpleMode: Bool) -> CGFloat {
+        guard iconRowLayout else { return 0 }
+        return simpleMode ? 15 : -80
+    }
+
+    /// The layout the user picked applies to the app switcher only; a window
+    /// session is always the Window previews grid.
+    static func usesIconRowLayout(iconRowMode: Bool, simpleMode: Bool,
+                                  sessionScope: SwitcherSessionScope) -> Bool {
+        sessionScope == .allApps && usesIconRowLayout(iconRowMode: iconRowMode, simpleMode: simpleMode)
+    }
+
+    /// The simple switcher shows one icon per app, like the system switcher,
+    /// whatever "Group windows by app" says. A window-scoped session (⌘`)
+    /// lists one app, so its row shows that app's windows instead.
     static func usesWindowRow(simpleMode: Bool,
-                              mergeWindowsByApp: Bool,
                               sessionScope: SwitcherSessionScope) -> Bool {
-        simpleMode && (!mergeWindowsByApp || sessionScope == .frontmostApp)
+        simpleMode && sessionScope == .frontmostApp
     }
 
     static func usesAppGroupsForMainShortcut(iconRowLayout: Bool,
@@ -690,12 +733,19 @@ enum SwitcherSupport {
         iconRowLayout && !windowRow
     }
 
-    /// The grouped simple row still needs every backing window for its title
-    /// chips and window shortcut, while its visible app cap remains grouped.
+    /// "Group windows by app" belongs to the Window previews grid alone: the
+    /// icon layouts already show one icon per app, and Large icons always
+    /// lists every window of the selected app.
+    static func groupsGridByApp(allApps: Bool, mergeWindowsByApp: Bool, iconRowLayout: Bool) -> Bool {
+        allApps && mergeWindowsByApp && !iconRowLayout
+    }
+
+    /// A grouped grid shows one card per app but keeps every backing window,
+    /// so the window shortcut can cycle an app's windows inside its card.
     static func preservesGroupedWindowsDuringEnumeration(allApps: Bool,
                                                          mergeWindowsByApp: Bool,
-                                                         simpleMode: Bool) -> Bool {
-        allApps && mergeWindowsByApp && simpleMode
+                                                         iconRowLayout: Bool) -> Bool {
+        groupsGridByApp(allApps: allApps, mergeWindowsByApp: mergeWindowsByApp, iconRowLayout: iconRowLayout)
     }
 
     /// Expands only the app representatives that survived the grouped cap.
@@ -728,10 +778,11 @@ enum SwitcherSupport {
             .contains(where: excludedBundleIdentifiers.contains)
     }
 
+    /// The window shortcut shows thumbnails in every layout, so the switcher
+    /// needs Screen Recording whenever it is on.
     static func needsScreenRecording(switcherEnabled: Bool,
-                                     simpleMode: Bool,
                                      dockPreviewEnabled: Bool) -> Bool {
-        dockPreviewEnabled || (switcherEnabled && capturesPreviews(simpleMode: simpleMode))
+        dockPreviewEnabled || switcherEnabled
     }
 
     /// Resolves the foreground surface a session is measured against: the
@@ -1007,9 +1058,7 @@ enum SwitcherSupport {
             if let bundleIdentifier = candidate.bundleIdentifier,
                let rule = appRules[bundleIdentifier] {
                 switch rule {
-                case .showWithoutWindows:
-                    return candidate.pid
-                case .windowsOnly, .hidden:
+                case .hidden:
                     return nil
                 }
             }
@@ -1468,7 +1517,8 @@ enum SwitcherSupport {
                                          appRowSurfaceWidth: CGFloat,
                                          previewContentWidth _: CGFloat,
                                          previewSurfaceWidth: CGFloat,
-                                         columns rawColumns: Int? = nil) -> SwitcherIconRowPreviewPlacement {
+                                         columns rawColumns: Int? = nil,
+                                         tileScale: CGFloat = 1) -> SwitcherIconRowPreviewPlacement {
         let appCount = max(1, rawAppCount)
         let visibleIconCount = max(1, rawVisibleIconCount)
         let selectedAppIndex = min(max(0, rawSelectedAppIndex), appCount - 1)
@@ -1484,8 +1534,9 @@ enum SwitcherSupport {
         } else {
             // A wrapped row puts the selection under its column, not its index.
             let column = rawColumns.map { selectedAppIndex % max(1, $0) } ?? selectedAppIndex
-            selectedCenterInRow = rowLeading + SwitcherIconRowLayout.appTileWidth / 2
-                + CGFloat(column) * (SwitcherIconRowLayout.appTileWidth + SwitcherIconRowLayout.spacing)
+            let tileWidth = SwitcherIconRowLayout.appTileWidth * tileScale
+            let stride = (SwitcherIconRowLayout.appTileWidth + SwitcherIconRowLayout.spacing) * tileScale
+            selectedCenterInRow = rowLeading + tileWidth / 2 + CGFloat(column) * stride
         }
 
         let rawLeading = selectedCenterInRow - previewSurfaceWidth / 2
@@ -1822,14 +1873,13 @@ enum SwitcherSupport {
         return commitWhenReady ? .cancelAndSwallow : .swallow
     }
 
-    /// The explicit takeover setting is the authority to change WindowServer's
-    /// shared symbolic-hotkey state. Shortcut matching alone is never enough.
-    static func nativeHotkeysToSuppress(takeOverSystemShortcuts: Bool,
-                                        appsShortcut: GlobalShortcut,
+    /// Suppresses the macOS symbolic hotkeys whose combinations match the
+    /// switcher's configured app or window shortcuts. Non-colliding shortcuts
+    /// leave the macOS switchers untouched automatically.
+    static func nativeHotkeysToSuppress(appsShortcut: GlobalShortcut,
                                         windowShortcut: GlobalShortcut,
                                         nativeShortcuts: [SwitcherNativeSymbolicHotKey: GlobalShortcut])
         -> Set<SwitcherNativeSymbolicHotKey> {
-        guard takeOverSystemShortcuts else { return [] }
         let ownedShortcuts = [appsShortcut, windowShortcut]
         return Set(nativeShortcuts.compactMap { id, nativeShortcut in
             ownedShortcuts.contains { switcherShortcut($0, owns: nativeShortcut) } ? id : nil
@@ -1846,8 +1896,7 @@ enum SwitcherSupport {
     /// 27.2: a session tap saw no key while another process held it). Asking
     /// for nothing then keeps ⌘Tab working instead of leaving it dead until
     /// the app holding it lets go.
-    static func nativeHotkeyIDs(takeOverSystemShortcuts: Bool,
-                                secureInputEnabled: Bool,
+    static func nativeHotkeyIDs(secureInputEnabled: Bool,
                                 appsShortcut: GlobalShortcut,
                                 windowShortcut: GlobalShortcut,
                                 liveEntries: [LiveSystemShortcut]) -> Set<Int32> {
@@ -1857,10 +1906,21 @@ enum SwitcherSupport {
                 SwitcherNativeSymbolicHotKey(rawValue: entry.id).map { ($0, entry.shortcut) }
             },
             uniquingKeysWith: { first, _ in first })
-        return Set(nativeHotkeysToSuppress(takeOverSystemShortcuts: takeOverSystemShortcuts,
-                                           appsShortcut: appsShortcut,
+        return Set(nativeHotkeysToSuppress(appsShortcut: appsShortcut,
                                            windowShortcut: windowShortcut,
                                            nativeShortcuts: nativeShortcuts).map(\.rawValue))
+    }
+
+    /// Native switcher symbolic-hotkey ids to pause briefly while recording a
+    /// switcher shortcut, so pressing ⌘Tab or ⌘` records into the field even
+    /// when the user previously moved the switcher off the system combination.
+    static func recordingSuppressionIDs(for role: GlobalShortcutRole,
+                                        secureInputEnabled: Bool,
+                                        liveEntries: [LiveSystemShortcut]) -> Set<Int32> {
+        guard !secureInputEnabled else { return [] }
+        let permitted = role.permittedSystemShortcutIDs
+        guard !permitted.isEmpty else { return [] }
+        return Set(liveEntries.lazy.map(\.id).filter(permitted.contains))
     }
 
     /// Mirrors the event tap's `allowingExtraShift` match: Shift reverses a
@@ -1991,46 +2051,26 @@ enum SwitcherSupport {
             && swallowedMouseDown
     }
 
-    /// The letters the panel acts on: W closes the highlighted window, Q quits
-    /// its app, and, when `pinSearchEnabled`, S pins the search field open so
-    /// it no longer needs the session's modifier held to stay on screen — that
-    /// modifier is what turns some keys into special characters instead of
-    /// plain letters, e.g. ⌥S types "ß". S is opt-in: existing users who type it as
-    /// the first letter of a search keep filtering by "s" until they turn the
-    /// preference on. A keyboard answers by the letter it types, so all three
-    /// keys stay where they are printed even on layouts that move them
-    /// (measured: French and Italian put W elsewhere, Turkish moves both).
-    /// Layouts that type no Latin letter at all, like Cyrillic and Greek, go
-    /// by the key's position instead, which is exactly where macOS resolves
-    /// their command shortcuts (measured: with Command held both translate
-    /// that key to "w").
-    static func letterAction(typedCharacter: String?, keyCode: Int64, pinSearchEnabled: Bool) -> SwitcherLetterAction? {
+    /// The letters the panel acts on: W closes the highlighted window and Q
+    /// quits its app. Every other letter, S included, goes to the search
+    /// field. A keyboard answers by the letter it types, so both keys stay
+    /// where they are printed even on layouts that move them (measured:
+    /// French and Italian put W elsewhere, Turkish moves both). Layouts that
+    /// type no Latin letter at all, like Cyrillic and Greek, go by the key's
+    /// position instead, which is exactly where macOS resolves their command
+    /// shortcuts (measured: with Command held both translate that key to "w").
+    static func letterAction(typedCharacter: String?, keyCode: Int64) -> SwitcherLetterAction? {
         guard let letter = latinLetter(in: typedCharacter) else {
             switch keyCode {
             case USKeyPosition.w: return .closeWindow
             case USKeyPosition.q: return .quitApp
-            case USKeyPosition.s where pinSearchEnabled: return .pinSearch
             default: return nil
             }
         }
         switch letter {
         case "w": return .closeWindow
         case "q": return .quitApp
-        case "s" where pinSearchEnabled: return .pinSearch
-        default:
-            // ⌥ turns S into "ß", and adding Caps Lock on top turns it into
-            // "Í" instead — a real, differently-accented letter that folds to
-            // an unrelated "i" rather than failing to fold at all, so the S
-            // case above never sees it. Fall back to the key position only when
-            // the original typed character is non-ASCII, to avoid triggering on
-            // remapped Latin layouts where the US-S key types another ASCII letter.
-            if pinSearchEnabled,
-               keyCode == USKeyPosition.s,
-               let typed = typedCharacter,
-               !typed.unicodeScalars.allSatisfy({ $0.isASCII }) {
-                return .pinSearch
-            }
-            return nil
+        default: return nil
         }
     }
 
@@ -2039,7 +2079,6 @@ enum SwitcherSupport {
     private enum USKeyPosition {
         static let q: Int64 = 12
         static let w: Int64 = 13
-        static let s: Int64 = 1
     }
 
     /// The plain letter a keystroke typed, when it typed one. Accents fold
