@@ -281,6 +281,8 @@ final class NotchService: ObservableObject {
     private var inside = false
     private var hoverEmphasized = false
     private var activitySelection = NotchActivitySelection()
+    /// When the current timer activity began, to rank it against an event's countdown.
+    private var timerActivityBegan: Date?
     private var activityPickerMenuOpen = false
     private var hoverState = NotchHoverState()
     private var openedByHover = false
@@ -630,9 +632,28 @@ final class NotchService: ObservableObject {
         NotchSupport.compactActivities(timer: hasTimerActivity, watch: hasWatchActivity, downloads: hasDownloadActivity,
                                       agents: hasAgentActivity, calendar: hasCalendarActivity,
                                       music: hasMusicActivity, keepAwake: hasKeepAwakeActivity,
-                                      videoDownloader: hasVideoDownloadActivity)
+                                      videoDownloader: hasVideoDownloadActivity,
+                                      calendarArrived: calendarHasArrived, timerLeadsCalendar: timerLeadsCalendar)
     }
 
+    private func noteTimerActivityStart() {
+        if hasTimerActivity { if timerActivityBegan == nil { timerActivityBegan = Date() } } else { timerActivityBegan = nil }
+    }
+
+    /// An event under way outranks everything on the closed island.
+    private var calendarHasArrived: Bool { NotchCalendarService.shared.countdown?.ongoing == true }
+
+    /// A finished timer, or one started after the event's countdown appeared,
+    /// shows before the countdown; one already running when it appeared follows it.
+    private var timerLeadsCalendar: Bool {
+        if NotchTimerService.shared.session.completed { return true }
+        let calendar = NotchCalendarService.shared
+        guard let countdown = calendar.countdown, !countdown.ongoing, let began = timerActivityBegan else { return true }
+        return began >= countdown.event.start.addingTimeInterval(-calendar.countdownLeadTime)
+    }
+
+    /// Hover-to-open only: in click-to-open mode the closed island shows no
+    /// more than it does at rest, and its activities live in the right-click menu.
     var showsCompactActivityPicker: Bool {
         (inside || activityPickerMenuOpen) && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking
             && !dragPlaceholder && notice == nil
@@ -2901,6 +2922,7 @@ final class NotchService: ObservableObject {
         defer { if releasedMusicStrip { syncMenuSpaceMonitoring() } }
         syncMascotKeepAwake()
         syncMascotAgents()
+        noteTimerActivityStart()
         activitySelection.reconcile(available: compactActivities)
         if fullscreenCompact {
             finishMusicDeparture()
