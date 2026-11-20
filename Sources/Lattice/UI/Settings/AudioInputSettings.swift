@@ -3,7 +3,7 @@
 
 import SwiftUI
 
-/// Audio Input settings: consolidates microphone level control, mute shortcut, and microphone device priority.
+/// The Input segment of the Audio page: consolidates microphone level control, mute shortcut, and microphone device priority.
 struct AudioInputSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var micMute = MicMuteService.shared
@@ -15,18 +15,14 @@ struct AudioInputSettings: View {
     @AppStorage(DefaultsKey.micMuteMenuBarIndicator)
     private var micMenuBarIndicator = true
 
+    /// The cards only: the Audio page shows them below its segmented control.
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                microphoneCard
-                    .settingsSectionAnchor(.micMute, cornerRadius: 16)
+        VStack(alignment: .leading, spacing: 20) {
+            microphoneCard
+                .settingsSectionAnchor(.micMute, cornerRadius: 16)
 
-                inputPriorityCard
-                    .settingsSectionAnchor(.audioPriority, cornerRadius: 16)
-            }
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .padding(22)
+            inputPriorityCard
+                .settingsSectionAnchor(.audioPriority, cornerRadius: 16)
         }
         .settingsExpansionAnimation(value: [microphoneControlEnabled, priority.inputPriorityEnabled])
     }

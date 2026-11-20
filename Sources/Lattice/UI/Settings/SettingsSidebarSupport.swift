@@ -67,7 +67,7 @@ enum SettingsSidebarSupport {
             // General still renders Camera Preview's section; keep that visit
             // anchored so it scrolls there. Other anchors fall back to the page.
             return destination.sectionAnchor == .cameraPreview ? nil : FeatureSettingsDestination(.general)
-        case .mouse, .keyboard, .audioInput, .audioOutput, .scratchpad:
+        case .mouse, .keyboard, .audio, .scratchpad:
             return items.contains { $0.id == .page(destination.page) }
                 ? nil : FeatureSettingsDestination(destination.page)
         case .energy:

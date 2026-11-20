@@ -8,7 +8,7 @@ import Foundation
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
     case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
-    case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, notch, notchMascot, notchWidget(NotchModule), notchCompanion
+    case mouse, keyboard, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audio, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, notch, notchMascot, notchWidget(NotchModule), notchCompanion
     case shortcuts, dataPermissions, about, videoDownloader
     case captureScreenshotOptions
 }
@@ -60,10 +60,9 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
 
     var page: SettingsPage {
         switch self {
-        case .mixer, .soundOutputSwitcher, .audioOutputPriority:
-            return .audioOutput
-        case .audioPriority, .micMute:
-            return .audioInput
+        // Input and Output are the two segments of one Audio page.
+        case .mixer, .soundOutputSwitcher, .audioOutputPriority, .audioPriority, .micMute:
+            return .audio
         case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper:
             return .energy
         case .scrollDirection, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts,
@@ -84,6 +83,21 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
             return .screenRecorder
         case .fanControl, .power: return .monitor
         case .windowMaximizer, .spacesOrder: return .windowLayout
+        }
+    }
+}
+
+/// The two segments of the Audio page. A deep link into a section picks the
+/// segment that holds it, so routing needs no extra state.
+enum AudioSettingsSide: Hashable, CaseIterable {
+    case input, output
+
+    /// The segment holding `anchor`; nil when the anchor names no audio section.
+    init?(anchor: SettingsSectionAnchor?) {
+        switch anchor {
+        case .micMute?, .audioPriority?: self = .input
+        case .mixer?, .soundOutputSwitcher?, .audioOutputPriority?: self = .output
+        default: return nil
         }
     }
 }
@@ -174,13 +188,13 @@ extension AppFeature {
         case .diskImageInstaller: return FeatureSettingsDestination(.diskImageInstaller)
 
         case .mixer:
-            return FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer)
+            return FeatureSettingsDestination(.audio, sectionAnchor: .mixer)
         case .soundOutputSwitcher:
-            return FeatureSettingsDestination(.audioOutput, sectionAnchor: .soundOutputSwitcher)
+            return FeatureSettingsDestination(.audio, sectionAnchor: .soundOutputSwitcher)
         case .audioPriority:
-            return FeatureSettingsDestination(.audioInput, sectionAnchor: .audioPriority)
+            return FeatureSettingsDestination(.audio, sectionAnchor: .audioPriority)
         case .micMute:
-            return FeatureSettingsDestination(.audioInput, sectionAnchor: .micMute)
+            return FeatureSettingsDestination(.audio, sectionAnchor: .micMute)
         case .musicBlock:
             return FeatureSettingsDestination(.keyboard, sectionAnchor: .musicBlocking)
 
@@ -271,7 +285,7 @@ enum FeatureVisibilitySupport {
         case .cameraPreview: return [.cameraPreview]
         case .diskImageInstaller: return [.diskImageInstaller]
         case .videoDownloader: return [.videoDownloader]
-        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput, .launcherGrid:
+        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audio, .launcherGrid:
             return []
         }
     }

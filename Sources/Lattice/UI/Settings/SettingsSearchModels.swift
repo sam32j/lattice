@@ -23,6 +23,9 @@ struct SettingsSearchItem: Identifiable {
     /// Parallel to `keywords`: the Boolean preference that must be on for
     /// the row to be on screen. `nil` rows are shown whenever the page is.
     var keywordRequirements: [String?] = []
+    /// Parallel to `keywords`: a section that overrides the keyword
+    /// feature's usual destination. `nil` keeps the feature's destination.
+    var keywordAnchors: [SettingsSectionAnchor?] = []
     /// The hub feature this result represents, when it corresponds to exactly
     /// one `AppFeature` — including a dedicated page result such as Homebrew,
     /// whose `id` stays `.page(...)` for identity stability. `nil` for a
