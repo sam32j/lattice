@@ -101,23 +101,28 @@ struct GeneralSettings: View {
                 .labelsHidden()
             }
             Divider()
-            SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
-                Toggle(SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
-                       isOn: Binding(
-                           get: { !hideMenuIcon },
-                           set: { show in
-                               if !show {
-                                   let islandOn = islandEnabled && features.isAvailable(.notch)
-                                   if !islandOn {
-                                       guard LatticeInterfaceConfirmation.confirmHideLattice(over: dialogWindow.window) else { return }
+            VStack(alignment: .leading, spacing: 0) {
+                SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
+                    Toggle(SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
+                           isOn: Binding(
+                               get: { !hideMenuIcon },
+                               set: { show in
+                                   if !show {
+                                       let islandOn = islandEnabled && features.isAvailable(.notch)
+                                       if !islandOn {
+                                           guard LatticeInterfaceConfirmation.confirmHideLattice(over: dialogWindow.window) else { return }
+                                       }
                                    }
+                                   hideMenuIcon = !show
                                }
-                               hideMenuIcon = !show
-                           }
-                       ))
-                    .labelsHidden().toggleStyle(.switch)
+                           ))
+                        .labelsHidden().toggleStyle(.switch)
+                }
+                MenuBarIconPickerRow()
+                    .padding(.leading, settingsRowTextInset)
+                    .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+                    .settingsCollapsible(isExpanded: !hideMenuIcon)
             }
-            if !hideMenuIcon { MenuBarIconPickerRow().padding(.leading, settingsRowTextInset) }
 
             Divider()
             SettingsRow(symbol: "squareshape.split.2x2", title: SettingsFollowupStrings.text(.openLatticeShortcut, l10n.language)) {
@@ -165,25 +170,40 @@ struct GeneralSettings: View {
 
     private var quickControlsCard: some View {
         SettingsCard(title: FeatureStrings.quickToggles(l10n.language).pageTitle) {
-            SettingsRow(symbol: AppFeature.cameraPreview.symbolName,
-                        title: SettingsOwnershipStrings.enable(cameraPreviewTitle, l10n.language)) {
-                PermissionGatedToggle(SettingsOwnershipStrings.enable(cameraPreviewTitle, l10n.language),
-                    isOn: $cameraPreviewEnabled, requiring: cameraRequirements)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .onChange(of: cameraPreviewEnabled) { _, _ in
-                        FeatureRuntime.shared.sync([.cameraPreview])
-                        FeatureRuntime.shared.finishAvailabilityChange()
-                    }
+            SettingsRow(symbol: "circle.lefthalf.filled",
+                        title: SettingsOrganizationStrings.text(.darkMode, l10n.language)) {
+                EmptyView()
             }
-            // Where Camera Preview links and search results land.
-            .settingsSectionAnchor(.cameraPreview)
-            if cameraChildrenEnabled {
+            ShortcutPreferenceRow(role: .darkMode,
+                                  label: FeatureStrings.brightness(l10n.language).toggleSystemAppearanceShortcut) {
+                QuickTogglesService.shared.syncWithPreferences()
+            }
+            .padding(.leading, settingsRowTextInset)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 0) {
+                SettingsRow(symbol: AppFeature.cameraPreview.symbolName,
+                            title: cameraPreviewTitle) {
+                    PermissionGatedToggle(cameraPreviewTitle,
+                        isOn: $cameraPreviewEnabled, requiring: cameraRequirements)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .onChange(of: cameraPreviewEnabled) { _, enabled in
+                            settingsApplyFeatureSwitch(enabled: enabled) {
+                                FeatureRuntime.shared.sync([.cameraPreview])
+                                FeatureRuntime.shared.finishAvailabilityChange()
+                            }
+                        }
+                }
                 ShortcutPreferenceRow(role: .cameraPreview, label: FeatureStrings.cameraPreview(l10n.language).openWithShortcut) {
                     FeatureRuntime.shared.sync([.cameraPreview])
                 }
                 .padding(.leading, settingsRowTextInset)
+                .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+                .settingsCollapsible(isExpanded: cameraChildrenEnabled)
             }
+            .settingsSectionAnchor(.cameraPreview, cornerRadius: 12)
 
             Divider()
 
@@ -191,6 +211,11 @@ struct GeneralSettings: View {
                         title: FeatureStrings.quickToggles(l10n.language).ejectTitle) {
                 EmptyView()
             }
+            ShortcutPreferenceRow(role: .ejectDisks,
+                                  label: FeatureStrings.quickToggles(l10n.language).ejectWithShortcut) {
+                QuickTogglesService.shared.syncWithPreferences()
+            }
+            .padding(.leading, settingsRowTextInset)
             DiskExclusionsList()
                 .padding(.leading, settingsRowTextInset)
         }
