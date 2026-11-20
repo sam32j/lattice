@@ -1505,7 +1505,6 @@ def main():
     scratchpad_reading = "Sources/Lattice/UI/Scratchpad/ScratchpadView.swift"
     write("NotchCompact.swift", "import AppKit\nimport Carbon.HIToolbox\nimport SwiftUI\nextension NotchCompactTests {\n"
           + declaration("Sources/Lattice/UI/Notch/NotchCameraView.swift", "struct NotchCameraView:")
-          + declaration("Sources/Lattice/UI/Notch/NotchCameraView.swift", "struct NotchCameraStopButton:")
           + declaration("Sources/Lattice/UI/Notch/NotchCalendarView.swift", "private struct NotchCalendarEventRow:")
               .replace("private struct", "struct", 1)
           + declaration("Sources/Lattice/UI/Notch/NotchCalendarView.swift", "private struct NotchCountdownChoice:")
