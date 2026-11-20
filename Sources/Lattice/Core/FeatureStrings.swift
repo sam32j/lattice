@@ -45,23 +45,39 @@ enum FeatureStrings {
     }
 
     static func windowLayout(_ language: AppLanguage) -> WindowLayoutFeatureStrings {
-        switch language {
-        case .enUS: return .enUS
-        case .ptBR: return .ptBR
-        case .tr: return .tr
-        case .ru: return .ru
-        case .es: return .es
-        case .sk: return .sk
-        case .de: return .de
-        case .fr: return .fr
-        case .it: return .it
-        case .ja: return .ja
-        case .ko: return .ko
-        case .zhHans: return .zhHans
-        case .zhTW: return .zhTW
-        case .zhHK: return .zhHK
-        case .uk: return .uk
+        var result: WindowLayoutFeatureStrings = switch language {
+        case .enUS: .enUS
+        case .ptBR: .ptBR
+        case .tr: .tr
+        case .ru: .ru
+        case .es: .es
+        case .sk: .sk
+        case .de: .de
+        case .fr: .fr
+        case .it: .it
+        case .ja: .ja
+        case .ko: .ko
+        case .zhHans: .zhHans
+        case .zhTW: .zhTW
+        case .zhHK: .zhHK
+        case .uk: .uk
         }
+        result.quarters = switch language {
+        case .enUS: "Quarters"
+        case .ptBR: "Quartos"
+        case .tr: "Çeyrekler"
+        case .ru: "Четверти"
+        case .es: "Cuartos"
+        case .sk: "Štvrtiny"
+        case .de: "Viertel"
+        case .fr: "Quarts"
+        case .it: "Quarti"
+        case .ja: "4分割"
+        case .ko: "4분할"
+        case .zhHans, .zhTW, .zhHK: "四分"
+        case .uk: "Чверті"
+        }
+        return result
     }
 
     static func monitorAlerts(_ language: AppLanguage) -> MonitorAlertFeatureStrings {
@@ -286,8 +302,8 @@ extension WindowLayoutFeatureStrings {
         fullScreen: "전체 화면",
         previousDisplay: "창을 이전 디스플레이로 이동",
         edgeSnapEnable: "화면 가장자리에 윈도우 맞추기",
-        edgeSnapSection: "화면 가장자리 맞춤",
-        edgeSnapCaption: "켠 다음 윈도우 제목 막대를 아래의 강조된 영역 중 한 곳으로 드래그해 놓으세요. 영역을 클릭하면 윈도우가 놓일 위치를 고를 수 있습니다.",
+        edgeSnapSection: "윈도우를 드래그하여 맞춤",
+        edgeSnapCaption: "윈도우를 화면 가장자리나 모서리로 드래그하여 제자리에 맞춥니다.",
         edgeSnapSystemConflict: "macOS가 같은 가장자리를 사용 중입니다. 데스크탑 및 Dock에서 윈도우 타일링을 끄면 Lattice가 사용할 수 있습니다.",
         edgeSnapOpenSystemSettings: "데스크탑 및 Dock 열기",
         edgeSnapWaitingForSystem: "Lattice에서 켜졌습니다. macOS 타일링을 끄면 바로 작동합니다.",
@@ -296,8 +312,8 @@ extension WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "이 가장자리의 영역",
         gapsSection: "간격",
         gapsCaption: "스냅된 윈도우 사이, 그리고 윈도우와 화면 가장자리 사이의 간격입니다.",
-        windowGap: "윈도우 간격",
-        screenGap: "화면 간격",
+        windowGap: "윈도우 사이 여백",
+        screenGap: "화면 가장자리 여백",
         sideRepeatCycle: "왼쪽/오른쪽 반복 시 크기 순환",
         sideRepeatCycleCaption: "같은 디스플레이에서 절반, 2/3, 1/3 순으로 바뀝니다. 끄면 디스플레이가 여러 개일 때 그 방향의 다음 디스플레이로 이동합니다.",
         gapNone: "없음",
@@ -1487,6 +1503,126 @@ struct WindowLayoutFeatureStrings {
     var holdDelayDefault: String = "Default"
     var holdDelayLonger: String = "Longer"
 
+    static func manageShortcuts(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Manage shortcuts"
+        case .ptBR: "Gerenciar atalhos"
+        case .tr: "Kısayolları yönet"
+        case .ru: "Настроить сочетания клавиш"
+        case .es: "Gestionar atajos"
+        case .sk: "Spravovať skratky"
+        case .de: "Kurzbefehle verwalten"
+        case .fr: "Gérer les raccourcis"
+        case .it: "Gestisci scorciatoie"
+        case .ja: "ショートカットを管理"
+        case .ko: "단축키 관리"
+        case .zhHans: "管理快捷键"
+        case .zhTW: "管理快速鍵"
+        case .zhHK: "管理快捷鍵"
+        case .uk: "Керувати скороченнями"
+        }
+    }
+
+    static func edgeSnapCustomizeHint(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Click any zone to customize its layout."
+        case .ptBR: "Clique em uma zona para personalizar seu layout."
+        case .tr: "Düzenini özelleştirmek için bir bölgeye tıklayın."
+        case .ru: "Нажмите на зону, чтобы настроить её расположение."
+        case .es: "Haz clic en cualquier zona para personalizar su disposición."
+        case .sk: "Kliknutím na oblasť prispôsobíte jej rozloženie."
+        case .de: "Klicke auf einen Bereich, um sein Layout anzupassen."
+        case .fr: "Cliquez sur une zone pour personnaliser sa disposition."
+        case .it: "Fai clic su una zona per personalizzarne la disposizione."
+        case .ja: "ゾーンをクリックして配置をカスタマイズできます。"
+        case .ko: "영역을 클릭하여 배치를 사용자화할 수 있습니다."
+        case .zhHans: "点按任意区域以自定义布局。"
+        case .zhTW: "按一下任一區域以自訂版面。"
+        case .zhHK: "按一下任何區域以自訂版面。"
+        case .uk: "Натисніть будь-яку зону, щоб налаштувати її розташування."
+        }
+    }
+
+    static func edgeSnapEnableZone(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Enable snap zone"
+        case .ptBR: "Ativar zona de ajuste"
+        case .tr: "Tutturma bölgesini etkinleştir"
+        case .ru: "Включить зону привязки"
+        case .es: "Activar zona de ajuste"
+        case .sk: "Zapnúť oblasť prichytenia"
+        case .de: "Einrastbereich aktivieren"
+        case .fr: "Activer la zone d’ancrage"
+        case .it: "Attiva zona di aggancio"
+        case .ja: "スナップゾーンを有効にする"
+        case .ko: "맞춤 영역 활성화"
+        case .zhHans: "启用贴靠区域"
+        case .zhTW: "啟用貼齊區域"
+        case .zhHK: "啟用貼齊區域"
+        case .uk: "Увімкнути зону прилипання"
+        }
+    }
+
+    static func edgeSnapSplitInto(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Split into"
+        case .ptBR: "Dividir em"
+        case .tr: "Bölge sayısı"
+        case .ru: "Разделить на"
+        case .es: "Dividir en"
+        case .sk: "Rozdeliť na"
+        case .de: "Aufteilen in"
+        case .fr: "Diviser en"
+        case .it: "Dividi in"
+        case .ja: "ゾーンの分割"
+        case .ko: "영역 분할"
+        case .zhHans: "拆分为"
+        case .zhTW: "分割為"
+        case .zhHK: "分割為"
+        case .uk: "Розділити на"
+        }
+    }
+
+    static func edgeSnapZoneCount(_ count: Int, _ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: count == 1 ? "1 zone" : "\(count) zones"
+        case .ptBR: count == 1 ? "1 zona" : "\(count) zonas"
+        case .tr: "\(count) bölge"
+        case .ru: count == 1 ? "1 зону" : "\(count) зоны"
+        case .es: count == 1 ? "1 zona" : "\(count) zonas"
+        case .sk: count == 1 ? "1 oblasť" : "\(count) oblasti"
+        case .de: count == 1 ? "1 Bereich" : "\(count) Bereiche"
+        case .fr: count == 1 ? "1 zone" : "\(count) zones"
+        case .it: count == 1 ? "1 zona" : "\(count) zone"
+        case .ja: "\(count)つのゾーン"
+        case .ko: "\(count)개 영역"
+        case .zhHans: "\(count) 个区域"
+        case .zhTW: "\(count) 個區域"
+        case .zhHK: "\(count) 個區域"
+        case .uk: count == 1 ? "1 зону" : "\(count) зони"
+        }
+    }
+
+    static func shortcutsPageTitle(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: "Window Arrangement Shortcuts"
+        case .ptBR: "Atalhos de Organização de Janelas"
+        case .tr: "Pencere Düzenleme Kısayolları"
+        case .ru: "Сочетания клавиш расположения окон"
+        case .es: "Atajos de disposición de ventanas"
+        case .sk: "Skratky usporiadania okien"
+        case .de: "Kurzbefehle für Fensteranordnung"
+        case .fr: "Raccourcis de disposition des fenêtres"
+        case .it: "Scorciatoie disposizione finestre"
+        case .ja: "ウインドウ配置のショートカット"
+        case .ko: "윈도우 배치 단축키"
+        case .zhHans: "窗口排列快捷键"
+        case .zhTW: "視窗排列快速鍵"
+        case .zhHK: "視窗排列快捷鍵"
+        case .uk: "Скорочення розташування вікон"
+        }
+    }
+
     static let enUS = WindowLayoutFeatureStrings(
         title: "Window Management",
         enable: "Enable Window Arrangement",
@@ -1559,8 +1695,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Full Screen",
         previousDisplay: "Move window to previous display",
         edgeSnapEnable: "Snap windows at screen edges",
-        edgeSnapSection: "Drag Windows to Snap",
-        edgeSnapCaption: "Turn this on and drag a window title bar to a highlighted area below. Click an area to choose where the window goes.",
+        edgeSnapSection: "Drag windows to snap",
+        edgeSnapCaption: "Drag a window to a screen edge or corner to snap it into place.",
         edgeSnapSystemConflict: "macOS is using the same edges. Turn off window tiling in Desktop & Dock so Lattice can take over.",
         edgeSnapOpenSystemSettings: "Open Desktop & Dock",
         edgeSnapWaitingForSystem: "Enabled in Lattice. It starts working as soon as macOS tiling is off.",
@@ -1569,8 +1705,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Areas on this edge",
         gapsSection: "Gaps",
         gapsCaption: "Space between snapped windows, and between windows and the screen edge.",
-        windowGap: "Window gap",
-        screenGap: "Screen gap",
+        windowGap: "Margin between windows",
+        screenGap: "Screen edge margin",
         sideRepeatCycle: "Cycle Left or Right sizes",
         sideRepeatCycleCaption: "Cycles half, two-thirds, then one-third.",
         gapNone: "None",
@@ -1653,8 +1789,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Tela cheia",
         previousDisplay: "Mover janela para o display anterior",
         edgeSnapEnable: "Encaixar janelas nas bordas da tela",
-        edgeSnapSection: "Encaixe nas bordas da tela",
-        edgeSnapCaption: "Ative e arraste a barra de título de uma janela até uma das áreas destacadas abaixo. Clique em uma área para escolher onde a janela fica.",
+        edgeSnapSection: "Arrastar janelas para ajustar",
+        edgeSnapCaption: "Arraste uma janela até uma borda ou canto da tela para ajustá-la no lugar.",
         edgeSnapSystemConflict: "O macOS está usando as mesmas bordas. Desligue o encaixe em Mesa e Dock para o Lattice assumir.",
         edgeSnapOpenSystemSettings: "Abrir Mesa e Dock",
         edgeSnapWaitingForSystem: "Ativado no Lattice. Começa a funcionar assim que o encaixe do macOS for desligado.",
@@ -1663,8 +1799,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Áreas nesta borda",
         gapsSection: "Espaçamento",
         gapsCaption: "Espaço entre janelas ajustadas e entre as janelas e a borda da tela.",
-        windowGap: "Espaço entre janelas",
-        screenGap: "Espaço até a borda da tela",
+        windowGap: "Margem entre janelas",
+        screenGap: "Margem da borda da tela",
         sideRepeatCycle: "Repetir Esquerda ou Direita alterna os tamanhos",
         sideRepeatCycleCaption: "Metade, depois dois terços e um terço na mesma tela. Desligado e com mais de uma tela, a repetição move a janela para a próxima tela daquele lado.",
         gapNone: "Nenhum",
@@ -1747,8 +1883,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Tam ekran",
         previousDisplay: "Pencereyi önceki ekrana taşı",
         edgeSnapEnable: "Pencereleri ekran kenarlarına yerleştir",
-        edgeSnapSection: "Ekran Kenarına Yapıştırma",
-        edgeSnapCaption: "Açın ve pencerenin başlık çubuğunu aşağıdaki vurgulu alanlardan birine sürükleyip bırakın. Pencerenin nereye yerleşeceğini seçmek için bir alana tıklayın.",
+        edgeSnapSection: "Tutturmak için pencereleri sürükle",
+        edgeSnapCaption: "Bir pencereyi yerine tutturmak için ekran kenarına veya köşesine sürükleyin.",
         edgeSnapSystemConflict: "macOS aynı kenarları kullanıyor. Lattice’ın devralması için Masaüstü ve Dock’taki pencere döşemeyi kapatın.",
         edgeSnapOpenSystemSettings: "Masaüstü ve Dock’u Aç",
         edgeSnapWaitingForSystem: "Lattice’ta açık. macOS döşemesi kapanınca çalışmaya başlar.",
@@ -1757,8 +1893,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Bu kenardaki alanlar",
         gapsSection: "Boşluklar",
         gapsCaption: "Yaslanan pencereler arasındaki ve pencerelerle ekran kenarı arasındaki boşluk.",
-        windowGap: "Pencere boşluğu",
-        screenGap: "Ekran boşluğu",
+        windowGap: "Pencereler arası kenar boşluğu",
+        screenGap: "Ekran kenarı boşluğu",
         sideRepeatCycle: "Sol veya Sağ tekrarında boyutları döndür",
         sideRepeatCycleCaption: "Aynı ekranda yarım, ardından üçte iki ve üçte bir. Kapalıyken ve birden fazla ekran varken tekrar, pencereyi o yöndeki sonraki ekrana taşır.",
         gapNone: "Yok",
@@ -1841,8 +1977,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Во весь экран",
         previousDisplay: "Переместить окно на предыдущий дисплей",
         edgeSnapEnable: "Привязывать окна к краям экрана",
-        edgeSnapSection: "Привязка к краям экрана",
-        edgeSnapCaption: "Включите и перетащите заголовок окна к одной из подсвеченных областей ниже. Нажмите на область, чтобы выбрать, куда встанет окно.",
+        edgeSnapSection: "Перетаскивать окна для привязки",
+        edgeSnapCaption: "Перетащите окно к краю или углу экрана, чтобы закрепить его на месте.",
         edgeSnapSystemConflict: "macOS использует те же края. Отключите размещение окон в разделе «Рабочий стол и Dock», чтобы их использовал Lattice.",
         edgeSnapOpenSystemSettings: "Открыть «Рабочий стол и Dock»",
         edgeSnapWaitingForSystem: "Включено в Lattice. Заработает сразу после отключения размещения окон macOS.",
@@ -1935,8 +2071,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Pantalla completa",
         previousDisplay: "Mover ventana a la pantalla anterior",
         edgeSnapEnable: "Ajustar ventanas a los bordes de la pantalla",
-        edgeSnapSection: "Ajuste a los bordes de la pantalla",
-        edgeSnapCaption: "Actívalo y arrastra la barra de título de una ventana hasta una de las áreas resaltadas de abajo. Haz clic en un área para elegir dónde se coloca la ventana.",
+        edgeSnapSection: "Arrastrar ventanas para ajustar",
+        edgeSnapCaption: "Arrastra una ventana a un borde o esquina de la pantalla para encajarla en su sitio.",
         edgeSnapSystemConflict: "macOS usa los mismos bordes. Desactiva el ajuste de ventanas en Escritorio y Dock para que Lattice tome el control.",
         edgeSnapOpenSystemSettings: "Abrir Escritorio y Dock",
         edgeSnapWaitingForSystem: "Activado en Lattice. Funcionará en cuanto se desactive el ajuste de ventanas de macOS.",
@@ -1945,8 +2081,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Áreas en este borde",
         gapsSection: "Espaciado",
         gapsCaption: "Espacio entre ventanas ajustadas y entre las ventanas y el borde de la pantalla.",
-        windowGap: "Espacio entre ventanas",
-        screenGap: "Espacio hasta el borde de la pantalla",
+        windowGap: "Margen entre ventanas",
+        screenGap: "Margen del borde de la pantalla",
         sideRepeatCycle: "Repetir Izquierda o Derecha alterna los tamaños",
         sideRepeatCycleCaption: "Mitad, luego dos tercios y un tercio en la misma pantalla. Desactivado y con más de una pantalla, la repetición mueve la ventana a la siguiente pantalla de ese lado.",
         gapNone: "Ninguno",
@@ -2029,8 +2165,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Celá obrazovka",
         previousDisplay: "Presunúť okno na predchádzajúci displej",
         edgeSnapEnable: "Priťahovať okná k okrajom obrazovky",
-        edgeSnapSection: "Prichytávanie k okrajom obrazovky",
-        edgeSnapCaption: "Zapnite to a presuňte záhlavie okna na jednu zo zvýraznených oblastí nižšie. Kliknutím na oblasť vyberiete, kam sa okno umiestni.",
+        edgeSnapSection: "Prichytiť okná potiahnutím",
+        edgeSnapCaption: "Potiahnite okno k okraju alebo rohu obrazovky, aby zapadlo na miesto.",
         edgeSnapSystemConflict: "macOS používa rovnaké okraje. V Ploche a Docku vypnite dlaždicovanie okien, aby to mohol prevziať Lattice.",
         edgeSnapOpenSystemSettings: "Otvoriť Plochu a Dock",
         edgeSnapWaitingForSystem: "Zapnuté vo Lattice. Začne fungovať hneď po vypnutí dlaždicovania v macOS.",
@@ -2039,8 +2175,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Oblasti na tomto okraji",
         gapsSection: "Medzery",
         gapsCaption: "Priestor medzi priťahovanými oknami a medzi oknami a okrajom obrazovky.",
-        windowGap: "Medzera medzi oknami",
-        screenGap: "Medzera od okraja obrazovky",
+        windowGap: "Okraj medzi oknami",
+        screenGap: "Okraj obrazovky",
         sideRepeatCycle: "Opakovaním „Vľavo“ alebo „Vpravo“ striedať veľkosti",
         sideRepeatCycleCaption: "Polovica, potom dve tretiny, potom jedna tretina na tom istom displeji. Keď je to vypnuté a máte viac ako jeden displej, opakovanie presunie okno na ďalší displej na tej strane.",
         gapNone: "Žiadna",
@@ -2123,8 +2259,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Vollbild",
         previousDisplay: "Fenster auf vorheriges Display bewegen",
         edgeSnapEnable: "Fenster an Bildschirmrändern einrasten",
-        edgeSnapSection: "Einrasten an Bildschirmrändern",
-        edgeSnapCaption: "Einschalten und die Titelleiste eines Fensters zu einem der hervorgehobenen Bereiche unten ziehen. Klicke auf einen Bereich, um festzulegen, wohin das Fenster kommt.",
+        edgeSnapSection: "Fenster zum Einrasten ziehen",
+        edgeSnapCaption: "Ziehe ein Fenster an einen Bildschirmrand oder in eine Ecke, um es einzurasten.",
         edgeSnapSystemConflict: "macOS verwendet dieselben Ränder. Deaktiviere die Fensteranordnung unter Schreibtisch & Dock, damit Lattice übernimmt.",
         edgeSnapOpenSystemSettings: "Schreibtisch & Dock öffnen",
         edgeSnapWaitingForSystem: "In Lattice aktiviert. Es funktioniert, sobald die Fensteranordnung von macOS aus ist.",
@@ -2133,8 +2269,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Bereiche an diesem Rand",
         gapsSection: "Abstände",
         gapsCaption: "Abstand zwischen angedockten Fenstern sowie zwischen Fenstern und dem Bildschirmrand.",
-        windowGap: "Fensterabstand",
-        screenGap: "Abstand zum Bildschirmrand",
+        windowGap: "Rand zwischen Fenstern",
+        screenGap: "Bildschirmrand-Abstand",
         sideRepeatCycle: "Links oder Rechts wiederholen wechselt die Größe",
         sideRepeatCycleCaption: "Hälfte, dann zwei Drittel und ein Drittel auf demselben Bildschirm. Ausgeschaltet und bei mehr als einem Bildschirm schiebt die Wiederholung das Fenster auf den nächsten Bildschirm auf dieser Seite.",
         gapNone: "Kein",
@@ -2217,8 +2353,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Plein écran",
         previousDisplay: "Déplacer la fenêtre vers l’écran précédent",
         edgeSnapEnable: "Ancrer les fenêtres aux bords de l’écran",
-        edgeSnapSection: "Ancrage aux bords de l’écran",
-        edgeSnapCaption: "Activez, puis faites glisser la barre de titre d’une fenêtre vers l’une des zones surlignées ci-dessous. Cliquez sur une zone pour choisir où va la fenêtre.",
+        edgeSnapSection: "Faire glisser les fenêtres pour les ancrer",
+        edgeSnapCaption: "Faites glisser une fenêtre vers un bord ou un coin de l’écran pour la mettre en place.",
         edgeSnapSystemConflict: "macOS utilise les mêmes bords. Désactivez le placement des fenêtres dans Bureau et Dock pour laisser Lattice prendre le relais.",
         edgeSnapOpenSystemSettings: "Ouvrir Bureau et Dock",
         edgeSnapWaitingForSystem: "Activé dans Lattice. Il fonctionnera dès que le placement des fenêtres de macOS sera désactivé.",
@@ -2227,8 +2363,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Zones sur ce bord",
         gapsSection: "Espacements",
         gapsCaption: "Espace entre les fenêtres ancrées et entre les fenêtres et le bord de l’écran.",
-        windowGap: "Espace entre fenêtres",
-        screenGap: "Espace au bord de l’écran",
+        windowGap: "Marge entre les fenêtres",
+        screenGap: "Marge du bord de l’écran",
         sideRepeatCycle: "Répéter Gauche ou Droite alterne les tailles",
         sideRepeatCycleCaption: "Moitié, puis deux tiers et un tiers sur le même écran. Désactivé et avec plusieurs écrans, la répétition déplace la fenêtre vers l’écran suivant de ce côté.",
         gapNone: "Aucun",
@@ -2311,8 +2447,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "Schermo intero",
         previousDisplay: "Sposta finestra sul display precedente",
         edgeSnapEnable: "Allinea le finestre ai bordi dello schermo",
-        edgeSnapSection: "Allineamento ai bordi dello schermo",
-        edgeSnapCaption: "Attiva e trascina la barra del titolo di una finestra verso una delle aree evidenziate qui sotto. Fai clic su un’area per scegliere dove va la finestra.",
+        edgeSnapSection: "Trascina le finestre per agganciarle",
+        edgeSnapCaption: "Trascina una finestra verso un bordo o un angolo dello schermo per posizionarla.",
         edgeSnapSystemConflict: "macOS usa gli stessi bordi. Disattiva l’affiancamento in Scrivania e Dock per lasciare il controllo a Lattice.",
         edgeSnapOpenSystemSettings: "Apri Scrivania e Dock",
         edgeSnapWaitingForSystem: "Attivato in Lattice. Funzionerà appena l’affiancamento di macOS sarà disattivato.",
@@ -2321,8 +2457,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Aree su questo bordo",
         gapsSection: "Spaziatura",
         gapsCaption: "Spazio tra le finestre agganciate e tra le finestre e il bordo dello schermo.",
-        windowGap: "Spazio tra finestre",
-        screenGap: "Spazio dal bordo dello schermo",
+        windowGap: "Margine tra le finestre",
+        screenGap: "Margine del bordo dello schermo",
         sideRepeatCycle: "Ripetere Sinistra o Destra alterna le dimensioni",
         sideRepeatCycleCaption: "Metà, poi due terzi e un terzo sullo stesso schermo. Se disattivato e con più di uno schermo, la ripetizione sposta la finestra sullo schermo successivo da quel lato.",
         gapNone: "Nessuno",
@@ -2405,8 +2541,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "フルスクリーン",
         previousDisplay: "ウインドウを前のディスプレイに移動",
         edgeSnapEnable: "画面の端にウインドウをスナップ",
-        edgeSnapSection: "画面端へのスナップ",
-        edgeSnapCaption: "オンにして、ウインドウのタイトルバーを下のハイライトされた領域のいずれかへドラッグします。領域をクリックすると、ウインドウの配置先を選べます。",
+        edgeSnapSection: "ウインドウをドラッグしてスナップ",
+        edgeSnapCaption: "ウインドウを画面の端や角にドラッグして配置します。",
         edgeSnapSystemConflict: "macOSが同じ画面端を使用しています。Latticeで使うには「デスクトップとDock」でウインドウのタイル表示をオフにしてください。",
         edgeSnapOpenSystemSettings: "デスクトップとDockを開く",
         edgeSnapWaitingForSystem: "Latticeでオンになっています。macOSのタイル表示をオフにすると動作します。",
@@ -2415,8 +2551,8 @@ struct WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "この端の領域",
         gapsSection: "間隔",
         gapsCaption: "スナップしたウインドウ同士、およびウインドウと画面端の間隔です。",
-        windowGap: "ウインドウの間隔",
-        screenGap: "画面端との間隔",
+        windowGap: "ウインドウ間の余白",
+        screenGap: "画面端の余白",
         sideRepeatCycle: "左/右の繰り返しでサイズを切り替える",
         sideRepeatCycleCaption: "同じディスプレイで半分、2/3、1/3の順に変わります。オフでディスプレイが複数ある場合、繰り返すとその方向の次のディスプレイへ移動します。",
         gapNone: "なし",
@@ -2499,8 +2635,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "全屏幕",
         previousDisplay: "将窗口移到上一台显示器",
         edgeSnapEnable: "将窗口贴靠到屏幕边缘",
-        edgeSnapSection: "拖动窗口以贴靠",
-        edgeSnapCaption: "开启后，将窗口标题栏拖到下方任一高亮区域即可。点按区域可选择窗口的放置位置。",
+        edgeSnapSection: "拖移窗口以贴靠",
+        edgeSnapCaption: "将窗口拖移到屏幕边缘或角落以贴靠就位。",
         edgeSnapSystemConflict: "macOS 正在使用相同的屏幕边缘。请在“桌面与程序坞”中关闭窗口平铺，让 Lattice 接管。",
         edgeSnapOpenSystemSettings: "打开桌面与程序坞",
         edgeSnapWaitingForSystem: "已在 Lattice 中开启。关闭 macOS 窗口平铺后即可使用。",
@@ -2510,7 +2646,7 @@ struct WindowLayoutFeatureStrings {
         gapsSection: "间距",
         gapsCaption: "贴靠窗口之间以及窗口与屏幕边缘之间的间距。",
         windowGap: "窗口间距",
-        screenGap: "屏幕边距",
+        screenGap: "屏幕边缘间距",
         sideRepeatCycle: "重复左/右时循环尺寸",
         sideRepeatCycleCaption: "在同一显示器上依次切换为一半、三分之二和三分之一。关闭且有多台显示器时，重复操作会把窗口移到该侧的下一台显示器。",
         gapNone: "无",
@@ -2593,8 +2729,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "全螢幕",
         previousDisplay: "將視窗移至上一台顯示器",
         edgeSnapEnable: "將視窗貼齊螢幕邊緣",
-        edgeSnapSection: "螢幕邊緣貼齊",
-        edgeSnapCaption: "開啟後，將視窗標題列拖到下方任一醒目區域即可。按一下區域可選擇視窗的擺放位置。",
+        edgeSnapSection: "拖移視窗以貼齊",
+        edgeSnapCaption: "將視窗拖移到螢幕邊緣或角落以貼齊定位。",
         edgeSnapSystemConflict: "macOS 正在使用相同的螢幕邊緣。請在「桌面與 Dock」關閉視窗並排，讓 Lattice 接管。",
         edgeSnapOpenSystemSettings: "開啟桌面與 Dock",
         edgeSnapWaitingForSystem: "已在 Lattice 中開啟。關閉 macOS 視窗並排後即可使用。",
@@ -2604,7 +2740,7 @@ struct WindowLayoutFeatureStrings {
         gapsSection: "間距",
         gapsCaption: "貼齊視窗之間以及視窗與螢幕邊緣之間的間距。",
         windowGap: "視窗間距",
-        screenGap: "螢幕邊距",
+        screenGap: "螢幕邊緣間距",
         sideRepeatCycle: "重複左/右時循環尺寸",
         sideRepeatCycleCaption: "在同一顯示器上依序切換為一半、三分之二和三分之一。關閉且有多部顯示器時，重複操作會把視窗移到該側的下一部顯示器。",
         gapNone: "無",
@@ -2687,8 +2823,8 @@ struct WindowLayoutFeatureStrings {
         fullScreen: "全螢幕",
         previousDisplay: "將視窗移至上一部顯示器",
         edgeSnapEnable: "將視窗貼齊螢幕邊緣",
-        edgeSnapSection: "螢幕邊緣貼齊",
-        edgeSnapCaption: "開啟後，將視窗標題列拖到下方任一醒目區域即可。按一下區域可選擇視窗的擺放位置。",
+        edgeSnapSection: "拖移視窗以貼齊",
+        edgeSnapCaption: "將視窗拖移到螢幕邊緣或角落以貼齊定位。",
         edgeSnapSystemConflict: "macOS 正在使用相同的螢幕邊緣。請在「桌面與 Dock」關閉視窗並排，讓 Lattice 接管。",
         edgeSnapOpenSystemSettings: "開啟桌面與 Dock",
         edgeSnapWaitingForSystem: "已在 Lattice 中開啟。關閉 macOS 視窗並排後即可使用。",
@@ -2698,7 +2834,7 @@ struct WindowLayoutFeatureStrings {
         gapsSection: "間距",
         gapsCaption: "貼齊視窗之間以及視窗與螢幕邊緣之間的間距。",
         windowGap: "視窗間距",
-        screenGap: "螢幕邊距",
+        screenGap: "螢幕邊緣間距",
         sideRepeatCycle: "重複左/右時循環尺寸",
         sideRepeatCycleCaption: "在同一顯示器上依序切換為一半、三分之二和三分之一。關閉且有多部顯示器時，重複操作會把視窗移到該側的下一部顯示器。",
         gapNone: "無",
@@ -3351,8 +3487,8 @@ extension WindowLayoutFeatureStrings {
         fullScreen: "На весь екран",
         previousDisplay: "Перемістити вікно на попередній дисплей",
         edgeSnapEnable: "Прилипати вікнами до країв екрана",
-        edgeSnapSection: "Прилипання до країв екрана",
-        edgeSnapCaption: "Увімкніть цю функцію й перетягніть заголовок вікна до однієї з підсвічених областей нижче. Натисніть область, щоб вибрати, куди стане вікно.",
+        edgeSnapSection: "Перетягувати вікна для прилипання",
+        edgeSnapCaption: "Перетягніть вікно до краю або кута екрана, щоб закріпити його на місці.",
         edgeSnapSystemConflict: "macOS використовує ті самі краї. Вимкніть мозаїку вікон у розділі «Робочий стіл і Dock», щоб Lattice міг керувати ними.",
         edgeSnapOpenSystemSettings: "Відкрити «Робочий стіл і Dock»",
         edgeSnapWaitingForSystem: "Увімкнено в Lattice. Почне працювати, щойно мозаїку macOS буде вимкнено.",
@@ -3361,8 +3497,8 @@ extension WindowLayoutFeatureStrings {
         edgeSnapAreasOnEdge: "Області на цьому краю",
         gapsSection: "Проміжки",
         gapsCaption: "Проміжок між прилиплими вікнами та між вікнами та краєм екрана.",
-        windowGap: "Проміжок між вікнами",
-        screenGap: "Проміжок екрана",
+        windowGap: "Відступ між вікнами",
+        screenGap: "Відступ від краю екрана",
         sideRepeatCycle: "Повтор «Ліворуч» або «Праворуч» змінює розмір",
         sideRepeatCycleCaption: "Половина, потім дві третини й третина на тому самому дисплеї. Якщо вимкнено й дисплеїв кілька, повтор переносить вікно на наступний дисплей із того боку.",
         gapNone: "Немає",

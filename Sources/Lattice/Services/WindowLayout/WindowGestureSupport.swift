@@ -406,47 +406,57 @@ enum WindowEdgeSnapZone: String, CaseIterable {
     }
 }
 
-/// The placements a drop area can use, in the families Settings lists them
-/// in. Each one fills a fixed part of the screen, so a drag can preview it.
-/// Center, full screen, restore and the display moves depend on the window or
-/// leave the screen, so they are left out.
+/// The placements a snap zone can use, synced with the placement families used
+/// across Window Arrangement. Each one fills a fixed part of the screen, so a
+/// drag can preview it.
 enum WindowEdgeSnapPlacementGroup: CaseIterable {
-    case halves, thirds, quarterRows, quarterColumns, sixths, corners, other
+    case halves, thirds, quarters, sixths, other
 
-    var actions: [WindowLayoutAction] {
+    var sections: [[WindowLayoutAction]] {
         switch self {
         case .halves:
-            return [.leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow, .centerHalf]
+            return [
+                [.leftHalf, .rightHalf],
+                [.topHalf, .bottomHalf],
+                [.centerColumn, .centerRow],
+            ]
         case .thirds:
-            return [.leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds, .centerTwoThirds,
-                    .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds]
-        case .quarterRows:
-            return [.topQuarter, .upperMiddleQuarter, .lowerMiddleQuarter, .bottomQuarter]
-        case .quarterColumns:
-            return [.leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter]
+            return [
+                [.leftThird, .centerThird, .rightThird, .leftTwoThirds, .centerTwoThirds, .rightTwoThirds],
+                [.topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds],
+            ]
+        case .quarters:
+            return [
+                [.topLeft, .topRight, .bottomLeft, .bottomRight],
+                [.leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter],
+                [.topQuarter, .upperMiddleQuarter, .lowerMiddleQuarter, .bottomQuarter],
+            ]
         case .sixths:
-            return [.topLeftSixth, .topCenterSixth, .topRightSixth,
-                    .bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth]
-        case .corners:
-            return [.topLeft, .topRight, .bottomLeft, .bottomRight]
+            return [
+                [.topLeftSixth, .topCenterSixth, .topRightSixth],
+                [.bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth],
+            ]
         case .other:
-            return [.maximize, .marginMaximize]
+            return [[.maximize]]
         }
+    }
+
+    var actions: [WindowLayoutAction] {
+        sections.flatMap { $0 }
     }
 
     func title(_ text: WindowLayoutFeatureStrings) -> String {
         switch self {
         case .halves: return text.halves
         case .thirds: return text.thirds
-        case .quarterRows: return text.quarterRows
-        case .quarterColumns: return text.quarterColumns
+        case .quarters: return text.quarters
         case .sixths: return text.sixths
-        case .corners: return text.corners
         case .other: return text.other
         }
     }
 
     static let placements = Set(allCases.flatMap(\.actions))
+    static let acceptedPlacements = placements.union([.centerHalf])
 }
 
 /// What each drop area does. A corner holds one placement, and a straight
@@ -545,7 +555,7 @@ struct WindowEdgeSnapLayout: Equatable {
 
     private static func accepts(_ actions: [WindowLayoutAction], for zone: WindowEdgeSnapZone) -> Bool {
         !actions.isEmpty && actions.count <= zone.maximumParts
-            && actions.allSatisfy(WindowEdgeSnapPlacementGroup.placements.contains)
+            && actions.allSatisfy(WindowEdgeSnapPlacementGroup.acceptedPlacements.contains)
     }
 }
 
@@ -874,8 +884,7 @@ enum WindowEdgeSnapSupport {
                                                         current: screen.visibleFrame,
                                                         visibleFrame: screen.visibleFrame,
                                                         windowGap: WindowLayoutGaps.windowGap,
-                                                        screenGap: WindowLayoutGaps.screenGap,
-                                                        marginPercent: WindowLayoutMargin.percent)
+                                                        screenGap: WindowLayoutGaps.screenGap)
             return WindowEdgeSnapTarget(zone: zone,
                                         action: action,
                                         frame: targetFrame.integral,
