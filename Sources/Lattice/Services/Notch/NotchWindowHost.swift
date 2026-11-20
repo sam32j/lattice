@@ -1109,6 +1109,8 @@ final class NotchPanel: NSPanel, NotchWaveHold {
     /// Only override a stale background-app cursor on the visible surface.
     var nonKeyCursorSurfaceContains: ((CGPoint) -> Bool)?
     var handleScroll: ((NSEvent) -> Bool)?
+    /// A right-click the island answers itself, such as the closed island's activity menu.
+    var handleSecondaryClick: ((NSEvent) -> Bool)?
     var handleIndirectTouches: ((NSEvent, NSView) -> Bool)?
     var visibilityDidChange: (() -> Void)?
     /// Set while the panel is offscreen only to change displays. The music
@@ -1161,6 +1163,7 @@ final class NotchPanel: NSPanel, NotchWaveHold {
             // than inheriting the I-beam from a text field beneath it.
             NSCursor.arrow.set()
         }
+        if event.type == .rightMouseDown, handleSecondaryClick?(event) == true { return }
         if event.type == .scrollWheel {
             if takesKeyForInput() {
                 acceptsKeyFocus = true

@@ -1553,6 +1553,7 @@ final class NotchService: ObservableObject {
         }
         syncShortcut()
         if !NotchTimerSupport.isEnabled() { NotchTimerService.shared.stop() }
+        syncRightClickTap()
         // A watch keeps reading while the island is away, as on the lock
         // screen, and says so with a notification if it cannot show itself.
         NotchWatchService.shared.syncWithPreferences()
@@ -1781,6 +1782,7 @@ final class NotchService: ObservableObject {
         openedByHover = false
         removeEventMonitors()
         removeGestureScrollMonitors()
+        stopRightClickTap()
         removeScreenEdgeClickMonitors()
         removeHiddenHoverMonitors()
         removeHoverExitMonitors()
@@ -4034,6 +4036,8 @@ final class NotchService: ObservableObject {
                                         background: { AnyView(NotchWindowBackground(presentation: $0)) },
                                         quickAccess: { AnyView(NotchQuickAccessView(service: self, motion: $0, backdrop: $1)) })
             windowHost?.missionControlDidRestore = { [weak self] in self?.missionControlDidRestore() }
+            panel?.handleSecondaryClick = { [weak self] event in self?.handleClosedIslandRightClick(event: event) ?? false }
+            panel?.takesKeyForInput = { [weak self] in self?.expanded == true }
             windowHost?.missionControlDidConceal = { [weak self] in self?.missionControlDidConceal() }
             windowHost?.setHoverHandler { [weak self] in self?.hover($0) }
             panel?.title = FeatureStrings.notch(L10n.shared.language).title
@@ -6129,4 +6133,11 @@ extension NSScreen {
     var notchDisplayID: CGDirectDisplayID {
         (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
     }
+}
+
+/// Runs one item of the island's activity menu; the item keeps it alive.
+private final class NotchActivityMenuAction: NSObject {
+    private let run: () -> Void
+    init(_ run: @escaping () -> Void) { self.run = run }
+    @objc func runItem() { run() }
 }
