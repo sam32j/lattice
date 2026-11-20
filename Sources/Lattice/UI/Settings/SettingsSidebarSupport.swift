@@ -34,7 +34,7 @@ enum SettingsSidebarSupport {
         let pageItem = SettingsSidebarItem(id: .page(page),
                                            destination: FeatureSettingsDestination(page),
                                            title: title, icon: icon)
-        if page == .general || page == .monitor || page == .dock || page == .windowLayout || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audioInput || page == .audioOutput || page == .scratchpad {
+        if page == .general || page == .monitor || page == .dock || page == .windowLayout || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audio || page == .scratchpad {
             return [pageItem]
         }
         var rows = includePage ? [pageItem] : []
@@ -84,7 +84,7 @@ enum SettingsSidebarSupport {
                           in items: [SettingsSidebarItem],
                           preferredID: SettingsSidebarItem.ID? = nil)
         -> SettingsSidebarItem.ID? {
-        // Screenshot/recording options are detail pages, not sidebar entries.
+        // Screenshot/recording options and window arrangement shortcuts are detail pages, not sidebar entries.
         if destination.page == .screenRecorder || destination.page == .captureScreenshotOptions,
            items.contains(where: { $0.id == .page(.screenshot) }) {
             return .page(.screenshot)

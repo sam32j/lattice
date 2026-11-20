@@ -112,8 +112,6 @@ struct WindowSnappingStrings {
 /// label.
 struct WindowSnappingPanelStrings {
     let maximize: String
-    let maximizeMargin: String
-    let fullScreen: String
     let centerWindow: String
     let prevDisplay: String
     let nextDisplay: String
@@ -168,7 +166,7 @@ struct WindowSnappingPanelStrings {
         switch language {
         case .enUS: return enUS
         case .ptBR:
-            return .init(maximize: "Maximizar", maximizeMargin: "Maximizar com margem", fullScreen: "Tela cheia",
+            return .init(maximize: "Maximizar",
                          centerWindow: "Centralizar", prevDisplay: "Tela anterior", nextDisplay: "Próxima tela",
                          restore: "Restaurar tamanho anterior", quickActions: "AÇÕES RÁPIDAS",
                          gridHint: "Clique para encaixar • Arraste para abranger • Role para alternar",
@@ -182,7 +180,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "%@ (pilha)", threeColumns: "3 colunas", quarters: "Quartos 2×2",
                          mainStack: "Principal + pilha")
         case .tr:
-            return .init(maximize: "Büyüt", maximizeMargin: "Kenar boşluklu büyüt", fullScreen: "Tam ekran",
+            return .init(maximize: "Büyüt",
                          centerWindow: "Ortala", prevDisplay: "Önceki ekran", nextDisplay: "Sonraki ekran",
                          restore: "Önceki boyuta dön", quickActions: "HIZLI EYLEMLER",
                          gridHint: "Yerleştirmek için tıklayın • Yaymak için sürükleyin • Değiştirmek için kaydırın",
@@ -196,7 +194,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "%@ yığın", threeColumns: "3 sütun", quarters: "2×2 çeyrek",
                          mainStack: "Ana + yığın")
         case .ru:
-            return .init(maximize: "Развернуть", maximizeMargin: "Развернуть с отступом", fullScreen: "Полный экран",
+            return .init(maximize: "Развернуть",
                          centerWindow: "По центру", prevDisplay: "Пред. дисплей", nextDisplay: "След. дисплей",
                          restore: "Вернуть прежний размер", quickActions: "БЫСТРЫЕ ДЕЙСТВИЯ",
                          gridHint: "Щелчок — привязать • Перетаскивание — охватить • Прокрутка — переключить",
@@ -210,7 +208,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "Стопка %@", threeColumns: "3 столбца", quarters: "Четверти 2×2",
                          mainStack: "Основное + стопка")
         case .es:
-            return .init(maximize: "Maximizar", maximizeMargin: "Maximizar con margen", fullScreen: "Pantalla completa",
+            return .init(maximize: "Maximizar",
                          centerWindow: "Centrar", prevDisplay: "Pantalla anterior", nextDisplay: "Pantalla siguiente",
                          restore: "Restaurar tamaño anterior", quickActions: "ACCIONES RÁPIDAS",
                          gridHint: "Clic para ajustar • Arrastra para abarcar • Desplázate para cambiar",
@@ -224,7 +222,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "Pila %@", threeColumns: "3 columnas", quarters: "Cuartos 2×2",
                          mainStack: "Principal + pila")
         case .sk:
-            return .init(maximize: "Maximalizovať", maximizeMargin: "Maximalizovať s okrajom", fullScreen: "Celá obrazovka",
+            return .init(maximize: "Maximalizovať",
                          centerWindow: "Na stred", prevDisplay: "Predch. displej", nextDisplay: "Ďalší displej",
                          restore: "Obnoviť predošlú veľkosť", quickActions: "RÝCHLE AKCIE",
                          gridHint: "Kliknutím prichytíte • Potiahnutím roztiahnete • Posúvaním prepnete",
@@ -238,7 +236,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "Stoh %@", threeColumns: "3 stĺpce", quarters: "Štvrtiny 2×2",
                          mainStack: "Hlavné + stoh")
         case .de:
-            return .init(maximize: "Maximieren", maximizeMargin: "Mit Rand maximieren", fullScreen: "Vollbild",
+            return .init(maximize: "Maximieren",
                          centerWindow: "Zentrieren", prevDisplay: "Vorh. Display", nextDisplay: "Nächstes Display",
                          restore: "Vorherige Größe wiederherstellen", quickActions: "SCHNELLAKTIONEN",
                          gridHint: "Klicken zum Anordnen • Ziehen zum Aufspannen • Scrollen zum Wechseln",
@@ -252,7 +250,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "Stapel %@", threeColumns: "3 Spalten", quarters: "2×2-Viertel",
                          mainStack: "Haupt + Stapel")
         case .fr:
-            return .init(maximize: "Agrandir", maximizeMargin: "Agrandir avec marge", fullScreen: "Plein écran",
+            return .init(maximize: "Agrandir",
                          centerWindow: "Centrer", prevDisplay: "Écran préc.", nextDisplay: "Écran suiv.",
                          restore: "Rétablir la taille précédente", quickActions: "ACTIONS RAPIDES",
                          gridHint: "Cliquez pour ancrer • Glissez pour étendre • Faites défiler pour changer",
@@ -266,7 +264,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "Pile %@", threeColumns: "3 colonnes", quarters: "Quarts 2×2",
                          mainStack: "Principal + pile")
         case .it:
-            return .init(maximize: "Ingrandisci", maximizeMargin: "Ingrandisci con margine", fullScreen: "Schermo intero",
+            return .init(maximize: "Ingrandisci",
                          centerWindow: "Centra", prevDisplay: "Monitor prec.", nextDisplay: "Monitor succ.",
                          restore: "Ripristina dimensioni precedenti", quickActions: "AZIONI RAPIDE",
                          gridHint: "Clic per agganciare • Trascina per estendere • Scorri per cambiare",
@@ -280,7 +278,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "Pila %@", threeColumns: "3 colonne", quarters: "Quarti 2×2",
                          mainStack: "Principale + pila")
         case .ja:
-            return .init(maximize: "最大化", maximizeMargin: "余白付きで最大化", fullScreen: "フルスクリーン",
+            return .init(maximize: "最大化",
                          centerWindow: "中央に配置", prevDisplay: "前のディスプレイ", nextDisplay: "次のディスプレイ",
                          restore: "前のサイズに戻す", quickActions: "クイックアクション",
                          gridHint: "クリックでスナップ・ドラッグで範囲指定・スクロールで切り替え",
@@ -294,7 +292,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "%@スタック", threeColumns: "3列", quarters: "2×2の4分割",
                          mainStack: "メイン + スタック")
         case .ko:
-            return .init(maximize: "최대화", maximizeMargin: "여백 두고 최대화", fullScreen: "전체 화면",
+            return .init(maximize: "최대화",
                          centerWindow: "가운데", prevDisplay: "이전 디스플레이", nextDisplay: "다음 디스플레이",
                          restore: "이전 크기로 복원", quickActions: "빠른 동작",
                          gridHint: "클릭해 스냅 • 드래그해 범위 지정 • 스크롤해 전환",
@@ -308,7 +306,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "%@ 스택", threeColumns: "3열", quarters: "2×2 4분할",
                          mainStack: "메인 + 스택")
         case .zhHans:
-            return .init(maximize: "最大化", maximizeMargin: "留边最大化", fullScreen: "全屏",
+            return .init(maximize: "最大化",
                          centerWindow: "居中", prevDisplay: "上一个显示器", nextDisplay: "下一个显示器",
                          restore: "恢复之前的大小", quickActions: "快捷操作",
                          gridHint: "点按吸附 • 拖移跨越 • 滚动切换",
@@ -322,7 +320,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "%@堆叠", threeColumns: "3 列", quarters: "2×2 四分",
                          mainStack: "主 + 堆叠")
         case .zhTW, .zhHK:
-            return .init(maximize: "最大化", maximizeMargin: "留邊最大化", fullScreen: "全螢幕",
+            return .init(maximize: "最大化",
                          centerWindow: "置中", prevDisplay: "上一個顯示器", nextDisplay: "下一個顯示器",
                          restore: "恢復之前的大小", quickActions: "快速動作",
                          gridHint: "點按吸附 • 拖移跨越 • 捲動切換",
@@ -336,7 +334,7 @@ struct WindowSnappingPanelStrings {
                          stackFormat: "%@堆疊", threeColumns: "3 欄", quarters: "2×2 四分",
                          mainStack: "主 + 堆疊")
         case .uk:
-            return .init(maximize: "Розгорнути", maximizeMargin: "Розгорнути з відступом", fullScreen: "Повний екран",
+            return .init(maximize: "Розгорнути",
                          centerWindow: "По центру", prevDisplay: "Попер. дисплей", nextDisplay: "Наст. дисплей",
                          restore: "Повернути попередній розмір", quickActions: "ШВИДКІ ДІЇ",
                          gridHint: "Клацання — прив’язати • Перетягування — охопити • Прокручування — перемкнути",
@@ -353,7 +351,7 @@ struct WindowSnappingPanelStrings {
     }
 
     static let enUS = WindowSnappingPanelStrings(
-        maximize: "Maximize", maximizeMargin: "Maximize Margin", fullScreen: "Full Screen",
+        maximize: "Maximize",
         centerWindow: "Center", prevDisplay: "Prev Display", nextDisplay: "Next Display",
         restore: "Restore Previous Size", quickActions: "QUICK ACTIONS",
         gridHint: "Click to snap • Drag to span • Scroll to cycle",
