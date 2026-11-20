@@ -152,9 +152,9 @@ enum ReleaseChangeAliases {
             "music bars that follow playback"]
         case .notchDownloads: return [.island("downloads"), .island("download"), "safari downloads",
             "downloads folder", "downloads page", "completed download", "completed downloads"]
-        case .notchAgents: return ["ai agents", "ai agent", "claude code", "claude code timer", "codex", "ai usage",
+        case .notchAgents: return ["ai agents", "ai agent", "claude code", "claude code timer", "codex", "ai usage", "agents",
             "opencode", "github copilot", .island("agent"), .island("agents")]
-        case .notchWatch: return [.exact("Watch")]
+        case .notchWatch: return [.exact("Screen Watcher"), .exact("Watch")]
         case .notchMascot: return ["companion"]
         case .monitorCPU: return ["cpu temperature", "cpu load", "cpu readings", "per core", "per-core",
             "processor temperature", "process breakdowns", "cpu alert", "cpu and gpu temperatures"]
