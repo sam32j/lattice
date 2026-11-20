@@ -40,6 +40,14 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
         var onExit: (() -> Void)?
         private var keyMonitor: Any?
         private var clickMonitor: Any?
+        /// The modifiers the latest flagsChanged reported, which is what the
+        /// field previews. The recording tap sits at the HID head, ahead of
+        /// any event-tap remapper (a hyper key that turns Caps Lock into
+        /// Control and then stamps Command and Option on downstream), so its
+        /// key press can carry fewer modifiers than the user is holding. The
+        /// flagsChanged events reach this app after every such remapper, so
+        /// they are the source of truth for what the user sees held.
+        private(set) var previewModifiers: GlobalShortcutModifiers = []
 
         init(onKeyDown: @escaping (NSEvent) -> Void,
              onFlagsChanged: @escaping (NSEvent) -> Void,
@@ -55,6 +63,7 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
                     guard let self, Self.tapOwner === self,
                           let key = UInt16(exactly: keyCode) else { return }
                     var flags = NSEvent.ModifierFlags(rawValue: UInt(rawFlags.rawValue))
+                    let modifiers = modifiers.union(self.previewModifiers)
                     if modifiers.contains(.control) { flags.insert(.control) }
                     if modifiers.contains(.option) { flags.insert(.option) }
                     if modifiers.contains(.shift) { flags.insert(.shift) }
@@ -75,6 +84,7 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
                 keyMonitor = NSEvent.addLocalMonitorForEvents(
                     matching: [.keyDown, .flagsChanged]) { [weak self] event in
                         if event.type == .flagsChanged {
+                            self?.noteFlagsChanged(event.modifierFlags)
                             self?.onFlagsChanged(event)
                             return nil
                         }
@@ -105,6 +115,10 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
             }
         }
 
+        func noteFlagsChanged(_ flags: NSEvent.ModifierFlags) {
+            previewModifiers = GlobalShortcutModifiers(eventFlags: flags)
+        }
+
         func remove() {
             // SwiftUI can install a replacement before dismantling this view.
             // Only the current owner may release the shared recording tap.
@@ -116,6 +130,7 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
                 NSEvent.removeMonitor(keyMonitor)
                 self.keyMonitor = nil
             }
+            previewModifiers = []
             if let clickMonitor {
                 NSEvent.removeMonitor(clickMonitor)
                 self.clickMonitor = nil
