@@ -1641,6 +1641,8 @@ def main():
     music_visibility = music_visibility.replace("UserDefaults.standard", "ReviewDefaults.current!")
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
     music_visibility = music_visibility.replace("videoDownloader: hasVideoDownloadActivity", "videoDownloader: false")
+    music_visibility = music_visibility.replace("calendarArrived: calendarHasArrived, timerLeadsCalendar: timerLeadsCalendar",
+                                                "calendarArrived: false, timerLeadsCalendar: true")
     music_visibility = music_visibility.replace("playback?.isPlaying == true)",
                                                 "playback?.isPlaying == true, in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace(
@@ -1754,6 +1756,7 @@ def main():
           + declaration(notch, "    private func switchCompactSelection(").replace("private func", "func", 1)
           + declaration(notch, "    func refreshPresentation(")
               .replace("NotchSupport.coversMenus()", "UserDefaults.standard.coversMenus")
+              .replace("        noteTimerActivityStart()\n", "")
           + declaration(notch, "    private func applyMenuSpace(").replace("private func", "func", 1)
           + declaration(notch, "    func presentCapture(")
               .replace("content: AnyView, actions: AnyView? = nil", "content: Bool, actions: Bool? = nil")

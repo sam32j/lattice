@@ -1054,10 +1054,14 @@ final class NotchMirrorModel: ObservableObject {
     }
 }
 
-/// A choice outlives the gaps in what was chosen, such as a song changing
-/// or an agent between turns: the island shows the next activity meanwhile
-/// and returns to the chosen one. It ends when nothing is left to show, so
-/// work returning later starts from the automatic order again.
+/// What the closed island shows. `preferred` is the activity chosen to
+/// show; `plus` is a timer or event joined beside it, which keeps its reading
+/// right of the camera while the chosen activity takes the left. A choice
+/// outlives the gaps in what was chosen, such as a song changing or an agent
+/// between turns: the island shows the next activity meanwhile, still with
+/// the plus when it pairs, and returns to the chosen one. A plus that ends is
+/// dropped. Hiding clears the island until a new activity starts. Everything
+/// ends when nothing is left to show.
 struct NotchActivitySelection {
     private(set) var preferred: NotchCompactActivity?
     private(set) var companion: NotchCompactActivity?
@@ -1928,14 +1932,19 @@ enum NotchSupport {
                           calendar: calendar, music: music, keepAwake: keepAwake).first
     }
 
-    /// Keep Awake comes last: a session can run all day, even more than
-    /// music plays, and it only says that the Mac stays awake. A watch
-    /// follows the timer: the person started both and is waiting on them.
+    /// The automatic order: an event that has begun, then a timer that just
+    /// finished or was started after the event's countdown appeared, then the
+    /// countdown, then a timer that was already running before it appeared.
+    /// A watch follows: the person started it and is waiting on it. Keep Awake
+    /// comes last: a session can run all day and only says the Mac stays awake.
     static func compactActivities(timer: Bool, watch: Bool = false, downloads: Bool, agents: Bool,
-                                  calendar: Bool, music: Bool, keepAwake: Bool = false, videoDownloader: Bool = false) -> [NotchCompactActivity] {
+                                  calendar: Bool, music: Bool, keepAwake: Bool = false, videoDownloader: Bool = false,
+                                  calendarArrived: Bool = false, timerLeadsCalendar: Bool = true) -> [NotchCompactActivity] {
+        let arrived = calendar && calendarArrived
         let candidates: [(Bool, NotchCompactActivity)] = [
-            (videoDownloader, .videoDownloader), (timer, .timer), (watch, .watch), (downloads, .downloads), (agents, .agents),
-            (calendar, .calendar), (music, .music), (keepAwake, .keepAwake)
+            (arrived, .calendar), (timer && timerLeadsCalendar, .timer), (calendar && !arrived, .calendar),
+            (timer && !timerLeadsCalendar, .timer), (watch, .watch), (videoDownloader, .videoDownloader),
+            (downloads, .downloads), (agents, .agents), (music, .music), (keepAwake, .keepAwake)
         ]
         return candidates.compactMap { $0.0 ? $0.1 : nil }
     }
