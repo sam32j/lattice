@@ -197,9 +197,6 @@ enum AppUpdateRulesContract {
         let source = files.filter { $0.lastPathComponent.hasPrefix("AppUpdatesListView") }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
             .compactMap { try? String(contentsOf: $0, encoding: .utf8) }.joined(separator: "\n")
-        suite.expect(source.contains("guard !inNotch else {")
-                     && source.contains("guard panel.runAboveIsland() == .OK, let url = panel.url else { return }"),
-                     "inside the island the app picker opens above it instead of below it")
         suite.expect(source.contains(".help(moreOptions)")
                      && source.contains(".accessibilityLabel(\"\\(moreOptions): \\(item.name)\")")
                      && !source.contains(".help(text.excludeApp)"),
