@@ -32,6 +32,21 @@ enum KeyCaptureBridgeTests {
             expect(events.count == 1 && events.first?.keyCode == 48
                    && events.first?.modifierFlags.contains([.command, .control, .function]) == true,
                    "system-intercepted keys reach the compact recorder with all effective modifiers")
+            events.removeAll()
+            // A hyper key remapped in two stages: Caps Lock arrives at the HID
+            // head as Control, and an event-tap remapper adds Command and
+            // Option downstream, where the preview's flagsChanged comes from.
+            first.noteFlagsChanged([.control, .option, .command])
+            TapBoundary.handler?(38, [.control], [.maskControl])
+            expect(events.count == 1 && events.first?.keyCode == 38
+                   && GlobalShortcutModifiers(eventFlags: events.first?.modifierFlags ?? [])
+                       == [.control, .option, .command],
+                   "a remapped hyper key records every modifier the preview showed")
+            events.removeAll()
+            first.noteFlagsChanged([])
+            TapBoundary.handler?(38, [.control], [.maskControl])
+            expect(GlobalShortcutModifiers(eventFlags: events.first?.modifierFlags ?? []) == [.control],
+                   "released preview modifiers do not linger into the next press")
             second.install(view: view)
             first.remove()
             expect(TapBoundary.ends == 0 && TapBoundary.handler != nil,
