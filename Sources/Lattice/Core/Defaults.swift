@@ -135,10 +135,8 @@ enum DefaultsKey {
     static let appOutputDevices = "appOutputDevices"      // [bundle id: audio device UID]
     static let mixerCallAppVolumeEnabled = "mixerCallAppVolumeEnabled" // bundle ids explicitly allowed to process call audio despite screen-sharing echo
     static let mixerUniversalOutputDevice = "mixerUniversalOutputDevice" // retired: all-apps output saved by 3.4.1 betas
-    static let mixerShowFinder = "mixerShowFinder"
     static let mixerAppArrangement = "mixerAppArrangement"
     static let mixerHideInactiveApps = "mixerHideInactiveApps"
-    static let mixerHiddenApps = "mixerHiddenApps"        // [persistence id: display name] kept out of the mixer list (issue #300)
     static let volumeMixerEnabled = "volumeMixerEnabled"
     static let microphoneLevelControlEnabled = "microphoneLevelControlEnabled"
     static let mixerLowerVolumeOnHeadphonesDisconnect = "mixerLowerVolumeOnHeadphonesDisconnect"
@@ -1063,7 +1061,6 @@ enum Defaults {
         DefaultsKey.includeBetaUpdates: false,
         DefaultsKey.releaseNotesOnUpdate: true,
         DefaultsKey.lastUpdateCheckTime: 0.0,
-        DefaultsKey.mixerShowFinder: true,
         DefaultsKey.volumeMixerEnabled: true,
         DefaultsKey.microphoneLevelControlEnabled: true,
         DefaultsKey.mixerHideInactiveApps: false,

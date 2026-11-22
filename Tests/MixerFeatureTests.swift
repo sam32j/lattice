@@ -952,40 +952,6 @@ enum MixerFeatureTests {
                "a level the percent labels show as 0% mutes the output")
         suite.expect(!MixerRoutingSupport.mutesOutput(atVolume: 0.005) && !MixerRoutingSupport.mutesOutput(atVolume: 1),
                "a level the percent labels show as 1% or more keeps the output audible")
-        suite.expect(!MixerRoutingSupport.isHiddenFromMixer(
-                    persistenceID: "com.apple.finder",
-                    hiddenIDs: MixerRoutingSupport.hiddenRowIDs(hiddenApps: [:], showFinder: true)),
-               "Finder shows in the mixer when enabled")
-        suite.expect(MixerRoutingSupport.isHiddenFromMixer(
-                    persistenceID: "com.apple.finder",
-                    hiddenIDs: MixerRoutingSupport.hiddenRowIDs(hiddenApps: [:], showFinder: false)),
-               "Finder can be hidden from the mixer")
-        suite.expect(MixerRoutingSupport.isHiddenFromMixer(
-                    persistenceID: "com.example.Player",
-                    hiddenIDs: MixerRoutingSupport.hiddenRowIDs(
-                        hiddenApps: ["com.example.Player": "Player"], showFinder: true)),
-               "any app the user hid stays out of the mixer list")
-        suite.expect(!MixerRoutingSupport.isHiddenFromMixer(
-                    persistenceID: "com.example.Player",
-                    hiddenIDs: MixerRoutingSupport.hiddenRowIDs(hiddenApps: [:], showFinder: false)),
-               "hiding Finder leaves every other app visible")
-        suite.expect(MixerRoutingSupport.isHiddenFromMixer(
-                    persistenceID: "Bare Tool",
-                    hiddenIDs: MixerRoutingSupport.hiddenRowIDs(
-                        hiddenApps: ["Bare Tool": "Bare Tool"], showFinder: true)),
-               "apps saved under a display name can be hidden too")
-        suite.expect(!MixerRoutingSupport.isHiddenFromMixer(persistenceID: nil,
-                                                      hiddenIDs: ["com.example.Player"]),
-               "a row with nothing to remember it by is always listed")
-        let hiddenSanitized = MixerRoutingSupport.sanitizedHiddenApps([
-            "com.example.Player": "Player",
-            "com.apple.finder": "Finder",
-            "": "Nameless",
-            "com.example.Silent": "",
-            "com.example.Broken": 3,
-        ])
-        suite.expect(hiddenSanitized == ["com.example.Player": "Player"],
-               "the hidden map keeps only real entries and never carries the Finder")
         suite.expect(MixerRoutingSupport.needsPersistentFinderRow(showFinder: true,
                                                             hasFinderRow: false),
                "Finder gets a persistent row before Quick Look opens")

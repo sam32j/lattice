@@ -594,7 +594,6 @@ extension Strings {
         screenRecorderEnable: "Activer l’enregistrement de l’écran",
         mixerVisibleApps: "Apps dans la liste",
         mixerAllShown: "Toutes",
-        mixerHiddenCountLabel: "Masquées",
         mixerHideFromList: "Masquer de la liste",
         audioPrioritySection: "Priorité des périphériques audio",
         audioPriorityOutputEnable: "Basculer automatiquement vers la sortie audio ayant la priorité la plus élevée",

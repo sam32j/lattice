@@ -774,7 +774,6 @@ struct Strings {
     let screenRecorderEnable: String
     let mixerVisibleApps: String
     let mixerAllShown: String
-    let mixerHiddenCountLabel: String
     let mixerHideFromList: String
 
     // MARK: Panel — audio device priority
@@ -1775,7 +1774,6 @@ extension Strings {
         screenRecorderEnable: "Ativar gravação de tela",
         mixerVisibleApps: "Apps na lista",
         mixerAllShown: "Todos",
-        mixerHiddenCountLabel: "Escondidos",
         mixerHideFromList: "Esconder da lista",
         audioPrioritySection: "Prioridade dos dispositivos de áudio",
         audioPriorityOutputEnable: "Trocar automaticamente para a saída de áudio com maior prioridade",
@@ -2751,7 +2749,6 @@ extension Strings {
         screenRecorderEnable: "Enable Screen Recording",
         mixerVisibleApps: "Apps in the list",
         mixerAllShown: "All",
-        mixerHiddenCountLabel: "Hidden",
         mixerHideFromList: "Hide from the list",
         audioPrioritySection: "Audio priority",
         audioPriorityOutputEnable: "Automatically switch to the highest-priority output",

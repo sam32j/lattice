@@ -594,7 +594,6 @@ extension Strings {
         screenRecorderEnable: "启用屏幕录制",
         mixerVisibleApps: "列表中的 App",
         mixerAllShown: "全部",
-        mixerHiddenCountLabel: "已隐藏",
         mixerHideFromList: "从列表中隐藏",
         audioPrioritySection: "音频设备优先级",
         audioPriorityOutputEnable: "自动切换到最高优先级的音频输出",

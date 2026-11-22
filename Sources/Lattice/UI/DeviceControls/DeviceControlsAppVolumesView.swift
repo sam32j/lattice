@@ -31,12 +31,21 @@ struct DeviceControlsAppVolumesView: View {
         arrangement.ordered(mixer.apps, identity: { $0.persistenceID })
     }
 
+    /// Rows whose slider is being dragged. They stay listed until the drag
+    /// ends, even if their app stops playing meanwhile, so the drag is not cut
+    /// short by its row disappearing.
+    @State private var trackingAppIDs: Set<String> = []
+
+    private func staysListed(_ app: MixerApp) -> Bool {
+        isActiveApp(app) || arrangement.isPinned(app.persistenceID) || trackingAppIDs.contains(app.id)
+    }
+
     private var activeApps: [MixerApp] {
-        orderedApps.filter { isActiveApp($0) || arrangement.isPinned($0.persistenceID) }
+        orderedApps.filter { staysListed($0) }
     }
 
     private var inactiveApps: [MixerApp] {
-        orderedApps.filter { !isActiveApp($0) && !arrangement.isPinned($0.persistenceID) }
+        orderedApps.filter { !staysListed($0) }
     }
 
     private var activeCount: Int {
@@ -133,6 +142,13 @@ struct DeviceControlsAppVolumesView: View {
                     isPinned: arrangement.isPinned(app.persistenceID),
                     onTogglePin: {
                         updateArrangement { $0.togglePin(app.persistenceID ?? "") }
+                    },
+                    onSliderTrackingChanged: { tracking in
+                        if tracking {
+                            trackingAppIDs.insert(app.id)
+                        } else {
+                            trackingAppIDs.remove(app.id)
+                        }
                     }
                 )
                 .frame(
@@ -153,8 +169,11 @@ private struct DeviceControlsAppRow: View {
     let active: Bool
     let isPinned: Bool
     let onTogglePin: () -> Void
+    var onSliderTrackingChanged: (Bool) -> Void = { _ in }
 
-    @State private var isHovered = false
+    /// Only the pointer on the icon previews Pin; anywhere else on the row
+    /// the playing dot stays visible.
+    @State private var isIconHovered = false
 
     private static let iconSize: CGFloat = 30
 
@@ -210,7 +229,8 @@ private struct DeviceControlsAppRow: View {
                         value: Binding(
                             get: { app.volume },
                             set: { mixer.setVolume($0, for: app) }
-                        )
+                        ),
+                        onEditingChanged: onSliderTrackingChanged
                     )
                 }
             }
@@ -219,9 +239,6 @@ private struct DeviceControlsAppRow: View {
         .padding(.vertical, 8)
         .opacity(active ? 1.0 : 0.65)
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-        }
     }
 
     @ViewBuilder
@@ -233,10 +250,16 @@ private struct DeviceControlsAppRow: View {
                 iconContent
             }
             .buttonStyle(.plain)
-            .help(isPinned ? FeatureStrings.mixer(l10n.language).unpin : FeatureStrings.mixer(l10n.language).pin)
+            .onHover { isIconHovered = $0 }
+            .help(pinActionTitle)
+            .accessibilityLabel("\(pinActionTitle) \(app.name)")
         } else {
             iconContent
         }
+    }
+
+    private var pinActionTitle: String {
+        isPinned ? FeatureStrings.mixer(l10n.language).unpin : FeatureStrings.mixer(l10n.language).pin
     }
 
     private var iconContent: some View {
@@ -244,7 +267,7 @@ private struct DeviceControlsAppRow: View {
             .resizable()
             .frame(width: Self.iconSize, height: Self.iconSize)
             .overlay(alignment: .bottomTrailing) {
-                if isPinned || (isHovered && app.persistenceID != nil) {
+                if isPinned || (isIconHovered && app.persistenceID != nil) {
                     pinBadge
                         .offset(x: 3, y: 3)
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
@@ -255,7 +278,7 @@ private struct DeviceControlsAppRow: View {
                 }
             }
             .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isPinned)
-            .animation(.easeOut(duration: 0.15), value: isHovered)
+            .animation(.easeOut(duration: 0.15), value: isIconHovered)
             .animation(.easeOut(duration: 0.15), value: app.isPlaying)
     }
 

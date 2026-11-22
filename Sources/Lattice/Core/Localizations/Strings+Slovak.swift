@@ -594,7 +594,6 @@ extension Strings {
         screenRecorderEnable: "Povoliť záznam obrazovky",
         mixerVisibleApps: "Aplikácie v zozname",
         mixerAllShown: "Všetky",
-        mixerHiddenCountLabel: "Skryté",
         mixerHideFromList: "Skryť zo zoznamu",
         audioPrioritySection: "Priorita zvukových zariadení",
         audioPriorityOutputEnable: "Automaticky prepnúť na výstup s najvyššou prioritou",

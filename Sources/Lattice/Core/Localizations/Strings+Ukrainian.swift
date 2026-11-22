@@ -576,7 +576,6 @@ extension Strings {
         screenRecorderEnable: "Увімкнути запис екрана",
         mixerVisibleApps: "Програми в списку",
         mixerAllShown: "Усі",
-        mixerHiddenCountLabel: "Приховано",
         mixerHideFromList: "Сховати зі списку",
         audioPrioritySection: "Пріоритет аудіопристроїв",
         audioPriorityOutputEnable: "Автоматично перемикатися на пристрій виведення з найвищим пріоритетом",

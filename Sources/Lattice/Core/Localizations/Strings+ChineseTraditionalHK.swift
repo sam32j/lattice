@@ -595,7 +595,6 @@ extension Strings {
         screenRecorderEnable: "啟用螢幕錄影",
         mixerVisibleApps: "列表中的 App",
         mixerAllShown: "全部",
-        mixerHiddenCountLabel: "已隱藏",
         mixerHideFromList: "從列表中隱藏",
         audioPrioritySection: "音訊裝置優先順序",
         audioPriorityOutputEnable: "自動切換到最高優先順序嘅音訊輸出",

@@ -302,7 +302,9 @@ struct MixerSection: View {
             } else if orderedApps.isEmpty {
                 emptyLabel(l10n.s.mixerEmpty)
             } else {
-                if activeApps.isEmpty {
+                // The sections hold still while a row is adjusted, so ask the
+                // apps themselves whether anything plays.
+                if activeApps.isEmpty, !orderedApps.contains(where: \.isPlaying) {
                     Text("No app playing")
                         .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(.secondary)
@@ -617,7 +619,9 @@ struct MixerSettingsAppRow: View {
     var onVolumeChanged: () -> Void = {}
     var onSliderTrackingChanged: (Bool) -> Void = { _ in }
 
-    @State private var isHovered = false
+    /// Only the pointer on the icon previews Pin; anywhere else on the row
+    /// the playing dot stays visible.
+    @State private var isIconHovered = false
     @State private var isSliderTracking = false
 
     private var isAirPlay: Bool {
@@ -720,9 +724,6 @@ struct MixerSettingsAppRow: View {
         .padding(.vertical, 4)
         .opacity(active ? 1.0 : 0.65)
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-        }
     }
 
     @ViewBuilder
@@ -734,10 +735,16 @@ struct MixerSettingsAppRow: View {
                 iconContent
             }
             .buttonStyle(.plain)
-            .help(isPinned ? FeatureStrings.mixer(l10n.language).unpin : FeatureStrings.mixer(l10n.language).pin)
+            .onHover { isIconHovered = $0 }
+            .help(pinActionTitle)
+            .accessibilityLabel("\(pinActionTitle) \(app.name)")
         } else {
             iconContent
         }
+    }
+
+    private var pinActionTitle: String {
+        isPinned ? FeatureStrings.mixer(l10n.language).unpin : FeatureStrings.mixer(l10n.language).pin
     }
 
     /// 30 pt: large enough that the pin badge sits on the icon's corner
@@ -749,18 +756,20 @@ struct MixerSettingsAppRow: View {
             .resizable()
             .frame(width: Self.iconSize, height: Self.iconSize)
             .overlay(alignment: .bottomTrailing) {
-                if isPinned || (isHovered && app.persistenceID != nil) {
+                if isPinned || (isIconHovered && app.persistenceID != nil) {
                     pinBadge
                         .offset(x: 3, y: 3)
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
-                } else if active && app.isPlaying {
+                } else if app.isPlaying {
+                    // Live playback, not the row's section: a row held in
+                    // place while it is adjusted still shows that it plays.
                     greenDotBadge
                         .offset(x: 3, y: 3)
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
                 }
             }
             .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isPinned)
-            .animation(.easeOut(duration: 0.15), value: isHovered)
+            .animation(.easeOut(duration: 0.15), value: isIconHovered)
             .animation(.easeOut(duration: 0.15), value: app.isPlaying)
     }
 
