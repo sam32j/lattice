@@ -2,6 +2,269 @@
 
 ## [3.4.2-d.7] - 2026-11-12
 
+## [3.4.3-d.2] - 2026-11-22
+
+### Added
+- **Window Layout**: Clearer gap, snap and quarters copy with a Manage shortcuts link
+- **Dock Click**: Show the engaged action and drop the unused ones
+- **Switcher**: Liquid Glass panel, one icon row and a search field that types as you go
+- **Switcher**: Group windows by app, filter by display and desktop, and settle the hold delay
+- **Settings**: Merge Audio Input and Output into one Audio page
+- **Settings**: Add a full-width segmented control
+- **Settings**: Translucent detail title bar with system-style toolbar buttons
+- **Hub**: Size and host the wallpaper page in the island
+- **Settings**: Manage imported wallpaper folders and show Bluetooth on Display & Energy
+- **Wallpaper**: Add a source selector and group Imported wallpapers by folder
+- **Wallpaper**: List every Apple wallpaper from the system and download on demand
+- **Notch**: Add the closed island's right-click activity menu
+- **Notch**: Attach, detach and hide activities through the selection model
+- **Notch**: Rank an arrived event and a newer timer ahead of the other activities
+- **Notch**: Swipe tracks from the music header and close from utility headers
+- **Audio**: Let output adjustments skip publishing while a slider drags
+- **Hub**: Page the island between Device Controls subpages
+- **Notch**: Add a page transition for in-place page changes
+- **Hub**: Add the Stay Awake countdown path and motion
+- **Quick Toggles**: Eject all disks with a shortcut
+- **Process Manager**: Shorten "All Processes" on the island scope button
+- **Settings**: Refine keyboard, mouse, display, and capture settings layout and copy
+- **Captures**: Add backdrop icons to cards, indent settings, and remove top separator in inactive apps
+- **Capture**: Confirm before disabling Quick Links and close previews on focus change
+- **Audio Output**: Rebuild the Audio Output settings page
+- **Audio Input**: Mute and unmute by clicking the microphone
+- **Audio Output**: Cycle outputs in priority order and skip chosen devices
+- **Settings**: Optional caption under card titles and help on shortcut rows
+- **Window Layout**: Apply window and screen gaps to snapping-panel placements
+- **Shortcuts**: Group the Keyboard Shortcuts page like the Settings sidebar
+- **Mouse Buttons**: Smoother Configure slot and a clearer capture prompt
+- **Middle Click**: Choose the fingers that click and tap
+- **Mouse**: Replace scrolling and hover-delay sliders with preset pickers
+- **Window Snapping**: Add the snapping control panel to the HUD and island
+- **Window Layout**: Snap to normalized rects and cache the snapping session
+- **Window Layout**: Add a Core Animation snap preview overlay
+- **Notch**: Hold the page clip open while a page shrinks with the island
+- **Hub**: Let hosted content drive the floating HUD resize
+- **Settings Search**: Match aliases, group Bluetooth apart, and hide off-screen rows
+  - Pages take search aliases that match the page without adding child rows.
+  - Bluetooth Control heads its own group instead of filing under Displays.
+  - Follow-up rows, such as the options under Enable Display Control or
+  - Result rows draw their symbols with LatticeSymbol.
+- **Camera Preview**: Size the island preview like the Hub and add a close button
+- **Settings**: Gather Camera Preview and disk eject under Quick Controls in General
+- **Appearance**: Toggle the system appearance with a shortcut
+- **Quick Toggles**: Hide desktop icons behind a wallpaper curtain
+- **Branding**: Adopt the new app icon with a dark variant
+- **Process Manager**: Label ports by the service they provide
+- **App Updates**: Turn the Check Now arrow while checking
+- **Settings**: Let hints open on click and use Liquid Glass
+- **Ui**: Draw the Bluetooth rune in the sidebar, cards, permissions and notices
+- **Ui**: Add a Bluetooth rune for every Bluetooth icon
+- **Process Manager**: Show the new list on the Settings page
+- **Hub**: Host the new Process Manager list in the HUD and island
+- **Process Manager**: Rename Kill Process to Process Manager with an ECG icon
+- **Settings**: Add an accessory slot to feature page toolbars
+- **Process Manager**: Show one sectioned list in Settings, the HUD and the island
+- **Process Manager**: Add rows with a two-step stop and helper and port lines
+- **Ui**: Add a refresh arrow that turns while loading
+- **Process Manager**: Share row actions, hang checks and inline reopen
+- **Process Manager**: Snapshot classified rows, ports and relaunch results
+- **Process Manager**: Add list strings in every language
+- **Process Manager**: Sort processes into sections with nested helpers
+- **Process Manager**: Add a listening-port model and lsof parser
+
+### Changed
+- **Audio**: Retire the call-app volume override
+- **Window Layout**: Drop Maximize with Margin
+- **Switcher**: Model single-row icon layouts and an always-present search field
+- **Switcher**: Retire the system shortcut takeover, pinned search and separate pause list
+- **Settings**: Fold the App Switcher page into Dock & Applications
+- **Settings**: Move Dark Mode out of Energy & Display
+- **Notch**: Route island scrolls and touches through the stroke engine
+- **Notch**: Replace the music swipe trackers with one stroke engine
+- **Device Controls**: Drive the app volume knob from its true center
+- **Audio**: Add a fast path for app volume changes while a slider drags
+- **Audio**: Write the input volume off the main thread
+- **Hub**: Rebuild the Stay Awake toggle on the countdown motion
+- Remove retired UI views, dead service methods, and legacy mixer/capture code
+- **Ui**: Update active app indicators, remove cycle speed, and fix settings expansion animation
+- **Window Layout**: Regroup sections, bake split cycling, and add hold-to-cycle display
+- **Audio Output**: Collapse only the shortcut warning under output cycling
+- **Capture**: Drop the floating full-screen button and the lone mode-switch hint
+- **Window Layout Settings**: Tidy the Window Arrangement rows
+- **Cleaning Mode**: Drop the activate button from the settings card
+- **Music Block**: Drop the replacement app and surface monitoring failures
+- **Window Layout Settings**: Reset edge snapping beside its switch and group the gaps
+- **Mouse**: Apply scroll direction, smooth and linear scrolling everywhere
+- **Window Layout Settings**: Rename snapping to Window Arrangement
+- **Window Layout**: Remove the legacy PanelWindowLayoutView
+- **Notch Settings**: Drop the layout section from the island page
+- **Quick Toggles**: Keep quick actions available without Displays or Command Bar
+- **Hub**: Drop the Port Manager tool from the HUD and island
+- **Settings**: Retire the Port Manager page and its strings
+- **Process Manager**: Fold the Port Manager feature into Process Manager
+- **Command Bar**: Always offer the Process Manager entry
+- **Process Manager**: Remove strings the old page used
+- **Process Manager**: Replace the options popover with a refresh button
+
+### Fixed
+- **Audio Output**: Translate the rebuilt page and show output switch errors
+  - The Audio Output page's labels, captions, menu items and slider names come from the string catalog in every supported language; the headphone rows reuse their existing strings.
+  - When the system refuses an output, or a switch fails, the page says so under the output rows.
+- **Switcher**: Keep search letters, grouped windows and the grid selection in order
+  - After a click into the search field, W and Q type into the query instead of closing or quitting.
+  - Grouped grids keep one representative per app, so an app with a minimized window placed last no longer lists every window twice, and previews never trip on a repeated window.
+  - The window dashes keep the current window in view past the eighth window.
+  - The grid scrolls to the selected card when a close moves the selection to another app without changing its index, and builds each app's window list in one pass.
+  - Hidden apps always follow the minimized-window placement; the retired switch's setting, default, and label are removed.
+- **Dev**: Make the switcher rendering probe honest about its results
+- **Settings**: Settle reveals, slider drags and segment memory correctly
+  - A collapsible row's delayed reveal is cancelled when it closes again, so its next opening starts clipped.
+  - Slider drag coalescing stops at the gesture's own mouse-up, leaving the next gesture's events queued.
+  - Audio remembers the segment it opened on, deep links included.
+  - With Window Arrangement off, gesture users still find the ignored apps list under the gesture settings.
+- **Dock Preview**: Resume hover in place and pick the closed window's neighbour
+  - Card hover is continuous, so after a close holds the highlight, moving within the card that slid under the pointer selects it.
+  - When the pinned panel's refresh sees a close first, the closed window's neighbour takes the highlight, hover holds, and the cards slide together, as when the close is handled directly.
+- **Wallpaper**: Scope aerials to the chosen display and drop stale downloads
+  - With one display chosen, an aerial patches only that display's entries in the wallpaper store, and changes nothing when the store has none for it.
+  - Removing the feature forgets a download that was waiting to apply, so a reinstall never applies it unasked.
+- **Dock Preview**: Reflow cards smoothly after closing a window and hold hover until the pointer moves
+- **Shortcuts**: Pause the App Switcher's native hotkeys while a shortcut records
+- **Settings**: Hold a permission-gated toggle's feature across its prompt
+- **Settings**: Drag value sliders without the knob fighting back
+- **Settings**: Keep a collapsing row's clip open to the sides
+- **Audio**: Finish level edits on the device, mute and tap they began with
+  - The mute buttons lift a mute on an output with no writable level instead of asking for a level it would refuse, and read such an output by its mute alone.
+  - An output change at any point in a drag drops it, a round trip included, and the row shows the new output's own level and mute at once.
+  - A drag that returns to 100% before a tap finishes building updates the row, so the build stands down instead of tapping at the old level; a knob removed or disabled mid-drag still ends the edit and releases the tap.
+  - A microphone edit belongs to the input it started on, and a drag that came back to 0% while its unmute was in flight applies 0% once the mute lifts.
+  - A direct microphone pick records the saved preference as it stood when the pick was made.
+  - Percentage readouts clamp before converting, so an odd reading cannot crash the slider.
+- **Notch**: Keep the right-click tap, the activity menu and hidden music exact
+  - The right-click tap only takes presses on the island display's own top row, not one point into a display above it.
+  - The activity menu marks, and attaches to, the activity the island draws while a new song waits for its notice.
+  - Through an empty pause between songs, only the music stays hidden; an activity that ended there is not mistaken for a new one later.
+- **Audio**: Keep output, microphone and app levels on the device they were set for
+  - A master-volume drag whose output changes before release (headphones unplugged) is dropped instead of landing on the new output; the slider is disabled on an output with no level control, and raising a volume-only output no longer asks it to unmute.
+  - Unmute brings back the live level after an outside mute, and both panels read the remembered level fresh.
+  - A microphone level chosen while its unmute is still in flight is applied once the mute lifts, for the same input; a drag to zero remembers where it began; a sweep no longer shows an older level while a newer write is pending.
+  - A microphone picked in Device Controls stays picked until the saved microphone changes.
+  - While a slider drags, readbacks do not publish either, and an app's tap is kept through 100% until release.
+  - A fast drag past 100% on an app's knob reaches the far end, and volume readouts follow the thumb.
+- **Release Digest**: Count only the capitalized Agents as the Island feature
+- **Hub**: Move the Stay Awake switch thumb between its ends
+- **Keyboard Light**: Let the switch and keys supersede queued slider writes
+- **Notch**: Honour menu choices and keep hidden music hidden between songs
+  - Choosing the activity the island shows on its own makes it the choice, so a finishing timer no longer replaces it.
+  - Detach keeps the activity the menu named as the main one while it is live.
+  - Hidden music stays hidden through the pause between songs, even alone, and comes back after a real stop.
+  - The right-click tap works on an island display that does not share the main display's top edge.
+  - A calendar paired with a timer makes room for the timer's reading, and VoiceOver hears it and can open it.
+- **Notch**: Let the island's whole surface rectangle take clicks
+- **Notch**: Give zero-size corners the same segments so a close blends cleanly
+- **Notch**: The closed island never takes the keyboard
+- **Notch**: Keep music swipeable across a track change
+- **Shortcuts**: Save every modifier a Hyper key held
+- **Device Controls**: Stop republishing the master volume on every drag step
+- **Audio**: Honour the mixer switch and flush volumes when monitoring stops
+- **Notch**: Invalidate a running backdrop display link before starting another
+- **Hub**: Draw the keyboard-selected tile's ring inside the tile
+- **Hub**: Animate the mic mute symbol on its tile
+- **Display**: Keep keyboard light writes off the main thread and skip no-op publishes
+- **Keep Awake**: Write a remembered pick only when it changes
+- **Quick Toggles**: Emptying an already empty Trash does nothing
+- **Notch**: Publish the menu anchor's open state instead of a callback
+- **Window Layout**: Offer Center Column, not also Center Half, for snap areas
+- **Audio**: Keep mixer rows truthful and retire hidden apps for good
+  - Turning microphone control on for the input already watched installs its volume listeners, so outside gain changes show.
+  - A Device Controls row whose slider is being dragged stays listed until the drag ends.
+  - Only the pointer on an app icon previews Pin; the playing dot stays visible elsewhere on the row and follows live playback, and the pin button is named for VoiceOver.
+  - Audio Output says nothing is playing only when no app plays.
+  - With the hide control gone, the mixer no longer applies a saved hidden list: the hidden-apps map, the Finder toggle, their backup keys and the unused label are removed, so no app stays out of reach.
+- **Capture**: Report failed link revocations and keep Manage reachable
+  - Turning Quick Links off reports a link that could not be revoked; it stays listed under Manage to retry.
+  - The created-links row and Manage stay available while unexpired links exist, whatever the creation switches say.
+- **Window Layout**: Keep a held shortcut on its window and cycle Center Half
+  - Holding a layout shortcut cycles displays only for the window it started on; focus moving to another window ends the hold.
+  - A held Next or Previous Display keeps moving the window with the display transfer.
+  - A repeated Center Half press finds itself in its size cycle and moves on to two thirds and one third.
+- **Audio**: Fix mid-playback per-app routing and refine Device Controls and Audio settings
+- **Ui**: Remove blue tint from pointer display icon, align hold delay with parent text, and add amber-green pin transition
+- **Capture Settings**: Normal bottom padding with Quick Links off and shorter disable copy
+- **Screenshot**: Hide Reset on tools that already use their default shortcut
+- **Audio**: Keep AirPlay routes, row sections and the Device Controls viewport honest
+  - Publishing a row's effective output uses the same AirPlay rule as the other resolvers: a saved AirPlay route counts only while a speaker is connected.
+  - Music Blocker's failure warning follows the media-key tap when its callback re-enables or loses it.
+  - The settings route menu leaves out only the AirPlay placeholder, so real AirPlay outputs stay choosable.
+  - The Device Controls output picker keeps a row for a connected AirPlay route it does not list.
+  - In the floating Hub, Device Controls scrolls inside the height the panel shows.
+  - Each mixer row refreshes its section on its own; one app's adjustment cooldown no longer freezes the others.
+- **Device Controls**: Size the app volumes page to its content and keep pinned apps listed
+- **Mixer**: Keep device monitoring alive and preserve app routes on output changes
+- **Window Layout**: Keep side and corner heights measured on the whole screen
+- **Window Layout**: Pair edge-snap screen frames and keep side cells on their side
+  - A drag reads each screen's usable area in the same step as its Quartz frame, so a display change during the window lookup cannot pair one screen list with another.
+  - A snapping-panel cell that touches only the left or right edge holds that edge like a third does, so a window that comes back wider than the cell keeps its screen gap instead of being centered.
+- **Window Layout**: Keep Stage Manager under Window Arrangement and outline Center
+  - Reserve space for Stage Manager lives only under Enable Window Arrangement, where the arrangement rename put it; the maximizer section no longer repeats it.
+  - The snapping panel's Center shows its centered outline again.
+- **Notch**: Leave the camera page without a Stop control
+- **Quick Toggles**: List only connected and recorded disks in eject exclusions
+- **Build**: Drop a stale dark icon when none is generated
+- **Notch**: Put the camera's Stop in the island's top row
+- **Quick Toggles**: Name disks that are not connected and recapture the wallpaper
+  - The eject exclusions sheet takes a disk by name again, for one that is not connected.
+  - Hiding desktop icons captures the current wallpaper each session instead of reusing the last one.
+- **Settings**: Land Camera Preview links, keep Stage Manager for the maximizer and quiet folded rows
+  - Camera Preview links and search results scroll to its row on General and stay anchored there.
+  - Maximizer-only setups keep the Stage Manager setting, beside the maximizer.
+  - Folded rows are disabled, so Tab and Space cannot reach hidden controls.
+  - Turning mouse-button shortcuts off stops any row that is recording.
+  - The Command Bar's Settings entries match aliases, as Settings search does.
+- **Window Snapping Panel**: Reset drags on grid changes and keep previews honest
+  - Changing the grid mid-drag ends the drag instead of spanning cells the new grid lacks.
+  - Center shows no outline, since it keeps the window's own size, which the panel does not know.
+  - Hover tracking uses one activation option (always), as NSTrackingArea requires.
+- **Window Layout**: Anchor panel placements, contain gaps and match top-corner protection
+  - A placement from the snapping panel holds the edges it touches, so a window with a larger minimum size grows away from them and stays in the usable frame, and acceptance checks those edges instead of overlap alone. Only the whole frame uses Maximize's rule.
+  - Half a gap never takes more than a pane has: a gap wider than a small pane leaves it inside its own bounds.
+  - Top-edge protection reads the top corners with the same Stage Manager-adjusted bounds as the snap target.
+  - Restore's availability is refreshed when a placement settles or rolls back, not only after a fixed delay.
+- **Window Layout**: Edge snapping targets the space beside Stage Manager
+- **Settings**: Collapse follow-up rows before tearing a feature down
+- **Notch**: Defer preference-driven island syncs past settings animations
+- **Settings**: Unroll follow-up rows as a clipped accordion
+- **Ui**: Draw the Bluetooth rune in island capsules and indicator rows
+- **Settings**: Fold Display Control options into a smooth accordion
+- **Process Manager**: Keep port rows to Stop, without Open in Browser
+- **Screenshot Editor**: Reserve plain P for Pin
+- **Process Manager**: Guard Ports Stop and keep list order under the pointer
+  - Ports Stop is gated on the verified processes holding the ports, not the app, and asks again if that set changes while armed.
+  - Helper and port Stop is also a named accessibility action with the same two steps.
+  - Port lines offer Open in Browser.
+  - While the pointer rests on a row, each section keeps the order last shown, after its own sort.
+  - A row a search opened can be closed for that query without staying open afterwards.
+- **Process Manager**: Own restarts per request and keep port data honest
+  - Each restart carries a request ID; an older restart's failure or timeout can no longer cancel a newer one.
+  - Scans are numbered; one that finishes after a newer scan was shown is dropped.
+  - A timed-out lsof keeps the last listeners whose process is still listed instead of emptying Ports.
+  - Sharing-service labels need the process that serves them, so a dev server on 5900 is not Screen Sharing.
+  - Inline source (python -c, node -e) is never used as a port label.
+  - Vendor apps in /Applications/Utilities are no longer treated as macOS.
+  - Port endpoints map to a browser URL again: wildcard binds open on loopback in the same family.
+- **Process Manager**: Settle quits, force quits and reopens truthfully
+  - A helper that outlives its app stays listed; only confirmed exits leave.
+  - Without Accessibility an unfinished quit is unknown, not hung: the app comes forward instead of reading Not responding.
+  - A Force Quit that times out gets its row back and says it could not stop.
+  - Quit all apps skips apps marked Keep Running after the confirmation appeared.
+  - A single Quit the app turns down shows a toast.
+  - A failed Reopen brings the greyed row back for the time it has left.
+- **Pins**: Keep pins from taking focus and gestures that aren't theirs
+- **Editor**: Drop the edge blur copies for one smooth edge fade
+- **Editor**: Soften the canvas edges with an in-step blur, not a fade
+- **Editor**: Pin with P, save before closing, soften light-mode edges
+- **Hub**: Open the update dialog from the floating HUD
+- **Process Manager**: Match cryptex paths when verifying a process
+
 ## [3.4.3-d.1] - 2026-11-15
 
 ### Added
