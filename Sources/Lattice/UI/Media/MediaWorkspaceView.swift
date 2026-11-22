@@ -403,6 +403,7 @@ struct MediaWorkspaceView: View {
                 Toggle(imageText.saveInSubfolder, isOn: $imageSaveInSubfolder)
                     .toggleStyle(.checkbox)
                     .disabled(isRunning)
+                    .transition(.settingsReveal)
             }
         }
         .panelCard()
@@ -466,6 +467,7 @@ struct MediaWorkspaceView: View {
                         if MediaImageFormat.sanitized(imageFormatRaw) != .pdf {
                             Toggle(l10n.s.mediaStripMetadata, isOn: $imageStripMetadata)
                                 .toggleStyle(.checkbox)
+                                .transition(.settingsReveal)
                         }
                         imageBackgroundSection
                         imageWatermarkSection
@@ -475,6 +477,7 @@ struct MediaWorkspaceView: View {
                     }
                     .padding(.top, 6)
                     .disclosureIndent()
+                    .transition(.settingsReveal)
                 }
             }
             .panelCard()
@@ -702,6 +705,7 @@ struct MediaWorkspaceView: View {
                 Label(imageText.profileModified, systemImage: "pencil")
                     .font(.system(size: compact ? 9 : 10, weight: .medium))
                     .foregroundStyle(.secondary)
+                    .transition(.settingsReveal)
             }
             HStack(spacing: 6) {
                 TextField(imageText.profileName, text: $profileName)
@@ -888,6 +892,7 @@ struct MediaWorkspaceView: View {
             if currentWatermarkKind == .text || currentWatermarkKind == .textAndLogo {
                 TextField(imageText.watermarkTextPlaceholder, text: $imageWatermarkText)
                     .textFieldStyle(.roundedBorder)
+                    .transition(.settingsReveal)
             }
             if currentWatermarkKind == .logo || currentWatermarkKind == .textAndLogo {
                 HStack(spacing: 6) {
@@ -911,23 +916,27 @@ struct MediaWorkspaceView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                .transition(.settingsReveal)
             }
             if currentWatermarkKind != .off {
-                Picker(imageText.position, selection: $imageWatermarkPositionRaw) {
-                    Text(imageText.topLeft).tag(MediaImageWatermarkPosition.topLeft.rawValue)
-                    Text(imageText.topRight).tag(MediaImageWatermarkPosition.topRight.rawValue)
-                    Text(imageText.center).tag(MediaImageWatermarkPosition.center.rawValue)
-                    Text(imageText.bottomLeft).tag(MediaImageWatermarkPosition.bottomLeft.rawValue)
-                    Text(imageText.bottomRight).tag(MediaImageWatermarkPosition.bottomRight.rawValue)
+                VStack(alignment: .leading, spacing: 7) {
+                    Picker(imageText.position, selection: $imageWatermarkPositionRaw) {
+                        Text(imageText.topLeft).tag(MediaImageWatermarkPosition.topLeft.rawValue)
+                        Text(imageText.topRight).tag(MediaImageWatermarkPosition.topRight.rawValue)
+                        Text(imageText.center).tag(MediaImageWatermarkPosition.center.rawValue)
+                        Text(imageText.bottomLeft).tag(MediaImageWatermarkPosition.bottomLeft.rawValue)
+                        Text(imageText.bottomRight).tag(MediaImageWatermarkPosition.bottomRight.rawValue)
+                    }
+                    .pickerStyle(.menu)
+                    stepperDouble(imageText.opacity, value: $imageWatermarkOpacity, range: 0.1...1, step: 0.05, suffix: "%") {
+                        "\(Int(($0 * 100).rounded()))"
+                    }
+                    stepperInt(imageText.margin, value: $imageWatermarkMargin, range: 0...2000, step: 8, suffix: "px")
+                    stepperDouble(imageText.scale, value: $imageWatermarkScale, range: 0.05...0.8, step: 0.01, suffix: "%") {
+                        "\(Int(($0 * 100).rounded()))"
+                    }
                 }
-                .pickerStyle(.menu)
-                stepperDouble(imageText.opacity, value: $imageWatermarkOpacity, range: 0.1...1, step: 0.05, suffix: "%") {
-                    "\(Int(($0 * 100).rounded()))"
-                }
-                stepperInt(imageText.margin, value: $imageWatermarkMargin, range: 0...2000, step: 8, suffix: "px")
-                stepperDouble(imageText.scale, value: $imageWatermarkScale, range: 0.05...0.8, step: 0.01, suffix: "%") {
-                    "\(Int(($0 * 100).rounded()))"
-                }
+                .transition(.settingsReveal)
             }
         }
     }

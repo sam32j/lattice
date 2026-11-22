@@ -58,9 +58,7 @@ struct ClipboardSettings: View {
                             IslandDestinationSettings(destination: .clipboard)
                                 .padding(.leading, settingsRowTextInset)
                         }
-                        .padding(.leading, settingsRowTextInset)
-                        IslandDestinationSettings(destination: .clipboard)
-                            .padding(.leading, settingsRowTextInset)
+                        .transition(.settingsReveal)
                     }
                     }
                 }

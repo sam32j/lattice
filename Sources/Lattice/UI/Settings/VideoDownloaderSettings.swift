@@ -60,169 +60,176 @@ struct VideoDownloaderSettings: View {
                         }
 
                         if enabled {
-                            showOnDynamicIslandRow
-                            browserSignInRow
+                            VStack(alignment: .leading, spacing: 13) {
+                                showOnDynamicIslandRow
+                                browserSignInRow
+                            }
+                            .transition(.settingsReveal)
                         }
                     }
 
                     if enabled {
-                        // Toolchain Installing State
-                        if case .installing(_, _, let fraction, let message) = toolchain.state {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Text(VideoDownloaderStrings.gettingReady)
-                                        .font(.headline)
-                                    Spacer()
-                                    Text("\(Int(fraction * 100))%")
-                                        .font(.caption.monospacedDigit())
-                                        .foregroundStyle(.secondary)
-                                }
-                                ProgressView(value: fraction)
-                                Text(message)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(nsColor: .controlBackgroundColor))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-                            )
-                        } else if !toolchain.dependencies.ready {
-                            if !showDownloadConfirmation {
-                                // Containerized section: "Some tools are missing"
+                        VStack(alignment: .leading, spacing: 18) {
+                            // Toolchain Installing State
+                            if case .installing(_, _, let fraction, let message) = toolchain.state {
                                 VStack(alignment: .leading, spacing: 10) {
-                                    HStack(alignment: .center) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(VideoDownloaderStrings.missingToolsTitle)
-                                                .font(.headline)
-                                            Text(VideoDownloaderStrings.missingToolsBody)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
+                                    HStack {
+                                        Text(VideoDownloaderStrings.gettingReady)
+                                            .font(.headline)
                                         Spacer()
-                                        Button(VideoDownloaderStrings.repairAction) {
-                                            toolchain.install()
-                                        }
-                                        .buttonStyle(.bordered)
-                                        .tint(.orange)
-                                        .foregroundStyle(.orange)
+                                        Text("\(Int(fraction * 100))%")
+                                            .font(.caption.monospacedDigit())
+                                            .foregroundStyle(.secondary)
                                     }
-                                }
-                                .padding(14)
-                                .background(Color(nsColor: .controlBackgroundColor))
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-                                )
-                            }
-                        } else if case .failed(let error) = toolchain.state {
-                            // Failed State
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundStyle(.red)
-                                    Text(VideoDownloaderStrings.installationFailed)
-                                        .font(.headline)
-                                }
-                                Text(error)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                HStack {
-                                    Spacer()
-                                    Button(VideoDownloaderStrings.keepOff) {
-                                        enabled = false
-                                    }
-                                    .buttonStyle(.bordered)
-
-                                    Button(VideoDownloaderStrings.retry) {
-                                        toolchain.install()
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                }
-                            }
-                            .padding(16)
-                            .background(Color(nsColor: .controlBackgroundColor))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-                            )
-                        } else {
-                            // Active Video Downloader Surfaces
-                            VStack(alignment: .leading, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(VideoDownloaderStrings.downloadVideoSectionTitle)
-                                        .font(.headline)
-                                    Text(VideoDownloaderStrings.downloadVideoSectionSubtitle)
+                                    ProgressView(value: fraction)
+                                    Text(message)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
-
-                                searchInput(isCompact: isCompact)
-                            }
-
-                            // Fetching Video Details Skeleton Screen
-                            if model.isFetching {
-                                skeletonMediaCard(isCompact: isCompact)
-                            } else if let error = model.error, model.info == nil {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "exclamationmark.circle")
-                                        .font(.system(size: 26, weight: .regular))
-                                        .foregroundStyle(.secondary)
-
-                                    let displayError: String = {
-                                        if model.websiteFailure == .authentication {
-                                            return model.websiteSessions.hasSession
-                                                ? VideoDownloaderStrings.noAccessNotice
-                                                : VideoDownloaderStrings.loginRequiredNotice
-                                        }
-                                        if error.contains("Command failed") || error.contains("ERROR:") {
-                                            return VideoDownloaderStrings.fetchFailedNotice
-                                        }
-                                        return error
-                                    }()
-
-                                    Text(displayError)
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.center)
-                                    if model.websiteFailure != nil {
-                                        let sessionButtonTitle = model.websiteSessions.hasSession
-                                            ? VideoDownloaderStrings.tryDifferentSessions
-                                            : VideoDownloaderStrings.manageSessions
-                                        Button(sessionButtonTitle) { model.showWebsiteSessions = true }
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color(nsColor: .controlBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+                                )
+                            } else if !toolchain.dependencies.ready {
+                                if !showDownloadConfirmation {
+                                    // Containerized section: "Some tools are missing"
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        HStack(alignment: .center) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(VideoDownloaderStrings.missingToolsTitle)
+                                                    .font(.headline)
+                                                Text(VideoDownloaderStrings.missingToolsBody)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                            Spacer()
+                                            Button(VideoDownloaderStrings.repairAction) {
+                                                toolchain.install()
+                                            }
                                             .buttonStyle(.bordered)
-                                            .controlSize(.small)
+                                            .tint(.orange)
+                                            .foregroundStyle(.orange)
+                                        }
+                                    }
+                                    .padding(14)
+                                    .background(Color(nsColor: .controlBackgroundColor))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+                                    )
+                                    .transition(.settingsReveal)
+                                }
+                            } else if case .failed(let error) = toolchain.state {
+                                // Failed State
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundStyle(.red)
+                                        Text(VideoDownloaderStrings.installationFailed)
+                                            .font(.headline)
+                                    }
+                                    Text(error)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    HStack {
+                                        Spacer()
+                                        Button(VideoDownloaderStrings.keepOff) {
+                                            enabled = false
+                                        }
+                                        .buttonStyle(.bordered)
+
+                                        Button(VideoDownloaderStrings.retry) {
+                                            toolchain.install()
+                                        }
+                                        .buttonStyle(.borderedProminent)
                                     }
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 28)
-                                .padding(.horizontal, 20)
+                                .padding(16)
                                 .background(Color(nsColor: .controlBackgroundColor))
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color.secondary.opacity(0.10), lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
                                 )
-                            }
+                            } else {
+                                // Active Video Downloader Surfaces
+                                VStack(alignment: .leading, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(VideoDownloaderStrings.downloadVideoSectionTitle)
+                                            .font(.headline)
+                                        Text(VideoDownloaderStrings.downloadVideoSectionSubtitle)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
 
-                            // Media Preview Card
-                            if let info = model.info, !model.isFetching {
-                                mediaCard(info: info, isCompact: isCompact)
-                            }
+                                    searchInput(isCompact: isCompact)
+                                }
 
-                            // RECENT Section
-                            if !history.items.isEmpty {
-                                recentSection
-                                    .id("recentSection")
+                                // Fetching Video Details Skeleton Screen
+                                if model.isFetching {
+                                    skeletonMediaCard(isCompact: isCompact)
+                                } else if let error = model.error, model.info == nil {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "exclamationmark.circle")
+                                            .font(.system(size: 26, weight: .regular))
+                                            .foregroundStyle(.secondary)
+
+                                        let displayError: String = {
+                                            if model.websiteFailure == .authentication {
+                                                return model.websiteSessions.hasSession
+                                                    ? VideoDownloaderStrings.noAccessNotice
+                                                    : VideoDownloaderStrings.loginRequiredNotice
+                                            }
+                                            if error.contains("Command failed") || error.contains("ERROR:") {
+                                                return VideoDownloaderStrings.fetchFailedNotice
+                                            }
+                                            return error
+                                        }()
+
+                                        Text(displayError)
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundStyle(.secondary)
+                                            .multilineTextAlignment(.center)
+                                        if model.websiteFailure != nil {
+                                            let sessionButtonTitle = model.websiteSessions.hasSession
+                                                ? VideoDownloaderStrings.tryDifferentSessions
+                                                : VideoDownloaderStrings.manageSessions
+                                            Button(sessionButtonTitle) { model.showWebsiteSessions = true }
+                                                .buttonStyle(.bordered)
+                                                .controlSize(.small)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 28)
+                                    .padding(.horizontal, 20)
+                                    .background(Color(nsColor: .controlBackgroundColor))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(Color.secondary.opacity(0.10), lineWidth: 1)
+                                    )
+                                }
+
+                                // Media Preview Card
+                                if let info = model.info, !model.isFetching {
+                                    mediaCard(info: info, isCompact: isCompact)
+                                }
+
+                                // RECENT Section
+                                if !history.items.isEmpty {
+                                    recentSection
+                                        .id("recentSection")
+                                }
                             }
                         }
+                        .transition(.settingsReveal)
                     }
                 }
                 .padding(.horizontal, isCompact ? 14 : 20)

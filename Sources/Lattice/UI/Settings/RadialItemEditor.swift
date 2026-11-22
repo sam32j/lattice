@@ -80,30 +80,35 @@ struct RadialItemEditor: View {
                 Text(text.urlInvalid)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
             if item.kind == .shortcut, let shortcutError {
                 Text(shortcutError)
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
+                    .transition(.settingsReveal)
             }
             if item.kind == .submenu {
-                Text(text.submenuCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let openChildren {
-                    Button {
-                        dismiss()
-                        openChildren()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(text.editActionsButton)
-                            Image(systemName: "chevron.forward")
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(text.submenuCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let openChildren {
+                        Button {
+                            dismiss()
+                            openChildren()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(text.editActionsButton)
+                                Image(systemName: "chevron.forward")
+                            }
                         }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.accentColor)
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.accentColor)
                 }
+                .transition(.settingsReveal)
             }
 
             HStack {

@@ -8,6 +8,7 @@ struct ClipboardPlainPasteStatus: View {
     var body: some View {
         if service.shortcutRegistrationFailed {
             Text(l10n.s.shortcutUnavailable).font(.caption).foregroundStyle(.orange)
+                .transition(.settingsReveal)
         }
     }
 }

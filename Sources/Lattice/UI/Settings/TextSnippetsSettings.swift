@@ -382,11 +382,13 @@ private struct SnippetEditor: View {
                 Text(text.triggerTooShort)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
             if duplicateTrigger {
                 Text(text.duplicateTrigger)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
             HStack {
                 if let delete {
