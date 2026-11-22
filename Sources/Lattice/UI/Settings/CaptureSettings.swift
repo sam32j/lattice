@@ -25,6 +25,9 @@ struct CaptureSettings: View {
     @State private var showingQuickLinks = false
     @State private var showingSharePrivacy = false
     @State private var showingDisableLinksConfirm = false
+    /// A link that could not be revoked while turning Quick Links off; it
+    /// stays listed under Manage so it can be retried.
+    @State private var showingRevokeError = false
 
     /// Sidebar title shared with the directory; keep it short at narrow widths.
     static func title(for language: AppLanguage) -> String {
@@ -81,6 +84,9 @@ struct CaptureSettings: View {
                 Button(l10n.s.uninstallerCancel, role: .cancel) {}
             } message: {
                 Text(copy.disableLinksBody)
+            }
+            .alert(screenshotStrings.deleteFailedHUD, isPresented: $showingRevokeError) {
+                Button(screenshotStrings.done, role: .cancel) {}
             }
     }
 
@@ -282,12 +288,16 @@ struct CaptureSettings: View {
         let activeScreenshots = screenshotSharing.records.filter { $0.expiresAt > now }
         let activeRecordings = recordingSharing.records.filter { $0.expiresAt > now }
         Task { @MainActor in
+            // A failed revocation leaves its record in place, so the link
+            // stays visible and retryable under Manage until it expires.
+            var failed = false
             for record in activeScreenshots {
-                try? await screenshotSharing.delete(record)
+                do { try await screenshotSharing.delete(record) } catch { failed = true }
             }
             for record in activeRecordings {
-                try? await recordingSharing.delete(record)
+                do { try await recordingSharing.delete(record) } catch { failed = true }
             }
+            if failed { showingRevokeError = true }
         }
         applyQuickLinksEnabled(false)
     }
@@ -355,7 +365,8 @@ struct CaptureSettings: View {
                 }
                 createdLinksRow
                     .padding(.top, 12)
-                    .settingsCollapsible(isExpanded: isQuickLinksEnabled)
+                    // Links already out stay manageable with creation off.
+                    .settingsCollapsible(isExpanded: isQuickLinksEnabled || activeCreatedLinksCount > 0)
             }
             .padding(.leading, settingsRowTextInset)
         }
