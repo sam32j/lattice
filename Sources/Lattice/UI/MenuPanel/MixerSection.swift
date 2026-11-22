@@ -77,6 +77,14 @@ struct MixerSection: View {
                 outputDeviceRow
                 outputVolumeRow
                 systemSoundsRow
+                // A device the system refused, or a failed switch, says so
+                // here instead of leaving the output unchanged without a word.
+                if let error = mixer.outputSwitchError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 headphoneDisconnectSection
                 volumeKeyStepRow
             }
@@ -98,13 +106,13 @@ struct MixerSection: View {
 
     private var outputDeviceRow: some View {
         HStack(spacing: 8) {
-            Text("Audio output device")
+            Text(l10n.s.mixerOutputDeviceLabel)
                 .font(.body)
                 .lineLimit(1)
 
             Spacer(minLength: 8)
 
-            Picker("Audio output device", selection: universalOutputSelectionBinding) {
+            Picker(l10n.s.mixerOutputDeviceLabel, selection: universalOutputSelectionBinding) {
                 if mixer.currentOutputDeviceUID == nil {
                     Text(l10n.s.mixerOutputUnavailable)
                         .tag(MixerRoutingSupport.systemDefaultSelectionID)
@@ -133,7 +141,7 @@ struct MixerSection: View {
 
     private var systemSoundsRow: some View {
         HStack(spacing: 8) {
-            Text("Play system sound at")
+            Text(l10n.s.mixerSystemSoundLabel)
                 .font(.body)
                 .lineLimit(1)
                 .frame(minWidth: 105, alignment: .leading)
@@ -166,15 +174,15 @@ struct MixerSection: View {
     private var headphoneDisconnectRow: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Lower volume on headphone disconnect")
+                Text(l10n.s.mixerLowerOnHeadphonesDisconnect)
                     .font(.body)
-                Text("Applies to wired and Bluetooth headphones.")
+                Text(l10n.s.mixerLowerOnHeadphonesDisconnectCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 12)
-            Toggle("Lower volume on headphone disconnect",
+            Toggle(l10n.s.mixerLowerOnHeadphonesDisconnect,
                    isOn: $lowerOnHeadphonesDisconnect.animation(reduceMotion ? nil : .settingsExpansion))
                 .labelsHidden()
                 .toggleStyle(.switch)
@@ -184,13 +192,13 @@ struct MixerSection: View {
 
     private var targetVolumeRow: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text("Lower volume to")
+            Text(l10n.s.mixerHeadphonesDisconnectVolume)
                 .font(.body)
 
             Spacer(minLength: 12)
 
             DeviceControlsSlider(
-                title: "Lower volume to",
+                title: l10n.s.mixerHeadphonesDisconnectVolume,
                 value: headphonesDisconnectVolumeDoubleBinding,
                 range: Double(Defaults.minimumMixerHeadphonesDisconnectVolumePercent)...100,
                 step: 1,
@@ -204,15 +212,15 @@ struct MixerSection: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Volume key step")
+                    Text(l10n.s.mixerVolumeKeyStep)
                         .font(.body)
-                    Text("Changes how much each key press adjusts volume.")
+                    Text(l10n.s.mixerVolumeKeyStepCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 12)
-                Picker("Volume key step", selection: Binding(
+                Picker(l10n.s.mixerVolumeKeyStep, selection: Binding(
                     get: { preciseVolumeRollerEnabled },
                     set: { newValue in
                         preciseVolumeRollerEnabled = newValue
@@ -220,13 +228,13 @@ struct MixerSection: View {
                         PreciseVolumeRollerService.shared.syncWithPreferences()
                     }
                 )) {
-                    Text("Standard").tag(false)
-                    Text("Smaller").tag(true)
+                    Text(l10n.s.mixerVolumeKeyStepStandard).tag(false)
+                    Text(l10n.s.mixerVolumeKeyStepSmaller).tag(true)
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .fixedSize()
-                .help("Changes how much each key press adjusts volume.")
+                .help(l10n.s.mixerVolumeKeyStepCaption)
             }
 
             if preciseVolumeRollerEnabled, !permissions.accessibility {
@@ -254,7 +262,7 @@ struct MixerSection: View {
                     .frame(width: 26, height: 26)
                     .background(Color.accentColor.opacity(0.12),
                                 in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                Text("App Volumes")
+                Text(l10n.s.mixerAppVolumesTitle)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.primary)
                 Spacer()
@@ -271,7 +279,7 @@ struct MixerSection: View {
                 // The sections hold still while a row is adjusted, so ask the
                 // apps themselves whether anything plays.
                 if activeApps.isEmpty, !orderedApps.contains(where: \.isPlaying) {
-                    Text("No app playing")
+                    Text(l10n.s.mixerNoAppPlaying)
                         .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -324,8 +332,8 @@ struct MixerSection: View {
                                 .frame(width: 12)
                                 .rotationEffect(.degrees(showInactiveApps ? 90 : 0))
                             Text(showInactiveApps
-                                 ? "Hide inactive apps"
-                                 : "Show inactive apps (\(inactiveApps.count))")
+                                 ? l10n.s.mixerHideInactiveApps
+                                 : String(format: l10n.s.mixerShowInactiveAppsFormat, inactiveApps.count))
                                 .font(.system(size: 11.5, weight: .medium))
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -759,7 +767,7 @@ struct MixerSettingsAppRow: View {
                     .frame(width: 220, alignment: .trailing)
             } else {
                 AppVolumeBoostSlider(
-                    title: "\(app.name) volume",
+                    title: String(format: l10n.s.mixerAppVolumeFormat, app.name),
                     value: Binding(
                         get: { liveVolume ?? app.volume },
                         set: { nextVol in
@@ -898,9 +906,9 @@ struct MixerSettingsAppRow: View {
                 AppVolumeMixer.shared.setOutputDeviceUID(nil, for: app)
             } label: {
                 if app.selectedOutputDeviceUID == nil {
-                    Label("Default (Follow System)", systemImage: "checkmark")
+                    Label(l10n.s.mixerOutputFollowSystem, systemImage: "checkmark")
                 } else {
-                    Label("Default (Follow System)", systemImage: "hifispeaker.2")
+                    Label(l10n.s.mixerOutputFollowSystem, systemImage: "hifispeaker.2")
                 }
             }
 

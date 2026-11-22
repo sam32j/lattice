@@ -780,6 +780,18 @@ struct Strings {
     let audioPriorityMoveDown: String
     let audioPriorityUnavailable: String
     let audioPriorityCurrent: String
+    let mixerOutputDeviceLabel: String
+    let mixerSystemSoundLabel: String
+    let mixerVolumeKeyStep: String
+    let mixerVolumeKeyStepCaption: String
+    let mixerVolumeKeyStepStandard: String
+    let mixerVolumeKeyStepSmaller: String
+    let mixerAppVolumesTitle: String
+    let mixerNoAppPlaying: String
+    let mixerShowInactiveAppsFormat: String
+    let mixerHideInactiveApps: String
+    let mixerOutputFollowSystem: String
+    let mixerAppVolumeFormat: String
     let audioPrioritySkipCycling: String
     let audioPrioritySetOutput: String
     let audioPrioritySetInput: String
@@ -1769,6 +1781,18 @@ extension Strings {
         audioPriorityMoveDown: "Mover para baixo",
         audioPriorityUnavailable: "Desconectado",
         audioPriorityCurrent: "Em uso",
+        mixerOutputDeviceLabel: "Dispositivo de saída de áudio",
+        mixerSystemSoundLabel: "Tocar sons do sistema em",
+        mixerVolumeKeyStep: "Passo da tecla de volume",
+        mixerVolumeKeyStepCaption: "Altera quanto cada toque na tecla ajusta o volume.",
+        mixerVolumeKeyStepStandard: "Padrão",
+        mixerVolumeKeyStepSmaller: "Menor",
+        mixerAppVolumesTitle: "Volume dos apps",
+        mixerNoAppPlaying: "Nenhum app tocando",
+        mixerShowInactiveAppsFormat: "Mostrar apps inativos (%d)",
+        mixerHideInactiveApps: "Ocultar apps inativos",
+        mixerOutputFollowSystem: "Padrão (seguir o sistema)",
+        mixerAppVolumeFormat: "Volume de %@",
         audioPrioritySkipCycling: "Pular ao alternar",
         audioPrioritySetOutput: "Definir como saída de áudio",
         audioPrioritySetInput: "Definir como entrada de áudio",
@@ -2735,6 +2759,18 @@ extension Strings {
         audioPriorityMoveDown: "Move down",
         audioPriorityUnavailable: "Disconnected",
         audioPriorityCurrent: "Current",
+        mixerOutputDeviceLabel: "Audio output device",
+        mixerSystemSoundLabel: "Play system sound at",
+        mixerVolumeKeyStep: "Volume key step",
+        mixerVolumeKeyStepCaption: "Changes how much each key press adjusts volume.",
+        mixerVolumeKeyStepStandard: "Standard",
+        mixerVolumeKeyStepSmaller: "Smaller",
+        mixerAppVolumesTitle: "App Volumes",
+        mixerNoAppPlaying: "No app playing",
+        mixerShowInactiveAppsFormat: "Show inactive apps (%d)",
+        mixerHideInactiveApps: "Hide inactive apps",
+        mixerOutputFollowSystem: "Default (Follow System)",
+        mixerAppVolumeFormat: "%@ volume",
         audioPrioritySkipCycling: "Skip when cycling",
         audioPrioritySetOutput: "Set as audio output",
         audioPrioritySetInput: "Set as audio input",
