@@ -152,7 +152,9 @@ enum ReleaseChangeAliases {
             "music bars that follow playback"]
         case .notchDownloads: return [.island("downloads"), .island("download"), "safari downloads",
             "downloads folder", "downloads page", "completed download", "completed downloads"]
-        case .notchAgents: return ["ai agents", "ai agent", "claude code", "claude code timer", "codex", "ai usage", "agents",
+        // The feature's name, capitalized, outside Island sections; a plain
+        // "agents" (launch agents, say) only counts inside them.
+        case .notchAgents: return ["ai agents", "ai agent", "claude code", "claude code timer", "codex", "ai usage", .exact("Agents"),
             "opencode", "github copilot", .island("agent"), .island("agents")]
         case .notchWatch: return [.exact("Screen Watcher"), .exact("Watch")]
         case .notchMascot: return ["companion"]
