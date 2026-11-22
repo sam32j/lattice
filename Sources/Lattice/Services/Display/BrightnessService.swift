@@ -292,6 +292,13 @@ final class BrightnessService: ObservableObject {
     /// A drag folds into one write of its newest value, like the display
     /// sliders. Non-nil means a write is already scheduled.
     private var keyboardLevelWork: DispatchWorkItem?
+    /// Every keyboard-light write takes the next number. A queued slider write
+    /// that a later control (the switch, a key) superseded is skipped, and a
+    /// read waits until the newest write has finished; an older write's
+    /// completion, a failed one included, never clears a newer one.
+    private let keyboardWriteLock = NSLock()
+    private var keyboardWriteGeneration = 0
+    private var pendingKeyboardWrite: Int?
     /// Set between the slider's begin and end events. Holds the level the
     /// light was at before the drag, which is what the switch brings back
     /// when the drag ends at 0 (nil inside when it started off).
@@ -325,8 +332,17 @@ final class BrightnessService: ObservableObject {
         refreshKeyboardLight()
     }
 
+    /// A write made on the spot by the switch or a key: it supersedes any
+    /// slider write still queued behind it.
+    private func takeKeyboardLightOwnership() {
+        keyboardLevelWork?.cancel(); keyboardLevelWork = nil
+        keyboardWriteLock.withLock { keyboardWriteGeneration &+= 1 }
+        pendingKeyboardWrite = nil
+    }
+
     func setKeyboardLightEnabled(_ enabled: Bool) {
         guard keyboardLightEnabled != nil, let keyboardLightBridge else { return }
+        takeKeyboardLightOwnership()
         finishKeyboardLightDrag()
         if !enabled, let level = keyboardLightLevel, level > 0 {
             lastKeyboardLightLevel = level
@@ -376,11 +392,19 @@ final class BrightnessService: ObservableObject {
         guard let target = keyboardLightLevel, let keyboardLightBridge else { return }
         let fadeMs: Int32 = keyboardDragStart != nil ? 0 : 350
         showKeyboardLightNotice(target)
+        let generation = keyboardWriteLock.withLock { () -> Int in
+            keyboardWriteGeneration &+= 1
+            return keyboardWriteGeneration
+        }
+        pendingKeyboardWrite = generation
         workQueue.async { [weak self] in
+            guard let self,
+                  self.keyboardWriteLock.withLock({ self.keyboardWriteGeneration == generation }) else { return }
             let ok = keyboardLightBridge.setBrightness(target, fadeMs: fadeMs)
             let saturated = ok ? keyboardLightBridge.isBacklightSaturated() : false
             DispatchQueue.main.async {
-                guard let self else { return }
+                guard self.pendingKeyboardWrite == generation else { return }
+                self.pendingKeyboardWrite = nil
                 guard ok else {
                     self.refreshKeyboardLight()
                     return
@@ -422,7 +446,7 @@ final class BrightnessService: ObservableObject {
     func refreshKeyboardLight() {
         // A read landing mid-drag would show the level the keyboard is still
         // catching up to, so the slider keeps its own value until the write lands.
-        guard keyboardLevelWork == nil else { return }
+        guard keyboardLevelWork == nil, pendingKeyboardWrite == nil else { return }
         guard let bridge = keyboardLightBridge,
               let level = bridge.brightness() as Float?,
               level >= 0, level <= 1 else {
@@ -445,6 +469,7 @@ final class BrightnessService: ObservableObject {
               let keyboardLightBridge,
               let current = keyboardLightLevel(using: keyboardLightBridge)
         else { return }
+        takeKeyboardLightOwnership()
         finishKeyboardLightDrag()
         let target = BrightnessSupport.steppedKeyboardLightLevel(
             current: current, direction: direction)
@@ -581,7 +606,7 @@ final class BrightnessService: ObservableObject {
         // changes during the asynchronous permission teardown. The reset
         // owner releases it explicitly through resumeInputTaps().
         keyboardNoticeWork?.cancel(); keyboardNoticeWork = nil
-        keyboardLevelWork?.cancel(); keyboardLevelWork = nil
+        takeKeyboardLightOwnership()
         keyboardDragStart = nil
         removeKeyTap()
         displayBrightnessDecreaseHotkey.unregister()
