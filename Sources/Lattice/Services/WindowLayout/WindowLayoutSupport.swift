@@ -432,7 +432,9 @@ enum WindowLayoutGeometry {
         case .rightHalf: cycle = [.rightHalf, .rightTwoThirds, .rightThird]
         case .topHalf: cycle = [.topHalf, .topTwoThirds, .topThird]
         case .bottomHalf: cycle = [.bottomHalf, .bottomTwoThirds, .bottomThird]
-        case .centerColumn, .centerHalf: cycle = [.centerColumn, .centerTwoThirds, .centerThird]
+        case .centerColumn: cycle = [.centerColumn, .centerTwoThirds, .centerThird]
+        // Its own first step, so a repeated press finds it and moves on.
+        case .centerHalf: cycle = [.centerHalf, .centerTwoThirds, .centerThird]
         case .centerRow: cycle = [.centerRow, .centerRowTwoThirds, .middleThird]
         default: return nil
         }
