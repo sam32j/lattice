@@ -112,6 +112,11 @@ struct WindowLayoutSettings: View {
                                        moveText: text.gestureMove,
                                        resizeText: text.gestureResize)
                     SettingsToggleRow(title: text.gestureRaiseWindow, isOn: $gestureRaiseWindow)
+                    // Gestures honour the same ignored apps; with arrangement
+                    // off, its card is folded, so the list shows here.
+                    if !windowLayoutInstalled {
+                        WindowLayoutIgnoredAppsList()
+                    }
                 }
             }
         }

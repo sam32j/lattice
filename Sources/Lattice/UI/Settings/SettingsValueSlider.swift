@@ -180,9 +180,12 @@ private final class TrackingSettingsSlider: NSSlider {
             guard window === trackingWindow && trackingWindow.isVisible && isEnabled else { break }
             if next.type == .appKitDefined || next.type == .keyDown { NSApp.sendEvent(next); continue }
             if next.type == .leftMouseDragged {
-                while let newer = NSApp.nextEvent(matching: [.leftMouseDragged], until: .distantPast,
+                // Coalesce this gesture's drags, up to and including its own
+                // mouse-up; the next gesture's events stay queued.
+                while let newer = NSApp.nextEvent(matching: [.leftMouseDragged, .leftMouseUp], until: .distantPast,
                     inMode: .eventTracking, dequeue: true) {
                     next = newer
+                    if newer.type == .leftMouseUp { break }
                 }
             }
             update(next)

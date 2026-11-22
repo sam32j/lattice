@@ -62,6 +62,9 @@ private struct SettingsCollapsible: ViewModifier {
     let isExpanded: Bool
     @State private var contentHeight: CGFloat?
     @State private var settledOpen: Bool
+    /// Bumped on every open or close, so a completion queued by an earlier
+    /// opening cannot reopen the overflow after the group has closed again.
+    @State private var expansionGeneration = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(isExpanded: Bool) {
@@ -95,6 +98,8 @@ private struct SettingsCollapsible: ViewModifier {
             .disabled(!isExpanded)
             .accessibilityHidden(!isExpanded)
             .onChange(of: isExpanded) { _, expanded in
+                expansionGeneration &+= 1
+                let generation = expansionGeneration
                 if !expanded {
                     var transaction = Transaction()
                     transaction.disablesAnimations = true
@@ -105,7 +110,7 @@ private struct SettingsCollapsible: ViewModifier {
                     settledOpen = true
                 } else {
                     DispatchQueue.main.asyncAfter(deadline: .now() + Animation.settingsExpansionDuration + 0.04) {
-                        if isExpanded {
+                        if expansionGeneration == generation {
                             settledOpen = true
                         }
                     }

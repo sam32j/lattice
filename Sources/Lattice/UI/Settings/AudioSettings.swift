@@ -50,7 +50,8 @@ struct AudioSettings: View {
                   let requested = AudioSettingsSide(anchor: router.destination.sectionAnchor) else { return }
             side = requested
         }
-        .onChange(of: side) { _, newSide in Self.lastSide = newSide }
+        // Initial too: a deep link that opens Audio on one side records it.
+        .onChange(of: side, initial: true) { _, newSide in Self.lastSide = newSide }
     }
 
     private var sidePicker: some View {
