@@ -183,7 +183,7 @@ final class DockPreviewService: ObservableObject {
         guard isVisible, windows.contains(item) else { return }
         cancelPendingHide()
         guard !DockPreviewReflow.holdsHover(&reflowHoverAnchor) else { return }
-        selectedWindowID = item.windowID
+        if selectedWindowID != item.windowID { selectedWindowID = item.windowID }
     }
 
     /// Point after a close at which hover selection resumes: until the pointer
@@ -1576,7 +1576,7 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     func preview(_ item: SwitcherItem) {
         guard windows.contains(item) else { return }
         guard !DockPreviewReflow.holdsHover(&reflowHoverAnchor) else { return }
-        selectedWindowID = item.windowID
+        if selectedWindowID != item.windowID { selectedWindowID = item.windowID }
     }
 
     /// See the session panel's anchor: hover waits for the pointer to move
@@ -1749,7 +1749,19 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
         }
         guard windowIDsChanged || windowsChanged || missingPreview else { return }
 
-        windows = refreshed
+        // A close the timer notices first gets the same treatment as one
+        // `finishClosing` handles: the closed window's neighbour takes the
+        // highlight, hover holds still, and the cards slide together.
+        var successor: CGWindowID?
+        if let selectedWindowID, !refreshedIDs.contains(selectedWindowID) {
+            successor = DockPreviewReflow.successor(of: selectedWindowID,
+                                                    in: previousIDs.filter { $0 == selectedWindowID || refreshedIDs.contains($0) })
+            reflowHoverAnchor = NSEvent.mouseLocation
+        }
+        let onlyRemoved = Set(refreshedIDs).isSubset(of: previousIDs) && refreshedIDs.count < previousIDs.count
+        withAnimation(onlyRemoved ? DockPreviewReflow.animation : nil) {
+            windows = refreshed
+        }
         previews = previews.filter { refreshedIDs.contains($0.key) }
         for item in refreshed {
             guard let windowID = item.previewWindowID,
@@ -1760,7 +1772,7 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
         }
 
         if let selectedWindowID, !refreshedIDs.contains(selectedWindowID) {
-            self.selectedWindowID = refreshedIDs.first
+            self.selectedWindowID = successor ?? refreshedIDs.last
         } else if selectedWindowID == nil {
             selectedWindowID = refreshedIDs.first
         }
