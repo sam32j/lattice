@@ -55,16 +55,8 @@ extension MouseButtonShortcutsSection {
                         captureDetailsHeight = height
                     }
                 }
-                .opacity(capturing ? 1 : 0)
-                .allowsHitTesting(capturing)
-                // Hidden from hit testing is not hidden from accessibility:
-                // the folded Cancel sat under Configure and took its press.
-                .disabled(!capturing)
-                .accessibilityHidden(!capturing)
-            Button {
-                startCapture()
-            } label: {
-                Label(text.configureButton(l10n.language), systemImage: "plus")
+                .fixedSize()
+                .transition(.opacity)
             }
             .fixedSize()
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { configureButtonHeight = $0 }
@@ -140,6 +132,7 @@ extension MouseButtonShortcutsSection {
                     Text(spacesFeedback)
                         .font(.caption)
                         .foregroundStyle(.orange)
+                        .transition(.settingsReveal)
                 }
             }
             .onReceive(service.$lastInputSeen) { seen in

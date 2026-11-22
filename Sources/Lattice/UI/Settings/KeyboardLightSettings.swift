@@ -14,6 +14,7 @@ struct KeyboardLightSettings: View {
             VStack(alignment: .leading, spacing: 14) {
                 if brightness.keyboardLightEnabled != nil {
                     keyboardLightSlider
+                        .transition(.settingsReveal)
                 }
 
                 ForEach([GlobalShortcutRole.keyboardBrightnessDecrease, .keyboardBrightnessIncrease]) { role in
@@ -29,6 +30,7 @@ struct KeyboardLightSettings: View {
                     Text(l10n.s.shortcutUnavailable)
                         .font(.caption)
                         .foregroundStyle(.red)
+                        .transition(.settingsReveal)
                 }
             }
             .padding(.leading, settingsRowTextInset)
