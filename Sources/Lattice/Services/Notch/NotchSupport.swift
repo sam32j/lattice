@@ -1161,7 +1161,12 @@ struct NotchActivitySelection {
         guard !available.isEmpty else {
             // Hidden music between two songs, with nothing else live, stays
             // hidden for the next song.
-            if betweenTracks, hiddenLive?.contains(.music) == true { return }
+            if betweenTracks, hiddenLive?.contains(.music) == true {
+                // Only the music carries over; an activity that ended here is
+                // gone, so a new one starting later is not taken for it.
+                hiddenLive = [.music]
+                return
+            }
             preferred = nil
             plus = nil
             anchor = nil
