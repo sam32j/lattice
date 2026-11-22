@@ -1008,6 +1008,9 @@ final class WindowLayoutService: ObservableObject {
     }
 
     private var activeHeldAction: WindowLayoutAction?
+    /// The window the held shortcut started on; focus moving elsewhere during
+    /// the hold ends it rather than moving the newly focused window.
+    private var heldWindowKey: WindowLayoutWindowKey?
     private var holdTimer: Timer?
 
     func handleHotKeyDown(_ action: WindowLayoutAction) {
@@ -1015,6 +1018,7 @@ final class WindowLayoutService: ObservableObject {
         stopHoldTimers()
         activeHeldAction = action
 
+        heldWindowKey = AXIsProcessTrusted() ? focusedTarget(for: action)?.key : nil
         _ = apply(action)
 
         let holdToCycleDisplay = UserDefaults.standard.bool(forKey: DefaultsKey.windowLayoutHoldToCycleDisplayEnabled)
@@ -1032,6 +1036,7 @@ final class WindowLayoutService: ObservableObject {
     func handleHotKeyUp(_ action: WindowLayoutAction) {
         if activeHeldAction == action {
             activeHeldAction = nil
+            heldWindowKey = nil
             stopHoldTimers()
         }
     }
@@ -1043,14 +1048,20 @@ final class WindowLayoutService: ObservableObject {
 
     func cycleToNextDisplay(for action: WindowLayoutAction) {
         guard AXIsProcessTrusted() else { return }
-        guard let target = focusedTarget(for: action) else { return }
+        guard let target = focusedTarget(for: action), target.key == heldWindowKey else { return }
+        // A display action moves on with its own transfer; a placement's rect
+        // on the same display would read as already done.
+        if action == .nextDisplay || action == .previousDisplay {
+            _ = apply(action)
+            return
+        }
+        let effectiveAction = lastActions[target.key] ?? action
         let screens = NSScreen.screens
         guard screens.count > 1 else { return }
         guard let currentScreen = bestScreen(for: target.frame, screens: screens),
               let nextScreen = adjacentScreen(to: currentScreen, screens: screens, movingForward: true) else {
             return
         }
-        let effectiveAction = lastActions[target.key] ?? action
         _ = applyPlacement(effectiveAction,
                            to: target,
                            visibleFrame: nextScreen.windowLayoutVisibleFrame,
