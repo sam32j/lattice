@@ -134,6 +134,7 @@ struct AudioInputDeviceControls: View {
             if let lastError = inputManager.lastError {
                 inputMessage(String(format: l10n.s.mixerInputErrorFormat, lastError),
                              systemImage: "exclamationmark.triangle")
+                                 .transition(.settingsReveal)
             }
         }
         .onAppear { AudioInputDeviceManager.shared.syncWithPreferences() }

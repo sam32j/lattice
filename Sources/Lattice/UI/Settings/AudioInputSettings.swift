@@ -52,15 +52,19 @@ struct AudioInputSettings: View {
                                          showsUnavailableLabel: false,
                                          showsIcons: false)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    ShortcutPreferenceRow(role: .micMute, alignment: .center) {
-                        MicMuteService.shared.syncWithPreferences()
+                    VStack(alignment: .leading, spacing: 4) {
+                        ShortcutPreferenceRow(role: .micMute, alignment: .center) {
+                            MicMuteService.shared.syncWithPreferences()
+                        }
+                        if micShortcutEnabled, micMute.shortcutRegistrationFailed {
+                            Text(l10n.s.shortcutUnavailable)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                                .transition(.settingsReveal)
+                        }
                     }
-                    if micShortcutEnabled, micMute.shortcutRegistrationFailed {
-                        Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
+
+                    SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
                 }
 
                 SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
