@@ -30,8 +30,10 @@ struct DeviceControlsSlider: View {
     private var effectiveReadout: String {
         if let readout { return readout }
         let span = max(range.upperBound - range.lowerBound, 0.000_01)
-        let pct = Int(((displayedValue - range.lowerBound) / span * 100).rounded())
-        return "\(min(max(pct, 0), 100))%"
+        // Clamp before converting: a non-finite or far-off reading must not trap.
+        let fraction = (displayedValue - range.lowerBound) / span
+        let clamped = fraction.isFinite ? min(max(fraction, 0), 1) : 0
+        return "\(Int((clamped * 100).rounded()))%"
     }
 
     private var sliderBinding: Binding<Double> {

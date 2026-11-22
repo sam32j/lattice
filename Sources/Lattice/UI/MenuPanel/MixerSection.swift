@@ -534,12 +534,15 @@ private struct MixerOutputVolumeRow: View {
     /// The output a drag started on. Should the output change before release
     /// (headphones unplugged), the drag belonged to the old one and is dropped.
     @State private var editingOutputUID: String?
+    /// Set when the output changes at any point in a drag, so a round trip
+    /// back to the first output still drops the drag.
+    @State private var outputChangedDuringEdit = false
 
     private var isSystemOutputMuted: Bool {
         if let draggingOutputVolume {
             return draggingOutputVolume <= 0.001
         }
-        return mixer.systemOutputMuted == true || (mixer.systemOutputVolume ?? 0) <= 0.001
+        return mixer.outputReadsMuted
     }
 
     private var displayedSystemOutputVolume: Double {
@@ -591,10 +594,12 @@ private struct MixerOutputVolumeRow: View {
                     if editing {
                         editingOutputVolume = true
                         editingOutputUID = mixer.currentOutputDeviceUID
+                        outputChangedDuringEdit = false
                     } else {
                         editingOutputVolume = false
-                        let sameOutput = editingOutputUID == mixer.currentOutputDeviceUID
+                        let sameOutput = !outputChangedDuringEdit && editingOutputUID == mixer.currentOutputDeviceUID
                         editingOutputUID = nil
+                        outputChangedDuringEdit = false
                         if sameOutput, let finalVol = draggingOutputVolume {
                             mixer.requestOutputLevel(finalVol)
                             if finalVol > 0.001 {
@@ -608,21 +613,19 @@ private struct MixerOutputVolumeRow: View {
             // No scalar level on this output: nothing for the slider to set.
             // Mute stays available on its own button.
             .disabled(mixer.systemOutputVolume == nil)
+            // A draft belongs to the output it was made on: another output
+            // shows its own level and mute at once.
+            .onChange(of: mixer.currentOutputDeviceUID) { _, _ in
+                if editingOutputVolume { outputChangedDuringEdit = true }
+                draggingOutputVolume = nil
+            }
             .frame(width: 140)
         }
     }
 
     private func toggleOutputMute() {
         NotchService.shared.noteOwnLevelAdjustment(.volume)
-        let currentlyMuted = mixer.systemOutputMuted == true || (mixer.systemOutputVolume ?? 0) <= 0.001
-        if currentlyMuted {
-            mixer.requestOutputLevel(mixer.outputUnmuteLevel)
-        } else {
-            if let cur = mixer.systemOutputVolume, cur > 0.001 {
-                UserDefaults.standard.set(cur, forKey: AppVolumeMixer.lastUnmutedOutputVolumeKey)
-            }
-            mixer.requestOutputAdjustment(muted: true)
-        }
+        mixer.togglePanelOutputMute()
     }
 
     private func setSystemOutputVolume(_ value: Double) {
@@ -641,7 +644,7 @@ private struct MixerOutputVolumeRow: View {
         Binding(
             get: { draggingOutputVolume ?? displayedSystemOutputVolume },
             set: { newValue in
-                if editingOutputVolume, editingOutputUID != mixer.currentOutputDeviceUID {
+                if editingOutputVolume, outputChangedDuringEdit || editingOutputUID != mixer.currentOutputDeviceUID {
                     draggingOutputVolume = nil
                     return
                 }

@@ -732,13 +732,16 @@ private struct AppVolumeAuxiliaryOverlay: NSViewRepresentable {
         nsView.owner = self
         nsView.isEnabled = isEnabled
         if !isEnabled {
-            nsView.resetDragSample()
+            nsView.endPointerDrag()
             nsView.endScrollEditing()
         }
     }
 
     static func dismantleNSView(_ nsView: AuxiliaryView, coordinator: ()) {
         nsView.tearDownMonitor()
+        // A drag cut short by removal still ends, so the row releases the
+        // app's tap; ending twice is harmless.
+        if nsView.endPointerDrag() { nsView.owner?.onEditingChanged(false) }
         nsView.endScrollEditing()
     }
 
@@ -780,6 +783,15 @@ private struct AppVolumeAuxiliaryOverlay: NSViewRepresentable {
         func resetDragSample() {
             pointerDownInside = false
             lastDragWindowX = nil
+        }
+
+        /// Ends a pointer drag the way mouse-up does. True if one was active.
+        @discardableResult
+        func endPointerDrag() -> Bool {
+            guard pointerDownInside else { return false }
+            resetDragSample()
+            owner?.onPointerDragEnded()
+            return true
         }
 
         override func updateTrackingAreas() {
