@@ -47,7 +47,6 @@ struct MixerSection: View {
         SettingsCard(
             symbol: "speaker.wave.2",
             title: l10n.s.volumeMixerEnable,
-            headerSpacing: 0,
             headerAccessory: {
                 Toggle(l10n.s.volumeMixerEnable, isOn: $volumeMixerEnabled)
                     .labelsHidden()
@@ -64,9 +63,10 @@ struct MixerSection: View {
                     }
             }
         ) {
-            audioOutputSettingsContent
-                .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-                .settingsCollapsible(isExpanded: volumeMixerEnabled)
+            if volumeMixerEnabled {
+                audioOutputSettingsContent
+                    .transition(.settingsReveal)
+            }
         }
         .settingsExpansionAnimation(value: [volumeMixerEnabled, lowerOnHeadphonesDisconnect, preciseVolumeRollerEnabled])
     }
@@ -98,10 +98,12 @@ struct MixerSection: View {
     }
 
     private var headphoneDisconnectSection: some View {
-        VStack(alignment: .leading, spacing: lowerOnHeadphonesDisconnect ? 14 : 0) {
+        VStack(alignment: .leading, spacing: 14) {
             headphoneDisconnectRow
-            targetVolumeRow
-                .settingsCollapsible(isExpanded: lowerOnHeadphonesDisconnect)
+            if lowerOnHeadphonesDisconnect {
+                targetVolumeRow
+                    .transition(.settingsReveal)
+            }
         }
     }
 

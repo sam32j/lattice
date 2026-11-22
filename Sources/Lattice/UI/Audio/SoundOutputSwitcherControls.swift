@@ -20,9 +20,9 @@ struct SoundOutputSwitcherControls: View {
                 outputSwitcher.syncWithPreferences()
             }
 
-            if outputSwitcher.registrationFailed {
+            if outputSwitcher.registrationFailed, enabled {
                 inputMessage(l10n.s.shortcutUnavailable, systemImage: "keyboard.badge.ellipsis")
-                    .settingsCollapsible(isExpanded: enabled)
+                    .transition(.settingsReveal)
             }
         }
     }

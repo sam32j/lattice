@@ -118,14 +118,16 @@ struct WindowLayoutSettings: View {
                     // off, its card is folded, so the list shows here.
                     if !windowLayoutInstalled {
                         WindowLayoutIgnoredAppsList()
+                            .transition(.settingsReveal)
                     }
                 }
+                .transition(.settingsReveal)
             }
         }
     }
 
     var snappingCard: some View {
-        SettingsCard(symbol: "rectangle.3.group", title: text.gestureSection, headerSpacing: windowLayoutInstalled ? 14 : 0, headerAccessory: {
+        SettingsCard(symbol: "rectangle.3.group", title: text.gestureSection, headerAccessory: {
             PermissionGatedToggle(text.gestureSection, isOn: Binding(
                 get: { windowLayoutInstalled },
                 set: { enabled in
