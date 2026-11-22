@@ -7,12 +7,10 @@ import SwiftUI
 struct PanelURLCleanerView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var cleaner = URLCleanerService.shared
-    @AppStorage(DefaultsKey.urlCleanerEnabled) private var autoClean = false
+    @AppStorage(DefaultsKey.urlSanitizerAutoRemove) private var autoClean = true
     // The service reads the rules itself. `result` reads them too, so a rule
     // changed in Settings while the panel sits beside it redraws the result.
-    @AppStorage(DefaultsKey.urlCleanerCustomParameters) private var globalNames = ""
-    @AppStorage(DefaultsKey.urlCleanerSiteParameters) private var siteNames = ""
-    @AppStorage(DefaultsKey.urlCleanerDisabledParameters) private var disabledNames = ""
+    @AppStorage(DefaultsKey.urlSanitizerSites) private var storedSites = ""
     @State private var input = ""
     @State private var copied: String?
 
@@ -21,7 +19,7 @@ struct PanelURLCleanerView: View {
     /// Worked out from the field on every render, so Copy always takes the
     /// link that is in the field now under the rules in force now.
     private var result: URLCleaning.Result? {
-        _ = (globalNames, siteNames, disabledNames)
+        _ = storedSites
         return cleaner.clean(input)
     }
 
@@ -53,13 +51,13 @@ struct PanelURLCleanerView: View {
 
     private var autoCleanToggle: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Toggle(l10n.s.urlCleanerEnable, isOn: $autoClean)
+            Toggle(FeatureStrings.urlSanitizer(l10n.language).autoRemoveTitle, isOn: $autoClean)
                 .toggleStyle(.checkbox)
                 .font(.system(size: 11.5, weight: .medium))
                 .onChange(of: autoClean) { _, _ in
                     URLCleanerService.shared.syncWithPreferences()
                 }
-            Text(l10n.s.urlCleanerEnableCaption)
+            Text(FeatureStrings.urlSanitizer(l10n.language).autoRemoveHelp)
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
