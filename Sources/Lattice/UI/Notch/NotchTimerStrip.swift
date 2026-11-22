@@ -199,7 +199,7 @@ struct NotchCompanionMark: View {
         }
     }
 
-    static let timerSpacing: CGFloat = 4
+    static let timerSpacing: CGFloat = NotchCapsuleLayout.companionTimerSpacing
 
     private var downloadIndicator: some View {
         HStack(spacing: 5) {

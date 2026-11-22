@@ -589,12 +589,30 @@ struct NotchCapsuleCalendarStrip: View {
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(countdown.ongoing ? text.ongoing : text.next): \(title)")
-                .accessibilityValue(NotchCalendarSupport.countdownAccessibilityText(
-                    until: countdown.target, now: context.date, locale: l10n.language.formattingLocale()))
+                .accessibilityValue(accessibilityValue(countdown, companion: companion, now: context.date))
                 .accessibilityHint(FeatureStrings.notch(l10n.language).open)
+                .accessibilityActions {
+                    // What shares the capsule opens on its own, as its mark does.
+                    if let companion {
+                        Button(companion.title(l10n.language)) { service.openActivity(companion.module) }
+                    }
+                }
             }
             .accessibilityIdentifier("notch.calendarCountdown")
         }
+    }
+
+    /// The event's countdown, then a timer beside it: its reading is drawn,
+    /// so VoiceOver hears it too.
+    private func accessibilityValue(_ countdown: NotchCalendarCountdown, companion: NotchCompactActivity?,
+                                    now: Date) -> String {
+        let event = NotchCalendarSupport.countdownAccessibilityText(
+            until: countdown.target, now: now, locale: l10n.language.formattingLocale())
+        guard companion == .timer else { return event }
+        let timer = NotchTimerService.shared
+        let reading = NotchTimerSupport.compactText(for: timer.session, at: timer.now,
+                                                    locale: Locale(identifier: l10n.language.rawValue))
+        return "\(event), \(NotchCompactActivity.timer.title(l10n.language)) \(reading)"
     }
 
     /// The event's dot and its countdown, as a pair shows the event.

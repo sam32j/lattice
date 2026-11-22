@@ -1070,6 +1070,10 @@ struct NotchActivitySelection {
     /// The activity the person chose; a companion attached beside it may lead
     /// the pair on screen, but detaching always leaves this one.
     private(set) var anchor: NotchCompactActivity?
+    /// When music last went quiet. Back within `trackChangeGrace` it is the
+    /// next song of the same playback; later it is a new session.
+    private(set) var musicGoneSince: TimeInterval?
+    static let trackChangeGrace: TimeInterval = 5
 
     var isHidden: Bool { hiddenLive != nil }
 
@@ -1102,9 +1106,12 @@ struct NotchActivitySelection {
         hiddenLive = nil
     }
 
-    /// Detaches the companion: the chosen activity stays, alone.
-    mutating func unpair() {
-        guard let kept = anchor ?? preferred ?? plus else { return }
+    /// Detaches the companion: the activity the menu named as the main one
+    /// stays, alone, while it is still live; otherwise the chosen one does.
+    mutating func unpair(keeping main: NotchCompactActivity? = nil, available: [NotchCompactActivity] = []) {
+        let named = main.flatMap { available.contains($0) ? $0 : nil }
+        guard let kept = named ?? anchor ?? preferred ?? plus else { return }
+        anchor = kept
         preferred = kept
         plus = nil
         hiddenLive = nil
@@ -1139,8 +1146,22 @@ struct NotchActivitySelection {
         hiddenLive = Set(available)
     }
 
-    mutating func reconcile(available: [NotchCompactActivity]) {
+    mutating func reconcile(available: [NotchCompactActivity],
+                            now: TimeInterval = ProcessInfo.processInfo.systemUptime) {
+        let musicLive = available.contains(.music)
+        let quietFor = musicGoneSince.map { now - $0 }
+        // Music back after more than a song change's pause is a new session.
+        let musicRestarted = musicLive && (quietFor.map { $0 > Self.trackChangeGrace } ?? false)
+        if musicLive {
+            musicGoneSince = nil
+        } else if musicGoneSince == nil {
+            musicGoneSince = now
+        }
+        let betweenTracks = !musicLive && musicGoneSince.map { now - $0 <= Self.trackChangeGrace } == true
         guard !available.isEmpty else {
+            // Hidden music between two songs, with nothing else live, stays
+            // hidden for the next song.
+            if betweenTracks, hiddenLive?.contains(.music) == true { return }
             preferred = nil
             plus = nil
             anchor = nil
@@ -1150,8 +1171,11 @@ struct NotchActivitySelection {
         if let plus, !available.contains(plus) { self.plus = nil }
         if var hidden = hiddenLive {
             // An activity that ends and starts again is new; music between
-            // songs is not.
-            hidden = hidden.filter { available.contains($0) || $0 == .music }
+            // songs is not, but music starting again after a real stop is.
+            hidden = hidden.filter { activity in
+                if activity == .music { return betweenTracks || (musicLive && !musicRestarted) }
+                return available.contains(activity)
+            }
             hiddenLive = available.contains { !hidden.contains($0) } ? nil : hidden
         }
     }
@@ -1205,6 +1229,9 @@ enum NotchCapsuleLayout {
     /// A level's reading, with digits of one width, so it never jitters.
     static let levelFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
     static let readingFont = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+    /// The timer companion's reading, as `NotchTimerCompanionMark` draws it.
+    static let companionTimerFont = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
+    static let companionTimerSpacing: CGFloat = 4
     static let smallFont = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
 
     /// The widest each kind of strip grows, in points of capsule.
@@ -1391,9 +1418,16 @@ enum NotchCapsuleLayout {
     /// tooltip and VoiceOver.
     static func calendarPairSurface(companion: NotchCompactActivity, workingAgents: Int, downloadPercent: Bool,
                                     geometry: NotchGeometry, language: AppLanguage,
-                                    calendarLeadTime: TimeInterval = NotchCalendarSupport.timeLeftLeadTime) -> CGSize {
-        let mark = timerMarkWidth(companion: companion, workingAgents: workingAgents, downloadPercent: downloadPercent,
+                                    calendarLeadTime: TimeInterval = NotchCalendarSupport.timeLeftLeadTime,
+                                    timerReading: String? = nil) -> CGSize {
+        var mark = timerMarkWidth(companion: companion, workingAgents: workingAgents, downloadPercent: downloadPercent,
                                   geometry: geometry, language: language)
+        // A timer beside the event draws its reading after its glyph, and a
+        // long one (a finished Pomodoro, in some languages) needs its room.
+        if companion == .timer, let timerReading {
+            mark += companionTimerSpacing
+                + width(NotchAgentSupport.readingShape(timerReading), font: companionTimerFont)
+        }
         return surface(content: mark + markGap(.calendar) + calendarClockWidth(leadTime: calendarLeadTime),
                        leading: companion == .music ? artworkInset(geometry) : endPadding,
                        maximum: Maximum.activity, geometry: geometry)

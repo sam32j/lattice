@@ -751,9 +751,12 @@ final class NotchService: ObservableObject {
             if let rightClickTap, AXIsProcessTrusted() { InputEventTap.enable(tap: rightClickTap, enable: true) }
             return Unmanaged.passUnretained(event)
         }
+        // Quartz places every display relative to the main one; the island's
+        // own display may start lower (or higher), so its top edge is the origin.
+        let displayTop = displayID.map { CGDisplayBounds($0).minY } ?? 0
         guard type == .rightMouseDown,
               event.getIntegerValueField(.eventSourceUserData) != Self.rightClickReissueMarker,
-              event.location.y < 1.5, running, !suspended, !expanded, !peeking,
+              event.location.y - displayTop < 1.5, running, !suspended, !expanded, !peeking,
               !UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover),
               !compactActivities.isEmpty else { return Unmanaged.passUnretained(event) }
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
@@ -764,7 +767,7 @@ final class NotchService: ObservableObject {
         // release that follow it, to the menu bar. The same press a couple of
         // points lower reaches the island's own window, which then owns the
         // held button: its native menu follows the drag and the release picks.
-        lowered.location = CGPoint(x: event.location.x, y: 2.5)
+        lowered.location = CGPoint(x: event.location.x, y: displayTop + 2.5)
         lowered.setIntegerValueField(.eventSourceUserData, value: Self.rightClickReissueMarker)
         lowered.post(tap: .cgSessionEventTap)
         return nil
@@ -804,7 +807,9 @@ final class NotchService: ObservableObject {
         }
         for activity in live {
             let row = item(activity.title(language)) { [weak self] in
-                guard let self, activity != main || companion != nil else { return }
+                // Only an activity already chosen, and shown alone, has nothing
+                // to do; picking the one shown automatically makes it the choice.
+                guard let self, activity != main || companion != nil || self.activitySelection.preferred != activity else { return }
                 self.switchCompactSelection { self.activitySelection.select(activity, available: self.compactActivities) }
             }
             row.state = activity == main ? .on : activity == companion ? .mixed : .off
@@ -825,7 +830,9 @@ final class NotchService: ObservableObject {
                 }
                 flyout.addItem(item(title) { [weak self] in
                     guard let self else { return }
-                    self.switchCompactSelection { self.activitySelection.unpair() }
+                    self.switchCompactSelection {
+                        self.activitySelection.unpair(keeping: main, available: self.compactActivities)
+                    }
                 })
                 row.submenu = flyout
             } else if let main, companion == nil, activity != main,
@@ -1464,9 +1471,15 @@ final class NotchService: ObservableObject {
         case .calendar:
             guard let countdown = NotchCalendarService.shared.countdown else { return geometry.restingSize(showsContent: false) }
             if let companion {
+                let timer = NotchTimerService.shared
+                let timerReading = companion == .timer
+                    ? NotchTimerSupport.compactText(for: timer.session, at: timer.now,
+                                                    locale: Locale(identifier: language.rawValue))
+                    : nil
                 return layout.calendarPairSurface(companion: companion, workingAgents: working,
                                                   downloadPercent: download?.fraction != nil, geometry: geometry,
-                                                  language: language, calendarLeadTime: NotchCalendarService.shared.countdownLeadTime)
+                                                  language: language, calendarLeadTime: NotchCalendarService.shared.countdownLeadTime,
+                                                  timerReading: timerReading)
             }
             return layout.calendarSurface(title: layout.calendarTitle(countdown, language: language),
                                           time: NotchCalendarSupport.timeText(countdown, locale: language.formattingLocale()),
