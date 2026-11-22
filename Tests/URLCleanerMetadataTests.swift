@@ -85,7 +85,13 @@ enum URLCleanerMetadataTests {
         suite.expect(urlOnlyResult?.originalURL == nil && urlOnlyResult?.url?.absoluteString == cleaned,
                      "metadata with one navigation URL keeps the absent original URL absent")
 
-        let customRules = URLCleaning.rules(globalNames: "id", siteNames: nil, disabledNames: "|utm_*")
+        var customSites = URLCleaning.Rules.builtIn.sites
+        customSites[0].tokens = customSites[0].tokens.map { token in
+            var token = token
+            token.isBlocked = token.name != "utm_*"
+            return token
+        } + [URLCleaning.Token(name: "id", isCustom: true)]
+        let customRules = URLCleaning.Rules(sites: customSites)
         if case .preserved(let data) = URLCleanerLinkMetadata.rewrite(richData, matching: tracked, rules: customRules) {
             suite.expect(decoded(data)?.url?.absoluteString == "https://example.com/article?utm_source=news#section",
                          "preview URLs use the same added and disabled rules as the copied link")
