@@ -88,6 +88,7 @@ struct KeyboardSettings: View {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
                     }
+                    .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)
