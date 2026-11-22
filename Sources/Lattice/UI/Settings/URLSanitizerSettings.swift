@@ -188,7 +188,7 @@ private struct URLSanitizerTitleBarControls: View {
             SettingsTitleBarSwitch(title: strings.mainToggle, isOn: enabled) { isOn in
                 enabled = isOn
                 URLCleanerService.shared.syncWithPreferences()
-                FeatureRuntime.shared.finishAvailabilityChange()
+                settingsFinishAvailabilityChange()
             }
         }
         .padding(.horizontal, 8)

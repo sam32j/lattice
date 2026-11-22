@@ -38,14 +38,19 @@ struct ShelfSettings: View {
                             Toggle("", isOn: $enabled).labelsHidden()
                                 .onChange(of: enabled) { _, _ in
                                     FeatureRuntime.shared.sync([.shelf])
-                                    FeatureRuntime.shared.finishAvailabilityChange()
+                                    settingsFinishAvailabilityChange()
                                 }
                         }
                     }
                     if enabled {
-                        ShortcutPreferenceRow(role: .shelf,
-                            label: UtilitySettingsCopy.open(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language)) {
-                            ShelfService.shared.syncHotkey()
+                        VStack(alignment: .leading, spacing: 16) {
+                            ShortcutPreferenceRow(role: .shelf,
+                                label: UtilitySettingsCopy.open(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language)) {
+                                ShelfService.shared.syncHotkey()
+                            }
+                            .padding(.leading, settingsRowTextInset)
+                            IslandDestinationSettings(destination: .files)
+                                .padding(.leading, settingsRowTextInset)
                         }
                         .padding(.leading, settingsRowTextInset)
                         IslandDestinationSettings(destination: .files)

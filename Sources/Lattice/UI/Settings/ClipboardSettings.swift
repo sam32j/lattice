@@ -45,13 +45,18 @@ struct ClipboardSettings: View {
                     Toggle("", isOn: $enabled).labelsHidden()
                         .onChange(of: enabled) { _, _ in
                             FeatureRuntime.shared.sync([.clipboardHistory])
-                            FeatureRuntime.shared.finishAvailabilityChange()
+                            settingsFinishAvailabilityChange()
                         }
                     }
                     if enabled {
-                        ShortcutPreferenceRow(role: .clipboard, label: UtilitySettingsCopy.open(text.title, l10n.language),
-                            additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
-                            ClipboardHistoryService.shared.syncHotkey()
+                        VStack(alignment: .leading, spacing: 16) {
+                            ShortcutPreferenceRow(role: .clipboard, label: UtilitySettingsCopy.open(text.title, l10n.language),
+                                additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
+                                ClipboardHistoryService.shared.syncHotkey()
+                            }
+                            .padding(.leading, settingsRowTextInset)
+                            IslandDestinationSettings(destination: .clipboard)
+                                .padding(.leading, settingsRowTextInset)
                         }
                         .padding(.leading, settingsRowTextInset)
                         IslandDestinationSettings(destination: .clipboard)

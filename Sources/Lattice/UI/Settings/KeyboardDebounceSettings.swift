@@ -33,7 +33,7 @@ extension KeyboardSettings {
                             .labelsHidden()
                             .onChange(of: debounceEnabled) { _, value in
                                 debounce.syncWithPreferences()
-                                features.finishAvailabilityChange()
+                                settingsFinishAvailabilityChange()
                                 guard value, !permissions.accessibility else { return }
                                 permissions.requestAccessibility()
                             }

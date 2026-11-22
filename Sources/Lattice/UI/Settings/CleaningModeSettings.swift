@@ -9,7 +9,7 @@ struct CleaningModeSettings: View {
             ShortcutPreferenceRow(role: .cleaningMode, alignment: .center,
                 label: SettingsOrganizationStrings.text(.cleaningShortcut, l10n.language)) {
                 cleaning.syncWithPreferences()
-                FeatureRuntime.shared.finishAvailabilityChange()
+                settingsFinishAvailabilityChange()
             }
             .padding(.leading, settingsRowTextInset)
         }

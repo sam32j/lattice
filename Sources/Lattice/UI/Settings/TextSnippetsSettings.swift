@@ -31,7 +31,7 @@ struct TextSnippetsSettings: View {
                 PermissionGatedToggle(SettingsOwnershipStrings.enable(text.pageTitle, l10n.language), isOn: $enabled)
                     .onChange(of: enabled) { _, _ in
                         FeatureRuntime.shared.sync([.textSnippets])
-                        FeatureRuntime.shared.finishAvailabilityChange()
+                        settingsFinishAvailabilityChange()
                     }
                 Text(text.enableCaption)
                     .font(.caption)
