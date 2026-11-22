@@ -606,6 +606,9 @@ extension Strings {
         audioPriorityMoveDown: "下移",
         audioPriorityUnavailable: "已中斷連線",
         audioPriorityCurrent: "使用中",
+        audioPrioritySkipCycling: "循環切換時略過",
+        audioPrioritySetOutput: "設為音訊輸出",
+        audioPrioritySetInput: "設為音訊輸入",
         audioPriorityCaption: "裝置會依優先順序選用。當優先順序較高的裝置連接時，系統會切換至該裝置；使用中的裝置中斷連接時，則切換至下一個可用裝置。",
 
         updatesSection: "更新",
@@ -833,7 +836,7 @@ extension Strings {
         switcherUsageHintFormat: "按住 %@ 瀏覽；放開即可切換到視窗。Shift 或 ← 返回；W 關閉視窗；Q 結束 App；Esc 取消。",
         musicBlockSection: "停用媒體鍵",
         musicBlockTitle: "阻止音樂 App 自行開啟",
-        musicBlockCaption: "阻止偵測到的媒體鍵觸發音樂 App 啟動。需要輔助使用權限。未偵測到按鍵的耳機指令不會被阻止。",
+        musicBlockCaption: "阻止媒體鍵啟動預設音樂 App",
         musicBlockUnavailable: "此保護目前無法使用。請關閉後重新開啟，再試一次。",
         musicBlockReplacementLabel: "改為開啟",
         musicBlockReplacementNone: "無",

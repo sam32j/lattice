@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "Aşağı taşı",
         audioPriorityUnavailable: "Bağlantı Kesildi",
         audioPriorityCurrent: "Etkin",
+        audioPrioritySkipCycling: "Geçişte atla",
+        audioPrioritySetOutput: "Ses çıkışı olarak ayarla",
+        audioPrioritySetInput: "Ses girişi olarak ayarla",
         audioPriorityCaption: "Cihazlar öncelik sırasına göre seçilir. Daha yüksek öncelikli bir cihaz bağlandığında o cihaza geçilir. Etkin cihazın bağlantısı kesildiğinde sıradaki kullanılabilir cihaza geçilir.",
 
         updatesSection: "Güncellemeler",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "Gezinmek için %@ tuşunu basılı tut; pencereyi etkinleştirmek için bırak. Shift veya ← geri gider; W pencereyi kapatır; Q uygulamadan çıkar; Esc iptal eder.",
         musicBlockSection: "Medya tuşlarını devre dışı bırak",
         musicBlockTitle: "Müzik uygulamasının kendiliğinden açılmasını engelle",
-        musicBlockCaption: "Algılanan bir medya tuşundan sonra müzik uygulamasının açılmasını engeller. Erişilebilirlik izni gerektirir. Tuş algılanmayan kulaklık komutlarına izin verilir.",
+        musicBlockCaption: "Medya tuşunun varsayılan müzik uygulamasını başlatmasını engeller",
         musicBlockUnavailable: "Bu koruma şu anda kullanılamıyor. Yeniden denemek için kapatıp açın.",
         musicBlockReplacementLabel: "Yerine aç",
         musicBlockReplacementNone: "Hiçbiri",

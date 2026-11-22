@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "Descendre",
         audioPriorityUnavailable: "Déconnecté",
         audioPriorityCurrent: "Actif",
+        audioPrioritySkipCycling: "Ignorer lors du cycle",
+        audioPrioritySetOutput: "Définir comme sortie audio",
+        audioPrioritySetInput: "Définir comme entrée audio",
         audioPriorityCaption: "Les périphériques sont sélectionnés par ordre de priorité. Lorsqu’un périphérique de priorité plus élevée est connecté, le système bascule vers celui-ci. Lorsque le périphérique actif est déconnecté, le suivant disponible est sélectionné.",
 
         updatesSection: "Mises à jour",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "Maintenez %@ pour naviguer\u{00A0}; relâchez pour activer la fenêtre. Maj ou ← revient en arrière\u{00A0}; W ferme la fenêtre\u{00A0}; Q quitte l’app\u{00A0}; Échap annule.",
         musicBlockSection: "Désactiver les touches multimédias",
         musicBlockTitle: "Empêcher Musique de s’ouvrir toute seule",
-        musicBlockCaption: "Bloque l’ouverture de l’app de musique après une touche multimédia détectée. Nécessite l’accès à l’accessibilité. Les commandes du casque sans touche détectée sont autorisées.",
+        musicBlockCaption: "Empêche la touche multimédia d’ouvrir l’app de musique par défaut",
         musicBlockUnavailable: "Cette protection est indisponible pour le moment. Désactivez-la puis réactivez-la pour réessayer.",
         musicBlockReplacementLabel: "Ouvrir à la place",
         musicBlockReplacementNone: "Aucune",

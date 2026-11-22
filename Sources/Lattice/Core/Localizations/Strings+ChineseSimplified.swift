@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "下移",
         audioPriorityUnavailable: "已断开",
         audioPriorityCurrent: "使用中",
+        audioPrioritySkipCycling: "循环切换时跳过",
+        audioPrioritySetOutput: "设为音频输出",
+        audioPrioritySetInput: "设为音频输入",
         audioPriorityCaption: "设备按优先级顺序选用。连接优先级更高的设备时，系统会切换到该设备；当前设备断开连接时，则切换到下一个可用设备。",
 
         updatesSection: "更新",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "按住 %@ 进行浏览；松开即可激活窗口。Shift 或 ← 返回；W 关闭窗口；Q 退出 App；Esc 取消。",
         musicBlockSection: "禁用媒体键",
         musicBlockTitle: "阻止音乐 App 自行打开",
-        musicBlockCaption: "阻止检测到的媒体键触发音乐 App 启动。需要辅助功能权限。未检测到按键的耳机指令不会被阻止。",
+        musicBlockCaption: "阻止媒体键启动默认音乐 App",
         musicBlockUnavailable: "此保护目前不可用。请关闭后重新开启，再试一次。",
         musicBlockReplacementLabel: "改为打开",
         musicBlockReplacementNone: "无",
