@@ -50,7 +50,7 @@ struct LatticeHubHostedUtility: View {
                                fillsAvailableSpace: notchSize == nil)
                 .frame(height: viewportHeight, alignment: .top)
         } else if item == .deviceControls {
-            DeviceControlsHubView(onClose: onClose, notchSize: notchSize)
+            DeviceControlsHubView(onClose: onClose, notchSize: notchSize, viewportHeight: viewportHeight)
                 .frame(height: viewportHeight, alignment: .top)
         } else if item == .killProcess {
             // Its list scrolls itself; inside another scroll view it would

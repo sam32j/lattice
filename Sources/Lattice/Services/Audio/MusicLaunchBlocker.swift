@@ -165,12 +165,16 @@ final class MusicLaunchBlocker: ObservableObject {
             // A gap in observation invalidates the pending launch decision.
             lastMediaKeyAt = nil
             InputEventTap.enable(tap: mediaKeyTap, enable: true)
-            isMonitoring = CGEvent.tapIsEnabled(tap: mediaKeyTap)
+            // The settings warning follows whether the tap came back.
+            let recovered = CGEvent.tapIsEnabled(tap: mediaKeyTap)
+            isMonitoring = recovered
+            monitoringFailed = !recovered
             return Unmanaged.passUnretained(event)
         }
         guard CGEvent.tapIsEnabled(tap: mediaKeyTap) else {
             lastMediaKeyAt = nil
             isMonitoring = false
+            monitoringFailed = true
             return Unmanaged.passUnretained(event)
         }
         guard type.rawValue == MusicLaunchSupport.systemDefinedEventTypeRawValue,

@@ -431,10 +431,10 @@ struct MixerSection: View {
         }
     }
 
-    private var isInteractingWithAnyApp: Bool {
-        if !activeSliderTrackingAppIDs.isEmpty { return true }
-        let now = CFAbsoluteTimeGetCurrent()
-        return lastVolumeChangeTimes.values.contains { now - $0 < 2.0 }
+    /// Whether this row is being adjusted, or was a moment ago: only then does
+    /// it keep the section it had, so it does not jump while the user works it.
+    private func isInteracting(withAppID id: String, at now: CFAbsoluteTime) -> Bool {
+        activeSliderTrackingAppIDs.contains(id) || now - (lastVolumeChangeTimes[id] ?? 0) < 2.0
     }
 
     private func naturalIsActive(_ app: MixerApp) -> Bool {
@@ -444,12 +444,26 @@ struct MixerSection: View {
             || app.selectedOutputDeviceUID != nil
     }
 
+    /// Refreshes each row's section, except a row being adjusted keeps the one
+    /// it had: one app's cooldown must not freeze the others in stale sections.
     private func updateStabilizedListsIfNeeded(force: Bool = false) {
-        guard force || !isInteractingWithAnyApp else { return }
-        let naturalActive = Set(orderedApps.filter { naturalIsActive($0) }.map(\.id))
-        let naturalInactive = Set(orderedApps.filter { !naturalIsActive($0) }.map(\.id))
-        stabilizedActiveAppIDs = naturalActive
-        stabilizedInactiveAppIDs = naturalInactive
+        let now = CFAbsoluteTimeGetCurrent()
+        var active = Set<String>()
+        var inactive = Set<String>()
+        for app in orderedApps {
+            let held = !force && isInteracting(withAppID: app.id, at: now)
+            if held, stabilizedActiveAppIDs.contains(app.id) {
+                active.insert(app.id)
+            } else if held, stabilizedInactiveAppIDs.contains(app.id) {
+                inactive.insert(app.id)
+            } else if naturalIsActive(app) {
+                active.insert(app.id)
+            } else {
+                inactive.insert(app.id)
+            }
+        }
+        stabilizedActiveAppIDs = active
+        stabilizedInactiveAppIDs = inactive
     }
 
     private func isAppEffectivelyActive(_ app: MixerApp) -> Bool {
@@ -1109,7 +1123,7 @@ struct MixerSettingsAppRow: View {
                 }
             }
 
-            let nonAirPlayDevices = mixer.outputDevices.filter { !$0.isAirPlay }
+            let nonAirPlayDevices = mixer.outputDevices.filter { !MixerRoutingSupport.isAirPlaySentinel($0.uid) }
             if !nonAirPlayDevices.isEmpty {
                 Divider()
                 ForEach(nonAirPlayDevices) { device in
