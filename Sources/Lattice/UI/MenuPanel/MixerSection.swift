@@ -84,6 +84,7 @@ struct MixerSection: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
+                        .transition(.settingsReveal)
                 }
                 headphoneDisconnectSection
                 volumeKeyStepRow
@@ -320,63 +321,67 @@ struct MixerSection: View {
                 }
 
                 if !inactiveApps.isEmpty {
-                    Button {
-                        withAnimation(reduceMotion ? nil : .settingsExpansion) {
-                            showInactiveApps.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 12)
-                                .rotationEffect(.degrees(showInactiveApps ? 90 : 0))
-                            Text(showInactiveApps
-                                 ? l10n.s.mixerHideInactiveApps
-                                 : String(format: l10n.s.mixerShowInactiveAppsFormat, inactiveApps.count))
-                                .font(.system(size: 11.5, weight: .medium))
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 4)
-
-                    if showInactiveApps {
-                        ForEach(Array(inactiveApps.enumerated()), id: \.element.id) { index, app in
-                            if index > 0 {
-                                Divider().padding(.horizontal, 4)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            withAnimation(reduceMotion ? nil : .settingsExpansion) {
+                                showInactiveApps.toggle()
                             }
-                            MixerSettingsAppRow(
-                                app: app,
-                                outputDevices: mixer.outputDevices,
-                                isPinned: arrangement.isPinned(app.persistenceID),
-                                active: false,
-                                onTogglePin: {
-                                    updateArrangement { $0.togglePin(app.persistenceID ?? "") }
-                                    updateStabilizedListsIfNeeded(force: true)
-                                },
-                                onVolumeChanged: {
-                                    let now = CFAbsoluteTimeGetCurrent()
-                                    lastVolumeChangeTimes[app.id] = now
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.05) {
-                                        updateStabilizedListsIfNeeded()
-                                    }
-                                },
-                                onSliderTrackingChanged: { isTracking in
-                                    if isTracking {
-                                        activeSliderTrackingAppIDs.insert(app.id)
-                                    } else {
-                                        activeSliderTrackingAppIDs.remove(app.id)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 12)
+                                    .rotationEffect(.degrees(showInactiveApps ? 90 : 0))
+                                Text(showInactiveApps
+                                     ? l10n.s.mixerHideInactiveApps
+                                     : String(format: l10n.s.mixerShowInactiveAppsFormat, inactiveApps.count))
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
+
+                        if showInactiveApps {
+                            ForEach(Array(inactiveApps.enumerated()), id: \.element.id) { index, app in
+                                if index > 0 {
+                                    Divider().padding(.horizontal, 4)
+                                }
+                                MixerSettingsAppRow(
+                                    app: app,
+                                    outputDevices: mixer.outputDevices,
+                                    isPinned: arrangement.isPinned(app.persistenceID),
+                                    active: false,
+                                    onTogglePin: {
+                                        updateArrangement { $0.togglePin(app.persistenceID ?? "") }
+                                        updateStabilizedListsIfNeeded(force: true)
+                                    },
+                                    onVolumeChanged: {
+                                        let now = CFAbsoluteTimeGetCurrent()
+                                        lastVolumeChangeTimes[app.id] = now
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.05) {
                                             updateStabilizedListsIfNeeded()
                                         }
+                                    },
+                                    onSliderTrackingChanged: { isTracking in
+                                        if isTracking {
+                                            activeSliderTrackingAppIDs.insert(app.id)
+                                        } else {
+                                            activeSliderTrackingAppIDs.remove(app.id)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.05) {
+                                                updateStabilizedListsIfNeeded()
+                                            }
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
+                            .transition(.settingsReveal)
                         }
                     }
+                    .transition(.settingsReveal)
                 }
             }
         }
