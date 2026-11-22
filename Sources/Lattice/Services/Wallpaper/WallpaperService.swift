@@ -93,6 +93,9 @@ final class WallpaperService: ObservableObject {
     func syncWithPreferences() {
         if !isAvailable {
             galleryLifecycle.endAll()
+            // A download chosen before removal must not apply itself after a
+            // reinstall; it completes into the folder and waits for a choice.
+            pendingDownloadApply = nil
             let cancelled = UUID()
             applyToken = cancelled
             setApplyGeneration(cancelled)
@@ -278,7 +281,8 @@ final class WallpaperService: ObservableObject {
         let applyAll = applyAllDisplays
         isApplying = true
         if let assetID = entry.aerialAssetID {
-            applyAerial(assetID, path: url.path, token: token)
+            applyAerial(assetID, path: url.path, token: token,
+                        displays: applyAll ? nil : Set(chosen.compactMap(\.wallpaperStoreKey)))
             return
         }
         Task { @MainActor [weak self] in
@@ -462,13 +466,13 @@ final class WallpaperService: ObservableObject {
     }
 
     // aerials only go through the store, on every Space and display
-    private func applyAerial(_ assetID: String, path: String, token: UUID) {
+    private func applyAerial(_ assetID: String, path: String, token: UUID, displays: Set<String>?) {
         Task { @MainActor [weak self] in
             guard let self else { return }
             defer { if self.applyToken == token { self.isApplying = false } }
             let ok = await Task.detached(priority: .userInitiated) { [weak self] in
                 guard let self else { return false }
-                return WallpaperStore.setAerialOnAllSpaces(assetID) {
+                return WallpaperStore.setAerialOnAllSpaces(assetID, displays: displays) {
                     self.currentApplyGeneration() == token
                 }
             }.value
@@ -918,5 +922,14 @@ enum WallpaperThumbnailCache {
 
     private static func key(_ url: URL, _ maxPixel: Int) -> NSString {
         "\(url.standardizedFileURL.path)#\(maxPixel)" as NSString
+    }
+}
+
+private extension NSScreen {
+    /// The display's UUID, as the wallpaper store keys per-display entries.
+    var wallpaperStoreKey: String? {
+        guard let number = deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+              let uuid = CGDisplayCreateUUIDFromDisplayID(number)?.takeRetainedValue() else { return nil }
+        return CFUUIDCreateString(nil, uuid) as String
     }
 }
