@@ -119,7 +119,60 @@ private struct SettingsCollapsible: ViewModifier {
     }
 }
 
+/// Clips a container to its shape only while its height is changing, so
+/// rows folding away at its bottom edge are masked by that edge instead of
+/// fading over the rows sliding up beneath it. Once the height settles, the
+/// clip lifts again, so control borders, Liquid Glass lenses, and floating
+/// tooltips can reach past the container at rest.
+private struct SettingsClipsWhileResizing<ClipShape: Shape>: ViewModifier {
+    let shape: ClipShape
+    @State private var height: CGFloat?
+    @State private var isResizing = false
+    /// Bumped on every height change, so only the latest change's
+    /// completion lifts the clip.
+    @State private var resizeGeneration = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .clipShape(isResizing ? AnyShape(shape) : AnyShape(SettingsUnclippedShape()))
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { newHeight in
+                defer { height = newHeight }
+                guard let height, abs(height - newHeight) > 0.5, !reduceMotion else { return }
+                resizeGeneration &+= 1
+                let generation = resizeGeneration
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { isResizing = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + Animation.settingsExpansionDuration + 0.04) {
+                    if resizeGeneration == generation {
+                        withTransaction(transaction) { isResizing = false }
+                    }
+                }
+            }
+    }
+}
+
+/// A clip well past anything a control draws outside its card, standing in
+/// for "no clip" so the view's identity, and any focused field inside it,
+/// stays the same when the real clip comes and goes.
+private struct SettingsUnclippedShape: Shape {
+    static func path(around rect: CGRect) -> Path {
+        Path(rect.insetBy(dx: -400, dy: -400))
+    }
+
+    func path(in rect: CGRect) -> Path {
+        Self.path(around: rect)
+    }
+}
+
 extension View {
+    /// Masks rows folding away at this container's edge while it resizes,
+    /// and leaves overflow unclipped once it settles.
+    func settingsClipsWhileResizing<ClipShape: Shape>(to shape: ClipShape) -> some View {
+        modifier(SettingsClipsWhileResizing(shape: shape))
+    }
+
     /// Apply at the page boundary so cards and following rows animate together.
     func settingsExpansionAnimation<Value: Equatable>(value: Value) -> some View {
         modifier(SettingsExpansionAnimation(value: value))
