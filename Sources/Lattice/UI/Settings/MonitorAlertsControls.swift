@@ -106,6 +106,7 @@ struct MonitorAlertsControls: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
+                    .transition(.settingsReveal)
             }
             Text(text.caption)
                 .font(.caption)
@@ -157,6 +158,7 @@ struct MonitorAlertsControls: View {
                             value: $alertCPUThreshold,
                             in: 50...100,
                             step: 5)
+                                .transition(.settingsReveal)
                 }
                 Toggle(text.cpuTemperature, isOn: $alertCPUTemperature.animation(reduceMotion ? nil : .settingsExpansion))
                 if alertCPUTemperature {
@@ -164,6 +166,7 @@ struct MonitorAlertsControls: View {
                             value: $alertCPUTemperatureThreshold,
                             in: 70...105,
                             step: 5)
+                                .transition(.settingsReveal)
                 }
             }
             if AppFeature.monitorMemory.isAvailable {
@@ -176,6 +179,7 @@ struct MonitorAlertsControls: View {
                             value: $alertDiskFreePercent,
                             in: 5...30,
                             step: 5)
+                                .transition(.settingsReveal)
                 }
             }
             if AppFeature.monitorPower.isAvailable, PowerSampler.hasInternalBattery {
@@ -185,6 +189,7 @@ struct MonitorAlertsControls: View {
                             value: $alertBatteryTemperatureThreshold,
                             in: 30...50,
                             step: 5)
+                                .transition(.settingsReveal)
                 }
                 Toggle(text.battery, isOn: $alertBattery.animation(reduceMotion ? nil : .settingsExpansion))
                 if alertBattery {
@@ -192,10 +197,12 @@ struct MonitorAlertsControls: View {
                             value: $alertBatteryPercent,
                             in: 5...50,
                             step: 5)
+                                .transition(.settingsReveal)
                 }
             }
             if anyAlertEnabled {
                 cooldownPicker
+                    .transition(.settingsReveal)
             }
             // Alerts silently cannot fire when macOS notifications are denied
             // for the app; without this line that state is invisible (the
@@ -205,6 +212,7 @@ struct MonitorAlertsControls: View {
                     .font(.system(size: 9.5))
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
+                    .transition(.settingsReveal)
             }
         }
         .toggleStyle(.checkbox)

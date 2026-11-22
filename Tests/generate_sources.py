@@ -1994,7 +1994,7 @@ def main():
                     + declaration("Sources/Lattice/UI/Settings/NotchAgentsSettings.swift", prefix)
                     + "}\n" + (".padding(.leading, settingsRowTextInset)\n" if indented else "") + "}\n}\n"
                     for name, prefix, indented in [
-                        ("Readout", '                SettingsMenuRow(symbol: "camera.metering.center.weighted"', True),
+                        ("Readout", '                    SettingsMenuRow(symbol: "camera.metering.center.weighted"', True),
                         ("FinishAfter", '                SettingsMenuRow(symbol: "timer"', True),
                         ("LimitAt", '                SettingsMenuRow(symbol: "gauge.with.dots.needle.67percent"', True),
                         ("Budget", '            SettingsMenuRow(symbol: "dollarsign.circle"', False),
