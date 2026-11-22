@@ -594,7 +594,6 @@ extension Strings {
         screenRecorderEnable: "Bildschirmaufnahme aktivieren",
         mixerVisibleApps: "Apps in der Liste",
         mixerAllShown: "Alle",
-        mixerHiddenCountLabel: "Ausgeblendet",
         mixerHideFromList: "Aus der Liste ausblenden",
         audioPrioritySection: "Priorität der Audiogeräte",
         audioPriorityOutputEnable: "Automatisch zum Ausgabegerät mit der höchsten Priorität wechseln",

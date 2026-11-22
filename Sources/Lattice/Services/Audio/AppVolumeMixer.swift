@@ -90,13 +90,6 @@ struct MixerApp: Identifiable, Equatable {
     }
 }
 
-/// An app the user took out of the mixer list, remembered by name so it can
-/// be brought back even while it is not running (issue #300).
-struct MixerHiddenApp: Identifiable, Equatable {
-    let id: String
-    let name: String
-}
-
 /// Per-app volume control, something macOS does not offer natively.
 ///
 /// For every app the user turns down or routes to a specific output, a muted
@@ -128,7 +121,6 @@ final class AppVolumeMixer: ObservableObject {
     @Published private(set) var needsPermission = false
     /// Apps kept out of the list (issue #300), including the Finder when its
     /// own toggle hides it, so the panel can offer to bring any of them back.
-    @Published private(set) var hiddenApps: [MixerHiddenApp] = []
 
     private var engines: [String: any GainEngine] = [:]
     /// Arbitrates the engine builds running off-main: it suppresses duplicate
@@ -304,7 +296,6 @@ final class AppVolumeMixer: ObservableObject {
         if enabled {
             stopped = false
             processMonitoringEnabled = true
-            publishHiddenApps()
             if Self.isSupported {
                 installListener(selector: kAudioHardwarePropertyProcessObjectList)
             }
@@ -328,7 +319,6 @@ final class AppVolumeMixer: ObservableObject {
                 airPlayActive = false
             }
             if !apps.isEmpty { apps = [] }
-            if !hiddenApps.isEmpty { hiddenApps = [] }
             if systemOutputVolume != nil { systemOutputVolume = nil }
             if systemOutputMuted != nil { systemOutputMuted = nil }
             processMonitoringEnabled = false
@@ -342,7 +332,6 @@ final class AppVolumeMixer: ObservableObject {
         stopped = false
         processMonitoringEnabled = AppFeature.mixer.isAvailable
         if processMonitoringEnabled {
-            publishHiddenApps()
             // Created here, on the main thread, before any refresh reads the
             // AirPlay snapshot from the HAL queue.
             AirPlayRouteManager.shared.activate { [weak self] in
@@ -422,7 +411,6 @@ final class AppVolumeMixer: ObservableObject {
             airPlayActive = false
         }
         if !apps.isEmpty { apps = [] }
-        if !hiddenApps.isEmpty { hiddenApps = [] }
         if !outputDevices.isEmpty { outputDevices = [] }
         if currentOutputDeviceUID != nil { currentOutputDeviceUID = nil }
         if currentSystemSoundOutputDeviceUID != nil { currentSystemSoundOutputDeviceUID = nil }
@@ -1624,10 +1612,6 @@ final class AppVolumeMixer: ObservableObject {
         let sessionRoutes: [String: String]
         let universalOutputDeviceUID: String?
         let previouslyRoutedObjects: [String: [AudioObjectID]]
-        let showFinder: Bool
-        /// Persistence ids the list must leave out: the apps the user hid,
-        /// plus the Finder while its toggle is off (issue #300).
-        let hiddenRowIDs: Set<String>
         let ownPid: pid_t
     }
 
@@ -1683,10 +1667,6 @@ final class AppVolumeMixer: ObservableObject {
                         || engines[app.id]?.tappedObjects == app.audioObjects else { return nil }
                 return (app.id, app.audioObjects)
             }),
-            showFinder: UserDefaults.standard.bool(forKey: DefaultsKey.mixerShowFinder),
-            hiddenRowIDs: MixerRoutingSupport.hiddenRowIDs(
-                hiddenApps: savedHiddenApps(),
-                showFinder: UserDefaults.standard.bool(forKey: DefaultsKey.mixerShowFinder)),
             ownPid: ProcessInfo.processInfo.processIdentifier)
 
         halQueue.async { [weak self] in
@@ -1827,7 +1807,6 @@ final class AppVolumeMixer: ObservableObject {
         let ownPid = request.ownPid
         let saved = request.savedVolumes
         let savedOutputs = request.savedOutputs
-        let showFinder = request.showFinder
         let followsUniversalOutput = request.universalOutputDeviceUID != nil
             && request.universalOutputDeviceUID == defaultUID
         let defaultDevices = followsUniversalOutput ? defaultDevice.map {
@@ -1888,11 +1867,6 @@ final class AppVolumeMixer: ObservableObject {
             let identity = MixerRoutingSupport.rowIdentity(bundleIdentifier: bundleHints[owner],
                                                            ownerPid: owner,
                                                            displayName: name == fallbackName ? nil : name)
-            // Hidden means no row, and with no row the engine reconciliation
-            // below tears its tap down too: an app taken off the list always
-            // plays untouched, never silently attenuated (issue #300).
-            if MixerRoutingSupport.isHiddenFromMixer(persistenceID: identity.persistenceID,
-                                                     hiddenIDs: request.hiddenRowIDs) { continue }
             let isBypassed = bypassed.contains(owner)
             let route = isBypassed ? nil : storedRoute(for: identity,
                                                        saved: savedOutputs,
@@ -1919,7 +1893,7 @@ final class AppVolumeMixer: ObservableObject {
                                                                        session: request.sessionVolumes) ?? 1)))
         }
         if MixerRoutingSupport.needsPersistentFinderRow(
-            showFinder: showFinder,
+            showFinder: true,
             hasFinderRow: next.contains { $0.id == MixerRoutingSupport.finderBundleIdentifier }
         ), let finder = NSRunningApplication.runningApplications(
             withBundleIdentifier: MixerRoutingSupport.finderBundleIdentifier
@@ -2358,69 +2332,6 @@ final class AppVolumeMixer: ObservableObject {
         applyRouting(for: apps[index])
         clearPermissionIfNoActiveAdjustments()
         refreshApps()
-    }
-
-    // MARK: - List visibility (issue #300)
-
-    /// Takes a row out of the list. Its saved volume and route are kept for
-    /// the day it comes back; while hidden the app is never tapped, so it
-    /// always plays untouched. The Finder keeps its own preference key, from
-    /// the days when it was the only row that could be hidden.
-    func hideFromList(_ app: MixerApp) {
-        guard let id = app.persistenceID else { return }
-        if id == MixerRoutingSupport.finderBundleIdentifier {
-            UserDefaults.standard.set(false, forKey: DefaultsKey.mixerShowFinder)
-        } else {
-            var hidden = savedHiddenApps()
-            hidden[id] = app.name
-            persistHiddenApps(hidden)
-        }
-        publishHiddenApps()
-        refreshApps()
-    }
-
-    /// Puts a hidden app back on the list; its saved volume and route apply
-    /// again on the next refresh.
-    func showInList(id: String) {
-        if id == MixerRoutingSupport.finderBundleIdentifier {
-            UserDefaults.standard.set(true, forKey: DefaultsKey.mixerShowFinder)
-        } else {
-            var hidden = savedHiddenApps()
-            hidden.removeValue(forKey: id)
-            persistHiddenApps(hidden)
-        }
-        publishHiddenApps()
-        refreshApps()
-    }
-
-    private func savedHiddenApps() -> [String: String] {
-        MixerRoutingSupport.sanitizedHiddenApps(
-            UserDefaults.standard.dictionary(forKey: DefaultsKey.mixerHiddenApps) ?? [:])
-    }
-
-    private func persistHiddenApps(_ hidden: [String: String]) {
-        if hidden.isEmpty {
-            UserDefaults.standard.removeObject(forKey: DefaultsKey.mixerHiddenApps)
-        } else {
-            UserDefaults.standard.set(hidden, forKey: DefaultsKey.mixerHiddenApps)
-        }
-    }
-
-    /// Rebuilds the published hidden list: the stored map, plus the Finder
-    /// while its toggle keeps it out, sorted the same way as the visible rows.
-    private func publishHiddenApps() {
-        var entries = savedHiddenApps().map { MixerHiddenApp(id: $0.key, name: $0.value) }
-        if !UserDefaults.standard.bool(forKey: DefaultsKey.mixerShowFinder) {
-            let finderID = MixerRoutingSupport.finderBundleIdentifier
-            let name = NSRunningApplication.runningApplications(withBundleIdentifier: finderID)
-                .first?.localizedName ?? "Finder"
-            entries.append(MixerHiddenApp(id: finderID, name: name))
-        }
-        entries.sort {
-            MixerRoutingSupport.displayOrderedBefore(name: $0.name, id: $0.id,
-                                                     otherName: $1.name, otherID: $1.id)
-        }
-        if hiddenApps != entries { hiddenApps = entries }
     }
 
     /// The volume of a row: from disk when the row has a key to save under,

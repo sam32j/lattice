@@ -1956,8 +1956,6 @@ enum SwitcherModelFeatureTests {
                >= Defaults.minimumMixerHeadphonesDisconnectVolumePercent
                && Defaults.defaultMixerHeadphonesDisconnectVolumePercent < 100,
                "the headphone disconnect default is a real reduction that can still be heard")
-        suite.expect(registeredDefaults[DefaultsKey.mixerShowFinder] as? Bool == true,
-               "Finder returns to the mixer by default")
         suite.expect(registeredDefaults[DefaultsKey.mixerHideInactiveApps] as? Bool == false,
                "inactive mixer apps remain visible by default")
         suite.expect(registeredDefaults[DefaultsKey.soundOutputSwitcherEnabled] as? Bool == false,

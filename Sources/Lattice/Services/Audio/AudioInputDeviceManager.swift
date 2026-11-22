@@ -35,6 +35,9 @@ final class AudioInputDeviceManager: ObservableObject {
     /// the hub.
     private var globalListeners: [AudioObjectPropertySelector] = []
     private var volumeDeviceID: AudioObjectID?
+    /// Whether the listeners on `volumeDeviceID` include the volume ones, so
+    /// turning microphone control on or off rewires the same device.
+    private var observesVolume = false
     private var volumeListenerAddresses: [AudioObjectPropertyAddress] = []
     private var runningListenerAddress: AudioObjectPropertyAddress?
     private var volumeRefreshGeneration = 0
@@ -558,7 +561,7 @@ final class AudioInputDeviceManager: ObservableObject {
 
     private func updateVolumeListeners(for deviceID: AudioObjectID?) {
         let wantsVolume = UserDefaults.standard.bool(forKey: DefaultsKey.microphoneLevelControlEnabled)
-        guard volumeDeviceID != deviceID || (!wantsVolume && !volumeListenerAddresses.isEmpty) else { return }
+        guard volumeDeviceID != deviceID || observesVolume != wantsVolume else { return }
         removeVolumeListeners(resetActivity: false)
         guard let deviceID else {
             if isInputActive { isInputActive = false }
@@ -568,6 +571,7 @@ final class AudioInputDeviceManager: ObservableObject {
         // The active device is also needed for explicit read-back when a
         // driver cannot install notifications.
         volumeDeviceID = deviceID
+        observesVolume = wantsVolume
         if wantsVolume {
             let addresses = Self.mainInputVolumeAddresses() + Self.channelInputVolumeAddresses(for: deviceID)
             for var address in addresses where Self.isSettable(deviceID, &address) {
@@ -626,6 +630,7 @@ final class AudioInputDeviceManager: ObservableObject {
         }
         volumeListenerAddresses.removeAll()
         volumeDeviceID = nil
+        observesVolume = false
     }
 
     private func scheduleVolumeRefresh(for deviceID: AudioObjectID) {

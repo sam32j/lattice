@@ -594,7 +594,6 @@ extension Strings {
         screenRecorderEnable: "Ekran Kaydını Etkinleştir",
         mixerVisibleApps: "Listedeki uygulamalar",
         mixerAllShown: "Tümü",
-        mixerHiddenCountLabel: "Gizli",
         mixerHideFromList: "Listeden gizle",
         audioPrioritySection: "Ses cihazı önceliği",
         audioPriorityOutputEnable: "En yüksek öncelikli ses çıkışına otomatik geç",

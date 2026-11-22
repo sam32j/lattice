@@ -594,7 +594,6 @@ extension Strings {
         screenRecorderEnable: "画面収録を有効にする",
         mixerVisibleApps: "リストに表示するアプリ",
         mixerAllShown: "すべて",
-        mixerHiddenCountLabel: "非表示",
         mixerHideFromList: "リストから隠す",
         audioPrioritySection: "オーディオデバイスの優先順位",
         audioPriorityOutputEnable: "最も優先度の高いオーディオ出力に自動的に切り替える",

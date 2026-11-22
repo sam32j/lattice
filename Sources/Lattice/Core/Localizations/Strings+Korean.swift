@@ -595,7 +595,6 @@ extension Strings {
         screenRecorderEnable: "화면 기록 활성화",
         mixerVisibleApps: "목록에 표시할 앱",
         mixerAllShown: "모두",
-        mixerHiddenCountLabel: "숨김",
         mixerHideFromList: "목록에서 숨기기",
         audioPrioritySection: "오디오 장치 우선순위",
         audioPriorityOutputEnable: "우선순위가 가장 높은 오디오 출력으로 자동 전환",
