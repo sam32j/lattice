@@ -555,16 +555,18 @@ enum WallpaperSupport {
     @discardableResult
     static func patchStoreRoot(_ root: inout [String: Any],
                                aerialAssetID: String,
+                               displays: Set<String>? = nil,
                                now: Date = Date()) -> Bool {
         guard let configuration = aerialConfigurationData(assetID: aerialAssetID) else { return false }
         return patchStoreRoot(&root, provider: "com.apple.wallpaper.choice.aerials",
-                              configuration: configuration, now: now)
+                              configuration: configuration, displays: displays, now: now)
     }
 
     @discardableResult
     static func patchStoreRoot(_ root: inout [String: Any],
                                provider: String,
                                configuration: Data,
+                               displays: Set<String>? = nil,
                                now: Date = Date()) -> Bool {
         guard let options = fillScreenOptionValuesData() else { return false }
 
@@ -584,6 +586,13 @@ enum WallpaperSupport {
             "LastSet": now,
             "LastUse": now,
         ]
+
+        // Some displays only: their own entries, in the display list and in
+        // each Space, and nothing shared. None found means the choice cannot
+        // be scoped, so nothing is written rather than every display changing.
+        if let displays {
+            return patchDisplayEntries(&root, keys: displays, slot: slot)
+        }
 
         guard patchWallpaperSlot(&allSpaces, slot: slot) else { return false }
         root["AllSpacesAndDisplays"] = allSpaces
@@ -641,6 +650,36 @@ enum WallpaperSupport {
     // Desktop is the older individual/idle slot. Key off Type so a leftover
     // Linked key on an individual container cannot steal the Desktop slot.
     @discardableResult
+    private static func patchDisplayEntries(_ root: inout [String: Any], keys: Set<String>,
+                                            slot: [String: Any]) -> Bool {
+        var patched = false
+        if var displays = root["Displays"] as? [String: Any] {
+            for key in keys {
+                guard var entry = displays[key] as? [String: Any] else { continue }
+                guard patchWallpaperSlot(&entry, slot: slot) else { return false }
+                displays[key] = entry
+                patched = true
+            }
+            root["Displays"] = displays
+        }
+        if var spaces = root["Spaces"] as? [String: Any] {
+            for spaceKey in spaces.keys {
+                guard var space = spaces[spaceKey] as? [String: Any],
+                      var spaceDisplays = space["Displays"] as? [String: Any] else { continue }
+                for key in keys {
+                    guard var entry = spaceDisplays[key] as? [String: Any] else { continue }
+                    guard patchWallpaperSlot(&entry, slot: slot) else { return false }
+                    spaceDisplays[key] = entry
+                    patched = true
+                }
+                space["Displays"] = spaceDisplays
+                spaces[spaceKey] = space
+            }
+            root["Spaces"] = spaces
+        }
+        return patched
+    }
+
     static func patchWallpaperSlot(_ container: inout [String: Any],
                                    slot: [String: Any]) -> Bool {
         let type = container["Type"] as? String

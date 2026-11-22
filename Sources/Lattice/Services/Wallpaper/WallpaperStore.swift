@@ -52,10 +52,13 @@ enum WallpaperStore {
     /// Aerials have no still to set through AppKit; the store is their only
     /// way in, and WallpaperAgent downloads the video once it restarts.
     @discardableResult
+    /// Every display when `displays` is nil; otherwise only those displays'
+    /// own entries, keyed by display UUID as the store keys them.
     static func setAerialOnAllSpaces(_ assetID: String,
+                                     displays: Set<String>? = nil,
                                      shouldContinue: () -> Bool = { true }) -> Bool {
         patchIndex(shouldContinue: shouldContinue) {
-            WallpaperSupport.patchStoreRoot(&$0, aerialAssetID: assetID)
+            WallpaperSupport.patchStoreRoot(&$0, aerialAssetID: assetID, displays: displays)
         }
     }
 

@@ -155,6 +155,23 @@ enum WallpaperContract {
                         && aerialChoice?.first?["Provider"] as? String == "com.apple.wallpaper.choice.aerials"
                         && aerialConfig == ["assetID": "A1"],
                      "aerials are set through the store by asset ID")
+        var scopedRoot: [String: Any] = [
+            "AllSpacesAndDisplays": ["Type": "linked"] as [String: Any],
+            "Displays": [
+                "DISP-1": ["Type": "individual"] as [String: Any],
+                "DISP-2": ["Type": "individual"] as [String: Any],
+            ],
+        ]
+        let scopedPatched = WallpaperSupport.patchStoreRoot(&scopedRoot, aerialAssetID: "A1", displays: ["DISP-1"])
+        let scopedDisplays = scopedRoot["Displays"] as? [String: Any]
+        suite.expect(scopedPatched
+                        && (scopedDisplays?["DISP-1"] as? [String: Any])?["Desktop"] != nil
+                        && (scopedDisplays?["DISP-2"] as? [String: Any])?["Desktop"] == nil
+                        && (scopedRoot["AllSpacesAndDisplays"] as? [String: Any])?["Linked"] == nil,
+                     "an aerial for one display changes only that display's entry")
+        var unscopableRoot: [String: Any] = ["AllSpacesAndDisplays": ["Type": "linked"] as [String: Any]]
+        suite.expect(!WallpaperSupport.patchStoreRoot(&unscopableRoot, aerialAssetID: "A1", displays: ["DISP-9"]),
+                     "an aerial for a display the store does not list changes nothing")
 
         // dynamic pictures macOS has not downloaded come from the system catalog
         let catalogURL = appleRoot.appendingPathComponent("catalog.xml")
