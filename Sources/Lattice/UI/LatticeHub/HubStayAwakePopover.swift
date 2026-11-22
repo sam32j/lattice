@@ -201,8 +201,11 @@ struct HubPopoverSwitchStyle: ToggleStyle {
             ZStack(alignment: configuration.isOn ? .trailing : .leading) {
                 Capsule()
                     .fill(configuration.isOn ? Color.accentColor : Color.primary.opacity(0.18))
+                // A fixed size, so the ZStack's alignment can move it between
+                // the ends; a free circle fills the track and stays centred.
                 Circle()
                     .fill(Color.white)
+                    .frame(width: 14, height: 14)
                     .shadow(color: .black.opacity(0.25), radius: 0.8, y: 0.5)
                     .padding(1.5)
             }
