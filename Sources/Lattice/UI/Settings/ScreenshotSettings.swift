@@ -102,6 +102,7 @@ struct ScreenshotSettings: View {
                             .labelsHidden()
                             .fixedSize()
                         }
+                        .transition(.settingsReveal)
                     }
                 }
                 .padding(.top, 12)

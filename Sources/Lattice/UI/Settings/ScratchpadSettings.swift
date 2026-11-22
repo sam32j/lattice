@@ -39,12 +39,7 @@ struct ScratchpadSettings: View {
                         IslandDestinationSettings(destination: .scratchpad)
                             .padding(.leading, settingsRowTextInset)
                     }
-                    .padding(.leading, settingsRowTextInset)
-                    if scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
-                        Text(l10n.s.shortcutUnavailable).font(.caption).foregroundStyle(.orange)
-                    }
-                    IslandDestinationSettings(destination: .scratchpad)
-                        .padding(.leading, settingsRowTextInset)
+                    .transition(.settingsReveal)
                 }
                 }
                 Group {

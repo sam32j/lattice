@@ -46,6 +46,7 @@ struct ProfileShortcutRow: View {
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
         }
     }

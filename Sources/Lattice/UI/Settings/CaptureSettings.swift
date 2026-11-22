@@ -111,6 +111,7 @@ struct CaptureSettings: View {
                                         .labelsHidden()
                                         .fixedSize()
                                 }
+                                .transition(.settingsReveal)
                             }
                             if showsFloatingPreviewPosition {
                                 SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
@@ -118,6 +119,7 @@ struct CaptureSettings: View {
                                         .labelsHidden()
                                         .fixedSize()
                                 }
+                                .transition(.settingsReveal)
                             }
                             SettingsToggleRow(title: screenshotStrings.previewFocusToggle,
                                               isOn: $previewTakesFocus)
@@ -159,6 +161,7 @@ struct CaptureSettings: View {
                 }
                 if screenshotEnabled || recorderEnabled || activeCreatedLinksCount > 0 {
                     sharingCard
+                        .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)

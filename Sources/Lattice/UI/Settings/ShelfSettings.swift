@@ -52,9 +52,7 @@ struct ShelfSettings: View {
                             IslandDestinationSettings(destination: .files)
                                 .padding(.leading, settingsRowTextInset)
                         }
-                        .padding(.leading, settingsRowTextInset)
-                        IslandDestinationSettings(destination: .files)
-                            .padding(.leading, settingsRowTextInset)
+                        .transition(.settingsReveal)
                     }
                 }
             }
@@ -75,6 +73,7 @@ struct ShelfSettings: View {
                                 Text(l10n.s.finderAutomationNote)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .transition(.settingsReveal)
                             }
                         }
                     }
@@ -111,6 +110,7 @@ struct ShelfSettings: View {
                                 Text(l10n.s.shelfDockIslandNote)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .transition(.settingsReveal)
                             }
                         }
                     }

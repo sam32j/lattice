@@ -92,6 +92,7 @@ struct DateVariableBuilder: View {
                 Text(text.dateTimeStyleLocaleNote)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .transition(.settingsReveal)
             }
 
             // Offered for every type, Date included: the calendar date
@@ -170,6 +171,7 @@ struct DateVariableBuilder: View {
                     TextField(text.dateTimePatternLabel, text: $customPattern)
                         .font(.body.monospaced())
                 }
+                .transition(.settingsReveal)
             }
 
             HStack(alignment: .firstTextBaseline) {
