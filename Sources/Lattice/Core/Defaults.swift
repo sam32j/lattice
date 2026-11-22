@@ -241,7 +241,10 @@ enum DefaultsKey {
     static let cleanerScreenshotAgeDays = "cleanerScreenshotAgeDays"    // Int, 0 = off
     static let settingsWindowHeight = "settingsWindowHeight"
     static let shelfItems = "shelfItems"                  // Data: [ShelfPersistedItem] JSON
-    static let urlCleanerEnabled = "urlCleanerEnabled"
+    static let urlCleanerEnabled = "urlCleanerEnabled"                     // URL Sanitizer main switch
+    static let urlSanitizerAutoRemove = "urlSanitizerAutoRemove"           // rewrite copied links automatically
+    static let urlSanitizerSites = "urlSanitizerSites"                     // JSON [URLCleaning.Site]; "" = built-ins
+    // Clean URL's lists, read once by migrateURLCleanerRules and then removed.
     static let urlCleanerCustomParameters = "urlCleanerCustomParameters"
     static let urlCleanerSiteParameters = "urlCleanerSiteParameters"       // host|name pairs added to one site
     static let urlCleanerDisabledParameters = "urlCleanerDisabledParameters" // built-in host|name pairs switched off
@@ -1136,9 +1139,8 @@ enum Defaults {
         DefaultsKey.cleanerLastAutoFailed: 0,
         DefaultsKey.cleanerScreenshotAgeDays: CleanerPolicy.defaultScreenshotAgeDays,
         DefaultsKey.urlCleanerEnabled: false,
-        DefaultsKey.urlCleanerCustomParameters: "",
-        DefaultsKey.urlCleanerSiteParameters: "",
-        DefaultsKey.urlCleanerDisabledParameters: "",
+        DefaultsKey.urlSanitizerAutoRemove: true,
+        DefaultsKey.urlSanitizerSites: "",
         DefaultsKey.textSnippetsEnabled: false,
         DefaultsKey.snippetLibraryEnabled: false,
         DefaultsKey.snippetLibraryShortcut: GlobalShortcut.snippetLibraryDefault.storageValue,
@@ -1678,6 +1680,7 @@ enum Defaults {
         migratePageOwnedControls(in: defaults)
         migrateAudioControls(in: defaults)
         migrateFullscreenActivityVisibility(in: defaults)
+        migrateURLCleanerRules(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         defaults.register(defaults: ["NSInitialToolTipDelay": 300])
@@ -1700,6 +1703,21 @@ enum Defaults {
         // The "all apps" output choice now lasts one session; a saved one
         // would move apps that chose their own output after every launch.
         defaults.removeObject(forKey: DefaultsKey.mixerUniversalOutputDevice)
+    }
+
+    /// Clean URL kept three lists: names added everywhere, names added to one
+    /// host, and built-in names switched off. URL Sanitizer keeps one list of
+    /// sites. Moves an edited setup over once, then drops the old keys; an
+    /// untouched one stays unset and reads as the built-in sites.
+    static func migrateURLCleanerRules(in defaults: UserDefaults) {
+        let legacyKeys = [DefaultsKey.urlCleanerCustomParameters, DefaultsKey.urlCleanerSiteParameters,
+                          DefaultsKey.urlCleanerDisabledParameters]
+        let legacy = legacyKeys.map { defaults.string(forKey: $0) ?? "" }
+        defer { legacyKeys.forEach(defaults.removeObject(forKey:)) }
+        guard defaults.object(forKey: DefaultsKey.urlSanitizerSites) == nil,
+              legacy.contains(where: { !$0.isEmpty }) else { return }
+        let sites = URLCleaning.migratedSites(globalNames: legacy[0], siteNames: legacy[1], disabledNames: legacy[2])
+        defaults.set(URLCleaning.Rules(sites: sites).storageValue, forKey: DefaultsKey.urlSanitizerSites)
     }
 
     /// Start text filtering off for existing installations as well. A distinct

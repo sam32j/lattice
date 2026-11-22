@@ -28,7 +28,7 @@ extension SettingsView {
                                   accessory: { AnyView(KillProcessRefreshButton()) }) {
                 KillProcessView(surface: .settings)
             }
-        case .urlCleaner: URLCleanerSettings()
+        case .urlCleaner: URLSanitizerSettings()
         case .cleaner: FeatureActivationPage(feature: .cleaner) { CleanerView() }
         case .homebrew: FeatureActivationPage(feature: .homebrew) { HomebrewSettings() }
         case .appUpdates: FeatureActivationPage(feature: .appUpdates) { AppUpdatesSettings() }

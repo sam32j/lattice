@@ -10,10 +10,21 @@ final class URLCleanerService: ObservableObject {
     private static let urlType = NSPasteboard.PasteboardType(UTType.url.identifier)
 
     @Published private(set) var isRunning = false
-    @Published private(set) var lastCleaned: String?
-    /// Names the last automatic clean took out, so Settings can say what the
-    /// silent rewrite did rather than only that it is running.
-    @Published private(set) var lastRemoved: [String] = []
+    /// Links cleaned this session, newest first, for Settings' Recently
+    /// cleaned card. These are whole URLs: they live in memory only and are
+    /// never written to disk or to a log.
+    @Published private(set) var recent: [RecentClean] = []
+
+    struct RecentClean: Identifiable, Equatable {
+        let id = UUID()
+        let host: String
+        let original: String
+        let cleaned: String
+        let trackerCount: Int
+        let date: Date
+    }
+
+    static let recentLimit = 5
 
     private final class PollToken {
         private let lock = NSLock()
@@ -35,6 +46,7 @@ final class URLCleanerService: ObservableObject {
     private struct PollResult {
         let changeCount: Int
         let cleaned: URLCleaning.Result?
+        var original: String? = nil
     }
 
     private var timer: Timer?
@@ -45,7 +57,11 @@ final class URLCleanerService: ObservableObject {
     private init() {}
 
     func syncWithPreferences() {
-        if AppFeature.urlCleaner.isAvailable, UserDefaults.standard.bool(forKey: DefaultsKey.urlCleanerEnabled) {
+        let defaults = UserDefaults.standard
+        // Off means fully inactive; on with automatic removal off leaves the
+        // clipboard alone while Settings can still test and edit rules.
+        if AppFeature.urlCleaner.isAvailable, defaults.bool(forKey: DefaultsKey.urlCleanerEnabled),
+           defaults.bool(forKey: DefaultsKey.urlSanitizerAutoRemove) {
             start()
         } else {
             stop()
@@ -62,7 +78,6 @@ final class URLCleanerService: ObservableObject {
     /// stopped answering (issue #887).
     func copy(_ urlString: String) {
         cancelPoll()
-        lastCleaned = urlString
         GeneralPasteboardAccess.shared.async({
             let changeCount = Self.writeToPasteboard(urlString)
             // Unlike a rewrite of what another app copied, this link is ours.
@@ -132,9 +147,8 @@ final class URLCleanerService: ObservableObject {
                 self.pollInFlight = false
                 guard self.isRunning, let result else { return }
                 self.lastChangeCount = result.changeCount
-                if let cleaned = result.cleaned {
-                    self.lastCleaned = cleaned.url
-                    self.lastRemoved = cleaned.removed
+                if let cleaned = result.cleaned, let original = result.original {
+                    self.record(original: original, result: cleaned)
                 }
             }
         }
@@ -249,15 +263,22 @@ final class URLCleanerService: ObservableObject {
                                                      remote: types.contains("com.apple.is-remote-clipboard"),
                                                      linkMetadata: linkMetadata,
                                                      markers: Self.carriedMarkers(in: types))
-        return PollResult(changeCount: rewrittenChangeCount, cleaned: cleaned)
+        return PollResult(changeCount: rewrittenChangeCount, cleaned: cleaned,
+                          original: text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private static var rules: URLCleaning.Rules {
-        let defaults = UserDefaults.standard
-        return URLCleaning.rules(
-            globalNames: defaults.string(forKey: DefaultsKey.urlCleanerCustomParameters),
-            siteNames: defaults.string(forKey: DefaultsKey.urlCleanerSiteParameters),
-            disabledNames: defaults.string(forKey: DefaultsKey.urlCleanerDisabledParameters))
+        URLCleaning.Rules(storedValue: UserDefaults.standard.string(forKey: DefaultsKey.urlSanitizerSites))
+    }
+
+    /// Adds a clean that took at least one tracker out to Recently cleaned.
+    /// Kept to the last few, in memory only.
+    func record(original: String, result: URLCleaning.Result) {
+        guard !result.removals.isEmpty else { return }
+        let host = URLComponents(string: result.url)?.host.map(URLCleaning.matchingHost) ?? ""
+        let entry = RecentClean(host: host, original: original, cleaned: result.url,
+                                trackerCount: result.removals.count, date: Date())
+        recent = Array(([entry] + recent.filter { $0.original != original }).prefix(Self.recentLimit))
     }
 
     @discardableResult
