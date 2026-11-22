@@ -13,12 +13,12 @@ struct AudioInputDeviceControls: View {
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
     @ObservedObject private var audioPriority = AudioPriorityService.shared
     @ObservedObject private var micMute = MicMuteService.shared
-    @State private var lastUnmutedInputVolume: Double = {
-        let saved = UserDefaults.standard.object(forKey: "audioInputLastUnmutedVolume") as? Double ?? 0.75
-        return saved > 0.001 ? saved : 0.75
-    }()
     @State private var draggingInputVolume: Double? = nil
     @State private var unmutingFromDrag = false
+    @State private var pendingUnmuteLevel: PendingInputUnmuteLevel?
+    /// The audible level a drag started from, remembered for Unmute when the
+    /// drag ends at zero.
+    @State private var levelBeforeEdit: Double?
 
     var body: some View {
         VStack(alignment: .leading, spacing: showsIcons ? 8 : 14) {
@@ -114,17 +114,9 @@ struct AudioInputDeviceControls: View {
                     value: inputVolumeBinding,
                     range: 0...1,
                     step: 0,
-                    readout: "\(Int((displayedInputVolume * 100).rounded()))%",
                     onEditingChanged: { editing in
                         if !editing {
-                            if let finalVol = draggingInputVolume, finalVol > 0.001 {
-                                persistLastUnmutedInputVolume(finalVol)
-                                if !micMute.isMuted {
-                                    inputManager.setInputVolume(finalVol)
-                                }
-                            }
-                            draggingInputVolume = nil
-                            unmutingFromDrag = false
+                            finishInputEdit()
                         }
                     }
                 )
@@ -140,10 +132,18 @@ struct AudioInputDeviceControls: View {
         }
         .onAppear { AudioInputDeviceManager.shared.syncWithPreferences() }
         .onChange(of: micMute.isMuted) { _, muted in
-            if !muted {
-                unmutingFromDrag = false
-                if let pending = draggingInputVolume, pending > 0.001 {
-                    inputManager.setInputVolume(pending)
+            guard !muted else {
+                pendingUnmuteLevel = nil
+                return
+            }
+            unmutingFromDrag = false
+            if let dragging = draggingInputVolume, dragging > 0.001 {
+                pendingUnmuteLevel = nil
+                inputManager.setInputVolume(dragging)
+            } else if let pending = pendingUnmuteLevel {
+                pendingUnmuteLevel = nil
+                if pending.deviceUID == inputManager.effectiveInputDeviceUID {
+                    inputManager.setInputVolume(pending.value)
                 }
             }
         }
@@ -162,29 +162,44 @@ struct AudioInputDeviceControls: View {
         return inputManager.inputVolume ?? 1.0
     }
 
-    private func persistLastUnmutedInputVolume(_ value: Double) {
-        lastUnmutedInputVolume = value
-        UserDefaults.standard.set(value, forKey: "audioInputLastUnmutedVolume")
-    }
-
     private func toggleInputMute() {
         let currentlyMuted = micMute.isMuted || (inputManager.inputVolume != nil && (inputManager.inputVolume ?? 0) <= 0.001)
         if currentlyMuted {
-            let restoreVal = lastUnmutedInputVolume > 0.001 ? lastUnmutedInputVolume : (inputManager.inputVolume ?? 0.75)
-            let finalVal = restoreVal > 0.001 ? restoreVal : 0.75
-            var saved = UserDefaults.standard.dictionary(forKey: DefaultsKey.micMuteSavedVolumes) as? [String: Double] ?? [:]
-            if let uid = inputManager.effectiveInputDeviceUID {
-                saved[uid] = finalVal
-                UserDefaults.standard.set(saved, forKey: DefaultsKey.micMuteSavedVolumes)
+            let level = inputManager.inputUnmuteLevel
+            inputManager.seedMicMuteRestore(level)
+            if micMute.isMuted {
+                pendingUnmuteLevel = PendingInputUnmuteLevel(deviceUID: inputManager.effectiveInputDeviceUID,
+                                                             value: level)
             }
             micMute.setMuted(false)
-            inputManager.setInputVolume(finalVal)
+            inputManager.setInputVolume(level)
         } else {
             if let cur = inputManager.inputVolume, cur > 0.001 {
-                persistLastUnmutedInputVolume(cur)
+                inputManager.rememberUnmutedInputVolume(cur)
             }
             micMute.setMuted(true)
         }
+    }
+
+    /// Ends a slider edit. A level chosen while the unmute it started is
+    /// still in flight waits for it; a drag to zero remembers where it began.
+    private func finishInputEdit() {
+        if let finalVol = draggingInputVolume {
+            if finalVol > 0.001 {
+                inputManager.rememberUnmutedInputVolume(finalVol)
+                if micMute.isMuted {
+                    pendingUnmuteLevel = PendingInputUnmuteLevel(deviceUID: inputManager.effectiveInputDeviceUID,
+                                                                 value: finalVol)
+                } else {
+                    inputManager.setInputVolume(finalVol)
+                }
+            } else if let before = levelBeforeEdit {
+                inputManager.rememberUnmutedInputVolume(before)
+            }
+        }
+        draggingInputVolume = nil
+        unmutingFromDrag = false
+        levelBeforeEdit = nil
     }
 
     private var inputSelectionBinding: Binding<String> {
@@ -213,18 +228,15 @@ struct AudioInputDeviceControls: View {
         Binding(
             get: { draggingInputVolume ?? displayedInputVolume },
             set: { newValue in
-                draggingInputVolume = newValue
-                if newValue > 0.001 {
-                    lastUnmutedInputVolume = newValue
+                if draggingInputVolume == nil, !micMute.isMuted,
+                   let current = inputManager.inputVolume, current > 0.001 {
+                    levelBeforeEdit = current
                 }
+                draggingInputVolume = newValue
                 if micMute.isMuted, newValue > 0.001 {
                     if !unmutingFromDrag {
                         unmutingFromDrag = true
-                        var saved = UserDefaults.standard.dictionary(forKey: DefaultsKey.micMuteSavedVolumes) as? [String: Double] ?? [:]
-                        if let uid = inputManager.effectiveInputDeviceUID {
-                            saved[uid] = newValue
-                            UserDefaults.standard.set(saved, forKey: DefaultsKey.micMuteSavedVolumes)
-                        }
+                        inputManager.seedMicMuteRestore(newValue)
                         micMute.setMuted(false)
                     }
                 } else if !unmutingFromDrag {

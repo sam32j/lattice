@@ -12,6 +12,9 @@ struct DeviceControlsSlider: View {
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...1
     var step: Double = 0
+    /// A fixed reading for controls that need words (On, Off). Percentage
+    /// sliders leave it out: the default reading follows the thumb itself,
+    /// so it never lags a throttled value.
     var readout: String? = nil
     var tintColor: Color? = nil
     var onEditingChanged: (Bool) -> Void = { _ in }

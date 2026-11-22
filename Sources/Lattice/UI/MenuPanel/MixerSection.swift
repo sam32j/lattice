@@ -527,14 +527,13 @@ private struct MixerOutputVolumeRow: View {
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
-    @State private var lastUnmutedOutputVolume: Double = {
-        let saved = UserDefaults.standard.object(forKey: "audioOutputLastUnmutedVolume") as? Double ?? 0.5
-        return saved > 0.001 ? saved : 0.5
-    }()
     @State private var draggingOutputVolume: Double? = nil
     /// While dragging, writes skip publishing on the shared mixer (see
     /// `requestOutputAdjustment(publishes:)`); the final level publishes on release.
     @State private var editingOutputVolume = false
+    /// The output a drag started on. Should the output change before release
+    /// (headphones unplugged), the drag belonged to the old one and is dropped.
+    @State private var editingOutputUID: String?
 
     private var isSystemOutputMuted: Bool {
         if let draggingOutputVolume {
@@ -588,22 +587,27 @@ private struct MixerOutputVolumeRow: View {
                 value: systemOutputVolumeBinding,
                 range: 0...1,
                 step: 0,
-                readout: "\(Int((displayedSystemOutputVolume * 100).rounded()))%",
                 onEditingChanged: { editing in
                     if editing {
                         editingOutputVolume = true
+                        editingOutputUID = mixer.currentOutputDeviceUID
                     } else {
                         editingOutputVolume = false
-                        if let finalVol = draggingOutputVolume {
-                            publishFinalOutputVolume(finalVol)
+                        let sameOutput = editingOutputUID == mixer.currentOutputDeviceUID
+                        editingOutputUID = nil
+                        if sameOutput, let finalVol = draggingOutputVolume {
+                            mixer.requestOutputLevel(finalVol)
                             if finalVol > 0.001 {
-                                UserDefaults.standard.set(finalVol, forKey: "audioOutputLastUnmutedVolume")
+                                UserDefaults.standard.set(finalVol, forKey: AppVolumeMixer.lastUnmutedOutputVolumeKey)
                             }
                         }
                         draggingOutputVolume = nil
                     }
                 }
             )
+            // No scalar level on this output: nothing for the slider to set.
+            // Mute stays available on its own button.
+            .disabled(mixer.systemOutputVolume == nil)
             .frame(width: 140)
         }
     }
@@ -612,13 +616,10 @@ private struct MixerOutputVolumeRow: View {
         NotchService.shared.noteOwnLevelAdjustment(.volume)
         let currentlyMuted = mixer.systemOutputMuted == true || (mixer.systemOutputVolume ?? 0) <= 0.001
         if currentlyMuted {
-            let restoreVal = lastUnmutedOutputVolume > 0.001 ? lastUnmutedOutputVolume : (mixer.systemOutputVolume ?? 0.5)
-            let finalVal = restoreVal > 0.001 ? restoreVal : 0.5
-            mixer.requestOutputAdjustment(volume: finalVal, muted: false)
+            mixer.requestOutputLevel(mixer.outputUnmuteLevel)
         } else {
             if let cur = mixer.systemOutputVolume, cur > 0.001 {
-                lastUnmutedOutputVolume = cur
-                UserDefaults.standard.set(cur, forKey: "audioOutputLastUnmutedVolume")
+                UserDefaults.standard.set(cur, forKey: AppVolumeMixer.lastUnmutedOutputVolumeKey)
             }
             mixer.requestOutputAdjustment(muted: true)
         }
@@ -630,30 +631,22 @@ private struct MixerOutputVolumeRow: View {
             NotchService.shared.noteOwnVolumeAdjustment()
         }
         // Both panels share the key queue, so a drag supersedes an older key.
-        mixer.requestOutputAdjustment(volume: value, publishes: !editingOutputVolume)
-    }
-
-    private func publishFinalOutputVolume(_ volume: Double) {
-        if mixer.systemOutputMuted == true, volume > 0.001 {
-            mixer.requestOutputAdjustment(volume: volume, muted: false)
-        } else {
-            mixer.requestOutputAdjustment(volume: volume)
+        if mixer.systemOutputMuted == true, value > 0.001 {
+            NotchService.shared.noteOwnLevelAdjustment(.volume)
         }
+        mixer.requestOutputLevel(value, publishes: !editingOutputVolume)
     }
 
     private var systemOutputVolumeBinding: Binding<Double> {
         Binding(
             get: { draggingOutputVolume ?? displayedSystemOutputVolume },
             set: { newValue in
-                draggingOutputVolume = newValue
-                if newValue > 0.001 { lastUnmutedOutputVolume = newValue }
-                if mixer.systemOutputMuted == true, newValue > 0.001 {
-                    NotchService.shared.noteOwnLevelAdjustment(.volume)
-                    mixer.requestOutputAdjustment(volume: newValue, muted: false,
-                                                  publishes: !editingOutputVolume)
-                } else {
-                    setSystemOutputVolume(newValue)
+                if editingOutputVolume, editingOutputUID != mixer.currentOutputDeviceUID {
+                    draggingOutputVolume = nil
+                    return
                 }
+                draggingOutputVolume = newValue
+                setSystemOutputVolume(newValue)
             }
         )
     }
@@ -784,6 +777,7 @@ struct MixerSettingsAppRow: View {
                                 liveVolume = nil
                                 AppVolumeMixer.shared.setVolume(finalVol, for: app)
                             }
+                            AppVolumeMixer.shared.endInteractiveVolume(for: app)
                             onVolumeChanged()
                         }
                         onSliderTrackingChanged(tracking)

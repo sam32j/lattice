@@ -257,6 +257,7 @@ private struct DeviceControlsAppRow: View {
                                 liveVolume = nil
                                 AppVolumeMixer.shared.setVolume(finalVol, for: app)
                             }
+                            if !editing { AppVolumeMixer.shared.endInteractiveVolume(for: app) }
                         }
                     )
                 }

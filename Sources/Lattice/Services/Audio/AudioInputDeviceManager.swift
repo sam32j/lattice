@@ -70,6 +70,10 @@ final class AudioInputDeviceManager: ObservableObject {
     /// override that stop() would undo.
     private var inputDeviceBeforeOverride: String?
     private var appliedInputDeviceUID: String?
+    /// The saved preferred microphone at the moment the user picked another
+    /// input directly. While the preference is still that one, the picked
+    /// input stands; saving a new preference hands control back to it.
+    private var manualSelectionPreferredUID: String??
     /// True while Audio device priority is steering the input: the singular
     /// preferred-input enforcement steps aside so the two do not fight.
     private(set) var inputPriorityIsActive = false
@@ -102,6 +106,7 @@ final class AudioInputDeviceManager: ObservableObject {
 
     func stop() {
         removeVolumeListeners()
+        manualSelectionPreferredUID = nil
         // Priority selections are meant to survive a quit and the next
         // launch. Only the singular preferred-microphone override is restored.
         if !inputPriorityIsActive {
@@ -136,6 +141,7 @@ final class AudioInputDeviceManager: ObservableObject {
     func setInputPriorityActive(_ active: Bool) {
         guard inputPriorityIsActive != active else { return }
         inputPriorityIsActive = active
+        manualSelectionPreferredUID = nil
         refresh.discardInFlight()
         if listenerInstalled { refreshAndApply() }
     }
@@ -156,6 +162,7 @@ final class AudioInputDeviceManager: ObservableObject {
             UserDefaults.standard.removeObject(forKey: DefaultsKey.preferredInputDevice)
         }
         preferredInputDeviceUID = sanitized
+        manualSelectionPreferredUID = nil
         lastError = nil
         // The choice supersedes a sweep still reading the HAL: that one saw the
         // previous preference and would publish it back for an instant.
@@ -182,6 +189,10 @@ final class AudioInputDeviceManager: ObservableObject {
                 if status == noErr {
                     self.inputDeviceBeforeOverride = nil
                     self.appliedInputDeviceUID = nil
+                    if !self.inputPriorityIsActive {
+                        self.manualSelectionPreferredUID = .some(Defaults.sanitizedPreferredInputDeviceUID(
+                            UserDefaults.standard.string(forKey: DefaultsKey.preferredInputDevice)))
+                    }
                     if self.lastError != nil { self.lastError = nil }
                 } else {
                     let message = "OSStatus \(status)"
@@ -322,6 +333,9 @@ final class AudioInputDeviceManager: ObservableObject {
         let savedUID: String?
         let inputDeviceBeforeOverride: String?
         let mayApplyPreferred: Bool
+        /// A direct pick made after the saved preference: the preference
+        /// neither applies nor decides the effective input meanwhile.
+        let manualSelectionActive: Bool
         let priorityIsActive: Bool
         let preferredInputIsActive: Bool
         let volumeGeneration: Int
@@ -355,11 +369,16 @@ final class AudioInputDeviceManager: ObservableObject {
         // One reader at a time; a request that arrives meanwhile is remembered
         // and runs with the values the current sweep is about to publish.
         guard let generation = refresh.begin() else { return }
+        let savedUID = Defaults.sanitizedPreferredInputDeviceUID(
+            UserDefaults.standard.string(forKey: DefaultsKey.preferredInputDevice))
+        if let picked = manualSelectionPreferredUID, picked != savedUID {
+            manualSelectionPreferredUID = nil
+        }
         let request = RefreshRequest(
-            savedUID: Defaults.sanitizedPreferredInputDeviceUID(
-                UserDefaults.standard.string(forKey: DefaultsKey.preferredInputDevice)),
+            savedUID: savedUID,
             inputDeviceBeforeOverride: inputDeviceBeforeOverride,
             mayApplyPreferred: !applyingPreferred && !inputPriorityIsActive,
+            manualSelectionActive: manualSelectionPreferredUID != nil,
             priorityIsActive: inputPriorityIsActive,
             preferredInputIsActive: UserDefaults.standard.bool(forKey: DefaultsKey.microphoneLevelControlEnabled),
             volumeGeneration: volumeRefreshGeneration)
@@ -379,7 +398,7 @@ final class AudioInputDeviceManager: ObservableObject {
         let devices = inputDevices(defaultUID: currentUID)
         let availableUIDs = Set(devices.map(\.uid))
         let resolution = MixerRoutingSupport.resolveInputDevice(
-            preferredUID: savedUID,
+            preferredUID: request.manualSelectionActive ? nil : savedUID,
             availableUIDs: availableUIDs,
             currentUID: currentUID,
             priorityIsActive: request.priorityIsActive,
@@ -467,8 +486,14 @@ final class AudioInputDeviceManager: ObservableObject {
         // the old device's level while a slider drag is in flight.
         let sweepVolumeIsCurrent = volumeRefreshGeneration == snapshot.volumeGeneration
         let volumeDeviceChanged = volumeDeviceID != effectiveDeviceID
+        // On the same device, a write still queued or in flight may land after
+        // this sweep read the HAL; its accepted level stays shown until the
+        // write's own read-back. A newly selected device always shows its level.
+        let sameDeviceWritePending = (inputVolumeWriteInFlight || pendingInputVolumeWrite != nil)
+            && !effectiveDeviceChanged && !volumeDeviceChanged
         updateVolumeListeners(for: effectiveDeviceID)
-        if (sweepVolumeIsCurrent || effectiveDeviceChanged || volumeDeviceChanged), inputVolume != snapshot.inputVolume {
+        if ((sweepVolumeIsCurrent && !sameDeviceWritePending) || effectiveDeviceChanged || volumeDeviceChanged),
+           inputVolume != snapshot.inputVolume {
             inputVolume = snapshot.inputVolume
         }
 
@@ -844,5 +869,41 @@ final class AudioInputDeviceManager: ObservableObject {
             AudioObjectGetPropertyData(object, &address, 0, nil, &size,
                                        UnsafeMutableRawPointer(pointer)) == noErr
         }
+    }
+}
+
+// MARK: - Microphone level controls
+
+/// A level waiting for an unmute still in flight, for the input it was
+/// chosen on: the unmute sweep can leave the gain where it was, so the level
+/// is applied once the mute has really lifted.
+struct PendingInputUnmuteLevel: Equatable {
+    let deviceUID: String?
+    let value: Double
+}
+
+extension AudioInputDeviceManager {
+    static let lastUnmutedInputVolumeKey = "audioInputLastUnmutedVolume"
+
+    /// The level Unmute brings back, read fresh so the Audio settings row and
+    /// Device Controls always restore the same one.
+    var inputUnmuteLevel: Double {
+        let saved = UserDefaults.standard.object(forKey: Self.lastUnmutedInputVolumeKey) as? Double ?? 0
+        if saved > 0.001 { return saved }
+        if let current = inputVolume, current > 0.001 { return current }
+        return 0.75
+    }
+
+    func rememberUnmutedInputVolume(_ value: Double) {
+        guard value > 0.001 else { return }
+        UserDefaults.standard.set(value, forKey: Self.lastUnmutedInputVolumeKey)
+    }
+
+    /// Tells the unmute sweep which level to restore on the current input.
+    func seedMicMuteRestore(_ value: Double) {
+        guard let uid = effectiveInputDeviceUID else { return }
+        var saved = UserDefaults.standard.dictionary(forKey: DefaultsKey.micMuteSavedVolumes) as? [String: Double] ?? [:]
+        saved[uid] = value
+        UserDefaults.standard.set(saved, forKey: DefaultsKey.micMuteSavedVolumes)
     }
 }
