@@ -794,9 +794,9 @@ enum SwitcherModelFeatureTests {
         let placementCode = (try? String(
             contentsOfFile: "Sources/Lattice/Services/Switcher/WindowEnumerator.swift",
             encoding: .utf8)) ?? ""
-        suite.expect(placementCode.contains("forKey: DefaultsKey.switcherTreatHiddenAppsLikeMinimized")
+        suite.expect(placementCode.contains("let treatHiddenAppsLikeMinimized = true")
                && placementCode.contains("item.isMinimizedForPlacement(treatHiddenAppsLikeMinimized: treatHiddenAppsLikeMinimized)"),
-               "window enumeration applies the saved hidden-app choice through the placement predicate")
+               "window enumeration always places hidden apps with minimized windows")
 
         // A window on another desktop showed only its app's name without
         // Screen Recording: Accessibility leaves it out of the app's list.
@@ -1255,9 +1255,6 @@ enum SwitcherModelFeatureTests {
                == WindowSwitchMinimizedPlacement.normal.rawValue
                && SettingsBackupSupport.exportKeys().contains(DefaultsKey.switcherMinimizedPlacement),
                "App Switcher leaves minimized windows in normal order by default and carries the choice in backups")
-        suite.expect(registeredDefaults[DefaultsKey.switcherTreatHiddenAppsLikeMinimized] as? Bool == true
-               && SettingsBackupSupport.exportKeys().contains(DefaultsKey.switcherTreatHiddenAppsLikeMinimized),
-               "hidden apps follow the minimized-window placement by default and the opt-out travels with settings backups")
         suite.expect(registeredDefaults[DefaultsKey.switcherShowFullscreenWindows] as? Bool == true
                && SettingsBackupSupport.exportKeys().contains(DefaultsKey.switcherShowFullscreenWindows),
                "App Switcher keeps fullscreen windows visible by default and carries the choice in backups")

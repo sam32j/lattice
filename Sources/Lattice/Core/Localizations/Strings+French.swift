@@ -941,7 +941,6 @@ extension Strings {
         focusFollowsMouseRaise: "Placer la fenêtre au premier plan",
         focusFollowsMouseWaitForStop: "Attendre que le pointeur s’arrête",
         switcherMinimizedPlacementLabel: "Afficher les fenêtres réduites",
-        switcherTreatHiddenAppsLikeMinimized: "Traiter les apps masquées comme des fenêtres réduites",
         switcherMinimizedPlacementNormal: "Dans l’ordre récent",
         switcherMinimizedPlacementEnd: "Après les autres fenêtres",
         switcherMinimizedPlacementHidden: "Jamais",

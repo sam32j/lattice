@@ -942,7 +942,6 @@ extension Strings {
         focusFollowsMouseRaise: "將視窗移至最前方",
         focusFollowsMouseWaitForStop: "等待游標停下",
         switcherMinimizedPlacementLabel: "顯示縮至最小的視窗",
-        switcherTreatHiddenAppsLikeMinimized: "將隱藏的 App 視為已最小化的視窗",
         switcherMinimizedPlacementNormal: "按最近使用次序",
         switcherMinimizedPlacementEnd: "排在其他視窗之後",
         switcherMinimizedPlacementHidden: "永不",

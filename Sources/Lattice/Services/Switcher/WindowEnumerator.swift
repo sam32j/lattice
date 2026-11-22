@@ -154,8 +154,9 @@ enum WindowEnumerator {
         let minimizedPlacement = WindowSwitchMinimizedPlacement(
             rawValue: UserDefaults.standard.string(forKey: DefaultsKey.switcherMinimizedPlacement) ?? ""
         ) ?? .normal
-        let treatHiddenAppsLikeMinimized = UserDefaults.standard.bool(
-            forKey: DefaultsKey.switcherTreatHiddenAppsLikeMinimized)
+        // Hidden apps always follow the minimized placement; their separate
+        // switch was retired with the placement picker's redesign.
+        let treatHiddenAppsLikeMinimized = true
         let showFullscreenWindows = UserDefaults.standard.object(forKey: DefaultsKey.switcherShowFullscreenWindows) as? Bool ?? true
         return listWindows(filterPID: nil,
                            maximumCount: maximumCount,

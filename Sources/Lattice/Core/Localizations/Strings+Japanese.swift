@@ -941,7 +941,6 @@ extension Strings {
         focusFollowsMouseRaise: "ウインドウを手前に表示",
         focusFollowsMouseWaitForStop: "ポインタが止まるまで待つ",
         switcherMinimizedPlacementLabel: "しまったウインドウを表示",
-        switcherTreatHiddenAppsLikeMinimized: "非表示のアプリを最小化されたウインドウとして扱う",
         switcherMinimizedPlacementNormal: "最近使った順",
         switcherMinimizedPlacementEnd: "ほかのウインドウの後",
         switcherMinimizedPlacementHidden: "表示しない",

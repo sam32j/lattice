@@ -754,6 +754,11 @@ enum SwitcherSupport {
     static func expandGroupedWindows(orderedWindows: [SwitcherItem],
                                      representatives: [SwitcherItem]) -> [SwitcherItem] {
         let windowsByPID = Dictionary(grouping: orderedWindows, by: \.pid)
+        // One group per app: minimized windows placed after the others give
+        // an app a second representative, and expanding both would list
+        // every window twice.
+        var seenPIDs = Set<pid_t>()
+        let representatives = representatives.filter { seenPIDs.insert($0.pid).inserted }
         return representatives.flatMap { representative in
             [representative] + (windowsByPID[representative.pid] ?? []).filter {
                 $0.id != representative.id

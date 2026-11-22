@@ -941,7 +941,6 @@ extension Strings {
         focusFollowsMouseRaise: "Traer la ventana al frente",
         focusFollowsMouseWaitForStop: "Esperar a que el puntero se detenga",
         switcherMinimizedPlacementLabel: "Mostrar ventanas minimizadas",
-        switcherTreatHiddenAppsLikeMinimized: "Tratar las apps ocultas como ventanas minimizadas",
         switcherMinimizedPlacementNormal: "En orden reciente",
         switcherMinimizedPlacementEnd: "Después de las demás ventanas",
         switcherMinimizedPlacementHidden: "Nunca",

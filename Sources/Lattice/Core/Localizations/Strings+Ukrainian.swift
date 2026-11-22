@@ -913,7 +913,6 @@ extension Strings {
         focusFollowsMouseRaise: "Піднімати вікно на передній план",
         focusFollowsMouseWaitForStop: "Чекати, поки вказівник зупиниться",
         switcherMinimizedPlacementLabel: "Показувати згорнуті вікна",
-        switcherTreatHiddenAppsLikeMinimized: "Вважати приховані програми згорнутими вікнами",
         switcherMinimizedPlacementNormal: "У порядку використання",
         switcherMinimizedPlacementEnd: "Після інших вікон",
         switcherMinimizedPlacementHidden: "Ніколи",

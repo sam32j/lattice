@@ -22,7 +22,6 @@ struct SwitcherSettingsSection: View {
     @AppStorage(DefaultsKey.switcherMergeTabs) private var switcherMergeTabs = false
     @AppStorage(DefaultsKey.switcherWindowlessApps) private var switcherWindowlessApps = SwitcherWindowlessApps.fallback.rawValue
     @AppStorage(DefaultsKey.switcherMinimizedPlacement) private var switcherMinimizedPlacement = WindowSwitchMinimizedPlacement.normal.rawValue
-    @AppStorage(DefaultsKey.switcherTreatHiddenAppsLikeMinimized) private var switcherTreatHiddenAppsLikeMinimized = true
     @AppStorage(DefaultsKey.switcherShowFullscreenWindows) private var switcherShowFullscreenWindows = true
     @AppStorage(DefaultsKey.switcherScreenPlacement) private var switcherScreenPlacement = SwitcherScreenPlacement.fallback.rawValue
     @AppStorage(DefaultsKey.switcherCurrentDisplayOnly) private var switcherCurrentDisplayOnly = false
@@ -239,7 +238,6 @@ struct SwitcherSettingsSection: View {
                 .pickerStyle(.menu)
                 .fixedSize()
                 .onChange(of: switcherMinimizedPlacement) { _, _ in
-                    switcherTreatHiddenAppsLikeMinimized = true
                     AppSwitcher.shared.syncWithPreferences()
                 }
             }

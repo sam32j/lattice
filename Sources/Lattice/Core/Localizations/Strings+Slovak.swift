@@ -941,7 +941,6 @@ extension Strings {
         focusFollowsMouseRaise: "Vyniesť okno dopredu",
         focusFollowsMouseWaitForStop: "Počkať, kým sa kurzor zastaví",
         switcherMinimizedPlacementLabel: "Zobraziť minimalizované okná",
-        switcherTreatHiddenAppsLikeMinimized: "Považovať skryté aplikácie za minimalizované okná",
         switcherMinimizedPlacementNormal: "V poradí použitia",
         switcherMinimizedPlacementEnd: "Za ostatnými oknami",
         switcherMinimizedPlacementHidden: "Nikdy",

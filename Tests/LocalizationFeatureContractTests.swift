@@ -29,10 +29,8 @@ enum LocalizationFeatureContractTests {
             let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
             suite.expect(values.allSatisfy { !$0.contains("\u{2014}") },
                    "no em-dash in visible strings (\(language.rawValue))")
-            suite.expect(!strings.switcherMinimizedPlacementLabel.isEmpty
-                   && !strings.switcherTreatHiddenAppsLikeMinimized.isEmpty,
-                   "the minimized-window picker and separate hidden-app choice are labeled "
-                   + "(\(language.rawValue))")
+            suite.expect(!strings.switcherMinimizedPlacementLabel.isEmpty,
+                   "the minimized-window picker is labeled (\(language.rawValue))")
             suite.expect(!strings.homebrewGroupDependencies.isEmpty,
                    "the installed-package grouping choice is labeled (\(language.rawValue))")
         }

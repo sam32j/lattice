@@ -1147,7 +1147,6 @@ struct Strings {
     let focusFollowsMouseRaise: String
     let focusFollowsMouseWaitForStop: String
     let switcherMinimizedPlacementLabel: String
-    let switcherTreatHiddenAppsLikeMinimized: String
     let switcherMinimizedPlacementNormal: String
     let switcherMinimizedPlacementEnd: String
     let switcherMinimizedPlacementHidden: String
@@ -2113,7 +2112,6 @@ extension Strings {
         focusFollowsMouseRaise: "Trazer a janela para frente",
         focusFollowsMouseWaitForStop: "Esperar o ponteiro parar",
         switcherMinimizedPlacementLabel: "Mostrar janelas minimizadas",
-        switcherTreatHiddenAppsLikeMinimized: "Tratar apps ocultos como janelas minimizadas",
         switcherMinimizedPlacementNormal: "Na ordem recente",
         switcherMinimizedPlacementEnd: "Depois das outras janelas",
         switcherMinimizedPlacementHidden: "Nunca",
@@ -3080,7 +3078,6 @@ extension Strings {
         focusFollowsMouseRaise: "Bring the window to the front",
         focusFollowsMouseWaitForStop: "Wait for the pointer to stop",
         switcherMinimizedPlacementLabel: "Show minimized windows",
-        switcherTreatHiddenAppsLikeMinimized: "Treat hidden apps like minimized windows",
         switcherMinimizedPlacementNormal: "In recent order",
         switcherMinimizedPlacementEnd: "After other windows",
         switcherMinimizedPlacementHidden: "Never",

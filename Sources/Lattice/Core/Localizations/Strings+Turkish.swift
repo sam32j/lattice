@@ -941,7 +941,6 @@ extension Strings {
         focusFollowsMouseRaise: "Pencereyi öne getir",
         focusFollowsMouseWaitForStop: "İşaretçinin durmasını bekle",
         switcherMinimizedPlacementLabel: "Küçültülmüş pencereleri göster",
-        switcherTreatHiddenAppsLikeMinimized: "Gizli uygulamaları küçültülmüş pencereler gibi işle",
         switcherMinimizedPlacementNormal: "Son kullanım sırasıyla",
         switcherMinimizedPlacementEnd: "Diğer pencerelerden sonra",
         switcherMinimizedPlacementHidden: "Asla",

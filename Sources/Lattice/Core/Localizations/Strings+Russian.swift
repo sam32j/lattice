@@ -942,7 +942,6 @@ extension Strings {
         focusFollowsMouseRaise: "Поднимать окно на передний план",
         focusFollowsMouseWaitForStop: "Ждать, пока указатель остановится",
         switcherMinimizedPlacementLabel: "Показывать свёрнутые окна",
-        switcherTreatHiddenAppsLikeMinimized: "Считать скрытые приложения свёрнутыми окнами",
         switcherMinimizedPlacementNormal: "В порядке использования",
         switcherMinimizedPlacementEnd: "После других окон",
         switcherMinimizedPlacementHidden: "Никогда",
