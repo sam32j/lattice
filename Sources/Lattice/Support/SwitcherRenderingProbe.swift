@@ -22,10 +22,31 @@ enum SwitcherRenderingProbe {
         defaults.register(defaults: Defaults.registeredDefaults)
         let keys = [DefaultsKey.switcherSimpleMode, DefaultsKey.switcherIconRowMode,
                     DefaultsKey.switcherPreviewSize, DefaultsKey.switcherMergeTabs]
-        let saved = keys.map { defaults.object(forKey: $0) }
-        defer {
+        // Only what the user had stored comes back; `exit` skips `defer`, so
+        // this runs explicitly before the process ends.
+        let saved = keys.map { defaults.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "")?[$0] }
+        func restorePreferences() {
             for (key, value) in zip(keys, saved) {
                 if let value { defaults.set(value, forKey: key) } else { defaults.removeObject(forKey: key) }
+            }
+        }
+        /// Writes one render, counting it only once the file is on disk.
+        func write(_ host: NSView, as file: String, failures: inout [String]) -> Bool {
+            guard let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
+                failures.append("\(file): no bitmap")
+                return false
+            }
+            host.cacheDisplay(in: host.bounds, to: bitmap)
+            guard let png = bitmap.representation(using: .png, properties: [:]) else {
+                failures.append("\(file): no PNG")
+                return false
+            }
+            do {
+                try png.write(to: output.appendingPathComponent(file + ".png"))
+                return true
+            } catch {
+                failures.append("\(file): \(error)")
+                return false
             }
         }
 
@@ -34,8 +55,16 @@ enum SwitcherRenderingProbe {
             .prefix(11)
         var items: [SwitcherItem] = []
         var windowID: CGWindowID = 1
+        guard !apps.isEmpty else {
+            print("SWITCHER_RENDERING_FAILED no regular apps running")
+            restorePreferences()
+            exit(1)
+        }
+        // The second app has three windows for the window-scope case; with a
+        // single app running, that app has them.
+        let multiWindowPosition = apps.count > 1 ? 1 : 0
         for (position, app) in apps.enumerated() {
-            let count = position == 1 ? 3 : 1
+            let count = position == multiWindowPosition ? 3 : 1
             for window in 0..<count {
                 items.append(SwitcherItem(id: "\(app.processIdentifier)-\(window)",
                                           title: window == 0 ? "\(app.localizedName!) — Main" : "Document \(window + 1)",
@@ -76,7 +105,8 @@ enum SwitcherRenderingProbe {
             defaults.set(simple, forKey: DefaultsKey.switcherSimpleMode)
             defaults.set(icons, forKey: DefaultsKey.switcherIconRowMode)
             defaults.set(name == "grid-grouped", forKey: DefaultsKey.switcherMergeTabs)
-            let list = scope == .frontmostApp ? items.filter { $0.pid == items[1].pid } : items
+            let multiWindowPID = apps[apps.index(apps.startIndex, offsetBy: multiWindowPosition)].processIdentifier
+            let list = scope == .frontmostApp ? items.filter { $0.pid == multiWindowPID } : items
             switcher.loadForRendering(list, selectedIndex: min(selected, list.count - 1), scope: scope)
             if !query.isEmpty {
                 // Size for the whole session first, then filter, as a live search does.
@@ -100,16 +130,9 @@ enum SwitcherRenderingProbe {
                 host.layoutSubtreeIfNeeded()
                 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
                 let file = "\(name)-\(dark ? "dark" : "light")"
-                if let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
-                    host.cacheDisplay(in: host.bounds, to: bitmap)
-                    if let png = bitmap.representation(using: .png, properties: [:]) {
-                        do { try png.write(to: output.appendingPathComponent(file + ".png")) }
-                        catch { failures.append("\(file): \(error)") }
-                    }
-                } else {
-                    failures.append("\(file): no bitmap")
+                if write(host, as: file, failures: &failures) {
+                    print("SWITCHER_RENDERED \(file) panel=\(Int(size.width))x\(Int(size.height)) tileScale=\(switcher.iconRowLayout.tileScale)")
                 }
-                print("SWITCHER_RENDERED \(file) panel=\(Int(size.width))x\(Int(size.height)) tileScale=\(switcher.iconRowLayout.tileScale)")
                 window.contentView = nil
                 window.close()
             }
@@ -126,15 +149,13 @@ enum SwitcherRenderingProbe {
         window.orderFront(nil)
         host.layoutSubtreeIfNeeded()
         RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-        if let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
-            host.cacheDisplay(in: host.bounds, to: bitmap)
-            try? bitmap.representation(using: .png, properties: [:])?
-                .write(to: output.appendingPathComponent("settings-layout-tiles.png"))
+        if write(host, as: "settings-layout-tiles", failures: &failures) {
             print("SWITCHER_RENDERED settings-layout-tiles")
         }
         window.contentView = nil
         window.close()
         for failure in failures { print("SWITCHER_RENDERING_FAILED \(failure)") }
+        restorePreferences()
         exit(failures.isEmpty ? 0 : 1)
     }
 }
