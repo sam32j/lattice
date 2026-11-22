@@ -82,6 +82,7 @@ struct EnergyKeepAwakeSettings: View {
                 Text(l10n.s.shortcutUnavailable)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
         }
     }
@@ -175,9 +176,11 @@ struct EnergyKeepAwakeSettings: View {
                     }
                     if !permissions.accessibility {
                         PermissionRow(kind: .accessibility)
+                            .transition(.settingsReveal)
                     }
                 }
                 .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
             if PowerSampler.hasInternalBattery {
                 Divider()
@@ -205,6 +208,7 @@ struct EnergyKeepAwakeSettings: View {
                     .font(.caption)
                     .foregroundStyle(.red)
                     .padding(.leading, settingsRowTextInset)
+                    .transition(.settingsReveal)
             }
             if awake.clamshellPreferred {
                 SettingsRow(symbol: "sun.min", title: l10n.s.dimScreenOnLidCloseTitle,
@@ -213,6 +217,7 @@ struct EnergyKeepAwakeSettings: View {
                         .labelsHidden()
                 }
                 .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
         }
     }

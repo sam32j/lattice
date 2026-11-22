@@ -134,22 +134,25 @@ struct GeneralSettings: View {
             }
 
             if islandEnabled && features.isAvailable(.notch) {
-                Divider()
-                SettingsRow(symbol: "bookmark", title: SettingsFollowupStrings.text(.preferOpensAt, l10n.language)) {
-                    let selectionBinding = Binding(
-                        get: { LauncherShortcutTarget(rawValue: preferredTarget)?.rawValue ?? LauncherShortcutTarget.automatic.rawValue },
-                        set: { preferredTarget = $0 }
-                    )
-                    Picker(SettingsFollowupStrings.text(.preferOpensAt, l10n.language), selection: selectionBinding) {
-                        Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language))
-                            .tag(LauncherShortcutTarget.floatingWindow.rawValue)
-                        Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language))
-                            .tag(LauncherShortcutTarget.automatic.rawValue)
+                VStack(alignment: .leading, spacing: 13) {
+                    Divider()
+                    SettingsRow(symbol: "bookmark", title: SettingsFollowupStrings.text(.preferOpensAt, l10n.language)) {
+                        let selectionBinding = Binding(
+                            get: { LauncherShortcutTarget(rawValue: preferredTarget)?.rawValue ?? LauncherShortcutTarget.automatic.rawValue },
+                            set: { preferredTarget = $0 }
+                        )
+                        Picker(SettingsFollowupStrings.text(.preferOpensAt, l10n.language), selection: selectionBinding) {
+                            Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language))
+                                .tag(LauncherShortcutTarget.floatingWindow.rawValue)
+                            Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language))
+                                .tag(LauncherShortcutTarget.automatic.rawValue)
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .frame(width: 140, alignment: .trailing)
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 140, alignment: .trailing)
                 }
+                .transition(.settingsReveal)
             }
         }
     }

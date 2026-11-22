@@ -79,6 +79,7 @@ struct EnergyDisplaySettings: View {
                 Text(displayControlFailureText(failure, strings: strings))
                     .font(.caption).foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
+                    .transition(.settingsReveal)
             }
             Divider()
             SettingsControlRow(title: strings.keyStep, caption: strings.keyStepCaption) {

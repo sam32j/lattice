@@ -77,6 +77,7 @@ struct DockClickSettings: View {
                         .accessibilityAddTraits(selected ? .isSelected : [])
                     }
                 }
+                .transition(.settingsReveal)
             }
         }
         .permissionActivationLifetime($coordinator)

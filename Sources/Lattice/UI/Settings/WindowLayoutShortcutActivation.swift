@@ -20,6 +20,7 @@ struct WindowLayoutShortcutActivation: View {
                 }
                 .disabled(!permissions.accessibility)
             }
+            .transition(.settingsReveal)
         }
     }
 }
