@@ -32,10 +32,6 @@ struct MouseButtonShortcutsSection: View {
     @State var recordError: String?
     @State var recordErrorButton: Int64?
     @State var spacesCapturing = false
-    // Measured heights of the Configure button and of the capture it opens,
-    // so their shared slot eases between them.
-    @State var configureButtonHeight: CGFloat?
-    @State var captureDetailsHeight: CGFloat?
     @State var spacesFeedback: String?
 
     var text: MouseButtonFeatureStrings { FeatureStrings.mouseButtons(l10n.language) }

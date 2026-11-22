@@ -35,38 +35,31 @@ extension MouseButtonShortcutsSection {
                 Text(text.rowWheelNote)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
             if shortcut != nil { MouseShortcutExceptionEditor(button: button) }
         }
     }
 
-    /// The Configure button and the capture it opens share one slot. Both
-    /// stay laid out and cross-fade while the slot's height eases between
-    /// them, clipped, so nothing pops in at full size or jumps once the
-    /// other side has finished fading.
+    /// The Configure button and the capture it opens share one slot. The
+    /// capture unrolls from under the row above as Configure fades, and
+    /// rolls back up as it returns, so nothing pops in at full size.
     var captureRow: some View {
         ZStack(alignment: .topTrailing) {
-            captureDetails
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                    // A note arriving mid-capture grows the slot with it.
-                    withAnimation(captureDetailsHeight == nil || reduceMotion ? nil : .settingsExpansion) {
-                        captureDetailsHeight = height
-                    }
+            if capturing {
+                captureDetails
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.settingsReveal)
+            } else {
+                Button {
+                    startCapture()
+                } label: {
+                    Label(text.configureButton(l10n.language), systemImage: "plus")
                 }
                 .fixedSize()
                 .transition(.opacity)
             }
-            .fixedSize()
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { configureButtonHeight = $0 }
-            .opacity(capturing ? 0 : 1)
-            .allowsHitTesting(!capturing)
-            .disabled(capturing)
-            .accessibilityHidden(capturing)
         }
-        .frame(height: capturing ? captureDetailsHeight : configureButtonHeight, alignment: .top)
-        .clipped()
         .onReceive(service.$lastInputSeen) { seen in
             handleCapture(seen)
         }
