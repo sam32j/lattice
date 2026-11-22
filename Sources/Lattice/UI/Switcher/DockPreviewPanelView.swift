@@ -153,11 +153,13 @@ private struct DockPreviewPanelContent: View {
                                         onEndDrag(window)
                                     }
                             )
-                            .onHover { hovering in
-                                if hovering {
-                                    onPreview(window)
-                                } else {
-                                    onEndPreview(window)
+                            // Continuous, not entry and exit: after a close holds
+                            // hover, moving within the card that slid under the
+                            // pointer must select it.
+                            .onContinuousHover { phase in
+                                switch phase {
+                                case .active: onPreview(window)
+                                case .ended: onEndPreview(window)
                                 }
                             }
                         }
