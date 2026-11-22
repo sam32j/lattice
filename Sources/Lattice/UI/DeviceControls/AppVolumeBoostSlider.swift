@@ -389,9 +389,13 @@ struct AppVolumeBoostSlider: View {
                 nextVolume = Self.continuousVolume(forSliderPosition: exitedPos, totalWidth: totalWidth)
             }
         } else {
-            let candidatePos = min(max(currentEffective + deltaPos, 0.0), 1.0)
-            let crossedUnity = (currentEffective < unity && candidatePos >= unity)
-                || (currentEffective > unity && candidatePos <= unity)
+            // The unity crossing and its excess come from the pointer's full
+            // travel; only the resulting thumb position is clamped, so a fast
+            // drag past 100% still reaches the far end.
+            let rawCandidatePos = currentEffective + deltaPos
+            let candidatePos = min(max(rawCandidatePos, 0.0), 1.0)
+            let crossedUnity = (currentEffective < unity && rawCandidatePos >= unity)
+                || (currentEffective > unity && rawCandidatePos <= unity)
             let movingTowardUnity = (currentEffective < unity && deltaPos > 0)
                 || (currentEffective > unity && deltaPos < 0)
             let snapBelowRadius = Double(Self.snapBelowPoints / usable)
@@ -404,7 +408,7 @@ struct AppVolumeBoostSlider: View {
             let rearmAbove = Double(1.5 / usable)
 
             if canCatchUnityInDrag && (crossedUnity || enteredSnapPocket) {
-                let overshoot = crossedUnity ? (candidatePos - unity) : 0
+                let overshoot = crossedUnity ? (rawCandidatePos - unity) : 0
                 if abs(overshoot) <= deadPos {
                     holdingAtUnityInDrag = true
                     unityDragAccumulated = overshoot

@@ -175,6 +175,16 @@ final class AppVolumeMixer: ObservableObject {
     /// Volume and mute belong to the current output device, not the HAL's
     /// system object, so these listeners move whenever that device changes.
     private var outputControlListenerDevice: AudioObjectID?
+    /// Rows whose slider is being dragged. Their tap stays even when the drag
+    /// passes through 100%, so a refresh that reads unity mid-drag does not
+    /// tear it down and leave the app unadjusted until the next tick rebuilds it.
+    private var interactiveVolumeEdits: Set<String> = []
+    /// The output a slider drag writes to without publishing, and when it last
+    /// did. Until the drag commits, the output changes or the drag goes quiet
+    /// for a while, readbacks do not publish either, so the mixer's observers
+    /// stay still for the whole drag.
+    private var outputPublicationSuppression: (device: AudioObjectID, at: CFAbsoluteTime)?
+    private static let outputPublicationSuppressionWindow: CFAbsoluteTime = 5
     private var outputControlListenerAddresses: [AudioObjectPropertyAddress] = []
     private var outputControlRefreshGeneration = 0
     private var stopped = false
@@ -382,6 +392,7 @@ final class AppVolumeMixer: ObservableObject {
     func stopAll() {
         flushPersistedVolumes()
         stopped = true
+        interactiveVolumeEdits.removeAll()
         builds.invalidateAll()
         for engine in engines.values { engine.stop() }
         engines.removeAll()
@@ -650,6 +661,28 @@ final class AppVolumeMixer: ObservableObject {
         enqueueOutputAdjustment(volume: volume, muted: muted, publishes: publishes) { completion($0.handled) }
     }
 
+    /// Sets the master level from a slider or an unmute. An audible level
+    /// lifts a mute; an output with no mute control only gets the level, so a
+    /// volume-only output can still be raised from zero.
+    func requestOutputLevel(_ volume: Double, publishes: Bool = true) {
+        if systemOutputMuted == true, volume > 0.001 {
+            requestOutputAdjustment(volume: volume, muted: false, publishes: publishes)
+        } else {
+            requestOutputAdjustment(volume: volume, publishes: publishes)
+        }
+    }
+
+    /// The level Unmute brings back: the live level when a mute kept it (an
+    /// outside mute included), otherwise the level the panels last left,
+    /// read fresh so every panel restores the same one.
+    var outputUnmuteLevel: Double {
+        if let current = systemOutputVolume, current > 0.001 { return current }
+        let saved = UserDefaults.standard.object(forKey: Self.lastUnmutedOutputVolumeKey) as? Double ?? 0
+        return saved > 0.001 ? saved : 0.5
+    }
+
+    static let lastUnmutedOutputVolumeKey = "audioOutputLastUnmutedVolume"
+
     private func enqueueOutputAdjustment(volume: Double? = nil, muted: Bool? = nil,
                                          step: OutputStep? = nil, publishes: Bool = true,
                                          completion: @escaping (OutputKeyResult) -> Void) {
@@ -660,6 +693,7 @@ final class AppVolumeMixer: ObservableObject {
         // A direct control change supersedes keys pressed before it. The HAL
         // read for those keys may still finish later, so invalidate its value.
         if step == nil {
+            outputPublicationSuppression = publishes ? nil : (device, CFAbsoluteTimeGetCurrent())
             outputStepReadGeneration &+= 1
             outputControlLock.withLock { outputKeyGeneration &+= 1 }
             settleQueuedOutputSteps(result: .superseded)
@@ -800,6 +834,13 @@ final class AppVolumeMixer: ObservableObject {
 
     private func applyOutputControls(volume: Double?, muted: Bool?) {
         guard !hasCurrentOutputAdjustment else { return }
+        if let suppression = outputPublicationSuppression {
+            if suppression.device == outputControlListenerDevice,
+               CFAbsoluteTimeGetCurrent() - suppression.at < Self.outputPublicationSuppressionWindow {
+                return
+            }
+            outputPublicationSuppression = nil
+        }
         if systemOutputVolume != volume { systemOutputVolume = volume }
         if systemOutputMuted != muted { systemOutputMuted = muted }
     }
@@ -1166,9 +1207,11 @@ final class AppVolumeMixer: ObservableObject {
     func setInteractiveVolume(_ volume: Double, for app: MixerApp, isEditing: Bool) {
         guard isEditing else {
             setVolume(volume, for: app)
+            endInteractiveVolume(for: app)
             return
         }
         guard !app.isBypassed else { return }
+        interactiveVolumeEdits.insert(app.id)
         let clamped = Defaults.sanitizedAppVolume(volume)
         persistVolume(clamped, for: app)
         if clamped > 0.001 { lastAudibleVolume[app.id] = clamped }
@@ -1184,6 +1227,16 @@ final class AppVolumeMixer: ObservableObject {
         if abs(clamped - 1.0) > 0.001 {
             setVolume(clamped, for: app)
         }
+    }
+
+    /// Ends a slider drag. Its tap was kept even at 100% while the drag ran;
+    /// released at 100% with nothing else needing it, it goes now.
+    func endInteractiveVolume(for app: MixerApp) {
+        guard interactiveVolumeEdits.remove(app.id) != nil,
+              engines[app.id] != nil,
+              let live = apps.first(where: { $0.id == app.id }),
+              !appNeedsEngine(live) else { return }
+        applyRouting(for: live)
     }
 
     func setVolume(_ volume: Double, for app: MixerApp) {
@@ -2247,13 +2300,14 @@ final class AppVolumeMixer: ObservableObject {
             // and objects, so that clock is checked on its own. Only that:
             // an engine on a default the list hides is otherwise left alone.
             let clockIsGone = engine.clockDeviceUID.map { !listedUIDs.contains($0) } == true
+            let needsEngine = appNeedsEngine(app) || interactiveVolumeEdits.contains(id)
             guard engine.tappedObjects != app.audioObjects
                 || engine.outputDeviceUID != app.effectiveOutputDeviceUID
-                || !appNeedsEngine(app)
+                || !needsEngine
                 || clockIsGone else { continue }
 
             engineChangeAt[id] = now
-            guard appNeedsEngine(app) else {
+            guard needsEngine else {
                 // No remaining volume or output adjustment needs a tap.
                 discardEngine(for: id)
                 continue
@@ -2268,7 +2322,7 @@ final class AppVolumeMixer: ObservableObject {
                 engines.removeValue(forKey: id)?.stop()
                 engineRenderProgress.removeValue(forKey: id)
             }
-            applyRouting(for: app)
+            applyRouting(for: app, keepLiveEngineAtUnity: interactiveVolumeEdits.contains(id))
         }
 
         for app in apps where appNeedsEngine(app) && engines[app.id] == nil {
