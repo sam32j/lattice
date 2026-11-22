@@ -4276,11 +4276,18 @@ final class NotchService: ObservableObject {
             guard let self else { return }
             self.preferenceSyncWork = nil
             guard self.running else { return }
+            // A motion that started after this was scheduled finishes first.
+            if InterfaceMotionHold.remaining > 0 {
+                self.schedulePreferenceSync()
+                return
+            }
             self.syncWithPreferences()
         }
         preferenceSyncWork = work
-        // Past a settings switch's slide and the accordion it opens.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+        // Past a settings switch's slide and the accordion it opens, and past
+        // any frame-by-frame motion still running, such as the Stay Awake
+        // countdown, which a sync landing mid-slide froze and then jumped.
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, InterfaceMotionHold.remaining), execute: work)
     }
 
     private func applicationDidActivate() {

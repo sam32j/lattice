@@ -27,6 +27,7 @@ enum NotchScreenRefreshContract {
         }
     }
     enum DispatchQueue { static var main = Scheduler() }
+    enum InterfaceMotionHold { static var remaining: Double = 0 }
     final class Timer {
         var tolerance: Double = 0
         var invalidated = false
@@ -254,6 +255,23 @@ enum NotchScreenRefreshContract {
         DispatchQueue.main.advance(0.3)
         suite.expect(preferences.preferenceSyncs == 3,
                      "suspended islands still apply preference changes that stop disabled services")
+        preferences.suspended = false
+        InterfaceMotionHold.remaining = 0.8
+        preferences.schedulePreferenceSync()
+        DispatchQueue.main.advance(0.5)
+        suite.expect(preferences.preferenceSyncs == 3,
+                     "a preference write waits out a frame-by-frame motion still on screen")
+        InterfaceMotionHold.remaining = 0
+        DispatchQueue.main.advance(0.3)
+        suite.expect(preferences.preferenceSyncs == 4, "the held sync runs once the motion has finished")
+        preferences.schedulePreferenceSync()
+        InterfaceMotionHold.remaining = 0.5
+        DispatchQueue.main.advance(0.3)
+        suite.expect(preferences.preferenceSyncs == 4 && preferences.preferenceSyncWork != nil,
+                     "a motion starting after the sync was scheduled still finishes first")
+        InterfaceMotionHold.remaining = 0
+        DispatchQueue.main.advance(0.5)
+        suite.expect(preferences.preferenceSyncs == 5, "the rescheduled sync still runs once")
         let initialSize = service.geometry.compactMusicGeometry.compactActivitySize
         var pendingPeak = 0
         var geometryChanged = false
