@@ -32,7 +32,6 @@ struct AudioOutputSettings: View {
         SettingsCard(
             symbol: "line.horizontal.2.decrease.circle",
             title: l10n.s.manageAudioOutputPriorityTitle,
-            headerSpacing: 0,
             headerAccessory: {
                 Toggle(l10n.s.audioPriorityOutputEnable, isOn: Binding(
                     get: { priority.outputPriorityEnabled },
@@ -44,13 +43,14 @@ struct AudioOutputSettings: View {
                 .accessibilityLabel(l10n.s.audioPriorityOutputEnable)
             }
         ) {
-            VStack(alignment: .leading, spacing: 14) {
-                AudioOutputPriorityControls(showsHeader: false)
-                Divider()
-                SoundOutputSwitcherControls()
+            if priority.outputPriorityEnabled {
+                VStack(alignment: .leading, spacing: 14) {
+                    AudioOutputPriorityControls(showsHeader: false)
+                    Divider()
+                    SoundOutputSwitcherControls()
+                }
+                .transition(.settingsReveal)
             }
-            .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-            .settingsCollapsible(isExpanded: priority.outputPriorityEnabled)
         }
         .settingsExpansionAnimation(value: priority.outputPriorityEnabled)
     }

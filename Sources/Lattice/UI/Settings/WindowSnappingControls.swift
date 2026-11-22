@@ -6,8 +6,8 @@ extension WindowLayoutSettings {
     }
 
     var edgeSnapControls: some View {
-        // Spacing lives inside each follow-up group so a collapsed group
-        // leaves no gap under the switch.
+        // The follow-up groups sit at different gaps under the switch, so
+        // each carries its own and rolls it up with itself.
         VStack(alignment: .leading, spacing: 0) {
             SettingsControlRow(title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
                 PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
@@ -36,20 +36,15 @@ extension WindowLayoutSettings {
                             edgeSnapZoneActions = ""
                             WindowLayoutService.shared.syncWithPreferences()
                         }
-                    Spacer(minLength: 0)
-                    Button(l10n.s.shortcutReset) {
-                        edgeSnapDisabledZones = ""
-                        edgeSnapZoneActions = ""
-                        WindowLayoutService.shared.syncWithPreferences()
+                        .disabled(isEdgeSnapReset)
                     }
-                    .disabled(isEdgeSnapReset)
+                    Text(WindowLayoutFeatureStrings.edgeSnapCustomizeHint(l10n.language))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                Text(WindowLayoutFeatureStrings.edgeSnapCustomizeHint(l10n.language))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .padding(.top, 17)
+                .transition(.settingsReveal)
             }
-            .padding(.top, 17)
-            .settingsCollapsible(isExpanded: edgeSnapEnabled)
             if systemTilingEnabled {
                 VStack(alignment: .leading, spacing: 6) {
                     Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")

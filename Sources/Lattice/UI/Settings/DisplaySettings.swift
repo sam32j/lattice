@@ -41,8 +41,8 @@ struct DisplaySettings: View {
             refreshVisibleServices()
         }
         .onChange(of: focus) { _, _ in refreshVisibleServices() }
-        // The display card's accordion and the cards below it move in one
-        // transaction, so nothing under it jumps ahead of the expansion.
+        // The cards' revealed rows and the cards below them move in one
+        // transaction, so nothing under them jumps ahead of the expansion.
         .settingsExpansionAnimation(value: [brightnessControlEnabled, bluetoothSleepEnabled,
                                              wallpaperInstalled])
     }
@@ -65,7 +65,7 @@ struct DisplaySettings: View {
 
     private var wallpaperCard: some View {
         let strings = FeatureStrings.wallpaper(l10n.language)
-        return SettingsCard(symbol: "photo.tv", title: strings.enableManagement, headerSpacing: 0, headerAccessory: {
+        return SettingsCard(symbol: "photo.tv", title: strings.enableManagement, headerAccessory: {
             Toggle(strings.enableManagement, isOn: Binding(
                 get: { wallpaperInstalled },
                 set: { enabled in
@@ -79,10 +79,11 @@ struct DisplaySettings: View {
             .help(strings.enableManagement)
             .accessibilityLabel(strings.enableManagement)
         }) {
-            WallpaperFolderSettings()
-                .padding(.leading, settingsRowTextInset)
-                .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-                .settingsCollapsible(isExpanded: wallpaperInstalled)
+            if wallpaperInstalled {
+                WallpaperFolderSettings()
+                    .padding(.leading, settingsRowTextInset)
+                    .transition(.settingsReveal)
+            }
         }
     }
 

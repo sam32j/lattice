@@ -101,7 +101,7 @@ struct GeneralSettings: View {
                 .labelsHidden()
             }
             Divider()
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: SettingsCard<EmptyView>.headerSpacing) {
                 SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
                     Toggle(SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
                            isOn: Binding(
@@ -118,10 +118,11 @@ struct GeneralSettings: View {
                            ))
                         .labelsHidden().toggleStyle(.switch)
                 }
-                MenuBarIconPickerRow()
-                    .padding(.leading, settingsRowTextInset)
-                    .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-                    .settingsCollapsible(isExpanded: !hideMenuIcon)
+                if !hideMenuIcon {
+                    MenuBarIconPickerRow()
+                        .padding(.leading, settingsRowTextInset)
+                        .transition(.settingsReveal)
+                }
             }
 
             Divider()
@@ -185,7 +186,7 @@ struct GeneralSettings: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: SettingsCard<EmptyView>.headerSpacing) {
                 SettingsRow(symbol: AppFeature.cameraPreview.symbolName,
                             title: cameraPreviewTitle) {
                     PermissionGatedToggle(cameraPreviewTitle,
@@ -195,16 +196,17 @@ struct GeneralSettings: View {
                         .onChange(of: cameraPreviewEnabled) { _, enabled in
                             settingsApplyFeatureSwitch(enabled: enabled) {
                                 FeatureRuntime.shared.sync([.cameraPreview])
-                                FeatureRuntime.shared.finishAvailabilityChange()
+                                settingsFinishAvailabilityChange()
                             }
                         }
                 }
-                ShortcutPreferenceRow(role: .cameraPreview, label: FeatureStrings.cameraPreview(l10n.language).openWithShortcut) {
-                    FeatureRuntime.shared.sync([.cameraPreview])
+                if cameraChildrenEnabled {
+                    ShortcutPreferenceRow(role: .cameraPreview, label: FeatureStrings.cameraPreview(l10n.language).openWithShortcut) {
+                        FeatureRuntime.shared.sync([.cameraPreview])
+                    }
+                    .padding(.leading, settingsRowTextInset)
+                    .transition(.settingsReveal)
                 }
-                .padding(.leading, settingsRowTextInset)
-                .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-                .settingsCollapsible(isExpanded: cameraChildrenEnabled)
             }
             .settingsSectionAnchor(.cameraPreview, cornerRadius: 12)
 

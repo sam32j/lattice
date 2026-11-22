@@ -44,10 +44,8 @@ extension AppUpdatesListView {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .transition(.settingsReveal)
                 }
-                .settingsCollapsible(isExpanded: showsNotifyRow)
 
                 preferenceDivider
 

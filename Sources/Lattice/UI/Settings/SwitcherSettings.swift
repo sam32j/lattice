@@ -71,7 +71,6 @@ struct SwitcherSettingsSection: View {
         SettingsCard(symbol: "rectangle.on.rectangle",
                      title: l10n.s.switcherSection,
                      caption: switcherHeaderCaption,
-                     headerSpacing: 0,
                      headerAccessory: {
                          PermissionGatedToggle(l10n.s.switcherSection, isOn: Binding(
                              get: { switcherEngaged },
@@ -97,9 +96,6 @@ struct SwitcherSettingsSection: View {
                 .padding(.leading, settingsRowTextInset)
                 .transition(.settingsReveal)
             }
-            .padding(.leading, settingsRowTextInset)
-            .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-            .settingsCollapsible(isExpanded: switcherEngaged)
         }
     }
 
@@ -135,9 +131,8 @@ struct SwitcherSettingsSection: View {
                 }
                 if showsSecureInputWarning {
                     SecureInputRow(blocking: .switcher)
-                        .padding(.top, 17)
+                        .transition(.settingsReveal)
                 }
-                .settingsCollapsible(isExpanded: showsSecureInputWarning)
             }
 
             SettingsControlRow(title: l10n.s.switcherAppearanceDelay) {
@@ -201,9 +196,8 @@ struct SwitcherSettingsSection: View {
                                 Toggle(l10n.s.switcherMergeTabs, isOn: $switcherMergeTabs)
                                     .labelsHidden()
                             }
-                            .padding(.top, 13)
+                            .transition(.settingsReveal)
                         }
-                        .settingsCollapsible(isExpanded: layout == .windows)
                     }
                 }
             }
@@ -257,9 +251,8 @@ struct SwitcherSettingsSection: View {
                         Toggle(l10n.s.switcherWindowlessAppsFinder, isOn: keepsWindowlessFinderBinding)
                             .labelsHidden()
                     }
-                    .padding(.top, 13)
+                    .transition(.settingsReveal)
                 }
-                .settingsCollapsible(isExpanded: windowlessMode != .all)
             }
 
             SwitcherAppRulesList()

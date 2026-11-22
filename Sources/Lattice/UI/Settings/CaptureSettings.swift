@@ -353,9 +353,7 @@ struct CaptureSettings: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }) {
-            // The gap above the links row folds away with it; as a stack
-            // spacing it stayed behind as extra bottom padding when collapsed.
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 12) {
                     SettingsToggleRow(title: screenshotStrings.shareEnabledToggle,
                                       caption: copy.linksExpire,
@@ -364,12 +362,14 @@ struct CaptureSettings: View {
                         Text(copy.mixedLinkSettings)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .transition(.settingsReveal)
                     }
                 }
-                createdLinksRow
-                    .padding(.top, 12)
-                    // Links already out stay manageable with creation off.
-                    .settingsCollapsible(isExpanded: isQuickLinksEnabled || activeCreatedLinksCount > 0)
+                // Links already out stay manageable with creation off.
+                if isQuickLinksEnabled || activeCreatedLinksCount > 0 {
+                    createdLinksRow
+                        .transition(.settingsReveal)
+                }
             }
             .padding(.leading, settingsRowTextInset)
         }

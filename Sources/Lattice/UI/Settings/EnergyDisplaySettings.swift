@@ -32,7 +32,7 @@ struct EnergyDisplaySettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            SettingsCard(symbol: "display.2", title: strings.enable, headerSpacing: 0, headerAccessory: {
+            SettingsCard(symbol: "display.2", title: strings.enable, headerAccessory: {
                 Toggle(strings.enable, isOn: $brightnessEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
@@ -42,13 +42,14 @@ struct EnergyDisplaySettings: View {
                     .onChange(of: brightnessEnabled) { _, enabled in
                         settingsApplyFeatureSwitch(enabled: enabled) {
                             BrightnessService.shared.syncWithPreferences()
-                            FeatureRuntime.shared.finishAvailabilityChange()
+                            settingsFinishAvailabilityChange()
                         }
                     }
             }) {
-                displayControlsSection
-                    .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-                    .settingsCollapsible(isExpanded: brightnessEnabled)
+                if brightnessEnabled {
+                    displayControlsSection
+                        .transition(.settingsReveal)
+                }
             }
             .settingsSectionAnchor(.brightness, cornerRadius: 16)
         }

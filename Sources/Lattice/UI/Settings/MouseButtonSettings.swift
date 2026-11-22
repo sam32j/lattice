@@ -41,7 +41,7 @@ struct MouseButtonShortcutsSection: View {
     var text: MouseButtonFeatureStrings { FeatureStrings.mouseButtons(l10n.language) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 12) {
             SettingsControlRow(title: text.enableLabel, caption: text.enableCaption) {
                 PermissionGatedToggle(text.enableLabel, isOn: $enabled)
                     .labelsHidden()
@@ -58,22 +58,21 @@ struct MouseButtonShortcutsSection: View {
                         }
                     }
             }
-            // Stays laid out and unrolls as a clipped accordion, so the rows
-            // slide out from under the switch instead of fading in over the
-            // rows below while they are still moving down.
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(MouseButtonShortcutSupport.sortedButtons(mappings), id: \.self) { button in
-                    mappingRow(button, shortcut: mappings[button])
+            if enabled {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(MouseButtonShortcutSupport.sortedButtons(mappings), id: \.self) { button in
+                        mappingRow(button, shortcut: mappings[button])
+                            .transition(.settingsReveal)
+                    }
+                    if let pendingButton {
+                        mappingRow(pendingButton, shortcut: nil)
+                            .transition(.settingsReveal)
+                    }
+                    captureRow.frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                if let pendingButton {
-                    mappingRow(pendingButton, shortcut: nil)
-                }
-                captureRow.frame(maxWidth: .infinity, alignment: .trailing)
+                .transition(.settingsReveal)
             }
-            .padding(.top, 12)
-            .settingsCollapsible(isExpanded: enabled)
             Divider()
-                .padding(.vertical, 12)
             SettingsControlRow(title: text.spacesEnableLabel,
                                caption: text.spacesEnableCaption) {
                 if !spacesCommandsAreReachable {
@@ -98,23 +97,24 @@ struct MouseButtonShortcutsSection: View {
                         }
                     }
             }
-            VStack(alignment: .leading, spacing: 10) {
-                spacesRow.frame(maxWidth: .infinity, alignment: .trailing)
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(text.spacesFollowsDragLabel)
-                        Text(text.spacesFollowsDragCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+            if spacesEnabled {
+                VStack(alignment: .leading, spacing: 10) {
+                    spacesRow.frame(maxWidth: .infinity, alignment: .trailing)
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(text.spacesFollowsDragLabel)
+                            Text(text.spacesFollowsDragCaption)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 12)
+                        Toggle(text.spacesFollowsDragLabel, isOn: $spacesFollowsDrag)
+                            .labelsHidden()
                     }
-                    Spacer(minLength: 12)
-                    Toggle(text.spacesFollowsDragLabel, isOn: $spacesFollowsDrag)
-                        .labelsHidden()
                 }
+                .transition(.settingsReveal)
             }
-            .padding(.top, 12)
-            .settingsCollapsible(isExpanded: spacesEnabled)
         }
         .settingsSectionAnchor(.mouseButtonShortcuts, cornerRadius: 16)
         .onDisappear {
