@@ -46,18 +46,8 @@ struct FeatureActivationPage<Content: View>: View {
             if !enabled { showingOptions = false }
         }
     }
-    @ToolbarContentBuilder
     private var activationToolbarItem: some ToolbarContent {
-#if compiler(>=6.2)
-        if #available(macOS 26, *) {
-            ToolbarItem(id: "feature-activation-\(feature.rawValue)", placement: .primaryAction) { toolbarControl }
-                .sharedBackgroundVisibility(.hidden)
-        } else {
-            ToolbarItem(id: "feature-activation-\(feature.rawValue)", placement: .primaryAction) { toolbarControl }
-        }
-#else
-        ToolbarItem(id: "feature-activation-\(feature.rawValue)", placement: .primaryAction) { toolbarControl }
-#endif
+        SettingsTitleBarItem(id: "feature-activation-\(feature.rawValue)") { toolbarControl }
     }
 
     private var toolbarControl: some View {
@@ -74,14 +64,80 @@ struct FeatureActivationPage<Content: View>: View {
                 .accessibilityLabel(FeatureStrings.recorder(l10n.language).moreOptions)
                 .popover(isPresented: $showingOptions) { options() }
             }
-            FeatureActivationControl(feature: feature)
+            FeatureActivationControl(feature: feature, settlesBeforeApplying: true)
                 .toggleStyle(.switch)
-                .controlSize(.small)
+                .controlSize(SettingsTitleBarSwitch.controlSize)
                 .fixedSize()
         }
         .padding(.horizontal, 8)
     }
 
+}
+
+/// A page's own controls on the trailing side of the settings title bar,
+/// without the shared glass background macOS 26 would draw behind them.
+struct SettingsTitleBarItem<Content: View>: ToolbarContent {
+    let id: String
+    @ViewBuilder let content: () -> Content
+
+    @ToolbarContentBuilder
+    var body: some ToolbarContent {
+#if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            ToolbarItem(id: id, placement: .primaryAction) { content() }
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(id: id, placement: .primaryAction) { content() }
+        }
+#else
+        ToolbarItem(id: id, placement: .primaryAction) { content() }
+#endif
+    }
+}
+
+/// A page's main switch in the settings title bar, at the regular size.
+///
+/// The knob slides first, and the change it stands for is applied once the
+/// slide has finished. Applying it at once rebuilt the page and the title bar
+/// items mid-slide, which cut the animation short so the knob seemed to jump.
+/// Flipping again before then cancels the earlier change.
+struct SettingsTitleBarSwitch: View {
+    static let controlSize = ControlSize.regular
+
+    let title: String
+    let isOn: Bool
+    let apply: (Bool) -> Void
+    @StateObject private var settling = SettlingSwitchState()
+
+    var body: some View {
+        Toggle(title, isOn: settling.binding(isOn: isOn, apply: apply))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(Self.controlSize)
+            .fixedSize()
+            .accessibilityLabel(title)
+            .help(title)
+    }
+}
+
+/// What a settling switch shows while its change waits for the knob.
+@MainActor
+final class SettlingSwitchState: ObservableObject {
+    @Published private(set) var pending: Bool?
+    private var generation = 0
+
+    func binding(isOn: Bool, apply: @escaping (Bool) -> Void) -> Binding<Bool> {
+        Binding(get: { self.pending ?? isOn }, set: { value in
+            self.pending = value
+            self.generation &+= 1
+            let current = self.generation
+            settingsApplyAfterSwitch {
+                guard self.generation == current else { return }
+                apply(value)
+                self.pending = nil
+            }
+        })
+    }
 }
 
 /// Inline owner for a feature on a shared settings page. Its children are
@@ -109,6 +165,9 @@ struct FeatureActivationSection<Content: View>: View {
 
 struct FeatureActivationControl: View {
     let feature: AppFeature
+    /// In the title bar: let the knob finish sliding before the page swaps.
+    var settlesBeforeApplying = false
+    @StateObject private var settling = SettlingSwitchState()
     @ObservedObject private var runtime = FeatureRuntime.shared
     @ObservedObject private var l10n = L10n.shared
 
@@ -126,7 +185,12 @@ struct FeatureActivationControl: View {
     }
 
     private var binding: Binding<Bool> {
-        Binding(get: { feature.isAvailable }, set: { runtime.setPageEnabled(feature, $0) })
+        let runtime = runtime
+        let feature = feature
+        guard settlesBeforeApplying else {
+            return Binding(get: { feature.isAvailable }, set: { runtime.setPageEnabled(feature, $0) })
+        }
+        return settling.binding(isOn: feature.isAvailable) { runtime.setPageEnabled(feature, $0) }
     }
 
     var body: some View {
