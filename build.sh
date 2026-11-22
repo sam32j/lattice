@@ -433,7 +433,6 @@ if (( TEST )); then
         Sources/Lattice/Core/SettingsOwnershipStrings.swift
         Sources/Lattice/Core/FeatureEnergyProfile.swift
         Sources/Lattice/Core/FeatureHubStrings.swift
-        Sources/Lattice/Core/MixerScreenSharingStrings.swift
         Sources/Lattice/Core/ShortcutSettingsStrings.swift
         Sources/Lattice/Core/SettingsBackupSupport.swift
         Sources/Lattice/Core/SettingsBackupSupport+MouseExceptions.swift

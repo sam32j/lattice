@@ -760,13 +760,10 @@ enum MixerRoutingSupport {
             .contains { bundle == $0 || bundle.hasPrefix($0 + ".") }
     }
 
-    static func sanitizedCallAppVolumeIDs(_ ids: [String]) -> Set<String> {
-        Set(ids.map { $0.lowercased() }.filter { needsScreenSharingProtection(bundleIdentifier: $0) })
-    }
-
-    static func bypassesProcessTap(bundleIdentifier: String?, name: String,
-                                  allowCallAppVolume: Bool = false) -> Bool {
-        if !allowCallAppVolume, needsScreenSharingProtection(bundleIdentifier: bundleIdentifier) {
+    /// Call apps (Discord, Teams) are always left untouched: processing their
+    /// audio echoes into a shared screen's sound.
+    static func bypassesProcessTap(bundleIdentifier: String?, name: String) -> Bool {
+        if needsScreenSharingProtection(bundleIdentifier: bundleIdentifier) {
             return true
         }
         let bundle = (bundleIdentifier ?? "")
