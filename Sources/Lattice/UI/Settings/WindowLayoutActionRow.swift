@@ -76,6 +76,7 @@ struct WindowLayoutActionRow: View {
                         }
                     }
                 )
+                .transition(.settingsReveal)
             }
         }
         .shortcutConflictAlert($conflictAlert)

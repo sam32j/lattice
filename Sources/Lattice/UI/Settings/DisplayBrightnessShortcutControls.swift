@@ -25,6 +25,7 @@ struct DisplayBrightnessShortcutControls: View {
                 .font(.caption)
                 .foregroundStyle(.red)
                 .padding(.leading, showsSettingsRow ? settingsRowTextInset : 0)
+                .transition(.settingsReveal)
         }
     }
 }

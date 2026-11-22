@@ -17,16 +17,23 @@ extension WindowLayoutSettings {
                         WindowLayoutService.shared.syncWithPreferences()
                     }
             }
-            VStack(alignment: .leading, spacing: 8) {
-                // Reset sits under the switch: its top level with the
-                // zone picker's, its right edge with the switch's, at
-                // the regular size of the page's other buttons.
-                HStack(alignment: .top, spacing: 12) {
-                    WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
-                                             zoneActionsStorage: $edgeSnapZoneActions,
-                                             text: text,
-                                             resetTitle: l10n.s.shortcutReset)
-                        .onChange(of: edgeSnapDisabledZones) { _, _ in
+            if edgeSnapEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    // Reset sits under the switch: its top level with the
+                    // zone picker's, its right edge with the switch's, at
+                    // the regular size of the page's other buttons.
+                    HStack(alignment: .top, spacing: 12) {
+                        WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
+                                                 zoneActionsStorage: $edgeSnapZoneActions,
+                                                 text: text,
+                                                 resetTitle: l10n.s.shortcutReset)
+                            .onChange(of: edgeSnapDisabledZones) { _, _ in
+                                WindowLayoutService.shared.syncWithPreferences()
+                            }
+                        Spacer(minLength: 0)
+                        Button(l10n.s.shortcutReset) {
+                            edgeSnapDisabledZones = ""
+                            edgeSnapZoneActions = ""
                             WindowLayoutService.shared.syncWithPreferences()
                         }
                     Spacer(minLength: 0)
@@ -52,6 +59,7 @@ extension WindowLayoutSettings {
                         Text(text.edgeSnapWaitingForSystem)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .transition(.settingsReveal)
                     }
                     Button(text.edgeSnapOpenSystemSettings) {
                         NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
@@ -59,6 +67,7 @@ extension WindowLayoutSettings {
                     .controlSize(.small)
                 }
                 .padding(.top, 13)
+                .transition(.settingsReveal)
             }
         }
     }
@@ -91,6 +100,7 @@ struct WindowLayoutShortcutsSettings: View {
                             Text(l10n.s.shortcutUnavailable)
                                 .font(.caption)
                                 .foregroundStyle(.orange)
+                                .transition(.settingsReveal)
                         }
 
                         placementSections
@@ -126,6 +136,7 @@ struct WindowLayoutShortcutsSettings: View {
                                 Text(l10n.s.shortcutUnavailable)
                                     .font(.caption)
                                     .foregroundStyle(.orange)
+                                    .transition(.settingsReveal)
                             }
                         }
 
@@ -154,6 +165,7 @@ struct WindowLayoutShortcutsSettings: View {
                                         .pickerStyle(.menu)
                                     }
                                     .padding(.leading, 18 + 8)
+                                    .transition(.settingsReveal)
                                 }
                             }
                             .settingsExpansionAnimation(value: holdToCycleDisplayEnabled)
@@ -171,6 +183,7 @@ struct WindowLayoutShortcutsSettings: View {
                                 Text(l10n.s.shortcutUnavailable)
                                     .font(.caption)
                                     .foregroundStyle(.orange)
+                                    .transition(.settingsReveal)
                             }
 
                             actionRow(.previousDisplay)
@@ -183,6 +196,7 @@ struct WindowLayoutShortcutsSettings: View {
 
                 if !permissions.accessibility {
                     SettingsCard(title: l10n.s.permissionRequired) { PermissionRow(kind: .accessibility) }
+                        .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)

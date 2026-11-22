@@ -16,6 +16,7 @@ struct DockQuitOnCloseSettings: View {
             }
             if enabled {
                 DockQuitOnCloseExceptions()
+                    .transition(.settingsReveal)
             }
         }
         .settingsSectionAnchor(.autoQuit, cornerRadius: 16)
