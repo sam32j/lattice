@@ -894,7 +894,9 @@ final class AppSwitcher: ObservableObject {
             // The first letter typed is a command: W closes the highlighted
             // window and Q quits its app. Once a search is under way every key
             // belongs to the query, so both letters can still be typed.
-            if searchQuery.isEmpty,
+            // A click into the search field starts a search too: from then
+            // on W and Q are letters of the query.
+            if searchQuery.isEmpty, !isSearchActivated,
                let action = SwitcherSupport.letterAction(typedCharacter: text, keyCode: keyCode) {
                 // One window per press: holding the key down must never walk
                 // through the list closing or quitting everything on the way.
@@ -1084,11 +1086,12 @@ final class AppSwitcher: ObservableObject {
         if !capturesPreviews {
             previews = [:]
         } else {
-            previews = Dictionary(uniqueKeysWithValues: list.compactMap { item in
+            // Two rows can share a backing window; keep its preview once.
+            previews = Dictionary(list.compactMap { item in
                 item.previewWindowID.flatMap { id in
                     WindowPreviewProvider.shared.cachedPreview(for: id).map { (id, $0) }
                 }
-            })
+            }, uniquingKeysWith: { first, _ in first })
         }
         userNavigated = false
         // Index 0 is the on-screen window; index 1 is the most-recently-used

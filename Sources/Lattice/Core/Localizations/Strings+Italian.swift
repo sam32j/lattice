@@ -941,7 +941,6 @@ extension Strings {
         focusFollowsMouseRaise: "Porta la finestra in primo piano",
         focusFollowsMouseWaitForStop: "Attendi che il puntatore si fermi",
         switcherMinimizedPlacementLabel: "Mostra finestre ridotte a icona",
-        switcherTreatHiddenAppsLikeMinimized: "Tratta le app nascoste come finestre ridotte a icona",
         switcherMinimizedPlacementNormal: "In ordine recente",
         switcherMinimizedPlacementEnd: "Dopo le altre finestre",
         switcherMinimizedPlacementHidden: "Mai",

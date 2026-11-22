@@ -176,9 +176,18 @@ private struct SwitcherWindowPageDots: View {
     let position: Int
     let count: Int
 
+    /// At most eight dashes, the window that keeps the current one in view.
+    private static let maximumDots = 8
+
+    private var visibleRange: Range<Int> {
+        guard count > Self.maximumDots else { return 0..<count }
+        let start = min(max(position - Self.maximumDots / 2, 0), count - Self.maximumDots)
+        return start..<(start + Self.maximumDots)
+    }
+
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(0..<min(count, 8), id: \.self) { index in
+            ForEach(visibleRange, id: \.self) { index in
                 Capsule(style: .continuous)
                     .fill(Color.white.opacity(index == position ? 0.95 : 0.42))
                     .frame(width: index == position ? 16 : 6, height: 3)
@@ -509,8 +518,10 @@ struct SwitcherView: View {
             }
         }
         let windows = switcher.windows
+        // One pass over the windows, not one per app.
+        let membersByPID = Dictionary(grouping: windows.indices, by: { windows[$0].pid })
         return appGroups.map { group in
-            let members = windows.indices.filter { windows[$0].pid == group.pid }
+            let members = membersByPID[group.pid] ?? []
             let shown = members.contains(switcher.selectedIndex) ? switcher.selectedIndex : group.representativeIndex
             return GridCell(id: AnyHashable(group.pid), index: shown,
                             windowPosition: members.firstIndex(of: shown) ?? 0,
@@ -584,6 +595,14 @@ struct SwitcherView: View {
             }
             .onChange(of: switcher.selectedIndex) { _, newIndex in
                 guard let id = gridScrollID(for: newIndex) else { return }
+                withAnimation(instantSelection ? nil : .easeOut(duration: 0.15)) {
+                    proxy.scrollTo(id, anchor: nil)
+                }
+            }
+            // A close can keep the index while the selection moves to another
+            // app's card; follow the card itself too.
+            .onChange(of: gridScrollID(for: switcher.selectedIndex)) { _, newID in
+                guard let id = newID else { return }
                 withAnimation(instantSelection ? nil : .easeOut(duration: 0.15)) {
                     proxy.scrollTo(id, anchor: nil)
                 }

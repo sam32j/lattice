@@ -942,7 +942,6 @@ extension Strings {
         focusFollowsMouseRaise: "윈도우를 앞으로 가져오기",
         focusFollowsMouseWaitForStop: "포인터가 멈출 때까지 기다리기",
         switcherMinimizedPlacementLabel: "최소화된 윈도우 표시",
-        switcherTreatHiddenAppsLikeMinimized: "숨긴 앱을 최소화된 윈도우처럼 처리",
         switcherMinimizedPlacementNormal: "최근 사용 순서",
         switcherMinimizedPlacementEnd: "다른 윈도우 다음에",
         switcherMinimizedPlacementHidden: "안 함",
