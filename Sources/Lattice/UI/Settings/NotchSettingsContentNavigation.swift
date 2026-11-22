@@ -40,11 +40,14 @@ extension NotchSettings {
                                       requiring: moduleFeature(selectedModule)?.activationPermissions ?? [])
                         .disabled(selectedModule == .hub)
                     if selectedModule == .captures || selectedModule == .system {
-                        Divider()
-                        ForEach(contentFeatures(selectedModule), id: \.self) { feature in
-                            PermissionGatedSettingsRow(title: feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)),
-                                              isOn: contentFeatureBinding(feature), requiring: feature.activationPermissions)
+                        VStack(alignment: .leading, spacing: 13) {
+                            Divider()
+                            ForEach(contentFeatures(selectedModule), id: \.self) { feature in
+                                PermissionGatedSettingsRow(title: feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)),
+                                                  isOn: contentFeatureBinding(feature), requiring: feature.activationPermissions)
+                            }
                         }
+                        .transition(.settingsReveal)
                     }
                 }
                 NotchIslandPreview(module: selectedModule, hidden: !isShown(selectedModule))
@@ -53,6 +56,7 @@ extension NotchSettings {
                     SettingsCard { moduleOptions(selectedModule) }
                         .disabled(!isShown(selectedModule))
                         .opacity(isShown(selectedModule) ? 1 : 0.55)
+                        .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)

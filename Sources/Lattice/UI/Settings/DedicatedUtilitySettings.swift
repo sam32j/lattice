@@ -59,12 +59,12 @@ struct DedicatedUtilitySettings: View {
                             }
                             .padding(.leading, settingsRowTextInset)
                         }
-                        .padding(.leading, settingsRowTextInset)
+                        if let destination {
+                            IslandDestinationSettings(destination: destination)
+                                .padding(.leading, settingsRowTextInset)
+                        }
                     }
-                    if let destination {
-                        IslandDestinationSettings(destination: destination)
-                            .padding(.leading, settingsRowTextInset)
-                    }
+                    .transition(.settingsReveal)
                 }
             }
             .padding(22)

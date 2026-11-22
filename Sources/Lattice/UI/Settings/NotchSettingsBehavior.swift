@@ -15,28 +15,35 @@ extension NotchSettings {
                 }
             }
             if hover {
-                SettingsControlRow(title: opening.actionOnHover) {
-                    Picker(opening.actionOnHover, selection: $hoverExpand) {
-                        Text(opening.preview).tag(false)
-                        Text(opening.expand).tag(true)
+                VStack(alignment: .leading, spacing: 13) {
+                    SettingsControlRow(title: opening.actionOnHover) {
+                        Picker(opening.actionOnHover, selection: $hoverExpand) {
+                            Text(opening.preview).tag(false)
+                            Text(opening.expand).tag(true)
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
+                    hoverDelayPicker(opening)
+                    if hoverExpand {
+                        VStack(alignment: .leading, spacing: 13) {
+                            closeDelayPicker(opening)
+                            SettingsToggleRow(title: opening.openVisibleActivity,
+                                              caption: opening.openVisibleActivityHint,
+                                              isOn: $opensActivity)
+                        }
+                        .transition(.settingsReveal)
+                    }
+                    SettingsToggleRow(title: opening.hiddenUntilHover,
+                                      caption: opening.hiddenUntilHoverHint,
+                                      isOn: $hideUntilHover)
+                    if hideUntilHover {
+                        SettingsToggleRow(title: opening.showLiveActivity,
+                                          isOn: $hiddenShowsActivity)
+                                              .transition(.settingsReveal)
+                    }
                 }
-                hoverDelayPicker(opening)
-                if hoverExpand {
-                    closeDelayPicker(opening)
-                    SettingsToggleRow(title: opening.openVisibleActivity,
-                                      caption: opening.openVisibleActivityHint,
-                                      isOn: $opensActivity)
-                }
-                SettingsToggleRow(title: opening.hiddenUntilHover,
-                                  caption: opening.hiddenUntilHoverHint,
-                                  isOn: $hideUntilHover)
-                if hideUntilHover {
-                    SettingsToggleRow(title: opening.showLiveActivity,
-                                      isOn: $hiddenShowsActivity)
-                }
+                .transition(.settingsReveal)
             }
         }
     }

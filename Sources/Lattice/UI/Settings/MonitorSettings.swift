@@ -50,6 +50,7 @@ struct MonitorSettings: View {
                     groupHeading(l10n.s.monitorMenuBarSection, symbol: "menubar.rectangle")
                     if MenuBarMetric.order(in: .standard).contains(where: { $0.feature.isAvailable && $0.isAvailableOnCurrentHardware }) {
                         menuBarCard
+                            .transition(.settingsReveal)
                     }
                     menuBarStyleCard
                     groupHeading(l10n.s.monitorPanelSection, symbol: "macwindow")
@@ -57,6 +58,7 @@ struct MonitorSettings: View {
                     if AppFeature.fanControl.isPresentInControls() {
                         fanControlCard
                             .settingsSectionAnchor(.fanControl, cornerRadius: 16)
+                            .transition(.settingsReveal)
                     }
                     groupHeading(SettingsOrganizationStrings.text(.readings, l10n.language), symbol: "slider.horizontal.3")
                     readingsCard
@@ -169,16 +171,19 @@ struct MonitorSettings: View {
                 .fixedSize()
             }
             if AppFeature.monitorNetwork.isAvailable {
-                let title = FeatureStrings.monitorLayout(l10n.language).networkSpeedUnit
-                SettingsRow(symbol: "network", title: title) {
-                    Picker(title, selection: $networkSpeedUnit) {
-                        Text("MB/s").tag(NetworkSpeedUnit.bytes)
-                        Text("Mbps").tag(NetworkSpeedUnit.bits)
+                VStack(alignment: .leading, spacing: 13) {
+                    let title = FeatureStrings.monitorLayout(l10n.language).networkSpeedUnit
+                    SettingsRow(symbol: "network", title: title) {
+                        Picker(title, selection: $networkSpeedUnit) {
+                            Text("MB/s").tag(NetworkSpeedUnit.bytes)
+                            Text("Mbps").tag(NetworkSpeedUnit.bits)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .fixedSize()
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
                 }
+                .transition(.settingsReveal)
             }
             if AppFeature.monitorMemory.isAvailable {
                 SettingsRow(symbol: "memorychip", title: l10n.s.monitorMemoryMetricLabel) {
@@ -190,6 +195,7 @@ struct MonitorSettings: View {
                     .labelsHidden()
                     .fixedSize()
                 }
+                .transition(.settingsReveal)
             }
         }
     }
