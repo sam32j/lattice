@@ -80,9 +80,10 @@ enum ClipboardFeatureTests {
         struct PollResult {
             let changeCount: Int
             let cleaned: URLCleaning.Result?
+            var original: String? = nil
         }
         static let urlType = AppKit.NSPasteboard.PasteboardType("public.url")
-        static let rules = URLCleaning.Rules.none
+        static let rules = URLCleaning.Rules.builtIn
     }
 
     static func run(_ suite: TestSuite) {
@@ -193,6 +194,7 @@ enum ClipboardFeatureTests {
                      && cleanerBoard.string(forType: .source) == nil,
                      "a rewritten copy that named no app gains no mark, so the app that copied it is still credited")
         URLCleanerMetadataTests.run(suite)
+        URLSanitizerTests.run(suite)
         cleanerBoard.releaseGlobally()
         func expectEqual(_ actual: String, _ expected: String, _ label: String,
                          file: StaticString = #filePath, line: UInt = #line) {

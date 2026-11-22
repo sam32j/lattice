@@ -886,8 +886,7 @@ def main():
           + "}\nfinal class Panel: PanelFixture {\nvar monitorNeeds: SystemMonitorPanelNeeds { if let selectedMetric { return selectedMetric.monitorNeeds }; switch activeSection { case .system: return SystemMonitorPanelNeeds(system: true); case .network: return SystemMonitorPanelNeeds(network: true); case .disk: return SystemMonitorPanelNeeds(disk: true); case .power: return SystemMonitorPanelNeeds(power: true, powerCard: true); default: return .none } }\n}\n}\n")
     uninstall = "Sources/Lattice/Services/Uninstall/AppUninstaller.swift"
     bar = "Sources/Lattice/Services/CommandBar/CommandBarService.swift"
-    for host, path in [("Settings", "Sources/Lattice/UI/Settings/URLCleanerSettings.swift"),
-                       ("Panel", "Sources/Lattice/UI/MenuPanel/PanelURLCleanerView.swift")]:
+    for host, path in [("Panel", "Sources/Lattice/UI/MenuPanel/PanelURLCleanerView.swift")]:
         write(f"URLCleanerManual{host}.swift", "import Foundation\n"
               + f"extension RepositoryFeatureTests.URLCleanerManual{host} {{\n"
               + "".join(declaration(path, prefix).replace("private ", "", 1)
@@ -916,12 +915,6 @@ def main():
                                    "    static func plainText("])
           + "}\n}\nextension PastePlainTests.OriginalPasteHost {\n"
           + declaration("Sources/Lattice/Services/TransientPaste.swift", "    func pasteCurrentContents(")
-          + "}\n")
-    write("URLCleanerSiteSwitch.swift", "import Foundation\n"
-          + "extension RepositoryFeatureTests.URLCleanerSiteSwitchHost {\n"
-          + "".join(declaration("Sources/Lattice/UI/Settings/URLCleanerSettings.swift",
-                                prefix).replace("private ", "", 1)
-                    for prefix in ["    private func addSite(", "    private func setSite(", "    private func remove("])
           + "}\n")
     write("ClipboardSource.swift", "import Foundation\n"
           + "extension ClipboardFeatureTests.SourceHost {\n"

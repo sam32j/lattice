@@ -12,11 +12,11 @@ import ImageIO
 import VMStatisticsCompat
 
 enum RepositoryFeatureTests {
-    /// Run the production `result` and `copy` of the manual cleaner in
-    /// Settings and in the menu panel, with a cleaner whose rules the test
-    /// changes, recording what reaches the clipboard.
+    /// Run the production `result` and `copy` of the manual cleaner in the
+    /// menu panel, with a cleaner whose rules the test changes, recording
+    /// what reaches the clipboard.
     final class URLCleanerManualCleaner {
-        var rules = URLCleaning.Rules.none
+        var rules = URLCleaning.Rules.builtIn
         var copied: [String] = []
         func clean(_ text: String) -> URLCleaning.Result? { URLCleaning.clean(text, rules: rules) }
         func copy(_ urlString: String) { copied.append(urlString) }
@@ -26,18 +26,11 @@ enum RepositoryFeatureTests {
         var input: String { get set }
         func copy()
     }
-    final class URLCleanerManualSettings: URLCleanerManualSurface {
-        let cleaner = URLCleanerManualCleaner()
-        var input = ""
-        var copied: String?
-    }
     final class URLCleanerManualPanel: URLCleanerManualSurface {
         let cleaner = URLCleanerManualCleaner()
         var input = ""
         var copied: String?
-        var globalNames = ""
-        var siteNames = ""
-        var disabledNames = ""
+        var storedSites = ""
     }
 
     private struct SourceRead: Sendable {
@@ -91,9 +84,10 @@ enum RepositoryFeatureTests {
         struct PollResult {
             let changeCount: Int
             let cleaned: URLCleaning.Result?
+            var original: String? = nil
         }
         static let urlType = Kind(rawValue: "public.url")
-        static var rules: URLCleaning.Rules { .none }
+        static var rules: URLCleaning.Rules { .builtIn }
         static var written: [String] = []
         static var writtenSources: [String?] = []
         static var writtenRemote: [Bool] = []
@@ -199,16 +193,6 @@ enum RepositoryFeatureTests {
         }
     }
 
-    /// Runs the production site creation, switch and name removal of the rules list
-    /// against stored names the test reads back.
-    final class URLCleanerSiteSwitchHost {
-        var globalNames = ""
-        var siteNames = ""
-        var disabledNames = ""
-        var siteDraft = ""
-        var siteParameterDraft = ""
-    }
-
     static func run(_ suite: TestSuite) {
         func expectEqual(_ actual: String, _ expected: String, _ label: String,
                          file: StaticString = #filePath, line: UInt = #line) {
@@ -237,7 +221,7 @@ enum RepositoryFeatureTests {
             "Sources/Lattice/Services/URLCleanerService.swift",
             "Sources/Lattice/Support/Uninstaller.swift",
             "Sources/Lattice/UI/MenuPanel/PanelURLCleanerView.swift",
-            "Sources/Lattice/UI/Settings/URLCleanerSettings.swift",
+            "Sources/Lattice/UI/Settings/URLSanitizerSettings.swift",
             "Sources/Lattice/UI/Theme.swift",
         ]
         let missingSourcePaths = requiredSourcePaths.filter {
@@ -259,47 +243,37 @@ enum RepositoryFeatureTests {
         expectEqual(URLCleaning.clean("https://example.com/?id=42")?.url ?? "",
                     "https://example.com/?id=42",
                     "URL cleaner leaves clean URLs alone")
-        let customURLParameters = URLCleaning.customParameters(from: " Ref, source\nref,  ")
-        suite.expect(customURLParameters == ["ref", "source"],
-               "URL cleaner normalizes comma-separated custom parameter names")
-        let customURLRules = URLCleaning.rules(globalNames: " Ref, source\nref,  ",
-                                               siteNames: nil, disabledNames: nil)
-        expectEqual(URLCleaning.clean("https://example.com/?REF=one&id=42&source=two",
-                                              rules: customURLRules)?.url ?? "",
-                    "https://example.com/?id=42",
-                    "URL cleaner removes custom parameters by exact case-insensitive name")
-        expectEqual(URLCleaning.clean("https://example.com/?reference=one",
-                                              rules: customURLRules)?.url ?? "",
-                    "https://example.com/?reference=one",
-                    "URL cleaner does not treat custom parameter names as prefixes")
         // A grouped Form keeps a label column even for an empty label, which
         // left every field on the right half of its row. The hint has to
         // travel as `prompt:` and the label has to be hidden for a field to
         // own its whole row.
-        let urlCleanerSettingsSource = repository.source(
-            at: "Sources/Lattice/UI/Settings/URLCleanerSettings.swift")
-        suite.expect(!urlCleanerSettingsSource.contains("TextField(l10n.s."),
-               "no Clean URL field spends its row on a label instead of the field")
-        suite.expect(urlCleanerSettingsSource.components(separatedBy: "TextField(").count
-                == urlCleanerSettingsSource.components(separatedBy: ".labelsHidden()").count,
-               "every Clean URL field hides its label so the field owns the row")
+        for path in ["Sources/Lattice/UI/Settings/URLSanitizerSettings.swift",
+                     "Sources/Lattice/UI/Settings/URLSanitizerTestCard.swift",
+                     "Sources/Lattice/UI/Settings/URLSanitizerSiteSheet.swift"] {
+            let lines = repository.lines(at: path)
+            let fields = lines.indices.filter { lines[$0].contains("TextField(") }
+            let labelled = fields.filter { start in
+                !lines[start..<min(start + 8, lines.count)].contains { $0.contains(".labelsHidden()") }
+                    || !lines[start].contains("prompt:") && !lines[start + 1].contains("prompt:")
+            }
+            suite.expect(!fields.isEmpty && labelled.isEmpty && !lines.contains { $0.contains("TextField(l10n.s.") },
+                         "every URL Sanitizer field hides its label and carries its hint as a prompt: \(path) \(labelled)")
+        }
 
         // The manual result is worked out from the field, so editing the link
         // or the rules can never leave an older result for Copy to take.
-        let manualSurfaces: [(String, URLCleanerManualSurface)] = [
-            ("Settings", URLCleanerManualSettings()), ("menu panel", URLCleanerManualPanel()),
-        ]
-        for (surface, host) in manualSurfaces {
-            host.input = "https://youtu.be/abc?si=x"
-            host.copy()
-            host.input = "https://example.com/?utm_source=a&keep=1"
-            host.copy()
-            host.cleaner.rules = URLCleaning.rules(globalNames: "keep", siteNames: nil, disabledNames: nil)
-            host.copy()
-            suite.expect(host.cleaner.copied == ["https://youtu.be/abc", "https://example.com/?keep=1",
-                                                 "https://example.com/"],
-                   "\(surface) Copy takes the field's link under the current rules: \(host.cleaner.copied)")
-        }
+        let panelHost = URLCleanerManualPanel()
+        panelHost.input = "https://youtu.be/abc?si=x"
+        panelHost.copy()
+        panelHost.input = "https://example.com/?utm_source=a&keep=1"
+        panelHost.copy()
+        var keepRules = URLCleaning.Rules.builtIn.sites
+        keepRules[0].tokens.append(URLCleaning.Token(name: "keep", isCustom: true))
+        panelHost.cleaner.rules = URLCleaning.Rules(sites: keepRules)
+        panelHost.copy()
+        suite.expect(panelHost.cleaner.copied == ["https://youtu.be/abc", "https://example.com/?keep=1",
+                                                  "https://example.com/"],
+                     "menu panel Copy takes the field's link under the current rules: \(panelHost.cleaner.copied)")
         // The result reads the stored rules through the service, so each
         // surface has to observe every key they come from and read it where
         // the body works the result out. SwiftUI only redraws for a stored
@@ -315,7 +289,7 @@ enum RepositoryFeatureTests {
                                      "    private static var rules: URLCleaning.Rules {")
         let ruleKeys = storedRules.components(separatedBy: "DefaultsKey.").dropFirst()
             .map { rest in String(rest.prefix { $0.isLetter || $0.isNumber }) }
-        for (surface, path) in [("Settings", "Sources/Lattice/UI/Settings/URLCleanerSettings.swift"),
+        for (surface, path) in [("Settings", "Sources/Lattice/UI/Settings/URLSanitizerSettings.swift"),
                                 ("menu panel", "Sources/Lattice/UI/MenuPanel/PanelURLCleanerView.swift")] {
             let lines = repository.lines(at: path)
             let reads = memberText(lines, "    private var result:") + "\n" + memberText(lines, "    private var rules:")
@@ -330,29 +304,17 @@ enum RepositoryFeatureTests {
             suite.expect(!ruleKeys.isEmpty && unobserved.isEmpty,
                    "\(surface) redraws its result when a rule changes: \(ruleKeys), unobserved \(unobserved)")
         }
+        // Recently cleaned holds whole URLs: memory only, never logged.
+        let cleanerSource = repository.source(at: "Sources/Lattice/Services/URLCleanerService.swift")
+        suite.expect(!cleanerSource.isEmpty
+                        && ["print(", "NSLog", "os_log", "Logger", "debugPrint", ".set("]
+                            .allSatisfy { !cleanerSource.contains($0) },
+                     "the URL Sanitizer service neither logs nor stores the links it cleans")
 
-        // Rules are stored as a difference from the built-in tables, never as
-        // a copy of them, so names a later version adds still reach someone
-        // who has already edited their rules.
-        let keptUTM = URLCleaning.rules(globalNames: nil, siteNames: nil, disabledNames: "|utm_*")
-        expectEqual(URLCleaning.clean("https://example.com/?utm_source=news&fbclid=abc&id=1",
-                                      rules: keptUTM)?.url ?? "",
-                    "https://example.com/?utm_source=news&id=1",
-                    "switching the utm row off keeps every utm name and leaves the rest cleaning")
-        let keptShareToken = URLCleaning.rules(globalNames: nil, siteNames: nil,
-                                               disabledNames: "youtube.com|si")
-        expectEqual(URLCleaning.clean("https://www.youtube.com/watch?v=1&si=x&feature=share",
-                                      rules: keptShareToken)?.url ?? "",
-                    "https://www.youtube.com/watch?v=1&si=x",
-                    "a switched off site name stays in the link while its siblings still go")
-        let addedSiteRule = URLCleaning.rules(globalNames: nil, siteNames: "weibo.com|sudaref",
-                                              disabledNames: nil)
-        expectEqual(URLCleaning.clean("https://weibo.com/a?sudaref=x&id=1", rules: addedSiteRule)?.url ?? "",
-                    "https://weibo.com/a?id=1",
-                    "a name added to one site cleans that site")
-        expectEqual(URLCleaning.clean("https://example.com/?sudaref=x", rules: addedSiteRule)?.url ?? "",
-                    "https://example.com/?sudaref=x",
-                    "a name added to one site never reaches another")
+        suite.expect([DefaultsKey.urlSanitizerSites, DefaultsKey.urlSanitizerAutoRemove].allSatisfy {
+                    Defaults.registeredDefaults[$0] != nil && SettingsBackupSupport.exportKeys().contains($0)
+                } && Defaults.registeredDefaults[DefaultsKey.urlSanitizerSites] as? String == "",
+               "URL Sanitizer rules start as the built-ins and travel in Settings backups")
         suite.expect(URLCleaning.clean("https://example.com/?utm_source=a&fbclid=b&id=1")?.removed
                 == ["utm_source", "fbclid"],
                "cleaning answers with the names it took out, in the order the link carried them")
@@ -361,144 +323,9 @@ enum RepositoryFeatureTests {
         let paddedLink = " https://example.com/?id=1 "
         suite.expect(URLCleaning.outcome(for: URLCleaning.clean(paddedLink), input: paddedLink) == .unchanged,
                "trimming alone does not count as a clean")
-
-        let editedRules = URLCleaning.rules(globalNames: "ref", siteNames: "weibo.com|sudaref",
-                                            disabledNames: "|fbclid")
-        let ruleGroups = URLCleaning.ruleGroups(rules: editedRules)
-        suite.expect(ruleGroups.first?.site == URLCleaning.allSites,
-               "the rules that apply everywhere lead the list")
-        suite.expect(ruleGroups.first?.entries.first?.name == URLCleaning.utmWildcard,
-               "one row stands for every utm name")
-        suite.expect(ruleGroups.first?.entries.allSatisfy {
-            $0.name == URLCleaning.utmWildcard || !$0.name.hasPrefix("utm_")
-        } == true, "the utm names that row already covers are not listed again")
-        suite.expect(ruleGroups.first?.entries.contains { $0.name == "fbclid" && !$0.isEnabled } == true,
-               "a switched off built-in stays listed so it can be switched back on")
-        suite.expect(ruleGroups.first?.entries.contains { $0.name == "ref" && !$0.isBuiltIn } == true,
-               "names the user added share the list with the built-in ones")
-        suite.expect(ruleGroups.contains { $0.site == "weibo.com" },
-               "a site the user added gets a row of its own")
-        suite.expect(ruleGroups.contains { $0.site == "youtube.com" },
-               "every built-in site is listed")
         expectEqual(URLCleaning.clean("https://www.xiaohongshu.com/?shareRedId=a&exSource=b&id=1")?.url ?? "",
                     "https://www.xiaohongshu.com/?id=1",
                     "a built-in name spelled in mixed case by the site is still removed")
-        let upperCaseBuiltIns = URLCleaning.ruleGroups(rules: .none)
-            .flatMap(\.entries).map(\.name).filter { $0 != $0.lowercased() }
-        suite.expect(upperCaseBuiltIns.isEmpty,
-               "built-in names are lowercase, since matching and switched off names are: \(upperCaseBuiltIns)")
-        let siteSwitch = URLCleanerSiteSwitchHost()
-        siteSwitch.siteNames = "weibo.com|sudaref"
-        siteSwitch.disabledNames = "youtube.com|si"
-        func switchedRules() -> URLCleaning.Rules {
-            URLCleaning.rules(globalNames: siteSwitch.globalNames, siteNames: siteSwitch.siteNames,
-                              disabledNames: siteSwitch.disabledNames)
-        }
-        func switchedGroup(_ site: String) -> URLCleaning.RuleGroup? {
-            URLCleaning.ruleGroups(rules: switchedRules()).first { $0.site == site }
-        }
-        let youtubeLink = "https://www.youtube.com/watch?v=a&si=x&feature=y"
-        for site in ["weibo.com", "youtube.com"] {
-            switchedGroup(site).map { siteSwitch.setSite($0, enabled: false) }
-        }
-        suite.expect(switchedGroup("weibo.com")?.entries.map(\.name) == ["sudaref"]
-                && switchedGroup("weibo.com")?.enabledCount == 0
-                && URLCleaning.clean("https://weibo.com/a?sudaref=x", rules: switchedRules())?.removed == [],
-               "switching a site off keeps the name the user added to it, switched off")
-        suite.expect(switchedGroup("youtube.com")?.enabledCount == 0
-                && URLCleaning.clean(youtubeLink, rules: switchedRules())?.removed == [],
-               "switching a built-in site off switches off every built-in name: \(siteSwitch.disabledNames)")
-        for site in ["weibo.com", "youtube.com"] {
-            switchedGroup(site).map { siteSwitch.setSite($0, enabled: true) }
-        }
-        let youtubeAllOn = switchedGroup("youtube.com")
-            .map { !$0.entries.isEmpty && $0.enabledCount == $0.entries.count } ?? false
-        suite.expect(siteSwitch.disabledNames.isEmpty && youtubeAllOn
-                && URLCleaning.clean("https://weibo.com/a?sudaref=x", rules: switchedRules())?.removed == ["sudaref"]
-                && URLCleaning.clean(youtubeLink, rules: switchedRules())?.removed == ["si", "feature"],
-               "switching a site back on turns on every name it lists, one off before included: \(siteSwitch.disabledNames)")
-        // A name deleted while its row is off goes from the switched off
-        // names too, or adding it again later would bring it back off.
-        siteSwitch.globalNames = "keep"
-        for site in ["weibo.com", URLCleaning.allSites] {
-            switchedGroup(site).map { siteSwitch.setSite($0, enabled: false) }
-        }
-        siteSwitch.remove("sudaref", from: "weibo.com")
-        siteSwitch.remove("keep", from: URLCleaning.allSites)
-        let leftOff = URLCleaning.tokens(from: siteSwitch.disabledNames)
-        suite.expect(siteSwitch.siteNames.isEmpty && siteSwitch.globalNames.isEmpty
-                && leftOff["weibo.com"] == nil && leftOff[URLCleaning.allSites]?.contains("keep") != true,
-               "deleting a name the user added drops it from the switched off names too: \(siteSwitch.disabledNames)")
-        expectEqual(URLCleaning.siteKey(from: " https://WWW.Weibo.com/path?x=1 ") ?? "",
-                    "weibo.com", "the site field takes a pasted link and keeps the host")
-        expectEqual(URLCleaning.siteKey(from: "https://user@Shop.Example.com:8080/x") ?? "",
-                    "shop.example.com", "a pasted link's port and login do not become part of the host key")
-        let siteInputs: [(input: String, host: String, link: String)] = [
-            ("shop.example.com", "shop.example.com", "https://shop.example.com/x"),
-            ("shop.example.com:8080", "shop.example.com", "https://shop.example.com:8080/x"),
-            ("https://shop.example.com:8080/x?ref=a#part", "shop.example.com",
-             "https://shop.example.com:8080/x"),
-            ("https://user@shop.example.com/x", "shop.example.com", "https://user@shop.example.com/x"),
-            (" https://user:pass@WWW.Shop.Example.com:8080/x ", "shop.example.com",
-             "https://user:pass@WWW.Shop.Example.com:8080/x"),
-            ("https://192.0.2.1:8080/x", "192.0.2.1", "https://192.0.2.1:8080/x"),
-            ("[::ffff:192.0.2.1]", "[::ffff:192.0.2.1]", "https://[::ffff:192.0.2.1]/x"),
-            ("https://[::ffff:192.0.2.1]/x", "[::ffff:192.0.2.1]", "https://[::ffff:192.0.2.1]/x"),
-            ("https://user:pass@[2001:db8::192.0.2.1]:8080/x", "[2001:db8::192.0.2.1]",
-             "https://user:pass@[2001:db8::192.0.2.1]:8080/x"),
-        ]
-        for entry in siteInputs {
-            let site = URLCleanerSiteSwitchHost()
-            site.siteDraft = entry.input
-            site.siteParameterDraft = " Ref "
-            site.addSite()
-            expectEqual(site.siteNames, "\(entry.host)|ref", "site creation stores only the host from \(entry.input)")
-            suite.expect(site.siteDraft.isEmpty && site.siteParameterDraft.isEmpty,
-                         "successful site creation clears both drafts")
-            let restored = URLCleaning.rules(globalNames: site.globalNames, siteNames: site.siteNames,
-                                             disabledNames: site.disabledNames)
-            let link = entry.link + "?ref=campaign&id=42#section"
-            expectEqual(URLCleaning.clean(link, rules: restored)?.url ?? "", entry.link + "?id=42#section",
-                        "the stored rule cleans its host and preserves login, port, path and fragment")
-            let otherSite = "https://unrelated.example/?ref=campaign&id=42"
-            expectEqual(URLCleaning.clean(otherSite, rules: restored)?.url ?? "", otherSite,
-                        "a saved site rule does not reach an unrelated host")
-            if let group = URLCleaning.ruleGroups(rules: restored).first(where: { $0.site == entry.host }) {
-                site.setSite(group, enabled: false)
-                let disabled = URLCleaning.rules(globalNames: site.globalNames, siteNames: site.siteNames,
-                                                 disabledNames: site.disabledNames)
-                expectEqual(URLCleaning.clean(link, rules: disabled)?.url ?? "", link,
-                            "a disabled stored site rule preserves the original link")
-            } else {
-                suite.expect(false, "the saved site rule has a group")
-            }
-        }
-        for invalidSite in ["not a host", ".example.com", "https://user@:8080/x", "example.com|ref"] {
-            let site = URLCleanerSiteSwitchHost()
-            site.siteDraft = invalidSite
-            site.siteParameterDraft = "ref"
-            site.addSite()
-            suite.expect(site.siteNames.isEmpty && site.siteDraft == invalidSite,
-                         "invalid site creation keeps its draft and stores no rule")
-        }
-        suite.expect(URLCleaning.siteKey(from: "not a host") == nil,
-               "text that is not a host is refused rather than stored")
-        expectEqual(URLCleaning.parameterName(from: " Ref ") ?? "", "ref",
-                    "a parameter name is trimmed and lowercased")
-        suite.expect(URLCleaning.parameterName(from: "a=b") == nil,
-               "a name a query cannot carry as one parameter is refused")
-        suite.expect(URLCleaning.tokens(from: "youtube.com|si, |ref") == ["youtube.com": ["si"], "": ["ref"]],
-               "stored tokens read back as site and global names")
-        expectEqual(URLCleaning.storageValue(forTokens: URLCleaning.tokens(from: "youtube.com|si, |ref")),
-                    "|ref,youtube.com|si", "tokens are stored in a stable order")
-
-        suite.expect([DefaultsKey.urlCleanerCustomParameters,
-                DefaultsKey.urlCleanerSiteParameters,
-                DefaultsKey.urlCleanerDisabledParameters].allSatisfy {
-                    Defaults.registeredDefaults[$0] as? String == ""
-                        && SettingsBackupSupport.exportKeys().contains($0)
-                },
-               "URL cleaner rules start empty and travel in Settings backups")
         suite.expect(URLCleaning.clean("not a url") == nil,
                "URL cleaner rejects plain text")
         expectEqual(URLCleaning.clean("https://www.bilibili.com/video/BV1TY8J67EUB/?spm_id_from=333.1007.tianma.1-1-1.click&vd_source=3b2eea5")?.url ?? "",
