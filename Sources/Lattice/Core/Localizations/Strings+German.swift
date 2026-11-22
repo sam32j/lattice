@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "Nach unten",
         audioPriorityUnavailable: "Getrennt",
         audioPriorityCurrent: "Aktiv",
+        audioPrioritySkipCycling: "Beim Durchschalten überspringen",
+        audioPrioritySetOutput: "Als Audioausgang festlegen",
+        audioPrioritySetInput: "Als Audioeingang festlegen",
         audioPriorityCaption: "Geräte werden nach Priorität ausgewählt. Wird ein Gerät mit höherer Priorität verbunden, wechselt das System zu diesem Gerät. Wird das aktive Gerät getrennt, wird das nächste verfügbare Gerät ausgewählt.",
 
         updatesSection: "Updates",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "Halte %@ zum Navigieren; loslassen, um das Fenster zu aktivieren. Umschalt oder ← geht zurück; W schließt das Fenster; Q beendet die App; Esc bricht ab.",
         musicBlockSection: "Medientasten deaktivieren",
         musicBlockTitle: "Musik nicht von selbst öffnen lassen",
-        musicBlockCaption: "Blockiert den Start der Musik-App nach einer erkannten Medientaste. Benötigt Bedienungshilfen. Kopfhörerbefehle ohne erkannte Taste werden zugelassen.",
+        musicBlockCaption: "Verhindert, dass die Medientaste die Standard-Musik-App startet",
         musicBlockUnavailable: "Dieser Schutz ist gerade nicht verfügbar. Schalte ihn aus und wieder ein, um es erneut zu versuchen.",
         musicBlockReplacementLabel: "Stattdessen öffnen",
         musicBlockReplacementNone: "Keine",

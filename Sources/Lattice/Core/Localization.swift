@@ -787,6 +787,9 @@ struct Strings {
     let audioPriorityMoveDown: String
     let audioPriorityUnavailable: String
     let audioPriorityCurrent: String
+    let audioPrioritySkipCycling: String
+    let audioPrioritySetOutput: String
+    let audioPrioritySetInput: String
     let audioPriorityCaption: String
 
     // MARK: Settings — updates
@@ -1783,6 +1786,9 @@ extension Strings {
         audioPriorityMoveDown: "Mover para baixo",
         audioPriorityUnavailable: "Desconectado",
         audioPriorityCurrent: "Em uso",
+        audioPrioritySkipCycling: "Pular ao alternar",
+        audioPrioritySetOutput: "Definir como saída de áudio",
+        audioPrioritySetInput: "Definir como entrada de áudio",
         audioPriorityCaption: "Os dispositivos são selecionados por ordem de prioridade. Quando um dispositivo de maior prioridade é conectado, ele passa a ser usado. Quando o dispositivo ativo é desconectado, o próximo disponível é selecionado.",
 
         updatesSection: "Atualizações",
@@ -2010,7 +2016,7 @@ extension Strings {
         switcherUsageHintFormat: "Segure %@ para navegar; solte para ativar a janela. Shift ou ← volta; W fecha a janela; Q encerra o app; Esc cancela.",
         musicBlockSection: "Desativar teclas de mídia",
         musicBlockTitle: "Impedir que o Música abra sozinho",
-        musicBlockCaption: "Bloqueia a abertura do app de música após detectar uma tecla de mídia. Requer acesso à Acessibilidade. Comandos de fones sem uma tecla detectada são preservados.",
+        musicBlockCaption: "Impede que a tecla de mídia abra o app de música padrão",
         musicBlockUnavailable: "Esta proteção está indisponível agora. Desligue e ligue a opção para tentar novamente.",
         musicBlockReplacementLabel: "Abrir no lugar",
         musicBlockReplacementNone: "Nenhum",
@@ -2756,6 +2762,9 @@ extension Strings {
         audioPriorityMoveDown: "Move down",
         audioPriorityUnavailable: "Disconnected",
         audioPriorityCurrent: "Current",
+        audioPrioritySkipCycling: "Skip when cycling",
+        audioPrioritySetOutput: "Set as audio output",
+        audioPrioritySetInput: "Set as audio input",
         audioPriorityCaption: "Devices are selected in priority order. When a higher-priority device connects, it becomes active. When the active one disconnects, the next available takes over.",
 
         updatesSection: "Updates",
@@ -2983,7 +2992,7 @@ extension Strings {
         switcherUsageHintFormat: "Hold %@ to navigate; release to activate the window. Shift or ← goes back; W closes the window; Q quits the app; Esc cancels.",
         musicBlockSection: "Disable Media Keys",
         musicBlockTitle: "Stop Music from opening on its own",
-        musicBlockCaption: "Blocks the music app opening after a detected media key. Requires Accessibility access. Headphone commands without a detected key are left alone.",
+        musicBlockCaption: "Stop using the media key to start up the default music app",
         musicBlockUnavailable: "This protection is unavailable right now. Turn it off and on to try again.",
         musicBlockReplacementLabel: "Open instead",
         musicBlockReplacementNone: "None",

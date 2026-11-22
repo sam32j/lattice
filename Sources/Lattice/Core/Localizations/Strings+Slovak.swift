@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "Presunúť nadol",
         audioPriorityUnavailable: "Odpojené",
         audioPriorityCurrent: "Používa sa",
+        audioPrioritySkipCycling: "Preskočiť pri prepínaní",
+        audioPrioritySetOutput: "Nastaviť ako zvukový výstup",
+        audioPrioritySetInput: "Nastaviť ako zvukový vstup",
         audioPriorityCaption: "Zariadenia sa vyberajú podľa poradia priority. Keď sa pripojí zariadenie s vyššou prioritou, začne sa používať. Keď sa aktívne zariadenie odpojí, nahradí ho ďalšie dostupné.",
 
         updatesSection: "Aktualizácie",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "Podržaním %@ prechádzate oknami; pustením okno aktivujete. Shift alebo ← ide späť; W zatvorí okno; Q ukončí aplikáciu; Esc zruší.",
         musicBlockSection: "Vypnúť multimediálne klávesy",
         musicBlockTitle: "Zabrániť samovoľnému otváraniu Hudby",
-        musicBlockCaption: "Zablokuje otvorenie hudobnej aplikácie po rozpoznanom multimediálnom klávese. Vyžaduje prístup Prístupnosť. Príkazy zo slúchadiel bez rozpoznaného klávesu ostávajú nedotknuté.",
+        musicBlockCaption: "Zabráni multimediálnemu klávesu spustiť predvolenú hudobnú aplikáciu",
         musicBlockUnavailable: "Táto ochrana je teraz nedostupná. Vypnite ju a znova zapnite, aby ste to skúsili ešte raz.",
         musicBlockReplacementLabel: "Otvoriť namiesto toho",
         musicBlockReplacementNone: "Žiadne",

@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "下へ移動",
         audioPriorityUnavailable: "未接続",
         audioPriorityCurrent: "使用中",
+        audioPrioritySkipCycling: "切り替え時にスキップ",
+        audioPrioritySetOutput: "オーディオ出力に設定",
+        audioPrioritySetInput: "オーディオ入力に設定",
         audioPriorityCaption: "デバイスは優先順位に従って選択されます。優先順位の高いデバイスが接続されると、そのデバイスに切り替わります。使用中のデバイスが切断されると、次に利用可能なデバイスに切り替わります。",
 
         updatesSection: "アップデート",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "%@ を押したまま移動し、放すとウインドウがアクティブになります。Shift または ← で戻る、W でウインドウを閉じ、Q でアプリを終了、Esc でキャンセルします。",
         musicBlockSection: "メディアキーを無効化",
         musicBlockTitle: "ミュージックが勝手に開かないようにする",
-        musicBlockCaption: "検出したメディアキーによる音楽アプリの起動を防ぎます。アクセシビリティの許可が必要です。キーを検出できないヘッドフォンの操作はブロックしません。",
+        musicBlockCaption: "メディアキーでデフォルトの音楽アプリが起動しないようにします",
         musicBlockUnavailable: "この保護は現在利用できません。オフにしてから再びオンにしてお試しください。",
         musicBlockReplacementLabel: "代わりに開く",
         musicBlockReplacementNone: "なし",

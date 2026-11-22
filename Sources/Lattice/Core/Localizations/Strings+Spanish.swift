@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "Bajar",
         audioPriorityUnavailable: "Desconectado",
         audioPriorityCurrent: "En uso",
+        audioPrioritySkipCycling: "Omitir al alternar",
+        audioPrioritySetOutput: "Usar como salida de audio",
+        audioPrioritySetInput: "Usar como entrada de audio",
         audioPriorityCaption: "Los dispositivos se seleccionan por orden de prioridad. Cuando se conecta uno con mayor prioridad, el sistema cambia a ese dispositivo. Cuando el dispositivo activo se desconecta, se selecciona el siguiente disponible.",
 
         updatesSection: "Actualizaciones",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "Mantén %@ para navegar; suelta para activar la ventana. Mayúsculas o ← retrocede; W cierra la ventana; Q cierra la app; Esc cancela.",
         musicBlockSection: "Desactivar teclas multimedia",
         musicBlockTitle: "Evitar que Música se abra sola",
-        musicBlockCaption: "Bloquea la apertura de la app de música tras detectar una tecla multimedia. Requiere acceso de Accesibilidad. Los comandos de auriculares sin una tecla detectada se permiten.",
+        musicBlockCaption: "Evita que la tecla multimedia abra la app de música predeterminada",
         musicBlockUnavailable: "Esta protección no está disponible ahora. Desactívala y vuelve a activarla para reintentar.",
         musicBlockReplacementLabel: "Abrir en su lugar",
         musicBlockReplacementNone: "Ninguna",

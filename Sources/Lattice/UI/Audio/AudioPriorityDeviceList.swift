@@ -60,7 +60,7 @@ struct PriorityDeviceList: View {
                     .truncationMode(.middle)
                     .foregroundStyle(available ? .primary : .secondary)
                 if canCycle && !available && isSkipped {
-                    Text("Disconnected • Skip when cycling")
+                    Text("\(l10n.s.audioPriorityUnavailable) • \(l10n.s.audioPrioritySkipCycling)")
                         .font(.system(size: 9))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -70,7 +70,7 @@ struct PriorityDeviceList: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 } else if canCycle && isSkipped {
-                    Text("Skip when cycling")
+                    Text(l10n.s.audioPrioritySkipCycling)
                         .font(.system(size: 9))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -105,12 +105,12 @@ struct PriorityDeviceList: View {
         .contentShape(Rectangle())
         .contextMenu {
             if canCycle {
-                Button("Set as audio output") {
+                Button(l10n.s.audioPrioritySetOutput) {
                     _ = AppVolumeMixer.shared.setUniversalOutputDeviceUID(uid)
                 }
                 .disabled(isCurrent || !available)
 
-                Toggle("Skip when cycling", isOn: Binding(
+                Toggle(l10n.s.audioPrioritySkipCycling, isOn: Binding(
                     get: { isSkipped },
                     set: { _ in outputSwitcher.toggleSkip(for: uid) }
                 ))

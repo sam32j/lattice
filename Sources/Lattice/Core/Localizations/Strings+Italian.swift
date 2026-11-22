@@ -605,6 +605,9 @@ extension Strings {
         audioPriorityMoveDown: "Sposta giù",
         audioPriorityUnavailable: "Disconnesso",
         audioPriorityCurrent: "In uso",
+        audioPrioritySkipCycling: "Salta nel ciclo",
+        audioPrioritySetOutput: "Imposta come uscita audio",
+        audioPrioritySetInput: "Imposta come ingresso audio",
         audioPriorityCaption: "I dispositivi vengono selezionati in ordine di priorità. Quando viene collegato un dispositivo con priorità più alta, il sistema passa a quel dispositivo. Quando il dispositivo attivo viene scollegato, viene selezionato il successivo disponibile.",
 
         updatesSection: "Aggiornamenti",
@@ -832,7 +835,7 @@ extension Strings {
         switcherUsageHintFormat: "Tieni premuto %@ per spostarti; rilascia per attivare la finestra. Maiuscole o ← torna indietro; W chiude la finestra; Q chiude l’app; Esc annulla.",
         musicBlockSection: "Disabilita tasti multimediali",
         musicBlockTitle: "Impedisci a Musica di aprirsi da sola",
-        musicBlockCaption: "Blocca l’apertura dell’app musicale dopo un tasto multimediale rilevato. Richiede l’accesso ad Accessibilità. I comandi delle cuffie senza un tasto rilevato sono consentiti.",
+        musicBlockCaption: "Impedisce al tasto multimediale di avviare l’app musicale predefinita",
         musicBlockUnavailable: "Questa protezione non è disponibile al momento. Disattivala e riattivala per riprovare.",
         musicBlockReplacementLabel: "Apri al suo posto",
         musicBlockReplacementNone: "Nessuna",

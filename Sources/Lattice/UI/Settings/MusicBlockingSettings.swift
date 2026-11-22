@@ -19,7 +19,7 @@ struct MusicBlockingSettings: View {
         SettingsCard(
             symbol: "play.slash",
             title: l10n.s.musicBlockSection,
-            caption: "Stop using the media key to start up the default music app",
+            caption: l10n.s.musicBlockCaption,
             headerSpacing: 0,
             headerAccessory: {
                 PermissionGatedToggle(l10n.s.musicBlockTitle, isOn: $enabled)
