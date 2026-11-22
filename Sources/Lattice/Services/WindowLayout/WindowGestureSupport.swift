@@ -416,7 +416,9 @@ enum WindowEdgeSnapPlacementGroup: CaseIterable {
     var actions: [WindowLayoutAction] {
         switch self {
         case .halves:
-            return [.leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow, .centerHalf]
+            // Center Column draws the same half as Center Half, so only it is
+            // offered; a layout saved with Center Half still loads.
+            return [.leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow]
         case .thirds:
             return [.leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds, .centerTwoThirds,
                     .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds]
@@ -447,6 +449,7 @@ enum WindowEdgeSnapPlacementGroup: CaseIterable {
     }
 
     static let placements = Set(allCases.flatMap(\.actions))
+    static let acceptedPlacements = placements.union([.centerHalf])
 }
 
 /// What each drop area does. A corner holds one placement, and a straight
@@ -545,7 +548,7 @@ struct WindowEdgeSnapLayout: Equatable {
 
     private static func accepts(_ actions: [WindowLayoutAction], for zone: WindowEdgeSnapZone) -> Bool {
         !actions.isEmpty && actions.count <= zone.maximumParts
-            && actions.allSatisfy(WindowEdgeSnapPlacementGroup.placements.contains)
+            && actions.allSatisfy(WindowEdgeSnapPlacementGroup.acceptedPlacements.contains)
     }
 }
 
