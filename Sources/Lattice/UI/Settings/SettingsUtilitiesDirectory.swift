@@ -5,7 +5,12 @@ import Foundation
 extension SettingsDirectory {
     static func utilityPages(_ s: Strings, language: AppLanguage) -> [SettingsDirectoryItem] {
         [
-                SettingsDirectoryItem(page: .urlCleaner, title: s.urlCleanerName, icon: "link"),
+                SettingsDirectoryItem(page: .urlCleaner, title: s.urlCleanerName, icon: "link",
+                                      keywords: [Strings.enUS.urlCleanerName, "Clean URL", "tracking", "trackers",
+                                                 FeatureStrings.urlSanitizer(language).autoRemoveTitle,
+                                                 FeatureStrings.urlSanitizer(language).testTitle,
+                                                 FeatureStrings.urlSanitizer(language).sitesTitle,
+                                                 FeatureStrings.urlSanitizer(language).recentTitle]),
                 SettingsDirectoryItem(page: .clipboard, title: FeatureStrings.clipboard(language).title,
                                       icon: "doc.on.clipboard",
                                       featureKeywords: [

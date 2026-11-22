@@ -1880,17 +1880,9 @@ enum FeatureCatalogTests {
                 case .zhHK: return .zhHK
                 }
             }()
-            suite.expect(!strings.urlCleanerRulesTitle.isEmpty
-                    && !strings.urlCleanerRulesAllSites.isEmpty
-                    && !strings.urlCleanerRulesCaption.isEmpty
-                    && !strings.urlCleanerRulesAddSite.isEmpty
-                    && !strings.urlCleanerRulesParameterPlaceholder.isEmpty
-                    && !strings.urlCleanerRulesAddButton.isEmpty
-                    && !strings.urlCleanerRulesRemoveButton.isEmpty
-                    && !strings.urlCleanerRulesCountSingular.isEmpty
-                    && strings.urlCleanerRulesCountPluralFormat.contains("%d")
+            suite.expect(!strings.urlCleanerName.isEmpty
                     && strings.urlCleanerRemovedFormat.contains("%@"),
-                   "the URL cleaner rule list speaks \(language.rawValue)")
+                   "the URL Sanitizer speaks \(language.rawValue)")
         }
 
         // MARK: Hub presets and energy badges

@@ -479,8 +479,6 @@ struct Strings {
 
     // MARK: Feature — URL cleaner
     let urlCleanerName: String
-    let urlCleanerEnable: String
-    let urlCleanerEnableCaption: String
     let urlCleanerActiveNow: String
     let urlCleanerManualTitle: String
     let urlCleanerInputPlaceholder: String
@@ -492,7 +490,6 @@ struct Strings {
     let urlCleanerNoChange: String
     let urlCleanerCleaned: String
     let urlCleanerCopied: String
-    let urlCleanerLocalNote: String
 
     // MARK: Feature — Homebrew manager
     let homebrewName: String
@@ -1126,19 +1123,6 @@ struct Strings {
     let memoryMetricApp: String
     let keepAwakeRightClickToggle: String
     let keepAwakeRightClickToggleCaption: String
-    let urlCleanerRulesTitle: String
-    let urlCleanerRulesCaption: String
-    let urlCleanerRulesCoverageCaption: String
-    let urlCleanerRulesAllSites: String
-    let urlCleanerRulesCountSingular: String
-    let urlCleanerRulesCountPluralFormat: String   // + count
-    let urlCleanerRulesAddSite: String
-    let urlCleanerRulesParameterPlaceholder: String
-    let urlCleanerRulesMatchCaption: String
-    let urlCleanerRulesAddButton: String
-    let urlCleanerRulesRemoveButton: String
-    let urlCleanerRulesRemoveSiteButton: String
-    let urlCleanerRulesRestoreSiteButton: String
     let urlCleanerRemovedFormat: String            // + comma separated names
     let switcherSearchPlaceholder: String
     let invertVerticalScroll: String
@@ -1491,9 +1475,7 @@ extension Strings {
         uninstallerCommandBarFinderTitle: "Desinstalar aplicativo selecionado no Finder",
         uninstallerSelectionUnavailable: "Selecione um aplicativo que possa ser removido no Finder ou escolha outro na lista.",
 
-        urlCleanerName: "Limpar URL",
-        urlCleanerEnable: "Limpar URLs ao copiar",
-        urlCleanerEnableCaption: "Remove os parâmetros de rastreamento de um link assim que ele chega à área de transferência.",
+        urlCleanerName: "Limpador de URL",
         urlCleanerActiveNow: "Ativo agora",
         urlCleanerManualTitle: "Limpar agora",
         urlCleanerInputPlaceholder: "Cole uma URL",
@@ -1505,7 +1487,6 @@ extension Strings {
         urlCleanerNoChange: "Nada para limpar.",
         urlCleanerCleaned: "URL limpa.",
         urlCleanerCopied: "Copiado.",
-        urlCleanerLocalNote: "Local. Sem rede.",
 
         homebrewName: "Homebrew",
         homebrewEnableCaption: "Pesquise, instale e remova fórmulas e casks.",
@@ -2103,19 +2084,6 @@ extension Strings {
         memoryMetricApp: "Memória de apps",
         keepAwakeRightClickToggle: "Clique com o botão direito no ícone da barra de menus para alternar “Manter acordado”",
         keepAwakeRightClickToggleCaption: "Substitui o menu de contexto do clique com o botão direito.",
-        urlCleanerRulesTitle: "Regras de limpeza",
-        urlCleanerRulesCaption: "Um site anexa estes parâmetros aos próprios links de compartilhamento para rastrear de onde o link veio. Ligado, o nome é removido ao limpar um link; desligado, ele permanece. Os nomes que você adicionar podem ser excluídos.",
-        urlCleanerRulesCoverageCaption: "A lista cobre os diferentes caminhos de compartilhamento de um site (a página, o app, uma sala ao vivo), por isso é longa; um link real costuma carregar apenas dois a quatro deles.",
-        urlCleanerRulesAllSites: "Todos os sites",
-        urlCleanerRulesCountSingular: "1 parâmetro",
-        urlCleanerRulesCountPluralFormat: "%d parâmetros",
-        urlCleanerRulesAddSite: "Adicionar site",
-        urlCleanerRulesParameterPlaceholder: "Nome do parâmetro",
-        urlCleanerRulesMatchCaption: "Escreva o nome à esquerda do = , como utm_source. Um nome que corresponde tira aquele parâmetro do link e deixa o resto como está.",
-        urlCleanerRulesAddButton: "Adicionar",
-        urlCleanerRulesRemoveButton: "Excluir nome",
-        urlCleanerRulesRemoveSiteButton: "Desativar todas as regras deste site",
-        urlCleanerRulesRestoreSiteButton: "Ativar todas as regras deste site",
         urlCleanerRemovedFormat: "Removidos %@",
         switcherSearchPlaceholder: "Buscar",
         invertVerticalScroll: "Inverter rolagem vertical",
@@ -2469,9 +2437,7 @@ extension Strings {
         uninstallerCommandBarFinderTitle: "Uninstall app selected in Finder",
         uninstallerSelectionUnavailable: "Select an app that can be removed in Finder, or choose another from the list.",
 
-        urlCleanerName: "Clean URL",
-        urlCleanerEnable: "Clean URLs as you copy them",
-        urlCleanerEnableCaption: "Removes tracking parameters from a link the moment it reaches the clipboard.",
+        urlCleanerName: "URL Sanitizer",
         urlCleanerActiveNow: "Active now",
         urlCleanerManualTitle: "Clean now",
         urlCleanerInputPlaceholder: "Paste a URL",
@@ -2483,7 +2449,6 @@ extension Strings {
         urlCleanerNoChange: "Nothing to clean.",
         urlCleanerCleaned: "URL cleaned.",
         urlCleanerCopied: "Copied.",
-        urlCleanerLocalNote: "Local. No network.",
 
         homebrewName: "Homebrew",
         homebrewEnableCaption: "Search, install and remove formulae and casks.",
@@ -3081,19 +3046,6 @@ extension Strings {
         memoryMetricApp: "App Memory",
         keepAwakeRightClickToggle: "Right-click the menu bar icon to toggle Keep Awake",
         keepAwakeRightClickToggleCaption: "Replaces the right-click context menu.",
-        urlCleanerRulesTitle: "Cleaning rules",
-        urlCleanerRulesCaption: "A site attaches these parameters to its own share links to track where the link came from. Switched on, a name is removed when a link is cleaned; switched off, it stays. Names you add can be deleted.",
-        urlCleanerRulesCoverageCaption: "The list covers a site’s different share paths (the web page, the app, a live room), which is why it is long; a real link usually carries only two to four of them.",
-        urlCleanerRulesAllSites: "All sites",
-        urlCleanerRulesCountSingular: "1 parameter",
-        urlCleanerRulesCountPluralFormat: "%d parameters",
-        urlCleanerRulesAddSite: "Add a site",
-        urlCleanerRulesParameterPlaceholder: "Parameter name",
-        urlCleanerRulesMatchCaption: "Write the name to the left of the = , like utm_source. A name that matches takes that one parameter out of the link and leaves the rest as it was.",
-        urlCleanerRulesAddButton: "Add",
-        urlCleanerRulesRemoveButton: "Delete name",
-        urlCleanerRulesRemoveSiteButton: "Turn off every rule for this site",
-        urlCleanerRulesRestoreSiteButton: "Turn on every rule for this site",
         urlCleanerRemovedFormat: "Removed %@",
         switcherSearchPlaceholder: "Search",
         invertVerticalScroll: "Invert vertical scrolling",
