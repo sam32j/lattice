@@ -278,6 +278,15 @@ struct DeviceControlsAppVolumesView: View {
                     .tag(device.uid)
             }
 
+            // A saved AirPlay route is left out of the list above but still
+            // needs its own row, or the picker has nothing to show it with.
+            if let selected = app.selectedOutputDeviceUID, !app.outputDeviceUnavailable,
+               !availableOutputDevices.contains(where: { $0.uid == selected }),
+               let route = mixer.outputDevices.first(where: { $0.uid == selected }) {
+                Text(route.name)
+                    .tag(selected)
+            }
+
             if let selected = app.selectedOutputDeviceUID,
                MixerRoutingSupport.needsUnavailableOutputRow(
                 selectedUID: selected,

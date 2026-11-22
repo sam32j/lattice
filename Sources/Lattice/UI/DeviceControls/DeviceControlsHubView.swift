@@ -9,6 +9,9 @@ struct DeviceControlsHubView: View {
     @ObservedObject private var navigation = DeviceControlsNavigationState.shared
     var onClose: () -> Void
     var notchSize: CGSize? = nil
+    /// The height the host shows, when it is less than the content: the
+    /// floating panel caps it, and the list must scroll inside that space.
+    var viewportHeight: CGFloat? = nil
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -30,7 +33,7 @@ struct DeviceControlsHubView: View {
                 }
             }
         }
-        .frame(height: notchSize?.height ?? navigation.contentHeight, alignment: .top)
+        .frame(height: notchSize?.height ?? viewportHeight ?? navigation.contentHeight, alignment: .top)
         .onAppear {
             NotchService.shared.noteDeviceControlsSuppression(active: true)
         }

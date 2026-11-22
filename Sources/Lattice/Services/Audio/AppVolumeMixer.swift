@@ -2432,7 +2432,9 @@ final class AppVolumeMixer: ObservableObject {
                     if let defaultUID = currentOutputDeviceUID {
                         row.effectiveOutputDeviceUID = MixerRoutingSupport.effectiveDeviceUID(
                             selectedUID: route,
-                            availableUIDs: Set(outputDevices.map(\.uid)),
+                            availableUIDs: MixerRoutingSupport.routableOutputUIDs(
+                                outputDevices.map(\.uid),
+                                airPlayConnected: AirPlayRouteManager.isSpeakerConnected),
                             defaultUID: defaultUID)
                     }
                 }
