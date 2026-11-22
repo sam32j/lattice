@@ -756,7 +756,7 @@ final class NotchService: ObservableObject {
         let displayTop = displayID.map { CGDisplayBounds($0).minY } ?? 0
         guard type == .rightMouseDown,
               event.getIntegerValueField(.eventSourceUserData) != Self.rightClickReissueMarker,
-              event.location.y - displayTop < 1.5, running, !suspended, !expanded, !peeking,
+              (0..<1.5).contains(event.location.y - displayTop), running, !suspended, !expanded, !peeking,
               !UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover),
               !compactActivities.isEmpty else { return Unmanaged.passUnretained(event) }
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
@@ -789,7 +789,10 @@ final class NotchService: ObservableObject {
         let live = compactActivities
         guard !live.isEmpty else { return }
         let language = L10n.shared.language
-        let shown = activitySelection.display(available: live, pairs: { self.compactCompanions(of: $0).contains($1) })
+        // What the island draws: a new song waiting for its notice is held
+        // back there, so the marked row and the attach target follow that.
+        let drawn = awaitsTrackNotice ? live.filter { $0 != .music } : live
+        let shown = activitySelection.display(available: drawn, pairs: { self.compactCompanions(of: $0).contains($1) })
         let displayed = [shown.primary, shown.companion].compactMap { $0 }
         let main = activitySelection.anchor.flatMap { displayed.contains($0) ? $0 : nil } ?? shown.companion ?? shown.primary
         let companion = displayed.count == 2 ? displayed.first { $0 != main } : nil
