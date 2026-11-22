@@ -59,6 +59,9 @@ struct HubStayAwakeControl: View {
         motionGeneration += 1
         let generation = motionGeneration
         motionStart = Date()
+        // The session's own follow-up work (the lid-sleep flag, for one)
+        // writes preferences mid-slide; their island resync waits it out.
+        InterfaceMotionHold.hold(for: HubStayAwakeMotion.duration)
         DispatchQueue.main.asyncAfter(deadline: .now() + HubStayAwakeMotion.duration) {
             if motionGeneration == generation { motionStart = nil }
         }
