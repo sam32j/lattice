@@ -4,8 +4,8 @@
 import AppKit
 import SwiftUI
 
-/// The URL Sanitizer page: a header with the main switch and a Settings
-/// menu, a card to test a link against the saved rules, the sites those
+/// The URL Sanitizer page: the main switch and a Settings menu in the title
+/// bar, a card to test a link against the saved rules, the sites those
 /// rules are made of, and the links cleaned this session. Anything that
 /// needs more room opens in a sheet or a menu, so the page never grows a
 /// block in place.
@@ -31,7 +31,6 @@ struct URLSanitizerSettings: View {
         let result = URLCleaning.clean(input, rules: rules)
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                URLSanitizerHeader(enabled: $enabled, autoRemove: $autoRemove)
                 URLSanitizerTestCard(input: $input, result: result, rules: rules,
                                      isPaused: !enabled || !autoRemove,
                                      openSite: { open($0, rules: rules) })
@@ -41,6 +40,11 @@ struct URLSanitizerSettings: View {
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
             .padding(22)
+        }
+        .toolbar {
+            SettingsTitleBarItem(id: "url-sanitizer-controls") {
+                URLSanitizerTitleBarControls(enabled: $enabled, autoRemove: $autoRemove)
+            }
         }
         .sheet(item: $sheet) { request in
             URLSanitizerSiteSheet(draft: request.draft, rules: rules,
@@ -146,11 +150,12 @@ struct URLSanitizerSettings: View {
     }
 }
 
-// MARK: - Header
+// MARK: - Title bar
 
-/// Icon, title, the Settings menu and the main switch. The switch shows the
-/// state on its own, so there is no status text beside it.
-private struct URLSanitizerHeader: View {
+/// The Settings menu and the main switch, laid out like the title bar
+/// controls of the other utility pages. The switch shows the state on its
+/// own, so there is no status text beside it.
+private struct URLSanitizerTitleBarControls: View {
     @ObservedObject private var l10n = L10n.shared
     @Binding var enabled: Bool
     @Binding var autoRemove: Bool
@@ -162,32 +167,15 @@ private struct URLSanitizerHeader: View {
     private var strings: URLSanitizerStrings { FeatureStrings.urlSanitizer(l10n.language) }
 
     var body: some View {
-        HStack(spacing: 10) {
-            LatticeSymbol(AppFeature.urlCleaner.symbolName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 26, height: 26)
-                .background(Color.accentColor.opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .accessibilityHidden(true)
-            Text(l10n.s.urlCleanerName)
-                .font(.title3.weight(.semibold))
-                .lineLimit(1)
-                .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: 12)
+        HStack(spacing: 6) {
             Button {
                 guard Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
                 showingMenu.toggle()
             } label: {
                 Image(systemName: "gearshape")
-                    .font(.system(size: 14))
-                    .foregroundStyle(showingMenu ? Color.primary : Color.secondary)
-                    .frame(width: 28, height: 28)
-                    .background(showingMenu ? Color.primary.opacity(0.1) : Color.clear,
-                                in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    .contentShape(Rectangle())
+                    .foregroundStyle(showingMenu ? Color.accentColor : Color.primary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(FlatSettingsOptionsButtonStyle())
             .help(strings.settingsButton)
             .accessibilityLabel(strings.settingsButton)
             .accessibilityAddTraits(showingMenu ? .isSelected : [])
@@ -197,18 +185,13 @@ private struct URLSanitizerHeader: View {
             .onChange(of: showingMenu) { _, open in
                 if !open { menuClosedAt = Date() }
             }
-            Toggle(strings.mainToggle, isOn: $enabled)
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .accessibilityLabel(strings.mainToggle)
-                .help(strings.mainToggle)
-                .onChange(of: enabled) { _, enabled in
-                    settingsApplyFeatureSwitch(enabled: enabled) {
-                        URLCleanerService.shared.syncWithPreferences()
-                        FeatureRuntime.shared.finishAvailabilityChange()
-                    }
-                }
+            SettingsTitleBarSwitch(title: strings.mainToggle, isOn: enabled) { isOn in
+                enabled = isOn
+                URLCleanerService.shared.syncWithPreferences()
+                FeatureRuntime.shared.finishAvailabilityChange()
+            }
         }
+        .padding(.horizontal, 8)
     }
 }
 
