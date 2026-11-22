@@ -182,6 +182,10 @@ final class AudioInputDeviceManager: ObservableObject {
               uid != currentInputDeviceUID,
               let device = inputDevices.first(where: { $0.uid == uid }) else { return }
         refresh.discardInFlight()
+        // The preference as it stood when the pick was made: a newer saved
+        // microphone must not be recorded as the one this pick superseded.
+        let preferredAtPick = Defaults.sanitizedPreferredInputDeviceUID(
+            UserDefaults.standard.string(forKey: DefaultsKey.preferredInputDevice))
         halQueue.async { [weak self] in
             let status = Self.setDefaultInputDevice(device.audioObjectID)
             DispatchQueue.main.async {
@@ -190,8 +194,7 @@ final class AudioInputDeviceManager: ObservableObject {
                     self.inputDeviceBeforeOverride = nil
                     self.appliedInputDeviceUID = nil
                     if !self.inputPriorityIsActive {
-                        self.manualSelectionPreferredUID = .some(Defaults.sanitizedPreferredInputDeviceUID(
-                            UserDefaults.standard.string(forKey: DefaultsKey.preferredInputDevice)))
+                        self.manualSelectionPreferredUID = .some(preferredAtPick)
                     }
                     if self.lastError != nil { self.lastError = nil }
                 } else {

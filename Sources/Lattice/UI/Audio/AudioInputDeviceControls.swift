@@ -19,6 +19,12 @@ struct AudioInputDeviceControls: View {
     /// The audible level a drag started from, remembered for Unmute when the
     /// drag ends at zero.
     @State private var levelBeforeEdit: Double?
+    /// The input an edit started on; a switch to another input mid-edit drops
+    /// the edit rather than handing its level to the new one.
+    @State private var editInputUID: String??
+    /// Set once an edit is dropped for a switched input; its remaining ticks
+    /// are ignored until the slider is released.
+    @State private var editDropped = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: showsIcons ? 8 : 14) {
@@ -137,7 +143,7 @@ struct AudioInputDeviceControls: View {
                 return
             }
             unmutingFromDrag = false
-            if let dragging = draggingInputVolume, dragging > 0.001 {
+            if let dragging = draggingInputVolume, dragging > 0.001, editIsOnCurrentInput {
                 pendingUnmuteLevel = nil
                 inputManager.setInputVolume(dragging)
             } else if let pending = pendingUnmuteLevel {
@@ -183,7 +189,19 @@ struct AudioInputDeviceControls: View {
 
     /// Ends a slider edit. A level chosen while the unmute it started is
     /// still in flight waits for it; a drag to zero remembers where it began.
+    private var editIsOnCurrentInput: Bool {
+        editInputUID.map { $0 == inputManager.effectiveInputDeviceUID } ?? true
+    }
+
     private func finishInputEdit() {
+        defer {
+            draggingInputVolume = nil
+            unmutingFromDrag = false
+            levelBeforeEdit = nil
+            editInputUID = nil
+            editDropped = false
+        }
+        guard !editDropped, editIsOnCurrentInput else { return }
         if let finalVol = draggingInputVolume {
             if finalVol > 0.001 {
                 inputManager.rememberUnmutedInputVolume(finalVol)
@@ -193,13 +211,16 @@ struct AudioInputDeviceControls: View {
                 } else {
                     inputManager.setInputVolume(finalVol)
                 }
-            } else if let before = levelBeforeEdit {
-                inputManager.rememberUnmutedInputVolume(before)
+            } else {
+                if let before = levelBeforeEdit { inputManager.rememberUnmutedInputVolume(before) }
+                // The drag started an unmute and came back to zero before it
+                // landed: zero is the level, applied once the unmute lifts.
+                if micMute.isMuted, unmutingFromDrag {
+                    pendingUnmuteLevel = PendingInputUnmuteLevel(deviceUID: inputManager.effectiveInputDeviceUID,
+                                                                 value: 0)
+                }
             }
         }
-        draggingInputVolume = nil
-        unmutingFromDrag = false
-        levelBeforeEdit = nil
     }
 
     private var inputSelectionBinding: Binding<String> {
@@ -228,9 +249,16 @@ struct AudioInputDeviceControls: View {
         Binding(
             get: { draggingInputVolume ?? displayedInputVolume },
             set: { newValue in
-                if draggingInputVolume == nil, !micMute.isMuted,
-                   let current = inputManager.inputVolume, current > 0.001 {
-                    levelBeforeEdit = current
+                if editDropped { return }
+                if draggingInputVolume == nil {
+                    editInputUID = .some(inputManager.effectiveInputDeviceUID)
+                    if !micMute.isMuted, let current = inputManager.inputVolume, current > 0.001 {
+                        levelBeforeEdit = current
+                    }
+                } else if !editIsOnCurrentInput {
+                    draggingInputVolume = nil
+                    editDropped = true
+                    return
                 }
                 draggingInputVolume = newValue
                 if micMute.isMuted, newValue > 0.001 {

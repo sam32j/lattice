@@ -665,6 +665,12 @@ final class AppVolumeMixer: ObservableObject {
     /// lifts a mute; an output with no mute control only gets the level, so a
     /// volume-only output can still be raised from zero.
     func requestOutputLevel(_ volume: Double, publishes: Bool = true) {
+        // Mute but no writable level: a level request would be refused whole,
+        // so an audible one only lifts the mute.
+        guard systemOutputVolume != nil else {
+            if systemOutputMuted == true, volume > 0.001 { requestOutputAdjustment(muted: false, publishes: publishes) }
+            return
+        }
         if systemOutputMuted == true, volume > 0.001 {
             requestOutputAdjustment(volume: volume, muted: false, publishes: publishes)
         } else {
@@ -682,6 +688,29 @@ final class AppVolumeMixer: ObservableObject {
     }
 
     static let lastUnmutedOutputVolumeKey = "audioOutputLastUnmutedVolume"
+
+    /// Whether the output reads as muted: its mute is on, or its level is at
+    /// zero. An output without a level is judged by its mute alone.
+    var outputReadsMuted: Bool {
+        systemOutputMuted == true || (systemOutputVolume.map { $0 <= 0.001 } ?? false)
+    }
+
+    /// The panels' mute button. Unmute restores a level where the output has
+    /// one and only lifts the mute where it has none; Mute remembers the level.
+    func togglePanelOutputMute() {
+        if outputReadsMuted {
+            if systemOutputVolume == nil {
+                requestOutputAdjustment(muted: false)
+            } else {
+                requestOutputLevel(outputUnmuteLevel)
+            }
+        } else {
+            if let current = systemOutputVolume, current > 0.001 {
+                UserDefaults.standard.set(current, forKey: Self.lastUnmutedOutputVolumeKey)
+            }
+            requestOutputAdjustment(muted: true)
+        }
+    }
 
     private func enqueueOutputAdjustment(volume: Double? = nil, muted: Bool? = nil,
                                          step: OutputStep? = nil, publishes: Bool = true,
@@ -1226,6 +1255,11 @@ final class AppVolumeMixer: ObservableObject {
         // No live engine yet — only kick off engine creation once volume leaves 100%.
         if abs(clamped - 1.0) > 0.001 {
             setVolume(clamped, for: app)
+        } else if let index = apps.firstIndex(where: { $0.id == app.id }), apps[index].volume != clamped {
+            // Back at 100% before a build finished: the row says so, and the
+            // finishing build reads it and stands down instead of tapping at
+            // the level the drag already left.
+            apps[index].volume = clamped
         }
     }
 
