@@ -32,18 +32,20 @@ extension KeyboardSettings {
                         .labelsHidden()
                         .onChange(of: superKeyEnabled) { _, _ in
                             superKey.syncWithPreferences()
-                            features.finishAvailabilityChange()
+                            settingsFinishAvailabilityChange()
                         }
                 }
 
                 if superKeyEnabled {
-                    HStack(spacing: 6) {
-                        Text(InputSettingsStrings.text(.superKey, l10n.language))
-                        Spacer(minLength: 12)
-                        SettingsStatusDot(status: superKeyStatus)
-                        Picker(InputSettingsStrings.text(.superKey, l10n.language), selection: sourceBinding) {
-                            ForEach(SuperKeySource.allCases) { source in
-                                Text(text.sourceLabel(source)).tag(source)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 6) {
+                            Text(InputSettingsStrings.text(.superKey, l10n.language))
+                            Spacer(minLength: 12)
+                            SettingsStatusDot(status: superKeyStatus)
+                            Picker(InputSettingsStrings.text(.superKey, l10n.language), selection: sourceBinding) {
+                                ForEach(SuperKeySource.allCases) { source in
+                                    Text(text.sourceLabel(source)).tag(source)
+                                }
                             }
                         }
                         .labelsHidden().pickerStyle(.menu)

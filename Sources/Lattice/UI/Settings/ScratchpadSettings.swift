@@ -22,13 +22,22 @@ struct ScratchpadSettings: View {
                 Toggle("", isOn: $enabled).labelsHidden()
                     .onChange(of: enabled) { _, _ in
                         ScratchpadService.shared.syncWithPreferences()
-                        FeatureRuntime.shared.finishAvailabilityChange()
+                        settingsFinishAvailabilityChange()
                     }
                 }
                 if enabled {
-                    ShortcutPreferenceRow(role: .scratchpad,
-                        label: UtilitySettingsCopy.open(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language)) {
-                        ScratchpadService.shared.syncWithPreferences()
+                    VStack(alignment: .leading, spacing: 16) {
+                        ShortcutPreferenceRow(role: .scratchpad,
+                            label: UtilitySettingsCopy.open(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language)) {
+                            ScratchpadService.shared.syncWithPreferences()
+                        }
+                        .padding(.leading, settingsRowTextInset)
+                        if scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
+                            Text(l10n.s.shortcutUnavailable).font(.caption).foregroundStyle(.orange)
+                                .transition(.settingsReveal)
+                        }
+                        IslandDestinationSettings(destination: .scratchpad)
+                            .padding(.leading, settingsRowTextInset)
                     }
                     .padding(.leading, settingsRowTextInset)
                     if scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {

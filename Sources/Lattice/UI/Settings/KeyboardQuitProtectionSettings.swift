@@ -96,7 +96,7 @@ extension KeyboardSettings {
                     .labelsHidden()
                     .onChange(of: enabled.wrappedValue) { _, value in
                         quitService.syncWithPreferences()
-                        features.finishAvailabilityChange()
+                        settingsFinishAvailabilityChange()
                         guard value, !permissions.accessibility else { return }
                         permissions.requestAccessibility()
                     }

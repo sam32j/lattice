@@ -98,7 +98,7 @@ struct DisplaySettings: View {
                         .labelsHidden()
                         .onChange(of: bluetoothSleepEnabled) { _, _ in
                             BluetoothSleepService.shared.syncWithPreferences()
-                            FeatureRuntime.shared.finishAvailabilityChange()
+                            settingsFinishAvailabilityChange()
                         }
                 }
                 if bluetoothSleepEnabled {
@@ -107,9 +107,10 @@ struct DisplaySettings: View {
                         Toggle(strings.restoreToggle, isOn: $bluetoothSleepRestoreOnWake).labelsHidden()
                             .onChange(of: bluetoothSleepRestoreOnWake) { _, _ in
                                 BluetoothSleepService.shared.syncWithPreferences()
-                                FeatureRuntime.shared.finishAvailabilityChange()
+                                settingsFinishAvailabilityChange()
                             }
                     }
+                    .transition(.settingsReveal)
                 }
             } else {
                 SettingsRow(symbol: "dot.radiowaves.left.and.right", title: strings.pageTitle,
