@@ -28,8 +28,6 @@ enum DefaultsKey {
     // to match, and losing one ends the session). Issue #1587.
     static let keepAwakeAutomationRequireAll = "keepAwakeAutomationRequireAll"
     static let keepAwakePauseWhenLocked = "keepAwakePauseWhenLocked"
-    static let keepAwakeSwitchUsesUntil = "keepAwakeSwitchUsesUntil" // panel switch restarts the Until chip
-    static let keepAwakeUntilTime = "keepAwakeUntilTime"  // last picked end time; 0 = none yet
     static let keepAwakeMouseJiggleEnabled = "keepAwakeMouseJiggleEnabled"
     static let keepAwakeMouseJiggleInterval = "keepAwakeMouseJiggleIntervalMinutes"
     static let hotkeyEnabled = "hotkeyEnabled"
@@ -977,8 +975,6 @@ enum Defaults {
         DefaultsKey.keepAwakeRunningAppBundleIDs: [String](),
         DefaultsKey.keepAwakeAutomationRequireAll: false,
         DefaultsKey.keepAwakePauseWhenLocked: false,
-        DefaultsKey.keepAwakeSwitchUsesUntil: false,
-        DefaultsKey.keepAwakeUntilTime: 0.0,
         DefaultsKey.keepAwakeMouseJiggleEnabled: false,
         DefaultsKey.keepAwakeMouseJiggleInterval: 5,
         DefaultsKey.hotkeyEnabled: true,
@@ -1681,6 +1677,7 @@ enum Defaults {
         migrateAudioControls(in: defaults)
         migrateFullscreenActivityVisibility(in: defaults)
         migrateURLCleanerRules(in: defaults)
+        retireKeepAwakeLastPick(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         defaults.register(defaults: ["NSInitialToolTipDelay": 300])
@@ -1703,6 +1700,15 @@ enum Defaults {
         // The "all apps" output choice now lasts one session; a saved one
         // would move apps that chose their own output after every launch.
         defaults.removeObject(forKey: DefaultsKey.mixerUniversalOutputDevice)
+    }
+
+    /// Stay Awake's switch restarted the last pick, an end time or a preset.
+    /// It now starts the default duration, which only its own setting
+    /// changes, so the remembered end time goes.
+    static func retireKeepAwakeLastPick(in defaults: UserDefaults) {
+        for key in ["keepAwakeSwitchUsesUntil", "keepAwakeUntilTime"] where defaults.object(forKey: key) != nil {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     /// Clean URL kept three lists: names added everywhere, names added to one

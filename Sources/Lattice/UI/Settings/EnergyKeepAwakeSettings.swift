@@ -111,7 +111,7 @@ struct EnergyKeepAwakeSettings: View {
             get: { awake.isActive },
             set: { on in
                 if on {
-                    awake.startLastPick()
+                    awake.startDefault()
                 } else if awake.isActive {
                     awake.toggle()
                 }
@@ -123,8 +123,6 @@ struct EnergyKeepAwakeSettings: View {
         let selected = defaultDuration == minutes
         return Button {
             defaultDuration = minutes
-            // A chosen default is the newest pick, so the switch starts it.
-            UserDefaults.standard.set(false, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
         } label: {
             Text(DurationPicker.title(for: minutes, l10n.s))
                 .font(.system(size: 11, weight: .medium))
