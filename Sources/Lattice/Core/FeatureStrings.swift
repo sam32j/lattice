@@ -328,11 +328,11 @@ extension WindowLayoutFeatureStrings {
 extension MonitorAlertFeatureStrings {
     static let ko = MonitorAlertFeatureStrings(
         section: "알림",
-        caption: "값이 한도를 넘으면 알림을 받습니다. 12초 미만의 CPU 급증은 제외됩니다.",
+        caption: "값이 한도를 넘으면 알림을 받습니다.",
         notificationsDenied: "시스템 설정에서 Lattice 알림이 꺼져 있어 경고를 표시할 수 없습니다.",
         cpu: "CPU 사용률",
         cpuTemperature: "CPU 온도",
-        memory: "위험한 메모리 압력",
+        memory: "메모리 압력",
         disk: "디스크 여유 공간",
         battery: "배터리 잔량",
         cooldown: "다시 알림 간격",
@@ -2876,11 +2876,11 @@ struct MonitorAlertFeatureStrings {
 
     static let enUS = MonitorAlertFeatureStrings(
         section: "Alerts",
-        caption: "Get a notification when a reading passes its limit. CPU spikes under 12 seconds don’t count.",
+        caption: "Get a notification when a reading passes its limit.",
         notificationsDenied: "Notifications for Lattice are off in System Settings, so alerts cannot appear.",
         cpu: "CPU usage",
         cpuTemperature: "CPU temperature",
-        memory: "Critical memory pressure",
+        memory: "Memory pressure",
         disk: "Free disk space",
         battery: "Battery level",
         cooldown: "Repeat after",
@@ -2908,11 +2908,11 @@ struct MonitorAlertFeatureStrings {
 
     static let ptBR = MonitorAlertFeatureStrings(
         section: "Alertas",
-        caption: "Receba uma notificação quando uma leitura passar do limite. Picos de CPU com menos de 12 segundos não contam.",
+        caption: "Receba uma notificação quando uma leitura passar do limite.",
         notificationsDenied: "As notificações do Lattice estão desativadas nos Ajustes do Sistema, então os alertas não aparecem.",
         cpu: "Uso da CPU",
         cpuTemperature: "Temperatura da CPU",
-        memory: "Pressão de memória crítica",
+        memory: "Pressão de memória",
         disk: "Espaço livre em disco",
         battery: "Nível da bateria",
         cooldown: "Repetir após",
@@ -2940,11 +2940,11 @@ struct MonitorAlertFeatureStrings {
 
     static let tr = MonitorAlertFeatureStrings(
         section: "Uyarılar",
-        caption: "Bir değer sınırını aştığında bildirim alın. 12 saniyeden kısa CPU sıçramaları sayılmaz.",
+        caption: "Bir değer sınırını aştığında bildirim alın.",
         notificationsDenied: "Sistem Ayarları’nda Lattice bildirimleri kapalı, bu yüzden uyarılar görünemez.",
         cpu: "CPU kullanımı",
         cpuTemperature: "CPU sıcaklığı",
-        memory: "Kritik bellek basıncı",
+        memory: "Bellek baskısı",
         disk: "Boş disk alanı",
         battery: "Pil düzeyi",
         cooldown: "Tekrarlama süresi",
@@ -2972,11 +2972,11 @@ struct MonitorAlertFeatureStrings {
 
     static let ru = MonitorAlertFeatureStrings(
         section: "Оповещения",
-        caption: "Получайте уведомление, когда показатель выходит за предел. Всплески загрузки процессора короче 12 секунд не учитываются.",
+        caption: "Получайте уведомление, когда показатель выходит за предел.",
         notificationsDenied: "Уведомления Lattice выключены в Системных настройках, поэтому оповещения не появятся.",
         cpu: "Загрузка процессора",
         cpuTemperature: "Температура процессора",
-        memory: "Критическое давление памяти",
+        memory: "Нагрузка на память",
         disk: "Свободное место на диске",
         battery: "Уровень заряда",
         cooldown: "Повторять через",
@@ -3004,11 +3004,11 @@ struct MonitorAlertFeatureStrings {
 
     static let es = MonitorAlertFeatureStrings(
         section: "Alertas",
-        caption: "Recibe una notificación cuando una lectura supere su límite. Los picos de CPU de menos de 12 segundos no cuentan.",
+        caption: "Recibe una notificación cuando una lectura supere su límite.",
         notificationsDenied: "Las notificaciones de Lattice están desactivadas en Ajustes del Sistema, así que las alertas no aparecen.",
         cpu: "Uso de CPU",
         cpuTemperature: "Temperatura de la CPU",
-        memory: "Presión de memoria crítica",
+        memory: "Presión de memoria",
         disk: "Espacio libre en disco",
         battery: "Nivel de batería",
         cooldown: "Repetir tras",
@@ -3036,11 +3036,11 @@ struct MonitorAlertFeatureStrings {
 
     static let sk = MonitorAlertFeatureStrings(
         section: "Hlásenia",
-        caption: "Dostanete upozornenie, keď hodnota prekročí limit. Špičky procesora kratšie ako 12 sekúnd sa nerátajú.",
+        caption: "Dostanete upozornenie, keď hodnota prekročí limit.",
         notificationsDenied: "Hlásenia pre Lattice sú vypnuté v Systémových nastaveniach, takže sa nemôžu zobraziť.",
         cpu: "Využitie procesora",
         cpuTemperature: "Teplota procesora",
-        memory: "Kritický tlak na pamäť",
+        memory: "Zaťaženie pamäte",
         disk: "Voľné miesto na disku",
         battery: "Úroveň batérie",
         cooldown: "Opakovať po",
@@ -3068,11 +3068,11 @@ struct MonitorAlertFeatureStrings {
 
     static let de = MonitorAlertFeatureStrings(
         section: "Warnungen",
-        caption: "Erhalte eine Mitteilung, wenn ein Wert sein Limit überschreitet. CPU-Spitzen unter 12 Sekunden zählen nicht.",
+        caption: "Erhalte eine Mitteilung, wenn ein Wert sein Limit überschreitet.",
         notificationsDenied: "Mitteilungen für Lattice sind in den Systemeinstellungen aus, daher können keine Warnungen erscheinen.",
         cpu: "CPU-Auslastung",
         cpuTemperature: "CPU-Temperatur",
-        memory: "Kritischer Speicherdruck",
+        memory: "Speicherdruck",
         disk: "Freier Speicherplatz",
         battery: "Batteriestand",
         cooldown: "Wiederholen nach",
@@ -3100,11 +3100,11 @@ struct MonitorAlertFeatureStrings {
 
     static let fr = MonitorAlertFeatureStrings(
         section: "Alertes",
-        caption: "Recevez une notification quand une mesure dépasse sa limite. Les pics de processeur de moins de 12 secondes ne comptent pas.",
+        caption: "Recevez une notification quand une mesure dépasse sa limite.",
         notificationsDenied: "Les notifications de Lattice sont désactivées dans Réglages Système, les alertes ne peuvent donc pas apparaître.",
         cpu: "Utilisation du processeur",
         cpuTemperature: "Température du processeur",
-        memory: "Pression mémoire critique",
+        memory: "Pression mémoire",
         disk: "Espace disque libre",
         battery: "Niveau de batterie",
         cooldown: "Répéter après",
@@ -3132,11 +3132,11 @@ struct MonitorAlertFeatureStrings {
 
     static let it = MonitorAlertFeatureStrings(
         section: "Avvisi",
-        caption: "Ricevi una notifica quando un valore supera il limite. I picchi di CPU sotto i 12 secondi non contano.",
+        caption: "Ricevi una notifica quando un valore supera il limite.",
         notificationsDenied: "Le notifiche di Lattice sono disattivate in Impostazioni di Sistema, quindi gli avvisi non compaiono.",
         cpu: "Uso CPU",
         cpuTemperature: "Temperatura CPU",
-        memory: "Pressione memoria critica",
+        memory: "Pressione memoria",
         disk: "Spazio libero su disco",
         battery: "Livello batteria",
         cooldown: "Ripeti dopo",
@@ -3164,11 +3164,11 @@ struct MonitorAlertFeatureStrings {
 
     static let ja = MonitorAlertFeatureStrings(
         section: "アラート",
-        caption: "値が上限を超えると通知します。12秒未満のCPUの急上昇は対象外です。",
+        caption: "値が上限を超えると通知します。",
         notificationsDenied: "システム設定でLatticeの通知がオフのため、アラートは表示されません。",
         cpu: "CPU使用率",
         cpuTemperature: "CPU温度",
-        memory: "メモリ圧迫が深刻",
+        memory: "メモリプレッシャー",
         disk: "ディスクの空き容量",
         battery: "バッテリー残量",
         cooldown: "再通知までの間隔",
@@ -3196,11 +3196,11 @@ struct MonitorAlertFeatureStrings {
 
     static let zhHans = MonitorAlertFeatureStrings(
         section: "提醒",
-        caption: "读数超过限值时发送通知。短于 12 秒的 CPU 峰值不计入。",
+        caption: "读数超过限值时发送通知。",
         notificationsDenied: "Lattice 的通知已在系统设置中关闭，警报无法显示。",
         cpu: "CPU 使用率",
         cpuTemperature: "CPU 温度",
-        memory: "内存压力严重",
+        memory: "内存压力",
         disk: "可用磁盘空间",
         battery: "电池电量",
         cooldown: "重复间隔",
@@ -3228,11 +3228,11 @@ struct MonitorAlertFeatureStrings {
 
     static let zhTW = MonitorAlertFeatureStrings(
         section: "提醒",
-        caption: "讀數超過限值時傳送通知。短於 12 秒的 CPU 峰值不計入。",
+        caption: "讀數超過限值時傳送通知。",
         notificationsDenied: "Lattice 的通知已在系統設定中關閉，警示無法顯示。",
         cpu: "CPU 使用率",
         cpuTemperature: "CPU 溫度",
-        memory: "記憶體壓力過高",
+        memory: "記憶體壓力",
         disk: "可用磁碟空間",
         battery: "電池電量",
         cooldown: "重複間隔",
@@ -3260,11 +3260,11 @@ struct MonitorAlertFeatureStrings {
 
     static let zhHK = MonitorAlertFeatureStrings(
         section: "提示",
-        caption: "讀數超過限值時傳送通知。短於 12 秒的 CPU 峰值不計入。",
+        caption: "讀數超過限值時傳送通知。",
         notificationsDenied: "Lattice 的通知已在系統設定中關閉，警示無法顯示。",
         cpu: "CPU 使用率",
         cpuTemperature: "CPU 溫度",
-        memory: "記憶體壓力過高",
+        memory: "記憶體壓力",
         disk: "可用磁碟空間",
         battery: "電池電量",
         cooldown: "重複間隔",
@@ -3468,11 +3468,11 @@ extension WindowLayoutFeatureStrings {
 extension MonitorAlertFeatureStrings {
     static let uk = MonitorAlertFeatureStrings(
         section: "Сповіщення",
-        caption: "Отримуйте сповіщення, коли показник виходить за межу. Сплески навантаження процесора коротші за 12 секунд не враховуються.",
+        caption: "Отримуйте сповіщення, коли показник виходить за межу.",
         notificationsDenied: "Сповіщення Lattice вимкнено в Системних параметрах, тому вони не можуть з’являтися.",
         cpu: "Навантаження процесора",
         cpuTemperature: "Температура процесора",
-        memory: "Критичний тиск пам’яті",
+        memory: "Тиск на пам’ять",
         disk: "Вільне місце на диску",
         battery: "Рівень заряду",
         cooldown: "Повторювати через",

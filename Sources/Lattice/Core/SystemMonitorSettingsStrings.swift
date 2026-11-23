@@ -25,6 +25,10 @@ struct SystemMonitorSettingsStrings {
     let memberCharge: String
     let memberTimeLeft: String
     let combineTitle: String
+    let offOption: String
+    let onOption: String
+    let showInMenuBar: String
+    let whenCritical: String
 }
 
 extension FeatureStrings {
@@ -69,7 +73,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Activity",
         memberCharge: "Charge",
         memberTimeLeft: "Time remaining",
-        combineTitle: "Show as one item"
+        combineTitle: "Show as one item",
+        offOption: "Off",
+        onOption: "On",
+        showInMenuBar: "Show in menu bar",
+        whenCritical: "When critical"
     )
 
     static let ptBR = SystemMonitorSettingsStrings(
@@ -91,7 +99,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Atividade",
         memberCharge: "Carga",
         memberTimeLeft: "Tempo restante",
-        combineTitle: "Mostrar como um item"
+        combineTitle: "Mostrar como um item",
+        offOption: "Desativado",
+        onOption: "Ativado",
+        showInMenuBar: "Mostrar na barra de menus",
+        whenCritical: "Quando crítica"
     )
 
     static let tr = SystemMonitorSettingsStrings(
@@ -113,7 +125,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Etkinlik",
         memberCharge: "Şarj",
         memberTimeLeft: "Kalan süre",
-        combineTitle: "Tek öğe olarak göster"
+        combineTitle: "Tek öğe olarak göster",
+        offOption: "Kapalı",
+        onOption: "Açık",
+        showInMenuBar: "Menü çubuğunda göster",
+        whenCritical: "Kritik olduğunda"
     )
 
     static let ru = SystemMonitorSettingsStrings(
@@ -135,7 +151,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Активность",
         memberCharge: "Заряд",
         memberTimeLeft: "Осталось",
-        combineTitle: "Показывать одним элементом"
+        combineTitle: "Показывать одним элементом",
+        offOption: "Выкл.",
+        onOption: "Вкл.",
+        showInMenuBar: "Показывать в строке меню",
+        whenCritical: "При критическом"
     )
 
     static let es = SystemMonitorSettingsStrings(
@@ -157,7 +177,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Actividad",
         memberCharge: "Carga",
         memberTimeLeft: "Tiempo restante",
-        combineTitle: "Mostrar como un elemento"
+        combineTitle: "Mostrar como un elemento",
+        offOption: "Desactivado",
+        onOption: "Activado",
+        showInMenuBar: "Mostrar en la barra de menús",
+        whenCritical: "Cuando sea crítica"
     )
 
     static let sk = SystemMonitorSettingsStrings(
@@ -179,7 +203,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Aktivita",
         memberCharge: "Nabitie",
         memberTimeLeft: "Zostávajúci čas",
-        combineTitle: "Zobraziť ako jednu položku"
+        combineTitle: "Zobraziť ako jednu položku",
+        offOption: "Vypnuté",
+        onOption: "Zapnuté",
+        showInMenuBar: "Zobraziť na lište",
+        whenCritical: "Keď je kritický"
     )
 
     static let de = SystemMonitorSettingsStrings(
@@ -201,7 +229,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Aktivität",
         memberCharge: "Ladung",
         memberTimeLeft: "Restzeit",
-        combineTitle: "Als ein Objekt anzeigen"
+        combineTitle: "Als ein Objekt anzeigen",
+        offOption: "Aus",
+        onOption: "Ein",
+        showInMenuBar: "In der Menüleiste anzeigen",
+        whenCritical: "Wenn kritisch"
     )
 
     static let fr = SystemMonitorSettingsStrings(
@@ -223,7 +255,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Activité",
         memberCharge: "Charge",
         memberTimeLeft: "Temps restant",
-        combineTitle: "Afficher en un seul élément"
+        combineTitle: "Afficher en un seul élément",
+        offOption: "Désactivé",
+        onOption: "Activé",
+        showInMenuBar: "Afficher dans la barre des menus",
+        whenCritical: "Si critique"
     )
 
     static let it = SystemMonitorSettingsStrings(
@@ -245,7 +281,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Attività",
         memberCharge: "Carica",
         memberTimeLeft: "Tempo rimanente",
-        combineTitle: "Mostra come un elemento"
+        combineTitle: "Mostra come un elemento",
+        offOption: "Disattivato",
+        onOption: "Attivo",
+        showInMenuBar: "Mostra nella barra dei menu",
+        whenCritical: "Quando critica"
     )
 
     static let ja = SystemMonitorSettingsStrings(
@@ -267,7 +307,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "アクティビティ",
         memberCharge: "充電",
         memberTimeLeft: "残り時間",
-        combineTitle: "1つの項目として表示"
+        combineTitle: "1つの項目として表示",
+        offOption: "オフ",
+        onOption: "オン",
+        showInMenuBar: "メニューバーに表示",
+        whenCritical: "危険なとき"
     )
 
     static let ko = SystemMonitorSettingsStrings(
@@ -289,7 +333,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "활동",
         memberCharge: "충전량",
         memberTimeLeft: "남은 시간",
-        combineTitle: "하나의 항목으로 표시"
+        combineTitle: "하나의 항목으로 표시",
+        offOption: "끔",
+        onOption: "켬",
+        showInMenuBar: "메뉴 막대에 표시",
+        whenCritical: "위험할 때"
     )
 
     static let zhHans = SystemMonitorSettingsStrings(
@@ -311,7 +359,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "活动",
         memberCharge: "电量",
         memberTimeLeft: "剩余时间",
-        combineTitle: "显示为一个项目"
+        combineTitle: "显示为一个项目",
+        offOption: "关闭",
+        onOption: "打开",
+        showInMenuBar: "在菜单栏中显示",
+        whenCritical: "严重时"
     )
 
     static let zhTW = SystemMonitorSettingsStrings(
@@ -333,7 +385,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "活動",
         memberCharge: "電量",
         memberTimeLeft: "剩餘時間",
-        combineTitle: "顯示為一個項目"
+        combineTitle: "顯示為一個項目",
+        offOption: "關閉",
+        onOption: "開啟",
+        showInMenuBar: "在選單列中顯示",
+        whenCritical: "嚴重時"
     )
 
     static let zhHK = SystemMonitorSettingsStrings(
@@ -355,7 +411,11 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "活動",
         memberCharge: "電量",
         memberTimeLeft: "剩餘時間",
-        combineTitle: "顯示為一個項目"
+        combineTitle: "顯示為一個項目",
+        offOption: "關閉",
+        onOption: "開啟",
+        showInMenuBar: "在選單列中顯示",
+        whenCritical: "嚴重時"
     )
 
     static let uk = SystemMonitorSettingsStrings(
@@ -377,6 +437,10 @@ extension SystemMonitorSettingsStrings {
         memberActivity: "Активність",
         memberCharge: "Заряд",
         memberTimeLeft: "Залишилось часу",
-        combineTitle: "Показувати одним елементом"
+        combineTitle: "Показувати одним елементом",
+        offOption: "Вимк.",
+        onOption: "Увімк.",
+        showInMenuBar: "Показувати в рядку меню",
+        whenCritical: "Коли критичний"
     )
 }
