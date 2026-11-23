@@ -150,8 +150,9 @@ struct MonitorAlertsControls: View {
     }
 }
 
-/// One alert in one row: its name and its switch. Once it is on, the limit
-/// it fires at appears beside the switch; an alert that is off shows none.
+/// One alert: its name and its switch. Once it is on, a stepped slider for
+/// the limit it fires at unrolls under it, with the limit written at its end;
+/// an alert that is off shows none.
 struct MonitorAlertRow: View {
     struct Limit {
         let format: String
@@ -172,25 +173,51 @@ struct MonitorAlertRow: View {
     let reduceMotion: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(row.title)
-                .lineLimit(1)
-            Spacer(minLength: 8)
-            if row.isOn.wrappedValue, let limit = row.limit {
-                Picker(row.title, selection: limit.value) {
-                    ForEach(limit.values, id: \.self) { value in
-                        Text(String(format: limit.format, limit.label(value))).tag(value)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .fixedSize()
-                .transition(.opacity)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                Text(row.title)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Toggle(row.title, isOn: row.isOn.animation(reduceMotion ? nil : .settingsExpansion))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
             }
-            Toggle(row.title, isOn: row.isOn.animation(reduceMotion ? nil : .settingsExpansion))
-                .labelsHidden()
-                .toggleStyle(.switch)
+            .padding(.vertical, 6)
+            if row.isOn.wrappedValue, let limit = row.limit {
+                limitSlider(limit)
+                    .padding(.bottom, 8)
+                    .transition(.settingsReveal)
+            }
         }
-        .padding(.vertical, 6)
+    }
+
+    private func limitSlider(_ limit: Limit) -> some View {
+        let lower = Double(limit.values.first ?? 0)
+        let upper = Double(limit.values.last ?? 100)
+        let step = limit.values.count > 1 ? Double(limit.values[1] - limit.values[0]) : 1
+        let text = String(format: limit.format, limit.label(limit.value.wrappedValue))
+        return HStack(spacing: 12) {
+            Slider(value: Binding(get: { Double(limit.value.wrappedValue) },
+                                  set: { limit.value.wrappedValue = Int($0.rounded()) }),
+                   in: lower...upper, step: step) {
+                Text(row.title)
+            }
+            .labelsHidden()
+            .controlSize(.small)
+            Text(text)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                // As wide as the widest limit, so the slider never shifts.
+                .frame(minWidth: widestLabelWidth(limit), alignment: .trailing)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(text)
+    }
+
+    private func widestLabelWidth(_ limit: Limit) -> CGFloat {
+        let font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        return limit.values.map {
+            (String(format: limit.format, limit.label($0)) as NSString).size(withAttributes: [.font: font]).width
+        }.max().map { ceil($0) + 2 } ?? 80
     }
 }
