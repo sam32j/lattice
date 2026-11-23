@@ -134,8 +134,6 @@ extension Strings {
 
         sessionSection: "Sessione",
         defaultDurationLabel: "Durata predefinita",
-        keepAwakeAutoStart: "Mantieni attivo all’apertura di Lattice",
-        keepAwakeAutoStartCaption: "Avvia una sessione con la durata predefinita.",
         batteryProtectionSection: "Protezione della batteria",
         batteryDisableBelow: "Disattiva quando la batteria scende sotto",
         batteryNever: "Mai",
@@ -914,8 +912,6 @@ extension Strings {
         monitorMemoryMetricLabel: "Misura la memoria come",
         memoryMetricUsed: "Memoria usata",
         memoryMetricApp: "Memoria app",
-        keepAwakeRightClickToggle: "Fai clic destro sull’icona della barra dei menu per attivare o disattivare “Mantieni attivo”",
-        keepAwakeRightClickToggleCaption: "Sostituisce il menu contestuale del clic destro.",
         urlCleanerRemovedFormat: "Rimossi %@",
         switcherSearchPlaceholder: "Cerca",
         invertVerticalScroll: "Inverti lo scorrimento verticale",

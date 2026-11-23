@@ -134,8 +134,6 @@ extension Strings {
 
         sessionSection: "Oturum",
         defaultDurationLabel: "Varsayılan süre",
-        keepAwakeAutoStart: "Lattice açılınca uyanık tut",
-        keepAwakeAutoStartCaption: "Varsayılan süreyle bir oturum başlatır.",
         batteryProtectionSection: "Pil koruması",
         batteryDisableBelow: "Pil şu seviyenin altına düşünce kapat",
         batteryNever: "Asla",
@@ -914,8 +912,6 @@ extension Strings {
         monitorMemoryMetricLabel: "Belleği şu şekilde ölç",
         memoryMetricUsed: "Kullanılan Bellek",
         memoryMetricApp: "Uygulama Belleği",
-        keepAwakeRightClickToggle: "Uyanık tutmayı açıp kapatmak için menü çubuğu simgesine sağ tıkla",
-        keepAwakeRightClickToggleCaption: "Sağ tık bağlam menüsünün yerini alır.",
         urlCleanerRemovedFormat: "Kaldırıldı: %@",
         switcherSearchPlaceholder: "Ara",
         invertVerticalScroll: "Dikey kaydırmayı ters çevir",

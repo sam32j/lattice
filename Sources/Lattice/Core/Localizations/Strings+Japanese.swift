@@ -134,8 +134,6 @@ extension Strings {
 
         sessionSection: "セッション",
         defaultDurationLabel: "デフォルトの継続時間",
-        keepAwakeAutoStart: "Lattice起動時にスリープを防ぐ",
-        keepAwakeAutoStartCaption: "既定の時間でセッションを開始します。",
         batteryProtectionSection: "バッテリー保護",
         batteryDisableBelow: "バッテリーが次の値を下回ったらオフにする",
         batteryNever: "しない",
@@ -914,8 +912,6 @@ extension Strings {
         monitorMemoryMetricLabel: "メモリの測定方法",
         memoryMetricUsed: "使用中のメモリ",
         memoryMetricApp: "Appメモリ",
-        keepAwakeRightClickToggle: "メニューバーアイコンの右クリックでスリープ防止を切り替える",
-        keepAwakeRightClickToggleCaption: "右クリックのコンテキストメニューを置き換えます。",
         urlCleanerRemovedFormat: "%@ を削除しました",
         switcherSearchPlaceholder: "検索",
         invertVerticalScroll: "縦スクロールを反転",

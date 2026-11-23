@@ -90,11 +90,6 @@ enum LocalizationFeatureContractTests {
                    && !strings.mixerSoundEffectsOutputTitle.contains("—")
                    && !strings.mixerSoundEffectsOutputTooltip.contains("—"),
                    "\(prefix) system sound output labels are present without em dash")
-            suite.expect(!strings.keepAwakeRightClickToggle.isEmpty
-                   && !strings.keepAwakeRightClickToggleCaption.isEmpty
-                   && !strings.keepAwakeRightClickToggle.contains("—")
-                   && !strings.keepAwakeRightClickToggleCaption.contains("—"),
-                   "\(prefix) right-click Keep Awake labels are present without em dash")
             expectFormat(strings.homebrewConfirmInstallBodyFormat, ["@"], "\(prefix) Homebrew install format")
             expectFormat(strings.homebrewConfirmUninstallBodyFormat, ["@"], "\(prefix) Homebrew uninstall format")
             expectFormat(strings.homebrewConfirmUpgradeBodyFormat, ["@"], "\(prefix) Homebrew upgrade format")

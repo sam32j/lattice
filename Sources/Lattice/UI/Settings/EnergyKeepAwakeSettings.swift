@@ -9,8 +9,6 @@ struct EnergyKeepAwakeSettings: View {
     @ObservedObject private var permissions = Permissions.shared
     @AppStorage(DefaultsKey.defaultDuration) private var defaultDuration = 0
     @AppStorage(DefaultsKey.batteryLimit) private var batteryLimit = 10
-    @AppStorage(DefaultsKey.keepAwakeAutoStart) private var keepAwakeAutoStart = false
-    @AppStorage(DefaultsKey.keepAwakeRightClickToggle) private var keepAwakeRightClickToggle = false
     @AppStorage(DefaultsKey.keepAwakeAllowDisplaySleep) private var keepAwakeAllowDisplaySleep = false
     @AppStorage(DefaultsKey.keepAwakePauseWhenLocked) private var keepAwakePauseWhenLocked = false
     @AppStorage(DefaultsKey.keepAwakeAutomationRequireAll) private var keepAwakeAutomationRequireAll = false
@@ -146,14 +144,6 @@ struct EnergyKeepAwakeSettings: View {
     /// Everything else Keep Awake can do, one row each.
     private var keepAwakeOptionsCard: some View {
         SettingsCard(title: l10n.s.keepAwakeOptions) {
-            SettingsRow(symbol: "play.circle", title: l10n.s.keepAwakeAutoStart,
-                        caption: l10n.s.keepAwakeAutoStartCaption) {
-                Toggle(l10n.s.keepAwakeAutoStart, isOn: $keepAwakeAutoStart).labelsHidden()
-            }
-            SettingsRow(symbol: "cursorarrow.click.2", title: l10n.s.keepAwakeRightClickToggle,
-                        caption: l10n.s.keepAwakeRightClickToggleCaption) {
-                Toggle(l10n.s.keepAwakeRightClickToggle, isOn: $keepAwakeRightClickToggle).labelsHidden()
-            }
             SettingsRow(symbol: "timer", title: l10n.s.showCountdown) {
                 Toggle(l10n.s.showCountdown, isOn: $showCountdown).labelsHidden()
             }

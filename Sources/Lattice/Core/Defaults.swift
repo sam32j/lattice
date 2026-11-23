@@ -16,8 +16,6 @@ enum DefaultsKey {
     static let pendingPermissionActivation = "pendingPermissionActivation"
     static let defaultDuration = "defaultDurationMinutes" // 0 = indefinite
     static let batteryLimit = "batteryLimitPercent"       // 0 = never
-    static let keepAwakeAutoStart = "keepAwakeAutoStart"  // start Keep Awake when the app launches
-    static let keepAwakeRightClickToggle = "keepAwakeRightClickToggle"
     static let keepAwakeAllowDisplaySleep = "keepAwakeAllowDisplaySleep"
     static let keepAwakeExternalDisplay = "keepAwakeExternalDisplay"
     static let keepAwakeConnectedToPower = "keepAwakeConnectedToPower"
@@ -966,8 +964,6 @@ enum Defaults {
         DefaultsKey.dimScreenOnLidClose: false,
         DefaultsKey.defaultDuration: 0,
         DefaultsKey.batteryLimit: 10,
-        DefaultsKey.keepAwakeAutoStart: false,
-        DefaultsKey.keepAwakeRightClickToggle: false,
         DefaultsKey.keepAwakeAllowDisplaySleep: false,
         DefaultsKey.keepAwakeExternalDisplay: false,
         DefaultsKey.keepAwakeConnectedToPower: false,
@@ -1678,6 +1674,7 @@ enum Defaults {
         migrateFullscreenActivityVisibility(in: defaults)
         migrateURLCleanerRules(in: defaults)
         retireKeepAwakeLastPick(in: defaults)
+        retireKeepAwakeLaunchAndRightClick(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         defaults.register(defaults: ["NSInitialToolTipDelay": 300])
@@ -1707,6 +1704,16 @@ enum Defaults {
     /// changes, so the remembered end time goes.
     static func retireKeepAwakeLastPick(in defaults: UserDefaults) {
         for key in ["keepAwakeSwitchUsesUntil", "keepAwakeUntilTime"] where defaults.object(forKey: key) != nil {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    /// Stay Awake no longer starts when Lattice opens or toggles on a right
+    /// click of the menu bar icon; the icon's right click always shows its
+    /// menu. Their saved switches go, and with them out of the registered
+    /// defaults, backups neither export nor restore them.
+    static func retireKeepAwakeLaunchAndRightClick(in defaults: UserDefaults) {
+        for key in ["keepAwakeAutoStart", "keepAwakeRightClickToggle"] where defaults.object(forKey: key) != nil {
             defaults.removeObject(forKey: key)
         }
     }

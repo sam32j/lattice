@@ -134,8 +134,6 @@ extension Strings {
 
         sessionSection: "세션",
         defaultDurationLabel: "기본 지속 시간",
-        keepAwakeAutoStart: "Lattice 실행 시 잠자기 방지",
-        keepAwakeAutoStartCaption: "기본 시간으로 세션을 시작합니다.",
         batteryProtectionSection: "배터리 보호",
         batteryDisableBelow: "배터리 잔량이 다음보다 낮으면 끄기",
         batteryNever: "안 함",
@@ -915,8 +913,6 @@ extension Strings {
         monitorMemoryMetricLabel: "메모리 측정 방식",
         memoryMetricUsed: "사용 중인 메모리",
         memoryMetricApp: "앱 메모리",
-        keepAwakeRightClickToggle: "메뉴 막대 아이콘을 오른쪽 클릭하여 절전 방지 전환",
-        keepAwakeRightClickToggleCaption: "오른쪽 클릭 메뉴를 대체합니다.",
         urlCleanerRemovedFormat: "%@ 삭제함",
         switcherSearchPlaceholder: "검색",
         invertVerticalScroll: "세로 스크롤 반전",

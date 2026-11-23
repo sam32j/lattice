@@ -1,5 +1,11 @@
 # Lattice Changelog
 
+## [Unreleased]
+
+### Removed
+- **Stay Awake**: Start when Lattice opens. Use Start automatically with Power to keep the Mac awake whenever it is plugged in.
+- **Stay Awake**: Toggle with a right click on the menu bar icon. Use the Hub or the shortcut; a right click always opens the menu.
+
 ## [3.4.2-d.7] - 2026-11-12
 
 ## [3.4.3-d.2] - 2026-11-22

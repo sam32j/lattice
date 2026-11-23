@@ -297,8 +297,6 @@ struct Strings {
     // MARK: Settings — energy
     let sessionSection: String
     let defaultDurationLabel: String
-    let keepAwakeAutoStart: String
-    let keepAwakeAutoStartCaption: String
     let batteryProtectionSection: String
     let batteryDisableBelow: String
     let batteryNever: String
@@ -1120,8 +1118,6 @@ struct Strings {
     let monitorMemoryMetricLabel: String
     let memoryMetricUsed: String
     let memoryMetricApp: String
-    let keepAwakeRightClickToggle: String
-    let keepAwakeRightClickToggleCaption: String
     let urlCleanerRemovedFormat: String            // + comma separated names
     let switcherSearchPlaceholder: String
     let invertVerticalScroll: String
@@ -1299,8 +1295,6 @@ extension Strings {
 
         sessionSection: "Sessão",
         defaultDurationLabel: "Duração padrão",
-        keepAwakeAutoStart: "Manter acordado ao abrir o Lattice",
-        keepAwakeAutoStartCaption: "Inicia uma sessão com a duração padrão.",
         batteryProtectionSection: "Proteção de bateria",
         batteryDisableBelow: "Desativar com bateria abaixo de",
         batteryNever: "Nunca",
@@ -2080,8 +2074,6 @@ extension Strings {
         monitorMemoryMetricLabel: "Medir memória como",
         memoryMetricUsed: "Memória usada",
         memoryMetricApp: "Memória de apps",
-        keepAwakeRightClickToggle: "Clique com o botão direito no ícone da barra de menus para alternar “Manter acordado”",
-        keepAwakeRightClickToggleCaption: "Substitui o menu de contexto do clique com o botão direito.",
         urlCleanerRemovedFormat: "Removidos %@",
         switcherSearchPlaceholder: "Buscar",
         invertVerticalScroll: "Inverter rolagem vertical",
@@ -2260,8 +2252,6 @@ extension Strings {
 
         sessionSection: "Session",
         defaultDurationLabel: "Default duration",
-        keepAwakeAutoStart: "Keep Awake when Lattice opens",
-        keepAwakeAutoStartCaption: "Starts a session with the default duration.",
         batteryProtectionSection: "Battery protection",
         batteryDisableBelow: "Disable when battery drops below",
         batteryNever: "Never",
@@ -3041,8 +3031,6 @@ extension Strings {
         monitorMemoryMetricLabel: "Measure memory as",
         memoryMetricUsed: "Memory Used",
         memoryMetricApp: "App Memory",
-        keepAwakeRightClickToggle: "Right-click the menu bar icon to toggle Keep Awake",
-        keepAwakeRightClickToggleCaption: "Replaces the right-click context menu.",
         urlCleanerRemovedFormat: "Removed %@",
         switcherSearchPlaceholder: "Search",
         invertVerticalScroll: "Invert vertical scrolling",
