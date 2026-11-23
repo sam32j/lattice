@@ -38,8 +38,11 @@ struct MonitorAlertsControls: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                if index > 0 { Divider() }
-                MonitorAlertRow(row: row, reduceMotion: reduceMotion)
+                VStack(spacing: 0) {
+                    if index > 0 { Divider() }
+                    MonitorAlertRow(row: row, reduceMotion: reduceMotion)
+                }
+                .transition(.settingsReveal)
             }
             Divider()
                 .padding(.vertical, 4)
