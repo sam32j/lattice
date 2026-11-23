@@ -4,288 +4,284 @@
 import AppKit
 import SwiftUI
 
-/// An interactive visual radial menu canvas in Settings. Displays the real
-/// wheel layout with exact angles and colors, supports drag-to-reorder,
-/// click-to-edit, hover previews, and submenu drilldown.
+/// The wheel in the Settings editor, drawn with the live menu's own disc,
+/// chips and wedge so it previews the menu in either appearance. The only
+/// place actions are added, edited, moved and removed: click a slot to edit
+/// it, drag it onto another to swap, right-click for more. While the level
+/// has room, a dashed slot sits where the next action lands. Every slot is
+/// a focusable button: arrows move round the wheel, Return or Space edits,
+/// Option-arrow moves the action, Delete removes it.
 struct RadialMenuVisualCanvas: View {
     let items: [RadialMenuItem]
-    let profileColor: Color
+    let profileColor: RadialMenuColor
     let text: RadialMenuFeatureStrings
-    let openSubmenu: RadialMenuItem?
-    let onSelect: (RadialMenuItem) -> Void
-    let onReorder: (RadialMenuItem, RadialMenuItem) -> Void
+    let isSubmenu: Bool
+    let onEdit: (RadialMenuItem) -> Void
+    let onSwap: (RadialMenuItem, RadialMenuItem) -> Void
+    let onMove: (RadialMenuItem, Int) -> Void
     let onRemove: (RadialMenuItem) -> Void
-    let onOpenSubmenu: ((RadialMenuItem) -> Void)?
-    let onBack: (() -> Void)?
+    let onOpenSubmenu: (RadialMenuItem) -> Void
+    let onBack: () -> Void
     let onAdd: () -> Void
-    /// Nil where there is no starter set to go back to, and the button that
-    /// promises one is not shown at all.
-    let onReset: (() -> Void)?
+
+    private enum Slot: Hashable {
+        case item(UUID)
+        case add
+    }
 
     @State private var hoveredIndex: Int?
     @State private var draggingIndex: Int?
     @State private var dragPosition: CGPoint = .zero
     @State private var targetIndex: Int?
-    @State private var showingResetConfirm = false
+    @FocusState private var focusedSlot: Slot?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let canvasHeight: CGFloat = 330
-    private let wheelDiameter: CGFloat = 250
-    private let ringRadius: CGFloat = 92
-    private let hubDiameter: CGFloat = 68
-    private let deadZoneRadius: CGFloat = 36
+    static let wheelDiameter: CGFloat = 264
+    static let ringRadius: CGFloat = 98
+    static let chipSize: CGFloat = 46
+    static let hubDiameter: CGFloat = 68
+    static let deadZoneRadius: CGFloat = 36
+
+    private var showsAddSlot: Bool {
+        !items.isEmpty && items.count < RadialMenuSupport.maxItemsPerWheel
+    }
+
+    /// The wheel lays out as if the add slot were an action already, so the
+    /// user sees exactly where the next one lands.
+    private var slotCount: Int { items.count + (showsAddSlot ? 1 : 0) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
-            canvasArea
-        }
-        .frame(height: canvasHeight)
-        .frame(maxWidth: .infinity)
-        .background(stageBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.white.opacity(colorScheme == .light ? 0.12 : 0.14), lineWidth: 0.8)
-        )
-        .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.28), radius: 10, y: 4)
-    }
-
-    // MARK: - Header Bar
-
-    private var headerBar: some View {
-        HStack {
-            if let openSubmenu {
-                Button {
-                    onBack?()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.backward")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(openSubmenu.displayName(text))
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(profileColor)
-                }
-                .buttonStyle(.plain)
-                .help(text.backButton)
-            } else {
-                Text(text.pageTitle)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .textCase(.uppercase)
-            }
-
-            Spacer()
-
-            if let onReset {
-                Button(text.resetActionsButton) {
-                    showingResetConfirm = true
-                }
-                .buttonStyle(.borderless)
-                .controlSize(.small)
-                .foregroundStyle(.white.opacity(0.7))
-                .confirmationDialog(
-                    text.resetActionsConfirm,
-                    isPresented: $showingResetConfirm,
-                    titleVisibility: .visible
-                ) {
-                    Button(text.resetActionsConfirm, role: .destructive) {
-                        onReset()
-                    }
-                } message: {
-                    Text(text.resetActionsConfirmMessage)
-                }
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 10)
-    }
-
-    // MARK: - Stage Background
-
-    private var stageBackground: some View {
-        ZStack {
-            Color(red: 0.08, green: 0.09, blue: 0.11)
-
-            RadialGradient(
-                colors: [profileColor.opacity(0.15), .clear],
-                center: .center,
-                startRadius: 20,
-                endRadius: 150
-            )
-
-            Theme.spaceGradient.opacity(0.4)
-        }
-    }
-
-    // MARK: - Canvas Area
-
-    private var canvasArea: some View {
         GeometryReader { geometry in
             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
             ZStack {
-                wheelBackplate
-                dividers(center: center)
-                activeWedgeHighlight
-                chipsRing(center: center)
-                centerHub
+                RadialWheelDisc(diameter: Self.wheelDiameter, sliceCount: slotCount,
+                                deadZoneRadius: Self.deadZoneRadius)
+                    .shadow(color: .black.opacity(colorScheme == .light ? 0.12 : 0.4), radius: 14, y: 5)
+                wedgeHighlight
+                chips(center: center)
+                if showsAddSlot { addSlot }
+                hub
                 floatingDraggedChip
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .coordinateSpace(name: "RadialCanvas")
         }
+        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82), value: items.map(\.id))
     }
 
-    // MARK: - Wheel Backplate
-
-    private var wheelBackplate: some View {
-        Circle()
-            .fill(Color.black.opacity(0.42))
-            .overlay(
-                Circle()
-                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
-            )
-            .frame(width: wheelDiameter, height: wheelDiameter)
-            .shadow(color: .black.opacity(0.4), radius: 14, y: 4)
-    }
-
-    // MARK: - Dividers
+    // MARK: - Wedge
 
     @ViewBuilder
-    private func dividers(center: CGPoint) -> some View {
-        let count = items.count
-        if count > 1 {
-            RadialCanvasDividers(sliceCount: count,
-                                 innerRadius: deadZoneRadius,
-                                 outerRadius: wheelDiameter / 2 - 2)
-                .stroke(Color.white.opacity(0.09), lineWidth: 1)
-                .frame(width: wheelDiameter, height: wheelDiameter)
+    private var wedgeHighlight: some View {
+        let active = targetIndex ?? hoveredIndex
+        if let active, slotCount > 0, items.indices.contains(active) {
+            RadialWedgeShape(centerAngle: 2 * .pi * Double(active) / Double(slotCount),
+                             sliceAngle: 2 * .pi / Double(slotCount),
+                             innerRadius: Self.deadZoneRadius,
+                             outerRadius: Self.wheelDiameter / 2 - 3)
+                .fill(profileColor.gradient(for: colorScheme))
+                .mask(RadialWedgeRamp(scheme: colorScheme, innerRadius: Self.deadZoneRadius,
+                                      outerRadius: Self.wheelDiameter / 2,
+                                      strength: targetIndex != nil ? 1.3 : 1))
+                .frame(width: Self.wheelDiameter, height: Self.wheelDiameter)
+                .allowsHitTesting(false)
         }
     }
 
-    // MARK: - Active Wedge Highlight
+    // MARK: - Chips
 
-    @ViewBuilder
-    private var activeWedgeHighlight: some View {
-        let count = items.count
-        let activeIdx = targetIndex ?? hoveredIndex
-        if let activeIdx, count > 0, items.indices.contains(activeIdx) {
-            RadialWedgeShape(
-                centerAngle: 2 * .pi * Double(activeIdx) / Double(count),
-                sliceAngle: 2 * .pi / Double(count),
-                innerRadius: deadZoneRadius,
-                outerRadius: wheelDiameter / 2 - 2
-            )
-            .fill(profileColor.opacity(targetIndex != nil ? 0.32 : 0.22))
-            .frame(width: wheelDiameter, height: wheelDiameter)
-            .animation(.easeInOut(duration: 0.12), value: activeIdx)
-        }
+    private func offset(for index: Int) -> CGSize {
+        let unit = RadialMenuGeometry.unitPosition(index: index, itemCount: slotCount)
+        return CGSize(width: unit.dx * Self.ringRadius, height: -unit.dyUp * Self.ringRadius)
     }
 
-    // MARK: - Chips Ring
-
     @ViewBuilder
-    private func chipsRing(center: CGPoint) -> some View {
-        let count = items.count
+    private func chips(center: CGPoint) -> some View {
         ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-            let unit = RadialMenuGeometry.unitPosition(index: index, itemCount: count)
             let isDragged = draggingIndex == index
-            let isTarget = targetIndex == index
             let isHovered = hoveredIndex == index
-
-            RadialCanvasChip(
-                item: item,
-                text: text,
-                isHighlighted: isTarget || isHovered,
-                profileColor: profileColor
-            )
-            .opacity(isDragged ? 0.25 : 1)
-            .scaleEffect(isHovered && !isDragged ? 1.08 : 1)
-            .offset(x: unit.dx * ringRadius, y: -unit.dyUp * ringRadius)
-            .onHover { inside in
-                guard draggingIndex == nil else { return }
-                if inside {
-                    hoveredIndex = index
-                } else if hoveredIndex == index {
-                    hoveredIndex = nil
-                }
-            }
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named("RadialCanvas"))
-                    .onChanged { value in
-                        let distance = hypot(value.translation.width, value.translation.height)
-                        if distance > 6 {
-                            draggingIndex = index
-                            dragPosition = value.location
-
-                            let dx = value.location.x - center.x
-                            let dyUp = center.y - value.location.y
-                            let angle = RadialMenuGeometry.angle(dx: dx, dyUp: dyUp)
-                            if let slot = RadialMenuGeometry.index(forAngle: angle, itemCount: count) {
-                                targetIndex = slot
-                            }
-                        }
-                    }
-                    .onEnded { value in
-                        let distance = hypot(value.translation.width, value.translation.height)
-                        if distance <= 6 {
-                            onSelect(item)
-                        } else if let from = draggingIndex, let to = targetIndex, from != to,
-                                  items.indices.contains(from), items.indices.contains(to) {
-                            let source = items[from]
-                            let dest = items[to]
-                            withAnimation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.8)) {
-                                onReorder(source, dest)
-                            }
-                        }
-                        draggingIndex = nil
-                        targetIndex = nil
-                    }
-            )
-            .contextMenu {
-                Button(text.pageTitle) {
-                    onSelect(item)
-                }
-                if item.kind == .submenu {
-                    Button(text.editActionsButton) {
-                        onOpenSubmenu?(item)
+            let isFocused = focusedSlot == .item(item.id)
+            RadialChipFace(item: item, nowPlayingState: .nothingPlaying,
+                           highlighted: targetIndex == index || isHovered,
+                           profileColor: profileColor, size: Self.chipSize)
+                .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: 2).padding(-3)
+                    .opacity(isFocused ? 1 : 0))
+                .opacity(isDragged ? 0.25 : 1)
+                .scaleEffect(isHovered && !isDragged && !reduceMotion ? 1.08 : 1)
+                .animation(reduceMotion ? nil : .spring(response: 0.22, dampingFraction: 0.75), value: isHovered)
+                .contentShape(Circle())
+                .offset(offset(for: index))
+                .onHover { inside in
+                    guard draggingIndex == nil else { return }
+                    if inside {
+                        hoveredIndex = index
+                    } else if hoveredIndex == index {
+                        hoveredIndex = nil
                     }
                 }
-                Divider()
-                Button(text.deleteButton, role: .destructive) {
-                    onRemove(item)
+                .gesture(dragGesture(index: index, item: item, center: center))
+                .contextMenu { contextMenu(for: item) }
+                .focusable()
+                .focusEffectDisabled()
+                .focused($focusedSlot, equals: .item(item.id))
+                .onKeyPress(phases: .down) { press in handleKey(press, on: index) }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(String(format: text.slotAccessibilityFormat,
+                                           item.displayName(text), kindLabel(for: item),
+                                           index + 1, items.count))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onEdit(item) }
+                .accessibilityActions {
+                    Button(text.editActionButton) { onEdit(item) }
+                    if items.count > 1 {
+                        Button(text.moveEarlierButton) { onMove(item, -1) }
+                        Button(text.moveLaterButton) { onMove(item, 1) }
+                    }
+                    if item.kind == .submenu {
+                        Button(text.editActionsButton) { onOpenSubmenu(item) }
+                    }
+                    Button(text.deleteButton) { onRemove(item) }
                 }
-            }
-            .accessibilityLabel(item.displayName(text))
         }
     }
 
-    // MARK: - Center Hub
+    private func dragGesture(index: Int, item: RadialMenuItem, center: CGPoint) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("RadialCanvas"))
+            .onChanged { value in
+                guard hypot(value.translation.width, value.translation.height) > 6 else { return }
+                draggingIndex = index
+                dragPosition = value.location
+                let angle = RadialMenuGeometry.angle(dx: value.location.x - center.x,
+                                                     dyUp: center.y - value.location.y)
+                // The add slot is not a drop target.
+                if let slot = RadialMenuGeometry.index(forAngle: angle, itemCount: slotCount),
+                   items.indices.contains(slot) {
+                    targetIndex = slot
+                } else {
+                    targetIndex = nil
+                }
+            }
+            .onEnded { value in
+                if hypot(value.translation.width, value.translation.height) <= 6 {
+                    onEdit(item)
+                } else if let from = draggingIndex, let to = targetIndex, from != to,
+                          items.indices.contains(from), items.indices.contains(to) {
+                    onSwap(items[from], items[to])
+                }
+                draggingIndex = nil
+                targetIndex = nil
+            }
+    }
 
-    private var centerHub: some View {
+    @ViewBuilder
+    private func contextMenu(for item: RadialMenuItem) -> some View {
+        Button(text.editActionButton) { onEdit(item) }
+        if item.kind == .submenu {
+            Button(text.editActionsButton) { onOpenSubmenu(item) }
+        }
+        Divider()
+        Button(text.deleteButton, role: .destructive) { onRemove(item) }
+    }
+
+    /// Arrows walk round the wheel (right and down clockwise), Option-arrow
+    /// carries the action along, Return or Space edits, Delete removes.
+    private func handleKey(_ press: KeyPress, on index: Int) -> KeyPress.Result {
+        let item = items[index]
+        let step: Int? = {
+            switch press.key {
+            case .rightArrow, .downArrow: return 1
+            case .leftArrow, .upArrow: return -1
+            default: return nil
+            }
+        }()
+        if let step {
+            if press.modifiers.contains(.option) {
+                onMove(item, step)
+                focusedSlot = .item(item.id)
+            } else {
+                focus(index + step)
+            }
+            return .handled
+        }
+        switch press.key {
+        case .return, .space:
+            onEdit(item)
+            return .handled
+        case .delete, .deleteForward:
+            let neighbour = items.count > 1 ? items[(index + 1) % items.count].id : nil
+            onRemove(item)
+            focusedSlot = neighbour.map { .item($0) } ?? (items.count > 1 ? .add : nil)
+            return .handled
+        default:
+            return .ignored
+        }
+    }
+
+    private func focus(_ position: Int) {
+        guard slotCount > 0 else { return }
+        let wrapped = ((position % slotCount) + slotCount) % slotCount
+        focusedSlot = items.indices.contains(wrapped) ? .item(items[wrapped].id) : .add
+    }
+
+    // MARK: - Add slot
+
+    private var addSlot: some View {
+        let isFocused = focusedSlot == .add
+        return Button(action: onAdd) {
+            ZStack {
+                Circle()
+                    .strokeBorder(profileColor.color(for: colorScheme).opacity(0.7),
+                                  style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .background(Circle().fill(Color.primary.opacity(0.03)))
+                Image(systemName: "plus")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(profileColor.color(for: colorScheme))
+            }
+            .frame(width: Self.chipSize, height: Self.chipSize)
+            .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: 2).padding(-3).opacity(isFocused ? 1 : 0))
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .offset(offset(for: items.count))
+        .help(text.addButton)
+        .focusable()
+        .focusEffectDisabled()
+        .focused($focusedSlot, equals: .add)
+        .onKeyPress(phases: .down) { press in
+            switch press.key {
+            case .rightArrow, .downArrow: focus(items.count + 1); return .handled
+            case .leftArrow, .upArrow: focus(items.count - 1); return .handled
+            case .return, .space: onAdd(); return .handled
+            default: return .ignored
+            }
+        }
+        .accessibilityLabel(text.addButton)
+    }
+
+    // MARK: - Hub
+
+    private var hub: some View {
         ZStack {
             Circle()
-                .fill(Color(red: 0.12, green: 0.13, blue: 0.16))
-                .overlay(
-                    Circle()
-                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.8)
-                )
-                .shadow(color: .black.opacity(0.3), radius: 6, y: 2)
-
+                .fill(Color.primary.opacity(colorScheme == .light ? 0.045 : 0.075))
             hubContent
         }
-        .frame(width: hubDiameter, height: hubDiameter)
+        .frame(width: Self.hubDiameter, height: Self.hubDiameter)
         .contentShape(Circle())
         .onTapGesture {
-            if openSubmenu != nil {
-                onBack?()
+            if isSubmenu {
+                onBack()
             } else if items.isEmpty {
                 onAdd()
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(isSubmenu ? text.backButton : (items.isEmpty ? text.addButton : ""))
+        .accessibilityAddTraits(isSubmenu || items.isEmpty ? .isButton : [])
+        .accessibilityHidden(!isSubmenu && !items.isEmpty)
+        .accessibilityAction { if isSubmenu { onBack() } else if items.isEmpty { onAdd() } }
     }
 
     @ViewBuilder
@@ -294,10 +290,9 @@ struct RadialMenuVisualCanvas: View {
             VStack(spacing: 2) {
                 Image(systemName: "arrow.triangle.swap")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(profileColor)
+                    .foregroundStyle(profileColor.color(for: colorScheme))
                 Text(items[target].displayName(text))
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.white)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
@@ -307,53 +302,51 @@ struct RadialMenuVisualCanvas: View {
             VStack(spacing: 1) {
                 Text(item.displayName(text))
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                 Text(kindLabel(for: item))
                     .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
             .padding(.horizontal, 6)
-        } else if openSubmenu != nil {
+        } else if isSubmenu {
             VStack(spacing: 3) {
                 Image(systemName: "chevron.backward")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(profileColor)
+                    .foregroundStyle(profileColor.color(for: colorScheme))
                 Text(text.backButton)
                     .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         } else if items.isEmpty {
             VStack(spacing: 3) {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(profileColor)
+                    .foregroundStyle(profileColor.color(for: colorScheme))
                 Text(text.addButton)
                     .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
+            .padding(.horizontal, 6)
         } else {
-            BrandMark(width: 28, tint: Color.white.opacity(0.85))
+            BrandMark(width: 28, tint: Color.primary)
         }
     }
 
-    // MARK: - Floating Dragged Chip
+    // MARK: - Dragged chip
 
     @ViewBuilder
     private var floatingDraggedChip: some View {
         if let dragIdx = draggingIndex, items.indices.contains(dragIdx) {
-            let item = items[dragIdx]
-            RadialCanvasChip(
-                item: item,
-                text: text,
-                isHighlighted: true,
-                profileColor: profileColor
-            )
-            .scaleEffect(1.15)
-            .shadow(color: profileColor.opacity(0.6), radius: 10, y: 4)
-            .position(dragPosition)
-            .allowsHitTesting(false)
+            RadialChipFace(item: items[dragIdx], nowPlayingState: .nothingPlaying,
+                           highlighted: true, profileColor: profileColor, size: Self.chipSize)
+                .scaleEffect(1.15)
+                .position(dragPosition)
+                .allowsHitTesting(false)
         }
     }
 
@@ -369,90 +362,5 @@ struct RadialMenuVisualCanvas: View {
         case .media: return text.kindMedia
         case .submenu: return text.kindSubmenu
         }
-    }
-}
-
-// MARK: - Radial Canvas Chip
-
-private struct RadialCanvasChip: View {
-    let item: RadialMenuItem
-    let text: RadialMenuFeatureStrings
-    let isHighlighted: Bool
-    let profileColor: Color
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    isHighlighted
-                    ? AnyShapeStyle(profileColor)
-                    : AnyShapeStyle(Color(red: 0.18, green: 0.19, blue: 0.22))
-                )
-                .overlay(
-                    Circle()
-                        .strokeBorder(
-                            isHighlighted ? Color.white.opacity(0.5) : Color.white.opacity(0.18),
-                            lineWidth: isHighlighted ? 1.4 : 0.8
-                        )
-                )
-                .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
-
-            chipIcon
-        }
-        .frame(width: 44, height: 44)
-    }
-
-    @ViewBuilder
-    private var chipIcon: some View {
-        if item.mediaKey == .nowPlaying {
-            Image(systemName: "music.note")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(isHighlighted ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.9)))
-        } else if item.symbolName.isEmpty, let customImage = RadialMenuIconStore.customIcon(for: item) {
-            Image(nsImage: customImage)
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 26, height: 26)
-        } else if item.usesFileIcon {
-            Image(nsImage: RadialMenuIconStore.fileIcon(for: item.payload))
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 26, height: 26)
-        } else {
-            Image(systemName: item.effectiveSymbolName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(isHighlighted ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.9)))
-        }
-    }
-}
-
-// MARK: - Radial Dividers Shape
-
-private struct RadialCanvasDividers: Shape {
-    let sliceCount: Int
-    let innerRadius: CGFloat
-    let outerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let safeRect = CGRect(x: rect.minX.isFinite ? rect.minX : 0,
-                              y: rect.minY.isFinite ? rect.minY : 0,
-                              width: max(0, rect.width.isFinite ? rect.width : 0),
-                              height: max(0, rect.height.isFinite ? rect.height : 0))
-        guard sliceCount > 1, safeRect.width > 0, safeRect.height > 0 else {
-            return Path(CGRect(x: safeRect.minX, y: safeRect.minY, width: 0, height: 0))
-        }
-        var path = Path()
-        let center = CGPoint(x: safeRect.midX, y: safeRect.midY)
-        let step = 2 * .pi / Double(sliceCount)
-        for i in 0..<sliceCount {
-            let angle = step * (Double(i) + 0.5) - .pi / 2
-            let x1 = center.x + innerRadius * CGFloat(cos(angle))
-            let y1 = center.y + innerRadius * CGFloat(sin(angle))
-            let x2 = center.x + outerRadius * CGFloat(cos(angle))
-            let y2 = center.y + outerRadius * CGFloat(sin(angle))
-            path.move(to: CGPoint(x: x1, y: y1))
-            path.addLine(to: CGPoint(x: x2, y: y2))
-        }
-        return path
     }
 }
