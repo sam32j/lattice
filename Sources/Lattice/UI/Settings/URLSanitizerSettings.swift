@@ -27,9 +27,38 @@ struct URLSanitizerSettings: View {
     private var strings: URLSanitizerStrings { FeatureStrings.urlSanitizer(l10n.language) }
 
     var body: some View {
+        Group {
+            if enabled {
+                page
+            } else {
+                emptyState
+            }
+        }
+        .toolbar {
+            SettingsTitleBarItem(id: "url-sanitizer-controls") {
+                URLSanitizerTitleBarControls(enabled: $enabled, autoRemove: $autoRemove)
+            }
+        }
+    }
+
+    /// Off, the page is only what the feature is for and a way to turn it on,
+    /// like every other switched-off feature page.
+    private var emptyState: some View {
+        let hub = FeatureStrings.hub(l10n.language)
+        let title = AppFeature.urlCleaner.hubTitle(l10n.s, hub: hub)
+        return SettingsFeatureEmptyState(title: title, symbol: AppFeature.urlCleaner.symbolName,
+                                         description: AppFeature.urlCleaner.emptyStateDescription(hub)) {
+            Button(SettingsOwnershipStrings.enable(title, l10n.language)) {
+                URLSanitizerTitleBarControls.apply(true, to: $enabled)
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
+    private var page: some View {
         let rules = rules
         let result = URLCleaning.clean(input, rules: rules)
-        ScrollView {
+        return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 URLSanitizerTestCard(input: $input, result: result, rules: rules,
                                      isPaused: !enabled || !autoRemove,
@@ -40,11 +69,6 @@ struct URLSanitizerSettings: View {
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
             .padding(22)
-        }
-        .toolbar {
-            SettingsTitleBarItem(id: "url-sanitizer-controls") {
-                URLSanitizerTitleBarControls(enabled: $enabled, autoRemove: $autoRemove)
-            }
         }
         .sheet(item: $sheet) { request in
             URLSanitizerSiteSheet(draft: request.draft, rules: rules,
@@ -168,30 +192,42 @@ private struct URLSanitizerTitleBarControls: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Button {
-                guard Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
-                showingMenu.toggle()
-            } label: {
-                Image(systemName: "gearshape")
-                    .foregroundStyle(showingMenu ? Color.accentColor : Color.primary)
-            }
-            .buttonStyle(FlatSettingsOptionsButtonStyle())
-            .help(strings.settingsButton)
-            .accessibilityLabel(strings.settingsButton)
-            .accessibilityAddTraits(showingMenu ? .isSelected : [])
-            .popover(isPresented: $showingMenu, arrowEdge: .bottom) {
-                URLSanitizerSettingsMenu(autoRemove: $autoRemove)
-            }
-            .onChange(of: showingMenu) { _, open in
-                if !open { menuClosedAt = Date() }
-            }
+            if enabled { menuButton }
             SettingsTitleBarSwitch(title: strings.mainToggle, isOn: enabled) { isOn in
-                enabled = isOn
-                URLCleanerService.shared.syncWithPreferences()
-                settingsFinishAvailabilityChange()
+                Self.apply(isOn, to: $enabled)
             }
         }
         .padding(.horizontal, 8)
+        .onChange(of: enabled) { _, isOn in
+            if !isOn { showingMenu = false }
+        }
+    }
+
+    /// Turns URL Sanitizer on or off and brings the clipboard watch along.
+    static func apply(_ isOn: Bool, to enabled: Binding<Bool>) {
+        enabled.wrappedValue = isOn
+        URLCleanerService.shared.syncWithPreferences()
+        settingsFinishAvailabilityChange()
+    }
+
+    private var menuButton: some View {
+        Button {
+            guard Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
+            showingMenu.toggle()
+        } label: {
+            Image(systemName: "gearshape")
+                .foregroundStyle(showingMenu ? Color.accentColor : Color.primary)
+        }
+        .buttonStyle(FlatSettingsOptionsButtonStyle())
+        .help(strings.settingsButton)
+        .accessibilityLabel(strings.settingsButton)
+        .accessibilityAddTraits(showingMenu ? .isSelected : [])
+        .popover(isPresented: $showingMenu, arrowEdge: .bottom) {
+            URLSanitizerSettingsMenu(autoRemove: $autoRemove)
+        }
+        .onChange(of: showingMenu) { _, open in
+            if !open { menuClosedAt = Date() }
+        }
     }
 }
 
