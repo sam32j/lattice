@@ -1604,33 +1604,8 @@ enum SwitcherModelFeatureTests {
                "committing to an app with no window and coming from none changes no history")
         suite.expect(registeredDefaults[DefaultsKey.minimalWindowPreviews] as? Bool == false,
                "minimal previews preserve the existing appearance until enabled")
-        suite.expect(SettingsBackupSupport.exportKeys().isSuperset(of: [DefaultsKey.minimalWindowPreviews,
-                                                                  DefaultsKey.monitorPwrTemperature,
-                                                                  DefaultsKey.monitorSysBattery]),
-               "preview appearance and moved battery visibility travel in settings backups")
-        let batteryVisibilitySuite = "io.github.sam32j.lattice.tests.batteryVisibility.\(UUID().uuidString)"
-        if let batteryVisibilityDefaults = UserDefaults(suiteName: batteryVisibilitySuite) {
-            batteryVisibilityDefaults.removePersistentDomain(forName: batteryVisibilitySuite)
-            batteryVisibilityDefaults.set(false, forKey: DefaultsKey.monitorSysTemps)
-            Defaults.migrateBatteryTemperatureVisibility(in: batteryVisibilityDefaults)
-            suite.expect(!batteryVisibilityDefaults.bool(forKey: DefaultsKey.monitorPwrTemperature),
-                   "moving battery temperature preserves a hidden temperature section")
-            batteryVisibilityDefaults.set(true, forKey: DefaultsKey.monitorSysTemps)
-            Defaults.migrateBatteryTemperatureVisibility(in: batteryVisibilityDefaults)
-            suite.expect(!batteryVisibilityDefaults.bool(forKey: DefaultsKey.monitorPwrTemperature),
-                   "subsequent System visibility changes cannot overwrite the Power choice")
-            batteryVisibilityDefaults.removePersistentDomain(forName: batteryVisibilitySuite)
-            Defaults.migrateBatteryTemperatureVisibility(in: batteryVisibilityDefaults)
-            suite.expect(batteryVisibilityDefaults.bool(forKey: DefaultsKey.monitorPwrTemperature),
-                   "a fresh installation keeps battery temperature visible in Power")
-            batteryVisibilityDefaults.set(false, forKey: DefaultsKey.monitorSysTemps)
-            Defaults.migrateBatteryTemperatureVisibility(in: batteryVisibilityDefaults)
-            suite.expect(batteryVisibilityDefaults.bool(forKey: DefaultsKey.monitorPwrTemperature),
-                   "a restored Power preference wins over the previous temperature section")
-            batteryVisibilityDefaults.removePersistentDomain(forName: batteryVisibilitySuite)
-        } else {
-            suite.expect(false, "battery visibility migration has isolated preferences")
-        }
+        suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.minimalWindowPreviews),
+               "preview appearance travels in settings backups")
         let visibleDockCard = CGRect(x: 0, y: 25, width: 120, height: 80)
         for eventType: NSEvent.EventType in [.leftMouseDown, .rightMouseDown, .otherMouseDown, .otherMouseUp, .mouseMoved] {
             for button in [0, 1, 2, 3, 4] {
@@ -2712,10 +2687,6 @@ enum SwitcherModelFeatureTests {
                     && !Strings.ptBR.menuBarIconDisallowedBody.isEmpty
                     && Strings.enUS.menuBarIconDisallowedBody.contains("Allow in the Menu Bar"),
                "the hint names the System Settings switch by its own label")
-        suite.expect(registeredDefaults[DefaultsKey.panelShowKeepAwake] as? Bool == true,
-               "Keep Awake panel section is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelShowBrightness] as? Bool == true,
-               "brightness panel section is shown by default once the feature is on")
         suite.expect(registeredDefaults[DefaultsKey.brightnessControlEnabled] as? Bool == false,
                "brightness control arrives switched off")
         suite.expect(registeredDefaults[DefaultsKey.brightnessKeysEnabled] as? Bool == false,
@@ -2774,38 +2745,8 @@ enum SwitcherModelFeatureTests {
         suite.expect(registeredDefaults[DefaultsKey.screenshotFileNumberStart] as? Int == 1
                 && registeredDefaults[DefaultsKey.screenshotFileNumberNext] as? Int == 1,
                "the file number sequence starts counting at 1")
-        suite.expect(registeredDefaults[DefaultsKey.panelShowToggles] as? Bool == true,
-               "Quick toggles panel section is shown by default")
         suite.expect(registeredDefaults[DefaultsKey.monitorInterval] as? Int == 2,
                "monitor default interval stays at 2 seconds")
-        suite.expect(registeredDefaults[DefaultsKey.monitorShowDisk] as? Bool == true,
-               "disk monitor panel section is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorSysAlerts] as? Bool == true,
-               "system alert controls are shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorSysConnectedDevices] as? Bool == true
-                     && SettingsBackupSupport.exportKeys().contains(DefaultsKey.monitorSysConnectedDevices),
-               "the System card's connected devices row is shown by default and travels in backups")
-        suite.expect(registeredDefaults[DefaultsKey.monitorSysCPUCores] as? Bool == true
-                     && SettingsBackupSupport.exportKeys().contains(DefaultsKey.monitorSysCPUCores),
-               "the CPU row's per-core bars are shown by default and travel in backups")
-        suite.expect(registeredDefaults[DefaultsKey.monitorGraphDisk] as? Bool == true,
-               "disk monitor graph is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorNetApps] as? Bool == true,
-               "network app usage block is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorNetAddresses] as? Bool == true,
-               "local address block is shown by default and travels in backups")
-        suite.expect(registeredDefaults[DefaultsKey.monitorDiskUsage] as? Bool == true,
-               "disk usage block is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorDiskActivity] as? Bool == true,
-               "disk activity block is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorDiskSMART] as? Bool == true,
-               "disk SMART block is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorDiskProtection] as? Bool == true,
-               "disk protection block is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.monitorDiskTools] as? Bool == true,
-               "disk tools block is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.temperatureUnit] as? String == TemperatureUnit.celsius.rawValue,
-               "temperature defaults to Celsius")
         suite.expect(registeredDefaults[DefaultsKey.menuBarCPUTemperature] as? Bool == false,
                "menu bar CPU temperature is opt-in")
         suite.expect(registeredDefaults[DefaultsKey.menuBarGPUTemperature] as? Bool == false,
@@ -2831,14 +2772,10 @@ enum SwitcherModelFeatureTests {
                "separate menu bar metric items are opt-in")
         suite.expect(registeredDefaults[DefaultsKey.menuBarNetworkUploadFirst] as? Bool == false,
                "network menu bar upload-first layout is opt-in")
-        suite.expect(registeredDefaults[DefaultsKey.networkSpeedUnit] as? String == NetworkSpeedUnit.bytes.rawValue,
-               "network speeds keep bytes per second by default")
         suite.expect(registeredDefaults[DefaultsKey.menuBarLabelStyle] as? String == "compact",
                "menu bar label style defaults to compact")
         suite.expect(registeredDefaults[DefaultsKey.menuBarMemoryStyle] as? String == "percent",
                "memory menu bar style defaults to percent")
-        suite.expect(registeredDefaults[DefaultsKey.monitorPwrTimeRemaining] as? Bool == true,
-               "battery time is shown in the Power panel by default")
         suite.expect(registeredDefaults[DefaultsKey.windowLayoutShortcutsEnabled] as? Bool == false,
                "window layout shortcuts stay off until enabled")
         suite.expect(registeredDefaults[DefaultsKey.windowEdgeSnapEnabled] as? Bool == false,

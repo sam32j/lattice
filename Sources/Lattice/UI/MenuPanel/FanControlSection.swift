@@ -12,8 +12,6 @@ struct FanControlSection: View {
     @AppStorage(DefaultsKey.fanControlCurves) private var curvesStorage =
         FanControlConfiguration.defaultCurvesStorage
     @AppStorage(DefaultsKey.fanControlResume) private var resume = false
-    @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit =
-        TemperatureUnit.celsius.rawValue
     var collapsible = true
     var fallbackFanSpeeds: [Double] = []
 
@@ -35,7 +33,6 @@ struct FanControlSection: View {
                                   coolingLevel: $coolingLevel,
                                   curves: curvesBinding,
                                   resume: $resume,
-                                  temperatureUnit: displayTemperatureUnit,
                                   authorize: service.authorize,
                                   applyConfiguration: service.applyConfiguration,
                                   stopCooling: service.returnToSystem)
@@ -67,9 +64,6 @@ struct FanControlSection: View {
         )
     }
 
-    private var displayTemperatureUnit: TemperatureUnit {
-        TemperatureUnit(rawValue: temperatureUnit) ?? .celsius
-    }
 }
 
 struct FanControlCardContent: View {
@@ -84,7 +78,6 @@ struct FanControlCardContent: View {
     @Binding var coolingLevel: Int
     @Binding var curves: [FanControlCurve]
     @Binding var resume: Bool
-    let temperatureUnit: TemperatureUnit
     let authorize: () -> Void
     let applyConfiguration: (FanControlConfiguration) -> Void
     let stopCooling: () -> Void
@@ -122,7 +115,6 @@ struct FanControlCardContent: View {
                     FanControlCurveEditor(strings: strings,
                                           curves: $curves,
                                           temperatures: snapshot.temperatures ?? [],
-                                          temperatureUnit: temperatureUnit,
                                           disabled: isWorking)
                     if !curveCanRun {
                         Text(strings.curveUnavailable)
@@ -165,7 +157,7 @@ struct FanControlCardContent: View {
             guard let reading = readings.first(where: { $0.source == source }) else {
                 return nil
             }
-            return "\(name) \(MetricFormat.temperature(reading.celsius, unit: temperatureUnit))"
+            return "\(name) \(MetricFormat.temperature(reading.celsius))"
         }
 
         if !formatted.isEmpty {
@@ -343,7 +335,7 @@ struct FanControlCardContent: View {
                 ? snapshot.temperatures?.first { $0.source == activeCurves[0].sensor }?.celsius
                 : nil
             if let temperature {
-                return "\(strings.customCurve) · \(MetricFormat.temperature(temperature, unit: temperatureUnit)) · \(level)%"
+                return "\(strings.customCurve) · \(MetricFormat.temperature(temperature)) · \(level)%"
             }
             return "\(strings.customCurve) · \(level)%"
         }

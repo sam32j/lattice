@@ -81,12 +81,10 @@ extension View {
 }
 
 private struct GraphCeilingLabel: ViewModifier {
-    @AppStorage(DefaultsKey.monitorGraphScale) private var visible = true
     let text: String
 
     func body(content: Content) -> some View {
-        if visible {
-            content
+        content
                 .overlay {
                     GeometryReader { geometry in
                         Path { path in
@@ -108,8 +106,5 @@ private struct GraphCeilingLabel: ViewModifier {
                         .alignmentGuide(.top) { $0[VerticalAlignment.center] }
                         .allowsHitTesting(false)
                 }
-        } else {
-            content
-        }
     }
 }

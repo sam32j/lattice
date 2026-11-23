@@ -98,11 +98,6 @@ enum SettingsBackupSupport {
         DefaultsKey.menuBarNetwork,
         DefaultsKey.menuBarBattery,
         DefaultsKey.menuBarPower,
-        DefaultsKey.panelSectionOrder,
-        DefaultsKey.panelSystemOrder,
-        DefaultsKey.panelNetworkOrder,
-        DefaultsKey.panelDiskOrder,
-        DefaultsKey.panelPowerOrder,
         DefaultsKey.panelCollapsedSections,
         DefaultsKey.quickLauncherItemOrder,
         // Legacy island layouts stay restorable; absence selects the new layout.

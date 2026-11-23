@@ -213,7 +213,6 @@ struct Strings {
     let durationLabel: String
 
     // MARK: Panel — system monitor
-    let systemSection: String
     let temperatures: String
     let cpuLabel: String
     let gpuLabel: String
@@ -818,7 +817,6 @@ struct Strings {
 
     // MARK: Settings — monitor / menu bar metrics
     let tabMonitor: String
-    let monitorMenuBarSection: String
     let monitorMenuBarCaption: String
     let monitorCombineTemperatures: String
     let monitorCombineTemperaturesCaption: String
@@ -829,11 +827,6 @@ struct Strings {
     let monitorShowMemory: String
     let monitorShowNetwork: String
     let monitorShowPowerLabel: String
-    let monitorIntervalLabel: String
-    let monitorInterval1: String
-    let monitorInterval2: String
-    let monitorInterval5: String
-    let monitorPanelSection: String
     let panelNavigationMode: String
     let panelNavigationCaption: String
     let panelFooterSections: String
@@ -843,7 +836,6 @@ struct Strings {
 
     // MARK: Panel — network
     let networkSection: String
-    let networkIPAddresses: String
     let networkLocalIP: String
     let networkDownload: String
     let networkUpload: String
@@ -890,9 +882,6 @@ struct Strings {
 
     // MARK: Panel — power
     let powerSection: String
-    let powerSystem: String
-    let powerAdapter: String
-    let powerBattery: String
     let powerCharging: String
     let powerOnBattery: String
     let powerPluggedIn: String
@@ -904,7 +893,6 @@ struct Strings {
     let monitorShowBatteryTemperature: String
     let monitorShowPeripheralBattery: String
     let peripheralBatteryNoDevices: String
-    let monitorGraphsSection: String
 
     // MARK: Update notification + menu bar setup
     let updateBannerTitle: String
@@ -927,8 +915,6 @@ struct Strings {
     let memoryStyleBoth: String
     // MARK: System uptime, battery health, speed test
     let systemUptime: String
-    let batteryCharge: String
-    let powerHealth: String
     let powerCycles: String
     let speedTestRun: String
     let speedTestAgain: String
@@ -942,15 +928,8 @@ struct Strings {
     let panelHideItem: String
     let panelShowItem: String
     let panelHiddenItem: String
-    let monitorItemUptime: String
-    let monitorItemNetSpeed: String
-    let monitorItemNetTotals: String
-    let monitorItemNetTest: String
     let monitorItemDiskUsage: String
     let monitorItemDiskActivity: String
-    let monitorItemDiskSMART: String
-    let monitorItemDiskProtection: String
-    let monitorItemDiskTools: String
     let monitorPanelConfigHint: String
     let monitorOrderHint: String
 
@@ -1098,9 +1077,6 @@ struct Strings {
     let monitorOpenActivityMonitor: String
     let dockClickHide: String
     let dockClickHideCaption: String
-    let monitorMemoryMetricLabel: String
-    let memoryMetricUsed: String
-    let memoryMetricApp: String
     let urlCleanerRemovedFormat: String            // + comma separated names
     let switcherSearchPlaceholder: String
     let invertVerticalScroll: String
@@ -1202,7 +1178,6 @@ extension Strings {
         keepAwakeUntilStart: "Iniciar",
         durationLabel: "Duração",
 
-        systemSection: "Sistema",
         temperatures: "Temperaturas",
         cpuLabel: "CPU",
         gpuLabel: "GPU",
@@ -1773,7 +1748,6 @@ extension Strings {
         releaseNotesFallback: "Esta atualização inclui as correções e melhorias mais recentes.",
 
         tabMonitor: "Monitor do Sistema",
-        monitorMenuBarSection: "Na barra de menus",
         monitorMenuBarCaption: "Escolha o que aparece ao lado do ícone na barra de menus.",
         monitorCombineTemperatures: "Combinar uso e temperatura",
         monitorCombineTemperaturesCaption: "Quando uso e temperatura do mesmo item estiverem ativos, mostra tudo em um bloco só.",
@@ -1784,11 +1758,6 @@ extension Strings {
         monitorShowMemory: "Memória",
         monitorShowNetwork: "Rede",
         monitorShowPowerLabel: "Energia",
-        monitorIntervalLabel: "Atualizar a cada",
-        monitorInterval1: "1 segundo",
-        monitorInterval2: "2 segundos",
-        monitorInterval5: "5 segundos",
-        monitorPanelSection: "No painel",
         panelNavigationMode: "Navegar por seções no painel",
         panelNavigationCaption: "Mostra uma seção por vez. Escolha Lista para ver tudo em uma rolagem contínua.",
         panelFooterSections: "Seções",
@@ -1797,7 +1766,6 @@ extension Strings {
         betaFeatureWarning: "Beta. Você pode encontrar alguns bugs.",
 
         networkSection: "Rede",
-        networkIPAddresses: "Endereços IP",
         networkLocalIP: "IPv4 local",
         networkDownload: "Download",
         networkUpload: "Upload",
@@ -1842,9 +1810,6 @@ extension Strings {
         diskNoDisks: "Nenhum disco montado encontrado.",
 
         powerSection: "Energia",
-        powerSystem: "Sistema",
-        powerAdapter: "Adaptador",
-        powerBattery: "Bateria",
         powerCharging: "Carregando",
         powerOnBattery: "Na bateria",
         powerPluggedIn: "Na tomada",
@@ -1856,7 +1821,6 @@ extension Strings {
         monitorShowBatteryTemperature: "Temperatura da bateria",
         monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .ptBR),
         peripheralBatteryNoDevices: "Nenhum periférico encontrado",
-        monitorGraphsSection: "Gráficos",
 
         updateBannerTitle: "Atualização disponível",
         updateBannerAction: "Atualizar",
@@ -1877,8 +1841,6 @@ extension Strings {
         memoryStylePercent: "%",
         memoryStyleBoth: "Ambos",
         systemUptime: "Ativo há",
-        batteryCharge: "Carga",
-        powerHealth: "Saúde da bateria",
         powerCycles: "Ciclos",
         speedTestRun: "Testar velocidade",
         speedTestAgain: "Testar de novo",
@@ -1891,15 +1853,8 @@ extension Strings {
         panelHideItem: "Ocultar do painel",
         panelShowItem: "Mostrar no painel",
         panelHiddenItem: "Oculto",
-        monitorItemUptime: "Tempo ativo",
-        monitorItemNetSpeed: "Velocidade ao vivo",
-        monitorItemNetTotals: "Totais da sessão",
-        monitorItemNetTest: "Teste de velocidade",
         monitorItemDiskUsage: "Uso do disco",
         monitorItemDiskActivity: "Atividade ao vivo",
-        monitorItemDiskSMART: "SMART",
-        monitorItemDiskProtection: "Proteção externa",
-        monitorItemDiskTools: "Ferramentas",
         monitorPanelConfigHint: "Abra um bloco para escolher o que ele mostra.",
         monitorOrderHint: "Arraste para reordenar as seções do painel e use o olho para mostrar ou ocultar cada uma.",
 
@@ -2037,9 +1992,6 @@ extension Strings {
         monitorOpenActivityMonitor: "Abrir o Monitor de Atividade",
         dockClickHide: "Clicar no Dock oculta o app",
         dockClickHideCaption: "O app ativo é ocultado ao clicar no ícone dele no Dock. Clique de novo para trazê-lo de volta.",
-        monitorMemoryMetricLabel: "Medir memória como",
-        memoryMetricUsed: "Memória usada",
-        memoryMetricApp: "Memória de apps",
         urlCleanerRemovedFormat: "Removidos %@",
         switcherSearchPlaceholder: "Buscar",
         invertVerticalScroll: "Inverter rolagem vertical",
@@ -2142,7 +2094,6 @@ extension Strings {
         keepAwakeUntilStart: "Start",
         durationLabel: "Duration",
 
-        systemSection: "System",
         temperatures: "Temperatures",
         cpuLabel: "CPU",
         gpuLabel: "GPU",
@@ -2713,7 +2664,6 @@ extension Strings {
         releaseNotesFallback: "This update includes the latest fixes and improvements.",
 
         tabMonitor: "System Monitor",
-        monitorMenuBarSection: "In the menu bar",
         monitorMenuBarCaption: "Choose what appears next to the icon in the menu bar.",
         monitorCombineTemperatures: "Combine usage and temperature",
         monitorCombineTemperaturesCaption: "When usage and temperature for the same item are enabled, show them in one block.",
@@ -2724,11 +2674,6 @@ extension Strings {
         monitorShowMemory: "Memory",
         monitorShowNetwork: "Network",
         monitorShowPowerLabel: "Power",
-        monitorIntervalLabel: "Update every",
-        monitorInterval1: "1 second",
-        monitorInterval2: "2 seconds",
-        monitorInterval5: "5 seconds",
-        monitorPanelSection: "In the panel",
         panelNavigationMode: "Navigate panel by sections",
         panelNavigationCaption: "Shows one section at a time. Choose List to see everything in one continuous scroll.",
         panelFooterSections: "Sections",
@@ -2737,7 +2682,6 @@ extension Strings {
         betaFeatureWarning: "Beta. You may run into some bugs.",
 
         networkSection: "Network",
-        networkIPAddresses: "IP addresses",
         networkLocalIP: "Local IPv4",
         networkDownload: "Download",
         networkUpload: "Upload",
@@ -2782,9 +2726,6 @@ extension Strings {
         diskNoDisks: "No mounted disks found.",
 
         powerSection: "Power",
-        powerSystem: "System",
-        powerAdapter: "Adapter",
-        powerBattery: "Battery",
         powerCharging: "Charging",
         powerOnBattery: "On battery",
         powerPluggedIn: "Plugged in",
@@ -2796,7 +2737,6 @@ extension Strings {
         monitorShowBatteryTemperature: "Battery temperature",
         monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .enUS),
         peripheralBatteryNoDevices: "No devices found",
-        monitorGraphsSection: "Graphs",
 
         updateBannerTitle: "Update available",
         updateBannerAction: "Update",
@@ -2817,8 +2757,6 @@ extension Strings {
         memoryStylePercent: "%",
         memoryStyleBoth: "Both",
         systemUptime: "Up for",
-        batteryCharge: "Charge",
-        powerHealth: "Battery health",
         powerCycles: "Cycles",
         speedTestRun: "Speed test",
         speedTestAgain: "Test again",
@@ -2831,15 +2769,8 @@ extension Strings {
         panelHideItem: "Hide from panel",
         panelShowItem: "Show in panel",
         panelHiddenItem: "Hidden",
-        monitorItemUptime: "Uptime",
-        monitorItemNetSpeed: "Live speed",
-        monitorItemNetTotals: "Session totals",
-        monitorItemNetTest: "Speed test",
         monitorItemDiskUsage: "Disk usage",
         monitorItemDiskActivity: "Live activity",
-        monitorItemDiskSMART: "SMART",
-        monitorItemDiskProtection: "External protection",
-        monitorItemDiskTools: "Tools",
         monitorPanelConfigHint: "Open a block to choose what it shows.",
         monitorOrderHint: "Drag to reorder the panel sections and use the eye to show or hide each one.",
 
@@ -2977,9 +2908,6 @@ extension Strings {
         monitorOpenActivityMonitor: "Open Activity Monitor",
         dockClickHide: "Click the dock tile to hide the app",
         dockClickHideCaption: "The active app hides when you click its dock tile. Click again to bring it back.",
-        monitorMemoryMetricLabel: "Measure memory as",
-        memoryMetricUsed: "Memory Used",
-        memoryMetricApp: "App Memory",
         urlCleanerRemovedFormat: "Removed %@",
         switcherSearchPlaceholder: "Search",
         invertVerticalScroll: "Invert vertical scrolling",
@@ -3037,24 +2965,6 @@ extension Strings {
     var uninstallerRefusedUnidentifiedFormat: String { "%@ can’t be uninstalled because it can’t be identified as an app." }
     var uninstallerPickerHiddenNote: String { "Apps that are part of macOS or made by Apple aren’t listed." }
 
-    var monitorMenuBarPreview: String {
-        switch L10n.shared.language {
-        case .ptBR: return "Prévia da barra de menus"
-        case .zhHans: return "菜单栏预览"
-        case .zhHK, .zhTW: return "選單列預覽"
-        case .fr: return "Aperçu de la barre des menus"
-        case .de: return "Vorschau der Menüleiste"
-        case .it: return "Anteprima della barra dei menu"
-        case .ja: return "メニューバーのプレビュー"
-        case .ko: return "메뉴 막대 미리보기"
-        case .ru: return "Предпросмотр строки меню"
-        case .sk: return "Náhľad lišty s ponukami"
-        case .es: return "Vista previa de la barra de menús"
-        case .tr: return "Menü çubuğu önizlemesi"
-        case .uk: return "Попередній перегляд смуги меню"
-        case .enUS: return "Menu bar preview"
-        }
-    }
 
     var secureInputSwitcherHeldFormat: String {
         switch L10n.shared.language {

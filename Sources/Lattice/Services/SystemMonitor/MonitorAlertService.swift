@@ -187,8 +187,7 @@ final class MonitorAlertService {
     }
 
     private static func formattedTemperature(_ celsius: Double, defaults: UserDefaults) -> String {
-        let unit = TemperatureUnit(rawValue: defaults.string(forKey: DefaultsKey.temperatureUnit) ?? "") ?? .celsius
-        return MetricFormat.temperature(celsius, unit: unit)
+        MetricFormat.temperature(celsius)
     }
 
     private func send(_ kind: MonitorAlertKind, title: String, body: String) {
