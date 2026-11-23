@@ -27,13 +27,18 @@ enum SettingsPresentationProbe {
         defaults.set(AppLanguage.enUS.rawValue, forKey: DefaultsKey.language)
         // `--shortcuts` opens on the long Keyboard Shortcuts page (scroll-edge
         // checks), `--dock` on Dock & Applications, `--audio` on Audio (with
-        // `--audio-output`, landing on its Output segment through a deep link).
+        // `--audio-output`, landing on its Output segment through a deep link),
+        // and `--stay-awake` on Stay Awake.
         let arguments = CommandLine.arguments
         SettingsRouter.shared.page = arguments.contains("--shortcuts") ? .shortcuts
             : arguments.contains("--dock") ? .dock
             : arguments.contains("--audio") ? .audio : .features
         if arguments.contains("--audio-output") {
             SettingsRouter.shared.request(AppFeature.mixer.settingsDestination)
+        }
+        // `--stay-awake` opens the Stay Awake page through its deep link.
+        if arguments.contains("--stay-awake") {
+            SettingsRouter.shared.request(AppFeature.keepAwake.settingsDestination)
         }
 
         let app = NSApplication.shared

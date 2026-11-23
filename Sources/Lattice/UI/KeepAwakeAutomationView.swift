@@ -3,125 +3,81 @@
 
 import SwiftUI
 
-struct KeepAwakeAutomationEditor: View {
+/// The conditions that start a Stay Awake session by themselves, one tile
+/// each. A chosen tile says whether its condition holds right now. The card
+/// around them owns the Any/All choice and the apps list.
+struct KeepAwakeConditionTiles: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var awake = KeepAwakeManager.shared
     @AppStorage(DefaultsKey.keepAwakeExternalDisplay) private var externalDisplay = false
     @AppStorage(DefaultsKey.keepAwakeConnectedToPower) private var connectedToPower = false
     @AppStorage(DefaultsKey.keepAwakeRunningApps) private var runningApps = false
-    @AppStorage(DefaultsKey.keepAwakeAutomationRequireAll) private var requireAll = false
-
-    var compact = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 8 : 10) {
-            HStack(alignment: .top, spacing: compact ? 6 : 8) {
-                conditionTile(
-                    title: strings.externalDisplayToggle,
-                    icon: "display",
-                    selected: externalDisplay
-                ) {
-                    externalDisplay.toggle()
-                    awake.automationPreferencesDidChange()
-                }
-                conditionTile(
-                    title: strings.powerToggle,
-                    icon: "powerplug.fill",
-                    selected: connectedToPower
-                ) {
-                    connectedToPower.toggle()
-                    awake.automationPreferencesDidChange()
-                }
-                conditionTile(
-                    title: strings.runningAppsToggle,
-                    icon: "app.fill",
-                    selected: runningApps
-                ) {
-                    runningApps.toggle()
-                    awake.automationPreferencesDidChange()
-                }
-            }
-            // One condition cannot be combined with anything, so the mode
-            // would be a control with no effect (issue #1587).
-            if selectedConditionCount > 1 {
-                Picker(selection: $requireAll) {
-                    Text(strings.matchAny).tag(false)
-                    Text(strings.matchAll).tag(true)
-                } label: { EmptyView() }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .controlSize(compact ? .small : .regular)
-                .font(.system(size: compact ? 10 : 12, weight: .medium))
-                .onChange(of: requireAll) { _, _ in
-                    awake.automationPreferencesDidChange()
-                }
-            }
-            if runningApps {
-                AppBundleList(title: strings.runningAppsListTitle,
-                              caption: strings.runningAppsListCaption,
-                              addTitle: strings.runningAppsAddButton,
-                              removeLabel: strings.runningAppsRemoveButton,
-                              bundleIDs: awake.runningAppBundleIDs,
-                              reachesEveryApp: true,
-                              onAdd: { saveRunningApps(awake.runningAppBundleIDs + [$0]) },
-                              onRemove: { id in saveRunningApps(awake.runningAppBundleIDs.filter { $0 != id }) })
-            }
+        HStack(alignment: .top, spacing: 8) {
+            conditionTile(.externalDisplay, title: strings.externalDisplayToggle, icon: "display",
+                          selected: externalDisplay) { externalDisplay.toggle() }
+            conditionTile(.power, title: strings.powerToggle, icon: "powerplug.fill",
+                          selected: connectedToPower) { connectedToPower.toggle() }
+            conditionTile(.runningApps, title: strings.runningAppsToggle, icon: "app.fill",
+                          selected: runningApps) { runningApps.toggle() }
         }
-    }
-
-    private var selectedConditionCount: Int {
-        [externalDisplay, connectedToPower, runningApps].filter { $0 }.count
     }
 
     private var strings: KeepAwakeAutomationStrings {
         FeatureStrings.keepAwakeAutomation(l10n.language)
     }
 
-    private func saveRunningApps(_ bundleIDs: [String]) {
-        let sanitized = Defaults.sanitizedBundleIdentifierList(bundleIDs)
-        UserDefaults.standard.set(sanitized, forKey: DefaultsKey.keepAwakeRunningAppBundleIDs)
-        awake.automationPreferencesDidChange()
+    private var settings: StayAwakeSettingsStrings {
+        FeatureStrings.stayAwakeSettings(l10n.language)
     }
 
-    private func conditionTile(title: String,
-                               icon: String,
-                               selected: Bool,
-                               action: @escaping () -> Void) -> some View {
-        Button {
-            withAnimation(reduceMotion ? nil : .settingsExpansion, action)
+    private func conditionTile(_ condition: KeepAwakeAutomationCondition, title: String, icon: String,
+                               selected: Bool, toggle: @escaping () -> Void) -> some View {
+        let holds = awake.liveAutomationConditions.contains(condition)
+        return Button {
+            withAnimation(reduceMotion ? nil : .settingsExpansion, toggle)
+            awake.automationPreferencesDidChange()
         } label: {
-            VStack(alignment: .leading, spacing: compact ? 5 : 7) {
+            VStack(alignment: .leading, spacing: 7) {
                 HStack {
                     Image(systemName: icon)
-                        .font(.system(size: compact ? 14 : 17, weight: .semibold))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(selected ? Color.accentColor : Color.secondary)
                     Spacer(minLength: 4)
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: compact ? 11 : 13, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Color.accentColor)
                     }
                 }
                 Text(title)
-                    .font(.system(size: compact ? 10 : 12, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
+                // Only a chosen condition is watched, so only it can say.
+                Text(holds ? settings.conditionNow : settings.conditionNotNow)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(holds ? AnyShapeStyle(Color.green) : AnyShapeStyle(.tertiary))
+                    .opacity(selected ? 1 : 0)
             }
-            .padding(compact ? 7 : 9)
-            .frame(maxWidth: .infinity, minHeight: compact ? 65 : 78, alignment: .topLeading)
+            .padding(9)
+            .frame(maxWidth: .infinity, minHeight: 78, alignment: .topLeading)
             .background(
-                RoundedRectangle(cornerRadius: compact ? 9 : 11, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(selected ? Color.accentColor.opacity(0.11) : Color.primary.opacity(0.045))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: compact ? 9 : 11, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor.opacity(0.32) : Color.primary.opacity(0.08))
             )
-            .contentShape(RoundedRectangle(cornerRadius: compact ? 9 : 11, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(selected ? (holds ? settings.conditionNow : settings.conditionNotNow) : "")
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
-
 }

@@ -4,7 +4,8 @@
 import SwiftUI
 
 /// Display settings: Display brightness, XDR extra brightness,
-/// wallpaper management, Keep Awake (when focused), and Bluetooth behavior.
+/// wallpaper management and Bluetooth behavior. Stay Awake has a page of
+/// its own.
 struct DisplaySettings: View {
     var focus: SettingsSectionAnchor?
     @ObservedObject private var l10n = L10n.shared
@@ -16,9 +17,6 @@ struct DisplaySettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if focus == nil || focus == .keepAwake {
-                    FeatureActivationSection(feature: .keepAwake) { EnergyKeepAwakeSettings() }
-                }
                 // Display & Energy: displays, wallpaper, then Bluetooth, all on
                 // one page; a Bluetooth search result scrolls to its card here.
                 if focus == nil || focus == .brightness || focus == .extraBrightness
@@ -48,9 +46,6 @@ struct DisplaySettings: View {
     }
 
     private func refreshVisibleServices() {
-        if (focus == nil || focus == .keepAwake), AppFeature.keepAwake.isAvailable {
-            KeepAwakeManager.shared.refreshPasswordlessStatus()
-        }
         if (focus == nil || focus == .brightness || focus == .wallpaper || focus == .bluetoothSleep) {
             // Displays may have changed since launch (docked, clamshell).
             BrightnessService.shared.refresh()
