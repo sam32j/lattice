@@ -628,8 +628,6 @@ extension Strings {
 
         tabMonitor: "システムモニタ",
         monitorMenuBarCaption: "メニューバーのアイコンの横に表示する項目を選びます。",
-        monitorCombineTemperatures: "使用率と温度をまとめる",
-        monitorCombineTemperaturesCaption: "同じ項目の使用率と温度が有効な場合、1つのブロックにまとめて表示します。",
         monitorSeparateMenuBarMetrics: "メトリクスを個別の項目に分ける",
         monitorSeparateMenuBarMetricsCaption: "有効なブロックをメニューバーで分け、結合がオンなら使用率と温度は一緒に表示します。",
         monitorNetworkUploadFirst: "アップロードをダウンロードの上に表示",

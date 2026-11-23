@@ -628,8 +628,6 @@ extension Strings {
 
         tabMonitor: "Systemmonitor",
         monitorMenuBarCaption: "Wähle, was neben dem Symbol in der Menüleiste erscheint.",
-        monitorCombineTemperatures: "Auslastung und Temperatur kombinieren",
-        monitorCombineTemperaturesCaption: "Wenn Auslastung und Temperatur desselben Elements aktiv sind, erscheinen sie in einem Block.",
         monitorSeparateMenuBarMetrics: "Messwerte in eigene Elemente trennen",
         monitorSeparateMenuBarMetricsCaption: "Trennt aktive Blöcke in der Menüleiste und hält Auslastung und Temperatur zusammen, wenn Kombinieren aktiv ist.",
         monitorNetworkUploadFirst: "Upload über Download",

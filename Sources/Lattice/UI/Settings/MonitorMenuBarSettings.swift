@@ -9,7 +9,6 @@ struct MonitorMenuBarSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
 
-    @AppStorage(DefaultsKey.menuBarCombineTemperatures) private var combineTemperatures = true
     @AppStorage(DefaultsKey.menuBarSeparateMetrics) private var separateMetrics = false
     @AppStorage(DefaultsKey.menuBarMetricSpacing) private var metricSpacing = "standard"
     @AppStorage(DefaultsKey.menuBarMetricAppearance) private var metricAppearance = "values"
@@ -61,16 +60,9 @@ struct MonitorMenuBarSettings: View {
                 MenuBarStyleChoice(appearance: .bars, title: appearanceStrings.bars,
                                    selected: appearance == .bars) { metricAppearance = "bars" }
             }
-            if appearance == .bars {
-                MenuBarUsageBarSettings(strings: appearanceStrings, colorsTitle: strings.colorsTitle)
-                    .transition(.settingsReveal)
-            } else {
-                SettingsControlRow(title: l10n.s.monitorCombineTemperatures) {
-                    Toggle(l10n.s.monitorCombineTemperatures, isOn: $combineTemperatures).labelsHidden()
-                }
-                .help(l10n.s.monitorCombineTemperaturesCaption)
-                .transition(.settingsReveal)
-            }
+            // Bars take the System widget's colors and levels, so there is
+            // nothing to set for them; combining usage and temperature is a
+            // per-component switch in the readings list.
             SettingsControlRow(title: l10n.s.monitorSeparateMenuBarMetrics) {
                 Toggle(l10n.s.monitorSeparateMenuBarMetrics, isOn: $separateMetrics).labelsHidden()
             }

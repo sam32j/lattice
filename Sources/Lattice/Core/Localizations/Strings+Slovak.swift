@@ -628,8 +628,6 @@ extension Strings {
 
         tabMonitor: "Monitor systému",
         monitorMenuBarCaption: "Vyberte, čo sa zobrazí vedľa ikony v lište s ponukami.",
-        monitorCombineTemperatures: "Spojiť využitie a teplotu",
-        monitorCombineTemperaturesCaption: "Keď sú pre tú istú položku zapnuté využitie aj teplota, zobrazia sa v jednom bloku.",
         monitorSeparateMenuBarMetrics: "Rozdeliť metriky do samostatných položiek",
         monitorSeparateMenuBarMetricsCaption: "Rozdelí aktívne bloky v lište s ponukami a pri zapnutom spájaní ponechá využitie a teplotu spolu.",
         monitorNetworkUploadFirst: "Odosielanie nad sťahovaním",

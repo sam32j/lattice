@@ -475,7 +475,7 @@ struct MetricDetailView: View {
                         }
                         if usesWidgetDesign, kind == .memory, let ratio = memoryRatio {
                             Spacer(minLength: 0)
-                            SystemMemoryPressureChip(fraction: ratio)
+                            SystemMemoryPressureChip(level: .memory(pressure: monitor.snapshot.memoryPressure, fraction: ratio))
                         }
                     }
                     Text(heroSubtitle)

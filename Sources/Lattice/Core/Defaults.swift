@@ -297,15 +297,14 @@ enum DefaultsKey {
     static let menuBarPreset = "menuBarPreset"           // dense
     static let menuBarMetricSpacing = "menuBarMetricSpacing" // standard | compact
     static let menuBarMetricAppearance = "menuBarMetricAppearance" // values | bars
-    static let menuBarUsageBarNormalColor = "menuBarUsageBarNormalColor" // #RRGGBB
-    static let menuBarUsageBarElevatedColor = "menuBarUsageBarElevatedColor" // #RRGGBB
-    static let menuBarUsageBarCriticalColor = "menuBarUsageBarCriticalColor" // #RRGGBB
-    static let menuBarUsageBarMediumThreshold = "menuBarUsageBarMediumThreshold" // percent
-    static let menuBarUsageBarHighThreshold = "menuBarUsageBarHighThreshold" // percent
     static let menuBarHideIconWithMetrics = "menuBarHideIconWithMetrics" // glyph hides while metrics render in the main item
     static let menuBarIconSymbol = "menuBarIconSymbol" // system symbol name drawn instead of the glyph; empty keeps the glyph
     static let menuBarMetricOrder = "menuBarMetricOrder" // comma-separated MenuBarMetric raw values
-    static let menuBarCombineTemperatures = "menuBarCombineTemperatures" // usage/charge + temperature in one block when possible
+    // Usage (or charge) and temperature of one component in one block, each
+    // component on its own; only Values can combine.
+    static let menuBarCombineCPU = "menuBarCombineCPU"
+    static let menuBarCombineGPU = "menuBarCombineGPU"
+    static let menuBarCombineBattery = "menuBarCombineBattery"
     static let menuBarSeparateMetrics = "menuBarSeparateMetrics" // one status item per active metric
     static let menuBarNetworkUploadFirst = "menuBarNetworkUploadFirst" // network menu bar block shows upload above download
     static let menuBarLabelStyle = "menuBarLabelStyle"     // compact | classic
@@ -1257,11 +1256,6 @@ enum Defaults {
         DefaultsKey.menuBarPreset: "dense",
         DefaultsKey.menuBarMetricSpacing: "compact",  // owner's call: compact by default in 3.1.8
         DefaultsKey.menuBarMetricAppearance: "values",
-        DefaultsKey.menuBarUsageBarNormalColor: "#64D2FF",
-        DefaultsKey.menuBarUsageBarElevatedColor: "#FFD60A",
-        DefaultsKey.menuBarUsageBarCriticalColor: "#FF453A",
-        DefaultsKey.menuBarUsageBarMediumThreshold: 70,
-        DefaultsKey.menuBarUsageBarHighThreshold: 90,
         DefaultsKey.menuBarHideIconWithMetrics: false,
         DefaultsKey.menuBarIconSymbol: "",
         DefaultsKey.windowLayoutHiddenActions: "",
@@ -1270,7 +1264,9 @@ enum Defaults {
         DefaultsKey.windowReserveStageManagerSpace: false,
         DefaultsKey.windowLayoutSideRepeatCyclesThirds: false,
         DefaultsKey.menuBarMetricOrder: defaultMenuBarMetricOrder.joined(separator: ","),
-        DefaultsKey.menuBarCombineTemperatures: true,
+        DefaultsKey.menuBarCombineCPU: true,
+        DefaultsKey.menuBarCombineGPU: true,
+        DefaultsKey.menuBarCombineBattery: true,
         DefaultsKey.menuBarSeparateMetrics: false,
         DefaultsKey.menuBarNetworkUploadFirst: false,
         DefaultsKey.menuBarLabelStyle: "compact",

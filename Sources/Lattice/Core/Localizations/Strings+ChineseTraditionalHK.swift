@@ -629,8 +629,6 @@ extension Strings {
 
         tabMonitor: "系統監視器",
         monitorMenuBarCaption: "選取選單列中圖示旁顯示的內容。",
-        monitorCombineTemperatures: "合併使用率和溫度",
-        monitorCombineTemperaturesCaption: "同一項目的使用率和溫度都啟用時，在一個區塊中顯示。",
         monitorSeparateMenuBarMetrics: "將指標分開顯示",
         monitorSeparateMenuBarMetricsCaption: "將已啟用的區塊拆成獨立的選單列項目；合併開啟時，使用率和溫度仍會放在一起。",
         monitorNetworkUploadFirst: "上傳顯示在下載上方",

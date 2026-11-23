@@ -628,8 +628,6 @@ extension Strings {
 
         tabMonitor: "Sistem Monitörü",
         monitorMenuBarCaption: "Menü çubuğunda simgenin yanında ne görüneceğini seç.",
-        monitorCombineTemperatures: "Kullanımı ve sıcaklığı birleştir",
-        monitorCombineTemperaturesCaption: "Aynı öğe için kullanım ve sıcaklık etkinse, bunları tek blokta göster.",
         monitorSeparateMenuBarMetrics: "Metrikleri kendi öğelerine ayır",
         monitorSeparateMenuBarMetricsCaption: "Etkin blokları menü çubuğunda ayırır ve birleştirme açıkken kullanım ile sıcaklığı birlikte tutar.",
         monitorNetworkUploadFirst: "Yükleme indirme üstünde",
