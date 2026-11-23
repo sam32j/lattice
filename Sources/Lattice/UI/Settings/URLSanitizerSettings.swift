@@ -296,8 +296,8 @@ private struct URLSanitizerSiteRow: View {
                         Circle()
                             .fill(Color.accentColor)
                             .frame(width: 6, height: 6)
-                            .help(strings.usedByTestLink)
-                            .accessibilityLabel(strings.usedByTestLink)
+                            .help(strings.usedByCleanedLink)
+                            .accessibilityLabel(strings.usedByCleanedLink)
                     }
                     Text(count(strings))
                         .font(.callout.monospacedDigit())

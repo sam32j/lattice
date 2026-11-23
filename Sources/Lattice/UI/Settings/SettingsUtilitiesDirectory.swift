@@ -8,7 +8,7 @@ extension SettingsDirectory {
                 SettingsDirectoryItem(page: .urlCleaner, title: s.urlCleanerName, icon: "link",
                                       keywords: [Strings.enUS.urlCleanerName, "Clean URL", "tracking", "trackers",
                                                  FeatureStrings.urlSanitizer(language).autoRemoveTitle,
-                                                 FeatureStrings.urlSanitizer(language).testTitle,
+                                                 FeatureStrings.urlSanitizer(language).cleanTitle,
                                                  FeatureStrings.urlSanitizer(language).sitesTitle,
                                                  FeatureStrings.urlSanitizer(language).recentTitle]),
                 SettingsDirectoryItem(page: .clipboard, title: FeatureStrings.clipboard(language).title,
