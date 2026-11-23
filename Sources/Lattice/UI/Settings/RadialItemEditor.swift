@@ -28,6 +28,98 @@ struct RadialItemEditor: View {
     /// How long typing in the link field must pause before the website's
     /// icon is fetched.
     static let faviconDebounce: TimeInterval = 0.8
+    /// The width every field and menu of the editor shares.
+    static let fieldWidth: CGFloat = 175
+
+    /// The name the action gets when none is typed, shown as the field's
+    /// placeholder; "Automatic" only until there is a target to name.
+    var automaticName: String {
+        var unnamed = item
+        unnamed.name = ""
+        let hasTarget = !((item.kind == .app || item.kind == .file || item.kind == .url) && item.payload.isEmpty)
+            && !urlIsInvalid
+        return hasTarget ? unnamed.displayName(text, stableToggles: true) : text.automaticLabel
+    }
+
+    /// What the Action menu offers. Utilities that open something and the
+    /// controls that switch something are separate, as in the hub, whatever
+    /// kind they are stored as.
+    enum Category: Hashable {
+        case app, file, url, shortcut, utility, control, windowLayout, media, submenu
+    }
+
+    /// The tools on offer, plus the one this action already uses even if its
+    /// feature is switched off now, so the menu never shows a blank choice.
+    private var offeredTools: [RadialMenuTool] {
+        guard let current = item.tool, !availableTools.contains(current) else { return availableTools }
+        return availableTools + [current]
+    }
+    var availableUtilities: [RadialMenuTool] { offeredTools.filter { !$0.isControl } }
+    var availableControlTools: [RadialMenuTool] { offeredTools.filter(\.isControl) }
+
+    var category: Category {
+        switch item.kind {
+        case .app: return .app
+        case .file: return .file
+        case .url: return .url
+        case .shortcut: return .shortcut
+        case .tool: return item.tool?.isControl == true ? .control : .utility
+        case .quickToggle: return .control
+        case .windowLayout: return .windowLayout
+        case .media: return .media
+        case .submenu: return .submenu
+        }
+    }
+
+    var availableCategories: [Category] {
+        var categories: [Category] = [.app, .file, .url, .shortcut]
+        if !availableUtilities.isEmpty { categories.append(.utility) }
+        if !availableQuickToggles.isEmpty || !availableControlTools.isEmpty { categories.append(.control) }
+        if AppFeature.windowLayout.isAvailable { categories.append(.windowLayout) }
+        categories.append(.media)
+        if allowsSubmenu { categories.append(.submenu) }
+        return categories
+    }
+
+    func categoryTitle(_ category: Category) -> String {
+        switch category {
+        case .app: return text.kindApp
+        case .file: return text.kindFile
+        case .url: return text.kindURL
+        case .shortcut: return text.kindShortcut
+        case .utility: return text.kindTool
+        case .control: return FeatureStrings.quickToggles(l10n.language).pageTitle
+        case .windowLayout: return FeatureStrings.windowLayout(l10n.language).title
+        case .media: return text.kindMedia
+        case .submenu: return text.kindSubmenu
+        }
+    }
+
+    var categoryBinding: Binding<Category> {
+        Binding(get: { category }, set: { new in
+            guard new != category else { return }
+            switch new {
+            case .app: kindBinding.wrappedValue = .app
+            case .file: kindBinding.wrappedValue = .file
+            case .url: kindBinding.wrappedValue = .url
+            case .shortcut: kindBinding.wrappedValue = .shortcut
+            case .utility:
+                kindBinding.wrappedValue = .tool
+                item.payload = availableUtilities.first?.rawValue ?? ""
+            case .control:
+                if let toggle = availableQuickToggles.first {
+                    kindBinding.wrappedValue = .quickToggle
+                    item.payload = toggle.rawValue
+                } else {
+                    kindBinding.wrappedValue = .tool
+                    item.payload = availableControlTools.first?.rawValue ?? ""
+                }
+            case .windowLayout: kindBinding.wrappedValue = .windowLayout
+            case .media: kindBinding.wrappedValue = .media
+            case .submenu: kindBinding.wrappedValue = .submenu
+            }
+        })
+    }
 
     var availableTools: [RadialMenuTool] {
         RadialMenuTool.allCases.filter { $0.isRunnable() }
@@ -54,32 +146,23 @@ struct RadialItemEditor: View {
             SettingsCard {
                 VStack(alignment: .leading, spacing: 12) {
                     editorRow(text.actionLabel) {
-                        Picker(text.actionLabel, selection: kindBinding) {
-                            ForEach(availableKinds, id: \.self) { kind in
-                                Text(kindTitle(kind)).tag(kind)
+                        Picker(text.actionLabel, selection: categoryBinding) {
+                            ForEach(availableCategories, id: \.self) { category in
+                                Text(categoryTitle(category)).tag(category)
                             }
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
-                        .fixedSize()
+                        .frame(width: Self.fieldWidth)
                     }
                     payloadEditor
-                }
-            }
-
-            if item.kind == .submenu {
-                SettingsCard {
-                    editorRow(text.kindSubmenu, help: text.submenuCaption) {
-                        if let openChildren {
-                            Button {
+                    if item.kind == .submenu {
+                        editorRow(text.kindSubmenu, help: text.submenuCaption) {
+                            Button(text.editActionButton) {
                                 dismiss()
-                                openChildren()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Text(text.editActionsButton)
-                                    Image(systemName: "chevron.forward")
-                                }
+                                openChildren?()
                             }
+                            .disabled(openChildren == nil)
                         }
                     }
                 }
@@ -88,10 +171,10 @@ struct RadialItemEditor: View {
             SettingsCard {
                 VStack(alignment: .leading, spacing: 12) {
                     editorRow(text.nameLabel) {
-                        TextField(text.nameLabel, text: $item.name, prompt: Text(text.automaticLabel))
+                        TextField(text.nameLabel, text: $item.name, prompt: Text(automaticName))
                             .textFieldStyle(.roundedBorder)
                             .labelsHidden()
-                            .frame(width: 220)
+                            .frame(width: Self.fieldWidth)
                     }
                     editorRow(text.iconLabel, status: faviconMark) {
                         if isFetchingFavicon {
@@ -142,7 +225,7 @@ struct RadialItemEditor: View {
                     .font(.headline)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                Text(kindTitle(item.kind))
+                Text(categoryTitle(category))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -155,30 +238,6 @@ struct RadialItemEditor: View {
     func editorRow<Control: View>(_ title: String, help: String? = nil, status: RadialRowNote.Content? = nil,
                                   @ViewBuilder control: () -> Control) -> some View {
         RadialTriggerRow(title: title, help: help, status: status, control: control)
-    }
-
-    var availableKinds: [RadialMenuItem.Kind] {
-        var kinds: [RadialMenuItem.Kind] = [.app, .file, .url, .shortcut]
-        if !availableTools.isEmpty { kinds.append(.tool) }
-        if !availableQuickToggles.isEmpty { kinds.append(.quickToggle) }
-        if AppFeature.windowLayout.isAvailable { kinds.append(.windowLayout) }
-        kinds.append(.media)
-        if allowsSubmenu { kinds.append(.submenu) }
-        return kinds
-    }
-
-    func kindTitle(_ kind: RadialMenuItem.Kind) -> String {
-        switch kind {
-        case .app: return text.kindApp
-        case .file: return text.kindFile
-        case .url: return text.kindURL
-        case .shortcut: return text.kindShortcut
-        case .tool: return text.kindTool
-        case .quickToggle: return FeatureStrings.quickToggles(l10n.language).pageTitle
-        case .windowLayout: return FeatureStrings.windowLayout(l10n.language).title
-        case .media: return text.kindMedia
-        case .submenu: return text.kindSubmenu
-        }
     }
 
     private var faviconMark: RadialRowNote.Content? {

@@ -25,7 +25,7 @@ extension RadialItemEditor {
                 TextField(text.kindURL, text: $item.payload, prompt: Text(text.urlPlaceholder))
                     .textFieldStyle(.roundedBorder)
                     .labelsHidden()
-                    .frame(width: 220)
+                    .frame(width: Self.fieldWidth)
             }
         case .shortcut:
             editorRow(text.kindShortcut) {
@@ -40,32 +40,41 @@ extension RadialItemEditor {
                     onReset: {},
                     onCapture: { item.payload = $0.storageValue })
             }
-        case .tool:
+        case .tool where item.tool?.isControl != true:
             editorRow(text.toolLabel) {
                 menuPicker(text.toolLabel) {
-                    ForEach(availableTools) { tool in
-                        Label(tool.feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)),
-                              systemImage: tool.symbolName)
+                    ForEach(availableUtilities) { tool in
+                        Label(toolTitle(tool), systemImage: tool.symbolName)
                             .tag(tool.rawValue)
                     }
                 }
             }
-        case .quickToggle:
+        case .tool, .quickToggle:
+            // Quick toggles and the utilities that are really switches, in
+            // one menu; each keeps the kind it is stored as.
             let title = FeatureStrings.quickToggles(l10n.language).pageTitle
             editorRow(title) {
-                menuPicker(title) {
+                Picker(title, selection: controlBinding) {
                     ForEach(availableQuickToggles) { action in
                         Label(action.settingsTitle(text), systemImage: action.symbolName)
-                            .tag(action.rawValue)
+                            .tag("toggle:" + action.rawValue)
+                    }
+                    if !availableQuickToggles.isEmpty, !availableControlTools.isEmpty { Divider() }
+                    ForEach(availableControlTools) { tool in
+                        Label(toolTitle(tool), systemImage: tool.symbolName)
+                            .tag("tool:" + tool.rawValue)
                     }
                 }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: Self.fieldWidth)
             }
         case .windowLayout:
             let windowText = FeatureStrings.windowLayout(l10n.language)
             editorRow(windowText.title) {
                 menuPicker(windowText.title) {
                     ForEach(WindowLayoutAction.allCases) { action in
-                        Label(action.title(windowText), systemImage: action.symbolName)
+                        Label(action.radialTitle(text), systemImage: action.symbolName)
                             .tag(action.rawValue)
                     }
                 }
@@ -88,6 +97,25 @@ extension RadialItemEditor {
         Picker(title, selection: $item.payload) { options() }
             .labelsHidden()
             .pickerStyle(.menu)
-            .fixedSize()
+            .frame(width: Self.fieldWidth)
+    }
+
+    func toolTitle(_ tool: RadialMenuTool) -> String {
+        tool.feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language))
+    }
+
+    /// A quick toggle or a control tool, as one choice.
+    var controlBinding: Binding<String> {
+        Binding(get: {
+            (item.kind == .tool ? "tool:" : "toggle:") + item.payload
+        }, set: { tagged in
+            if tagged.hasPrefix("tool:") {
+                item.kind = .tool
+                item.payload = String(tagged.dropFirst("tool:".count))
+            } else {
+                item.kind = .quickToggle
+                item.payload = String(tagged.dropFirst("toggle:".count))
+            }
+        })
     }
 }

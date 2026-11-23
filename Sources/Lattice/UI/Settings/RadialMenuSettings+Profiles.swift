@@ -53,37 +53,69 @@ extension RadialMenuSettings {
     private func profileTab(_ profile: RadialMenuProfile, index: Int) -> some View {
         let selected = profile.id == selectedProfile.id
         let name = profile.displayName(text)
-        return HStack(spacing: 5) {
-            if index == 0 {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(selected ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
-                                              : AnyShapeStyle(.secondary))
-                    .accessibilityHidden(true)
+        let submenu = selected ? openSubmenu : nil
+        let foreground = selected ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
+                                  : AnyShapeStyle(.primary)
+        return HStack(spacing: 0) {
+            HStack(spacing: 5) {
+                // The primary's star is its mark; the others carry their dot.
+                if index == 0 {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(selected ? foreground : AnyShapeStyle(profile.color.color(for: colorScheme)))
+                        .accessibilityHidden(true)
+                } else {
+                    RadialProfileDot(color: profile.color, size: selected ? 8 : 10, onOwnFill: selected)
+                }
+                Text(name)
+                    .font(.callout.weight(selected ? .semibold : .regular))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 140, alignment: .leading)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .foregroundStyle(foreground)
             }
-            RadialProfileDot(color: profile.color, size: selected ? 8 : 10, onOwnFill: selected)
-            Text(name)
-                .font(.callout.weight(selected ? .semibold : .regular))
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: 140, alignment: .leading)
-                .fixedSize(horizontal: true, vertical: false)
-                .foregroundStyle(selected ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
-                                          : AnyShapeStyle(.primary))
+            .padding(.leading, 10)
+            .padding(.trailing, submenu == nil ? 10 : 14)
+            .frame(height: 28)
+            .background(
+                RadialAppendingPillSegment(pointed: submenu != nil)
+                    .fill(selected ? AnyShapeStyle(profile.color.gradient(for: colorScheme))
+                                   : AnyShapeStyle(Color.primary.opacity(0.06)))
+            )
+            .zIndex(1)
+            if let submenu {
+                // Inside a submenu the tab grows a segment naming it; the
+                // profile's part leads back to the profile's own wheel.
+                Text(submenu.displayName(text, stableToggles: true))
+                    .font(.callout)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 140, alignment: .leading)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 12)
+                    .frame(height: 28)
+                    .background(
+                        UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                               bottomTrailingRadius: 14, topTrailingRadius: 14,
+                                               style: .continuous)
+                            .fill(profile.color.color(for: colorScheme).opacity(0.22))
+                    )
+                    .padding(.leading, -10)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
         }
-        .padding(.horizontal, 10)
-        .frame(height: 28)
-        .background(
-            Capsule().fill(selected ? AnyShapeStyle(profile.color.gradient(for: colorScheme))
-                                    : AnyShapeStyle(Color.primary.opacity(0.06)))
-        )
+        .animation(.easeOut(duration: 0.18), value: submenu?.id)
         .overlay(alignment: .leading) {
             if tabDropTarget == profile.id {
                 Capsule().fill(Color.accentColor).frame(width: 2, height: 22).offset(x: -4)
             }
         }
         .contentShape(Capsule())
-        .onTapGesture { selectProfile(profile.id) }
+        .onTapGesture {
+            if selected, openSubmenuID != nil { openSubmenuID = nil } else { selectProfile(profile.id) }
+        }
         .help(index == 0 ? text.primaryHelp : name)
         .draggable(profile.id.uuidString)
         .dropDestination(for: String.self) { items, _ in
@@ -109,8 +141,9 @@ extension RadialMenuSettings {
             return .handled
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(name)
+        .accessibilityLabel(submenu.map { "\(name), \($0.displayName(text, stableToggles: true))" } ?? name)
         .accessibilityValue(index == 0 ? text.primaryHelp : "")
+        .accessibilityHint(submenu != nil ? text.backButton : "")
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction { selectProfile(profile.id) }
         .accessibilityActions {
@@ -263,5 +296,27 @@ struct RadialProfileEditSheet: View {
         }
         .padding(20)
         .frame(width: 380)
+    }
+}
+
+/// A tab's leading segment: a capsule, or, with a submenu appended, a
+/// capsule whose trailing end comes to a point over the segment after it.
+struct RadialAppendingPillSegment: Shape {
+    var pointed: Bool
+
+    func path(in rect: CGRect) -> Path {
+        guard pointed else { return Capsule().path(in: rect) }
+        let radius = rect.height / 2
+        let tip: CGFloat = 8
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + radius, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - tip, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.maxX - tip, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + radius, y: rect.maxY))
+        path.addArc(center: CGPoint(x: rect.minX + radius, y: rect.midY), radius: radius,
+                    startAngle: .degrees(90), endAngle: .degrees(270), clockwise: false)
+        path.closeSubpath()
+        return path
     }
 }

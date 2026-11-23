@@ -475,11 +475,13 @@ private struct RadialTabArc: View {
     }
 
     private func width(of tab: RadialProfileTabs.VisibleTab) -> CGFloat {
+        // Collapsed: the primary's star or another profile's dot. Expanded:
+        // the primary's star and the name, no dot.
+        guard tab.index == service.activeProfileIndex else { return (tab.index == 0 ? 9 : 10) + 12 }
         let star: CGFloat = tab.index == 0 ? 14 : 0
-        guard tab.index == service.activeProfileIndex else { return star + 10 + 12 }
         let name = fittedName(service.sessionProfiles[tab.index].displayName(text))
         let textWidth = name.reduce(CGFloat(0)) { $0 + ($1 as NSString).size(withAttributes: [.font: Self.nameFont]).width }
-        return star + 7 + 5 + textWidth + 18
+        return star + textWidth + 18
     }
 
     private var placed: [Placed] {
@@ -565,8 +567,7 @@ private struct RadialTabArc: View {
         let name = profile.displayName(text)
         let dotSize: CGFloat = current ? 7 : 10
         var glyphs: [Glyph] = []
-        if item.tab.index == 0 { glyphs.append(.star) }
-        glyphs.append(.dot)
+        if item.tab.index == 0 { glyphs.append(.star) } else if !current { glyphs.append(.dot) }
         if current { glyphs += fittedName(name).map(Glyph.character) }
         let gaps: [CGFloat] = glyphs.indices.map { index in
             guard index + 1 < glyphs.count else { return 0 }
@@ -582,7 +583,7 @@ private struct RadialTabArc: View {
             run += widths[index] + gaps[index]
         }
         let foreground = current ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
-                                 : AnyShapeStyle(.secondary)
+                                 : AnyShapeStyle(profile.color.color(for: colorScheme))
         return ZStack {
             ForEach(Array(placements.enumerated()), id: \.offset) { _, placement in
                 Group {
@@ -738,7 +739,7 @@ extension RadialMenuItem {
             guard let windowLayoutAction else {
                 return FeatureStrings.windowLayout(L10n.shared.language).title
             }
-            return windowLayoutAction.title(FeatureStrings.windowLayout(L10n.shared.language))
+            return windowLayoutAction.radialTitle(text)
         case .media:
             switch mediaKey {
             case .playPause: return text.mediaPlayPause
@@ -759,6 +760,18 @@ extension RadialMenuItem {
 
     var usesFileIcon: Bool {
         (kind == .app || kind == .file) && symbolName.isEmpty
+    }
+}
+
+extension WindowLayoutAction {
+    /// The window layout's own title, minus the "window" the wheel already
+    /// implies for the two display moves.
+    func radialTitle(_ text: RadialMenuFeatureStrings) -> String {
+        switch self {
+        case .nextDisplay: return text.moveToNextDisplay
+        case .previousDisplay: return text.moveToPreviousDisplay
+        default: return title(FeatureStrings.windowLayout(L10n.shared.language))
+        }
     }
 }
 

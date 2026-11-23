@@ -81,25 +81,24 @@ struct RadialMenuVisualCanvas: View {
     /// Add action on the leading side, the action count on the trailing one.
     private var bottomBar: some View {
         HStack {
-            if canAdd && !items.isEmpty {
-                Button(action: onAdd) {
-                    Label(text.addButton, systemImage: "plus")
-                        .font(.callout)
+            // Always here, in submenus too; greyed out once the level is full.
+            Button(action: onAdd) {
+                Label(text.addButton, systemImage: "plus")
+                    .font(.callout)
+            }
+            .buttonStyle(.borderless)
+            .disabled(!canAdd)
+            .onHover { addHovered = $0 }
+            .focused($focusedSlot, equals: .add)
+            .onKeyPress(phases: .down) { press in
+                switch press.key {
+                case .leftArrow, .upArrow: focus(items.count - 1); return .handled
+                case .rightArrow, .downArrow: focus(0); return .handled
+                default: return .ignored
                 }
-                .buttonStyle(.borderless)
-                .onHover { addHovered = $0 }
-                .focused($focusedSlot, equals: .add)
-                .onKeyPress(phases: .down) { press in
-                    switch press.key {
-                    case .leftArrow, .upArrow: focus(items.count - 1); return .handled
-                    case .rightArrow, .downArrow: focus(0); return .handled
-                    default: return .ignored
-                    }
-                }
-                .help(text.addButton)
             }
             Spacer()
-            Text("\(items.count) / \(RadialMenuSupport.maxItemsPerWheel)")
+            Text(String(format: text.slotsUsedFormat, items.count, RadialMenuSupport.maxItemsPerWheel))
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .accessibilityLabel(String(format: text.actionCountFormat, items.count,
@@ -170,7 +169,7 @@ struct RadialMenuVisualCanvas: View {
                                            item.displayName(text, stableToggles: true), kindLabel(for: item),
                                            index + 1, items.count))
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction { onEdit(item) }
+                .accessibilityAction { activate(item) }
                 .accessibilityActions {
                     Button(text.editActionButton) { onEdit(item) }
                     if items.count > 1 {
@@ -203,7 +202,7 @@ struct RadialMenuVisualCanvas: View {
             }
             .onEnded { value in
                 if hypot(value.translation.width, value.translation.height) <= 6 {
-                    onEdit(item)
+                    activate(item)
                 } else if let from = draggingIndex, let to = targetIndex, from != to,
                           items.indices.contains(from), items.indices.contains(to) {
                     onSwap(items[from], items[to])
@@ -213,12 +212,14 @@ struct RadialMenuVisualCanvas: View {
             }
     }
 
+    /// A click or Return: a submenu opens, any other action is edited.
+    private func activate(_ item: RadialMenuItem) {
+        if item.kind == .submenu { onOpenSubmenu(item) } else { onEdit(item) }
+    }
+
     @ViewBuilder
     private func contextMenu(for item: RadialMenuItem) -> some View {
         Button(text.editActionButton) { onEdit(item) }
-        if item.kind == .submenu {
-            Button(text.editActionsButton) { onOpenSubmenu(item) }
-        }
         Divider()
         Button(text.deleteButton, role: .destructive) { onRemove(item) }
     }
@@ -245,7 +246,7 @@ struct RadialMenuVisualCanvas: View {
         }
         switch press.key {
         case .return, .space:
-            onEdit(item)
+            activate(item)
             return .handled
         case .delete, .deleteForward:
             let neighbour = items.count > 1 ? items[(index + 1) % items.count].id : nil
@@ -259,7 +260,7 @@ struct RadialMenuVisualCanvas: View {
 
     /// Walks the actions and then Add action, round and round.
     private func focus(_ position: Int) {
-        let stops = items.count + (canAdd && !items.isEmpty ? 1 : 0)
+        let stops = items.count + (canAdd ? 1 : 0)
         guard stops > 0 else { return }
         let wrapped = ((position % stops) + stops) % stops
         focusedSlot = items.indices.contains(wrapped) ? .item(items[wrapped].id) : .add

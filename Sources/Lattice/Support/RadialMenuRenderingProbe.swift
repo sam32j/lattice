@@ -83,6 +83,24 @@ enum RadialMenuRenderingProbe {
                                        cancelTitle: "Cancel", save: { _, _ in })),
                 size: CGSize(width: 380, height: 330), output: output, failures: &failures, colorScheme: scheme)
         }
+        // A wheel with a submenu, for the tab's appended segment.
+        var nested = filled
+        let submenu = RadialMenuItem(kind: .submenu, name: "Players",
+                                     children: [RadialMenuItem(kind: .media, payload: RadialMenuMediaKey.playPause.rawValue)])
+        nested[0].items.append(submenu)
+        defaults.set(RadialMenuSupport.encodeProfiles(nested), forKey: DefaultsKey.radialMenuProfiles)
+        SettingsRefactorProbe.render("radial-settings-submenu", view: AnyView(RadialMenuSettings(openSubmenuID: submenu.id)),
+                                     size: CGSize(width: 640, height: 900), output: output, failures: &failures,
+                                     colorScheme: .dark)
+        for (name, item) in [("submenu", submenu),
+                             ("window", RadialMenuItem(kind: .windowLayout, payload: WindowLayoutAction.nextDisplay.rawValue)),
+                             ("control", RadialMenuItem(kind: .tool, payload: RadialMenuTool.keepAwake.rawValue))] {
+            SettingsRefactorProbe.render("radial-item-editor-\(name)", view: AnyView(
+                RadialItemEditor(text: FeatureStrings.radialMenu(.enUS), item: item, isNew: false,
+                                 allowsSubmenu: true, profileColor: .purple, openChildren: {},
+                                 save: { _ in }, delete: {})),
+                size: CGSize(width: 460, height: 420), output: output, failures: &failures, colorScheme: .dark)
+        }
         SettingsRefactorProbe.setPreviewAvailability(.middleClick, enabled: true)
         defaults.set(true, forKey: DefaultsKey.middleClickEnabled)
         defaults.set(4, forKey: DefaultsKey.middleClickTapFingers)

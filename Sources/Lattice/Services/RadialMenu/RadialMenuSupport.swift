@@ -454,6 +454,17 @@ enum RadialMenuTool: String, Codable, CaseIterable, Identifiable {
 
     var symbolName: String { feature.symbolName }
 
+    /// Switches something on or off rather than opening a utility, the way
+    /// the hub groups these features (Sound, Energy & Display, Mouse &
+    /// Keyboard). The action editor lists them with the quick controls; they
+    /// stay stored as tools.
+    var isControl: Bool {
+        switch self {
+        case .micMute, .keepAwake, .cleaningMode: return true
+        default: return false
+        }
+    }
+
     /// Hub availability and a feature's own master switch are separate. A
     /// saved Shelf slice stays dormant while Shelf is explicitly disabled and
     /// returns automatically when the user enables it again.

@@ -28,6 +28,10 @@ struct RadialMenuSettings: View {
     @State var selectedProfileID: UUID?
     /// The submenu being edited; nil means the root wheel.
     @State var openSubmenuID: UUID?
+
+    init(openSubmenuID: UUID? = nil) {
+        _openSubmenuID = State(initialValue: openSubmenuID)
+    }
     @State var editing: RadialMenuItem?
     @State var editingProfile: RadialMenuProfile?
     @State var confirmingDeletion: RadialMenuProfile?
@@ -193,10 +197,6 @@ struct RadialMenuSettings: View {
         VStack(spacing: 0) {
             profileTopBar
                 .frame(height: 44)
-            if let openSubmenu {
-                breadcrumb(for: openSubmenu)
-                    .frame(height: 24)
-            }
             RadialMenuVisualCanvas(
                 items: level,
                 profileColor: selectedProfile.color,
@@ -219,30 +219,5 @@ struct RadialMenuSettings: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(text.editorLabel)
-    }
-
-    private func breadcrumb(for submenu: RadialMenuItem) -> some View {
-        HStack {
-            Button {
-                openSubmenuID = nil
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "chevron.backward")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(selectedProfile.color.gradient(for: colorScheme))
-                    Text("\(selectedProfile.displayName(text)) › \(submenu.displayName(text))")
-                        .font(.caption)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help(text.backButton)
-            .accessibilityLabel(text.backButton)
-            .accessibilityValue("\(selectedProfile.displayName(text)), \(submenu.displayName(text))")
-            Spacer()
-        }
-        .padding(.horizontal, 16)
     }
 }

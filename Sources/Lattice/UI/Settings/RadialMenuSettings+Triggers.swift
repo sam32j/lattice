@@ -180,6 +180,11 @@ struct RadialTriggerRow<Control: View>: View {
                 .truncationMode(.tail)
                 .help(help ?? title)
                 .layoutPriority(1)
+            Spacer(minLength: 12)
+            if let status {
+                RadialStatusMark(content: status)
+            }
+            // Beside the control it explains, opened by a click only.
             if let info {
                 Button { showsInfo.toggle() } label: {
                     Image(systemName: "info.circle")
@@ -187,7 +192,6 @@ struct RadialTriggerRow<Control: View>: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help(info)
                 .accessibilityLabel(info)
                 .popover(isPresented: $showsInfo, arrowEdge: .bottom) {
                     Text(info)
@@ -196,10 +200,6 @@ struct RadialTriggerRow<Control: View>: View {
                         .frame(width: 240, alignment: .leading)
                         .padding(14)
                 }
-            }
-            Spacer(minLength: 12)
-            if let status {
-                RadialStatusMark(content: status)
             }
             control
         }
@@ -289,16 +289,27 @@ struct RadialMouseButtonRow: View {
                 if recording {
                     recordingButton
                 } else if let button = trigger.buttonNumber {
-                    Text(name(of: button))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    Button(text.mouseButtonClearShort) {
-                        if previewRaw != nil { previewRaw = RadialMenuMouseTrigger.off.rawValue; return }
-                        raw = RadialMenuMouseTrigger.off.rawValue
-                        RadialMenuService.shared.syncWithPreferences()
+                    // Set: a green Active state (its tooltip names the button)
+                    // and Clear, together as wide as the other controls.
+                    HStack(spacing: 6) {
+                        HStack(spacing: 5) {
+                            Circle().fill(Color.green).frame(width: 7, height: 7)
+                            Text(text.mouseButtonActive)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        .help(name(of: button))
+                        .accessibilityElement(children: .combine)
+                        .accessibilityValue(name(of: button))
+                        Spacer(minLength: 4)
+                        Button(text.mouseButtonClearShort) {
+                            if previewRaw != nil { previewRaw = RadialMenuMouseTrigger.off.rawValue; return }
+                            raw = RadialMenuMouseTrigger.off.rawValue
+                            RadialMenuService.shared.syncWithPreferences()
+                        }
+                        .help(text.mouseButtonClear)
                     }
-                    .help(text.mouseButtonClear)
+                    .frame(width: RadialTriggerRow<EmptyView>.controlWidth)
                 } else {
                     Button { start() } label: {
                         Text(text.mouseButtonSet)

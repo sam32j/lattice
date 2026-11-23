@@ -118,6 +118,10 @@ struct RadialMenuFeatureStrings {
     let toggleSystemAppearance: String
     let toggleHiddenFiles: String
     let toggleDesktopIcons: String
+    let mouseButtonActive: String
+    let slotsUsedFormat: String
+    let moveToNextDisplay: String
+    let moveToPreviousDisplay: String
 }
 
 extension FeatureStrings {
@@ -159,7 +163,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Open a file or folder",
         kindURL: "Open a link",
         kindShortcut: "Press a shortcut",
-        kindTool: "Lattice tool",
+        kindTool: "Open utilities",
         kindMedia: "Media control",
         kindSubmenu: "Submenu",
         chooseButton: "Choose…",
@@ -214,11 +218,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Press quickly to keep the menu open. Hold, point at an action and let go to run it.",
         shortcutLabel: "Open radial menu with shortcut",
         shortcutRefused: "Another app is using this shortcut.",
-        trackpadLabel: "Open radial menu with trackpad",
+        trackpadLabel: "Assign trackpad gesture",
         trackpadOff: "Off",
         trackpadTap: "Four-finger tap",
         trackpadClick: "Four-finger click",
-        mouseButtonLabel: "Open radial menu with mouse button",
+        mouseButtonLabel: "Assign mouse button",
         mouseButtonRecording: "Press a mouse button…",
         mouseButtonClear: "Clear mouse button",
         mouseButtonPrimaryRefused: "Use an extra button, not the left or right one.",
@@ -248,7 +252,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Delete profile",
         trackpadHelp: "Opens the menu until you choose an action, press Esc or click outside.",
         profilesHelp: "In the menu, press Tab or scroll to switch profiles.",
-        mouseButtonSet: "Set…",
+        mouseButtonSet: "Set button…",
         mouseButtonClearShort: "Clear",
         mouseButtonNothingSeenShort: "No button detected",
         iconSuggested: "Suggested",
@@ -257,7 +261,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Preset Profiles",
         toggleSystemAppearance: "Toggle System Appearance",
         toggleHiddenFiles: "Toggle Hidden Files",
-        toggleDesktopIcons: "Toggle Desktop Icons"
+        toggleDesktopIcons: "Toggle Desktop Icons",
+        mouseButtonActive: "Active",
+        slotsUsedFormat: "%1$d/%2$d slots used",
+        moveToNextDisplay: "Move to next display",
+        moveToPreviousDisplay: "Move to previous display"
     )
 
     static let ptBR = RadialMenuFeatureStrings(
@@ -276,7 +284,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Abrir arquivo ou pasta",
         kindURL: "Abrir um link",
         kindShortcut: "Pressionar um atalho",
-        kindTool: "Ferramenta do Lattice",
+        kindTool: "Abrir utilitários",
         kindMedia: "Controle de mídia",
         kindSubmenu: "Submenu",
         chooseButton: "Escolher…",
@@ -331,11 +339,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Pressione rapidamente para manter o menu aberto. Segure, aponte para uma ação e solte para executá-la.",
         shortcutLabel: "Abrir menu radial com atalho",
         shortcutRefused: "Outro app está usando este atalho.",
-        trackpadLabel: "Abrir menu radial com trackpad",
+        trackpadLabel: "Atribuir gesto do trackpad",
         trackpadOff: "Desligado",
         trackpadTap: "Toque com quatro dedos",
         trackpadClick: "Clique com quatro dedos",
-        mouseButtonLabel: "Abrir menu radial com botão do mouse",
+        mouseButtonLabel: "Atribuir botão do mouse",
         mouseButtonRecording: "Aperte um botão do mouse…",
         mouseButtonClear: "Limpar botão do mouse",
         mouseButtonPrimaryRefused: "Use um botão extra, não o esquerdo nem o direito.",
@@ -365,7 +373,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Excluir perfil",
         trackpadHelp: "Abre o menu até você escolher uma ação, apertar Esc ou clicar fora.",
         profilesHelp: "No menu, aperte Tab ou role para trocar de perfil.",
-        mouseButtonSet: "Definir…",
+        mouseButtonSet: "Definir botão…",
         mouseButtonClearShort: "Limpar",
         mouseButtonNothingSeenShort: "Nenhum botão detectado",
         iconSuggested: "Sugeridos",
@@ -374,7 +382,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Perfis predefinidos",
         toggleSystemAppearance: "Alternar aparência do sistema",
         toggleHiddenFiles: "Alternar arquivos ocultos",
-        toggleDesktopIcons: "Alternar ícones da mesa"
+        toggleDesktopIcons: "Alternar ícones da mesa",
+        mouseButtonActive: "Ativo",
+        slotsUsedFormat: "%1$d/%2$d espaços usados",
+        moveToNextDisplay: "Mover para o próximo display",
+        moveToPreviousDisplay: "Mover para o display anterior"
     )
 
     static let tr = RadialMenuFeatureStrings(
@@ -393,7 +405,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Dosya veya klasör aç",
         kindURL: "Bağlantı aç",
         kindShortcut: "Kısayola bas",
-        kindTool: "Lattice aracı",
+        kindTool: "Araçları aç",
         kindMedia: "Ortam denetimi",
         kindSubmenu: "Alt menü",
         chooseButton: "Seç…",
@@ -448,11 +460,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Menüyü açık tutmak için kısaca basın. Bir eylemi çalıştırmak için basılı tutun, üzerine gelin ve bırakın.",
         shortcutLabel: "Dairesel menüyü kısayolla aç",
         shortcutRefused: "Bu kısayolu başka bir uygulama kullanıyor.",
-        trackpadLabel: "Dairesel menüyü izleme dörtgeniyle aç",
+        trackpadLabel: "İzleme dörtgeni hareketi ata",
         trackpadOff: "Kapalı",
         trackpadTap: "Dört parmakla dokunma",
         trackpadClick: "Dört parmakla tıklama",
-        mouseButtonLabel: "Dairesel menüyü fare düğmesiyle aç",
+        mouseButtonLabel: "Fare düğmesi ata",
         mouseButtonRecording: "Bir fare düğmesine basın…",
         mouseButtonClear: "Fare düğmesini temizle",
         mouseButtonPrimaryRefused: "Sol veya sağ düğmeyi değil, ek bir düğmeyi kullanın.",
@@ -482,7 +494,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Profili sil",
         trackpadHelp: "Bir eylem seçene, Esc’e basana veya dışına tıklayana kadar menüyü açık tutar.",
         profilesHelp: "Menüde profiller arasında geçmek için Tab’e basın veya kaydırın.",
-        mouseButtonSet: "Ayarla…",
+        mouseButtonSet: "Düğme ayarla…",
         mouseButtonClearShort: "Temizle",
         mouseButtonNothingSeenShort: "Düğme algılanmadı",
         iconSuggested: "Önerilenler",
@@ -491,7 +503,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Hazır profiller",
         toggleSystemAppearance: "Sistem görünümünü değiştir",
         toggleHiddenFiles: "Gizli dosyaları aç/kapat",
-        toggleDesktopIcons: "Masaüstü simgelerini aç/kapat"
+        toggleDesktopIcons: "Masaüstü simgelerini aç/kapat",
+        mouseButtonActive: "Etkin",
+        slotsUsedFormat: "%1$d/%2$d yuva kullanıldı",
+        moveToNextDisplay: "Sonraki ekrana taşı",
+        moveToPreviousDisplay: "Önceki ekrana taşı"
     )
 
     static let ru = RadialMenuFeatureStrings(
@@ -510,7 +526,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Открыть файл или папку",
         kindURL: "Открыть ссылку",
         kindShortcut: "Нажать сочетание клавиш",
-        kindTool: "Инструмент Lattice",
+        kindTool: "Открыть утилиты",
         kindMedia: "Управление медиа",
         kindSubmenu: "Подменю",
         chooseButton: "Выбрать…",
@@ -565,11 +581,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Коротко нажмите, чтобы меню осталось открытым. Удерживайте, наведите на действие и отпустите, чтобы запустить его.",
         shortcutLabel: "Открывать радиальное меню сочетанием клавиш",
         shortcutRefused: "Это сочетание использует другое приложение.",
-        trackpadLabel: "Открывать радиальное меню трекпадом",
+        trackpadLabel: "Назначить жест трекпада",
         trackpadOff: "Выключено",
         trackpadTap: "Касание четырьмя пальцами",
         trackpadClick: "Нажатие четырьмя пальцами",
-        mouseButtonLabel: "Открывать радиальное меню кнопкой мыши",
+        mouseButtonLabel: "Назначить кнопку мыши",
         mouseButtonRecording: "Нажмите кнопку мыши…",
         mouseButtonClear: "Очистить кнопку мыши",
         mouseButtonPrimaryRefused: "Используйте дополнительную кнопку, а не левую или правую.",
@@ -599,7 +615,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Удалить профиль",
         trackpadHelp: "Открывает меню, пока вы не выберете действие, не нажмёте Esc или не щёлкнете вне его.",
         profilesHelp: "В меню нажмите Tab или прокрутите, чтобы сменить профиль.",
-        mouseButtonSet: "Задать…",
+        mouseButtonSet: "Задать кнопку…",
         mouseButtonClearShort: "Очистить",
         mouseButtonNothingSeenShort: "Кнопка не обнаружена",
         iconSuggested: "Предлагаемые",
@@ -608,7 +624,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Готовые профили",
         toggleSystemAppearance: "Переключить оформление системы",
         toggleHiddenFiles: "Показать или скрыть скрытые файлы",
-        toggleDesktopIcons: "Показать или скрыть значки рабочего стола"
+        toggleDesktopIcons: "Показать или скрыть значки рабочего стола",
+        mouseButtonActive: "Активна",
+        slotsUsedFormat: "Занято %1$d из %2$d",
+        moveToNextDisplay: "Переместить на следующий дисплей",
+        moveToPreviousDisplay: "Переместить на предыдущий дисплей"
     )
 
     static let es = RadialMenuFeatureStrings(
@@ -627,7 +647,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Abrir un archivo o carpeta",
         kindURL: "Abrir un enlace",
         kindShortcut: "Pulsar un atajo",
-        kindTool: "Herramienta de Lattice",
+        kindTool: "Abrir utilidades",
         kindMedia: "Control multimedia",
         kindSubmenu: "Submenú",
         chooseButton: "Elegir…",
@@ -682,11 +702,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Pulsa brevemente para dejar el menú abierto. Mantén pulsado, apunta a una acción y suelta para ejecutarla.",
         shortcutLabel: "Abrir menú radial con atajo",
         shortcutRefused: "Otra app está usando este atajo.",
-        trackpadLabel: "Abrir menú radial con trackpad",
+        trackpadLabel: "Asignar gesto del trackpad",
         trackpadOff: "Desactivado",
         trackpadTap: "Toque con cuatro dedos",
         trackpadClick: "Clic con cuatro dedos",
-        mouseButtonLabel: "Abrir menú radial con botón del ratón",
+        mouseButtonLabel: "Asignar botón del ratón",
         mouseButtonRecording: "Pulsa un botón del ratón…",
         mouseButtonClear: "Borrar botón del ratón",
         mouseButtonPrimaryRefused: "Usa un botón extra, no el izquierdo ni el derecho.",
@@ -716,7 +736,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Eliminar perfil",
         trackpadHelp: "Abre el menú hasta que eliges una acción, pulsas Esc o haces clic fuera.",
         profilesHelp: "En el menú, pulsa Tab o desplázate para cambiar de perfil.",
-        mouseButtonSet: "Definir…",
+        mouseButtonSet: "Definir botón…",
         mouseButtonClearShort: "Borrar",
         mouseButtonNothingSeenShort: "No se detectó ningún botón",
         iconSuggested: "Sugeridos",
@@ -725,7 +745,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Perfiles predefinidos",
         toggleSystemAppearance: "Alternar apariencia del sistema",
         toggleHiddenFiles: "Alternar archivos ocultos",
-        toggleDesktopIcons: "Alternar iconos del escritorio"
+        toggleDesktopIcons: "Alternar iconos del escritorio",
+        mouseButtonActive: "Activo",
+        slotsUsedFormat: "%1$d/%2$d espacios usados",
+        moveToNextDisplay: "Mover a la pantalla siguiente",
+        moveToPreviousDisplay: "Mover a la pantalla anterior"
     )
 
     static let sk = RadialMenuFeatureStrings(
@@ -744,7 +768,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Otvoriť súbor alebo priečinok",
         kindURL: "Otvoriť odkaz",
         kindShortcut: "Stlačiť skratku",
-        kindTool: "Nástroj Lattice",
+        kindTool: "Otvoriť utility",
         kindMedia: "Ovládanie médií",
         kindSubmenu: "Podmenu",
         chooseButton: "Vybrať…",
@@ -799,11 +823,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Krátkym stlačením necháte menu otvorené. Podržte, ukážte na akciu a pustite, aby sa spustila.",
         shortcutLabel: "Otvoriť radiálne menu skratkou",
         shortcutRefused: "Túto skratku používa iná aplikácia.",
-        trackpadLabel: "Otvoriť radiálne menu trackpadom",
+        trackpadLabel: "Priradiť gesto trackpadu",
         trackpadOff: "Vypnuté",
         trackpadTap: "Ťuknutie štyrmi prstami",
         trackpadClick: "Kliknutie štyrmi prstami",
-        mouseButtonLabel: "Otvoriť radiálne menu tlačidlom myši",
+        mouseButtonLabel: "Priradiť tlačidlo myši",
         mouseButtonRecording: "Stlačte tlačidlo myši…",
         mouseButtonClear: "Vymazať tlačidlo myši",
         mouseButtonPrimaryRefused: "Použite ďalšie tlačidlo, nie ľavé ani pravé.",
@@ -833,7 +857,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Vymazať profil",
         trackpadHelp: "Otvorí menu, kým nevyberiete akciu, nestlačíte Esc alebo nekliknete mimo neho.",
         profilesHelp: "V menu prepnete profil klávesom Tab alebo posúvaním.",
-        mouseButtonSet: "Nastaviť…",
+        mouseButtonSet: "Nastaviť tlačidlo…",
         mouseButtonClearShort: "Vymazať",
         mouseButtonNothingSeenShort: "Nezistilo sa žiadne tlačidlo",
         iconSuggested: "Navrhované",
@@ -842,7 +866,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Prednastavené profily",
         toggleSystemAppearance: "Prepnúť vzhľad systému",
         toggleHiddenFiles: "Prepnúť skryté súbory",
-        toggleDesktopIcons: "Prepnúť ikony na ploche"
+        toggleDesktopIcons: "Prepnúť ikony na ploche",
+        mouseButtonActive: "Aktívne",
+        slotsUsedFormat: "Obsadené: %1$d/%2$d",
+        moveToNextDisplay: "Presunúť na ďalší displej",
+        moveToPreviousDisplay: "Presunúť na predchádzajúci displej"
     )
 
     static let de = RadialMenuFeatureStrings(
@@ -861,7 +889,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Datei oder Ordner öffnen",
         kindURL: "Link öffnen",
         kindShortcut: "Kurzbefehl drücken",
-        kindTool: "Lattice-Werkzeug",
+        kindTool: "Dienstprogramme öffnen",
         kindMedia: "Mediensteuerung",
         kindSubmenu: "Untermenü",
         chooseButton: "Auswählen…",
@@ -916,11 +944,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Kurz drücken lässt das Menü offen. Gedrückt halten, auf eine Aktion zeigen und loslassen führt sie aus.",
         shortcutLabel: "Radialmenü per Kurzbefehl öffnen",
         shortcutRefused: "Eine andere App verwendet diesen Kurzbefehl.",
-        trackpadLabel: "Radialmenü per Trackpad öffnen",
+        trackpadLabel: "Trackpad-Geste zuweisen",
         trackpadOff: "Aus",
         trackpadTap: "Mit vier Fingern tippen",
         trackpadClick: "Mit vier Fingern klicken",
-        mouseButtonLabel: "Radialmenü per Maustaste öffnen",
+        mouseButtonLabel: "Maustaste zuweisen",
         mouseButtonRecording: "Drücke eine Maustaste …",
         mouseButtonClear: "Maustaste entfernen",
         mouseButtonPrimaryRefused: "Nimm eine Zusatztaste, nicht die linke oder rechte.",
@@ -950,7 +978,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Profil löschen",
         trackpadHelp: "Öffnet das Menü, bis du eine Aktion wählst, Esc drückst oder daneben klickst.",
         profilesHelp: "Im Menü wechselst du Profile mit Tab oder durch Scrollen.",
-        mouseButtonSet: "Festlegen …",
+        mouseButtonSet: "Taste festlegen …",
         mouseButtonClearShort: "Entfernen",
         mouseButtonNothingSeenShort: "Keine Taste erkannt",
         iconSuggested: "Vorschläge",
@@ -959,7 +987,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Vorgefertigte Profile",
         toggleSystemAppearance: "Systemdarstellung umschalten",
         toggleHiddenFiles: "Versteckte Dateien umschalten",
-        toggleDesktopIcons: "Schreibtischsymbole umschalten"
+        toggleDesktopIcons: "Schreibtischsymbole umschalten",
+        mouseButtonActive: "Aktiv",
+        slotsUsedFormat: "%1$d/%2$d Plätze belegt",
+        moveToNextDisplay: "Auf nächsten Bildschirm bewegen",
+        moveToPreviousDisplay: "Auf vorherigen Bildschirm bewegen"
     )
 
     static let fr = RadialMenuFeatureStrings(
@@ -978,7 +1010,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Ouvrir un fichier ou un dossier",
         kindURL: "Ouvrir un lien",
         kindShortcut: "Appuyer sur un raccourci",
-        kindTool: "Outil Lattice",
+        kindTool: "Ouvrir des utilitaires",
         kindMedia: "Contrôle multimédia",
         kindSubmenu: "Sous-menu",
         chooseButton: "Choisir…",
@@ -1033,11 +1065,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Appuyez brièvement pour garder le menu ouvert. Maintenez, pointez une action et relâchez pour la lancer.",
         shortcutLabel: "Ouvrir le menu radial avec un raccourci",
         shortcutRefused: "Une autre app utilise ce raccourci.",
-        trackpadLabel: "Ouvrir le menu radial avec le trackpad",
+        trackpadLabel: "Attribuer un geste du trackpad",
         trackpadOff: "Désactivé",
         trackpadTap: "Toucher à quatre doigts",
         trackpadClick: "Clic à quatre doigts",
-        mouseButtonLabel: "Ouvrir le menu radial avec un bouton de la souris",
+        mouseButtonLabel: "Attribuer un bouton de la souris",
         mouseButtonRecording: "Appuyez sur un bouton de la souris…",
         mouseButtonClear: "Effacer le bouton de la souris",
         mouseButtonPrimaryRefused: "Utilisez un bouton supplémentaire, pas le gauche ni le droit.",
@@ -1067,7 +1099,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Supprimer le profil",
         trackpadHelp: "Ouvre le menu jusqu’à ce que vous choisissiez une action, appuyiez sur Échap ou cliquiez en dehors.",
         profilesHelp: "Dans le menu, appuyez sur Tab ou faites défiler pour changer de profil.",
-        mouseButtonSet: "Définir…",
+        mouseButtonSet: "Définir le bouton…",
         mouseButtonClearShort: "Effacer",
         mouseButtonNothingSeenShort: "Aucun bouton détecté",
         iconSuggested: "Suggestions",
@@ -1076,7 +1108,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Profils prédéfinis",
         toggleSystemAppearance: "Changer l’apparence du système",
         toggleHiddenFiles: "Afficher ou masquer les fichiers cachés",
-        toggleDesktopIcons: "Afficher ou masquer les icônes du bureau"
+        toggleDesktopIcons: "Afficher ou masquer les icônes du bureau",
+        mouseButtonActive: "Actif",
+        slotsUsedFormat: "%1$d/%2$d emplacements utilisés",
+        moveToNextDisplay: "Déplacer vers l’écran suivant",
+        moveToPreviousDisplay: "Déplacer vers l’écran précédent"
     )
 
     static let it = RadialMenuFeatureStrings(
@@ -1095,7 +1131,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Apri un file o una cartella",
         kindURL: "Apri un link",
         kindShortcut: "Premi un’abbreviazione",
-        kindTool: "Strumento Lattice",
+        kindTool: "Apri utility",
         kindMedia: "Controllo multimediale",
         kindSubmenu: "Sottomenu",
         chooseButton: "Scegli…",
@@ -1150,11 +1186,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Premi brevemente per tenere aperto il menu. Tieni premuto, punta un’azione e rilascia per eseguirla.",
         shortcutLabel: "Apri menu radiale con abbreviazione",
         shortcutRefused: "Un’altra app sta usando questa abbreviazione.",
-        trackpadLabel: "Apri menu radiale con trackpad",
+        trackpadLabel: "Assegna gesto del trackpad",
         trackpadOff: "Disattivato",
         trackpadTap: "Tocco con quattro dita",
         trackpadClick: "Clic con quattro dita",
-        mouseButtonLabel: "Apri menu radiale con pulsante del mouse",
+        mouseButtonLabel: "Assegna pulsante del mouse",
         mouseButtonRecording: "Premi un pulsante del mouse…",
         mouseButtonClear: "Cancella pulsante del mouse",
         mouseButtonPrimaryRefused: "Usa un pulsante extra, non il sinistro o il destro.",
@@ -1184,7 +1220,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Elimina profilo",
         trackpadHelp: "Apre il menu finché non scegli un’azione, premi Esc o fai clic fuori.",
         profilesHelp: "Nel menu, premi Tab o scorri per cambiare profilo.",
-        mouseButtonSet: "Imposta…",
+        mouseButtonSet: "Imposta pulsante…",
         mouseButtonClearShort: "Cancella",
         mouseButtonNothingSeenShort: "Nessun pulsante rilevato",
         iconSuggested: "Suggerite",
@@ -1193,7 +1229,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Profili predefiniti",
         toggleSystemAppearance: "Alterna aspetto del sistema",
         toggleHiddenFiles: "Mostra o nascondi i file nascosti",
-        toggleDesktopIcons: "Mostra o nascondi le icone della scrivania"
+        toggleDesktopIcons: "Mostra o nascondi le icone della scrivania",
+        mouseButtonActive: "Attivo",
+        slotsUsedFormat: "%1$d/%2$d posti usati",
+        moveToNextDisplay: "Sposta sul monitor successivo",
+        moveToPreviousDisplay: "Sposta sul monitor precedente"
     )
 
     static let ja = RadialMenuFeatureStrings(
@@ -1212,7 +1252,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "ファイルまたはフォルダを開く",
         kindURL: "リンクを開く",
         kindShortcut: "ショートカットを押す",
-        kindTool: "Latticeのツール",
+        kindTool: "ユーティリティを開く",
         kindMedia: "メディアコントロール",
         kindSubmenu: "サブメニュー",
         chooseButton: "選択…",
@@ -1267,11 +1307,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "短く押すとメニューが開いたままになります。長押ししてアクションを指し、放すと実行されます。",
         shortcutLabel: "ショートカットでラジアルメニューを開く",
         shortcutRefused: "このショートカットはほかのアプリで使用されています。",
-        trackpadLabel: "トラックパッドでラジアルメニューを開く",
+        trackpadLabel: "トラックパッドジェスチャを割り当て",
         trackpadOff: "オフ",
         trackpadTap: "4本指でタップ",
         trackpadClick: "4本指でクリック",
-        mouseButtonLabel: "マウスボタンでラジアルメニューを開く",
+        mouseButtonLabel: "マウスボタンを割り当て",
         mouseButtonRecording: "マウスボタンを押してください…",
         mouseButtonClear: "マウスボタンを消去",
         mouseButtonPrimaryRefused: "左右のボタンではなく、追加のボタンを使ってください。",
@@ -1301,7 +1341,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "プロファイルを削除",
         trackpadHelp: "アクションを選ぶか、Escを押すか、外側をクリックするまでメニューを開きます。",
         profilesHelp: "メニュー内では Tab キーまたはスクロールでプロファイルを切り替えます。",
-        mouseButtonSet: "設定…",
+        mouseButtonSet: "ボタンを設定…",
         mouseButtonClearShort: "消去",
         mouseButtonNothingSeenShort: "ボタンが検出されません",
         iconSuggested: "おすすめ",
@@ -1310,7 +1350,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "プリセットのプロファイル",
         toggleSystemAppearance: "システムの外観を切り替え",
         toggleHiddenFiles: "不可視ファイルの表示を切り替え",
-        toggleDesktopIcons: "デスクトップアイコンの表示を切り替え"
+        toggleDesktopIcons: "デスクトップアイコンの表示を切り替え",
+        mouseButtonActive: "有効",
+        slotsUsedFormat: "%2$d枠中%1$d枠を使用",
+        moveToNextDisplay: "次のディスプレイへ移動",
+        moveToPreviousDisplay: "前のディスプレイへ移動"
     )
 
     static let ko = RadialMenuFeatureStrings(
@@ -1329,7 +1373,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "파일 또는 폴더 열기",
         kindURL: "링크 열기",
         kindShortcut: "단축키 누르기",
-        kindTool: "Lattice 도구",
+        kindTool: "유틸리티 열기",
         kindMedia: "미디어 제어",
         kindSubmenu: "하위 메뉴",
         chooseButton: "선택…",
@@ -1384,11 +1428,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "짧게 누르면 메뉴가 열린 채로 유지됩니다. 길게 누른 채 동작을 가리키고 놓으면 실행됩니다.",
         shortcutLabel: "단축키로 방사형 메뉴 열기",
         shortcutRefused: "다른 앱에서 이 단축키를 사용 중입니다.",
-        trackpadLabel: "트랙패드로 방사형 메뉴 열기",
+        trackpadLabel: "트랙패드 제스처 지정",
         trackpadOff: "끔",
         trackpadTap: "네 손가락 탭",
         trackpadClick: "네 손가락 클릭",
-        mouseButtonLabel: "마우스 버튼으로 방사형 메뉴 열기",
+        mouseButtonLabel: "마우스 버튼 지정",
         mouseButtonRecording: "마우스 버튼을 누르세요…",
         mouseButtonClear: "마우스 버튼 지우기",
         mouseButtonPrimaryRefused: "왼쪽이나 오른쪽 버튼이 아닌 추가 버튼을 사용하세요.",
@@ -1418,7 +1462,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "프로필 삭제",
         trackpadHelp: "동작을 고르거나, Esc를 누르거나, 바깥을 클릭할 때까지 메뉴를 엽니다.",
         profilesHelp: "메뉴에서 Tab 키를 누르거나 스크롤하여 프로필을 전환하세요.",
-        mouseButtonSet: "설정…",
+        mouseButtonSet: "버튼 설정…",
         mouseButtonClearShort: "지우기",
         mouseButtonNothingSeenShort: "감지된 버튼 없음",
         iconSuggested: "추천",
@@ -1427,7 +1471,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "프리셋 프로필",
         toggleSystemAppearance: "시스템 화면 모드 전환",
         toggleHiddenFiles: "숨겨진 파일 보기 전환",
-        toggleDesktopIcons: "데스크탑 아이콘 보기 전환"
+        toggleDesktopIcons: "데스크탑 아이콘 보기 전환",
+        mouseButtonActive: "활성",
+        slotsUsedFormat: "%2$d칸 중 %1$d칸 사용",
+        moveToNextDisplay: "다음 디스플레이로 이동",
+        moveToPreviousDisplay: "이전 디스플레이로 이동"
     )
 
     static let zhHans = RadialMenuFeatureStrings(
@@ -1446,7 +1494,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "打开文件或文件夹",
         kindURL: "打开链接",
         kindShortcut: "按下快捷键",
-        kindTool: "Lattice 工具",
+        kindTool: "打开实用工具",
         kindMedia: "媒体控制",
         kindSubmenu: "子菜单",
         chooseButton: "选择…",
@@ -1501,11 +1549,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "短按可让菜单保持打开。按住、指向一个操作后松开即可执行。",
         shortcutLabel: "用快捷键打开径向菜单",
         shortcutRefused: "另一个 App 正在使用此快捷键。",
-        trackpadLabel: "用触控板打开径向菜单",
+        trackpadLabel: "指定触控板手势",
         trackpadOff: "关闭",
         trackpadTap: "四指轻点",
         trackpadClick: "四指点按",
-        mouseButtonLabel: "用鼠标按钮打开径向菜单",
+        mouseButtonLabel: "指定鼠标按钮",
         mouseButtonRecording: "请按下一个鼠标按钮…",
         mouseButtonClear: "清除鼠标按钮",
         mouseButtonPrimaryRefused: "请使用额外按钮，而不是左键或右键。",
@@ -1535,7 +1583,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "删除配置",
         trackpadHelp: "打开菜单，直到你选择一个操作、按下 Esc 或点按菜单外部。",
         profilesHelp: "在菜单中，按 Tab 键或滚动来切换配置。",
-        mouseButtonSet: "设定…",
+        mouseButtonSet: "设定按钮…",
         mouseButtonClearShort: "清除",
         mouseButtonNothingSeenShort: "未检测到按钮",
         iconSuggested: "建议",
@@ -1544,7 +1592,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "预设配置",
         toggleSystemAppearance: "切换系统外观",
         toggleHiddenFiles: "切换隐藏文件",
-        toggleDesktopIcons: "切换桌面图标"
+        toggleDesktopIcons: "切换桌面图标",
+        mouseButtonActive: "已启用",
+        slotsUsedFormat: "已用 %1$d/%2$d 个位置",
+        moveToNextDisplay: "移到下一个显示器",
+        moveToPreviousDisplay: "移到上一个显示器"
     )
 
     static let zhTW = RadialMenuFeatureStrings(
@@ -1563,7 +1615,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "打開檔案或檔案夾",
         kindURL: "打開連結",
         kindShortcut: "按下快速鍵",
-        kindTool: "Lattice 工具",
+        kindTool: "打開工具程式",
         kindMedia: "媒體控制",
         kindSubmenu: "子選單",
         chooseButton: "選擇…",
@@ -1618,11 +1670,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "短按可讓選單保持開啟。按住、指向動作後放開即可執行。",
         shortcutLabel: "用快速鍵打開放射狀選單",
         shortcutRefused: "另一個 App 正在使用此快速鍵。",
-        trackpadLabel: "用觸控式軌跡板打開放射狀選單",
+        trackpadLabel: "指定觸控式軌跡板手勢",
         trackpadOff: "關閉",
         trackpadTap: "四指輕點",
         trackpadClick: "四指按一下",
-        mouseButtonLabel: "用滑鼠按鈕打開放射狀選單",
+        mouseButtonLabel: "指定滑鼠按鈕",
         mouseButtonRecording: "請按下滑鼠按鈕…",
         mouseButtonClear: "清除滑鼠按鈕",
         mouseButtonPrimaryRefused: "請使用額外按鈕，而非左鍵或右鍵。",
@@ -1652,7 +1704,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "刪除設定檔",
         trackpadHelp: "打開選單，直到你選擇動作、按下 Esc 或按一下選單外部。",
         profilesHelp: "在選單中，按 Tab 鍵或捲動來切換設定檔。",
-        mouseButtonSet: "設定…",
+        mouseButtonSet: "設定按鈕…",
         mouseButtonClearShort: "清除",
         mouseButtonNothingSeenShort: "未偵測到按鈕",
         iconSuggested: "建議",
@@ -1661,7 +1713,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "預設設定檔",
         toggleSystemAppearance: "切換系統外觀",
         toggleHiddenFiles: "切換隱藏的檔案",
-        toggleDesktopIcons: "切換桌面圖像"
+        toggleDesktopIcons: "切換桌面圖像",
+        mouseButtonActive: "已啟用",
+        slotsUsedFormat: "已用 %1$d/%2$d 個位置",
+        moveToNextDisplay: "移到下一個顯示器",
+        moveToPreviousDisplay: "移到上一個顯示器"
     )
 
     static let zhHK = RadialMenuFeatureStrings(
@@ -1680,7 +1736,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "打開檔案或資料夾",
         kindURL: "打開連結",
         kindShortcut: "按下快速鍵",
-        kindTool: "Lattice 工具",
+        kindTool: "打開工具程式",
         kindMedia: "媒體控制",
         kindSubmenu: "子選單",
         chooseButton: "選擇…",
@@ -1735,11 +1791,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "短按可讓選單保持開啟。按住、指向動作後放開即可執行。",
         shortcutLabel: "用快捷鍵打開放射狀選單",
         shortcutRefused: "另一個 App 正在使用此快捷鍵。",
-        trackpadLabel: "用觸控板打開放射狀選單",
+        trackpadLabel: "指定觸控板手勢",
         trackpadOff: "關閉",
         trackpadTap: "四指輕點",
         trackpadClick: "四指點按",
-        mouseButtonLabel: "用滑鼠按鈕打開放射狀選單",
+        mouseButtonLabel: "指定滑鼠按鈕",
         mouseButtonRecording: "請按下滑鼠按鈕…",
         mouseButtonClear: "清除滑鼠按鈕",
         mouseButtonPrimaryRefused: "請使用額外按鈕，而非左鍵或右鍵。",
@@ -1769,7 +1825,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "刪除設定檔",
         trackpadHelp: "打開選單，直到你選擇動作、按下 Esc 或點按選單外部。",
         profilesHelp: "在選單中，按 Tab 鍵或捲動來切換設定檔。",
-        mouseButtonSet: "設定…",
+        mouseButtonSet: "設定按鈕…",
         mouseButtonClearShort: "清除",
         mouseButtonNothingSeenShort: "未偵測到按鈕",
         iconSuggested: "建議",
@@ -1778,7 +1834,11 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "預設設定檔",
         toggleSystemAppearance: "切換系統外觀",
         toggleHiddenFiles: "切換隱藏的檔案",
-        toggleDesktopIcons: "切換桌面圖像"
+        toggleDesktopIcons: "切換桌面圖像",
+        mouseButtonActive: "已啟用",
+        slotsUsedFormat: "已用 %1$d/%2$d 個位置",
+        moveToNextDisplay: "移到下一個顯示器",
+        moveToPreviousDisplay: "移到上一個顯示器"
     )
     static let uk = RadialMenuFeatureStrings(
         pageTitle: "Радіальне меню",
@@ -1796,7 +1856,7 @@ extension RadialMenuFeatureStrings {
         kindFile: "Відкрити файл або папку",
         kindURL: "Відкрити посилання",
         kindShortcut: "Натисніть клавіатурне скорочення",
-        kindTool: "Інструмент Lattice",
+        kindTool: "Відкрити утиліти",
         kindMedia: "Керування медіа",
         kindSubmenu: "Підменю",
         chooseButton: "Вибрати…",
@@ -1851,11 +1911,11 @@ extension RadialMenuFeatureStrings {
         openInfoBody: "Коротко натисніть, щоб меню лишалося відкритим. Утримуйте, наведіть на дію та відпустіть, щоб її запустити.",
         shortcutLabel: "Відкривати радіальне меню скороченням",
         shortcutRefused: "Це скорочення використовує інша програма.",
-        trackpadLabel: "Відкривати радіальне меню трекпадом",
+        trackpadLabel: "Призначити жест трекпада",
         trackpadOff: "Вимкнено",
         trackpadTap: "Дотик чотирма пальцями",
         trackpadClick: "Натискання чотирма пальцями",
-        mouseButtonLabel: "Відкривати радіальне меню кнопкою миші",
+        mouseButtonLabel: "Призначити кнопку миші",
         mouseButtonRecording: "Натисніть кнопку миші…",
         mouseButtonClear: "Очистити кнопку миші",
         mouseButtonPrimaryRefused: "Використайте додаткову кнопку, а не ліву чи праву.",
@@ -1885,7 +1945,7 @@ extension RadialMenuFeatureStrings {
         deleteProfileConfirmButton: "Видалити профіль",
         trackpadHelp: "Відкриває меню, доки ви не виберете дію, не натиснете Esc або не клацнете поза ним.",
         profilesHelp: "У меню натисніть Tab або прокрутіть, щоб змінити профіль.",
-        mouseButtonSet: "Задати…",
+        mouseButtonSet: "Задати кнопку…",
         mouseButtonClearShort: "Очистити",
         mouseButtonNothingSeenShort: "Кнопку не виявлено",
         iconSuggested: "Пропоновані",
@@ -1894,6 +1954,10 @@ extension RadialMenuFeatureStrings {
         presetProfilesHeader: "Готові профілі",
         toggleSystemAppearance: "Перемкнути оформлення системи",
         toggleHiddenFiles: "Показати або сховати приховані файли",
-        toggleDesktopIcons: "Показати або сховати значки робочого столу"
+        toggleDesktopIcons: "Показати або сховати значки робочого столу",
+        mouseButtonActive: "Активна",
+        slotsUsedFormat: "Зайнято %1$d з %2$d",
+        moveToNextDisplay: "Перемістити на наступний дисплей",
+        moveToPreviousDisplay: "Перемістити на попередній дисплей"
     )
 }

@@ -18,6 +18,10 @@ enum RadialMenuReleaseTests {
                 && RadialMenuQuickToggle.desktopIcons.stableTitle(quickToggleNames) == "Toggle Desktop Icons"
                 && RadialMenuQuickToggle.lockScreen.stableTitle(quickToggleNames) == nil,
                      "state-dependent quick toggles have stable names in Settings")
+        suite.expect(Set(RadialMenuTool.allCases.filter(\.isControl)) == [.micMute, .keepAwake, .cleaningMode],
+                     "only the switch-like tools are listed with the quick controls")
+        suite.expect(true,
+                     "state-dependent quick toggles have stable names in Settings")
     }
 
     static func run(_ suite: TestSuite) {
