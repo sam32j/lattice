@@ -86,12 +86,23 @@ struct URLSanitizerSettings: View {
             HStack(spacing: 8) {
                 URLSanitizerSearchField(text: $search, prompt: strings.searchPlaceholder)
                     .frame(width: 180)
+                // A square the search field's height, with its name in the
+                // tooltip: a titled button squeezed beside the field cut its
+                // own label down to an ellipsis.
                 Button {
                     sheet = SheetRequest(draft: URLSanitizerSiteDraft())
                 } label: {
-                    Label(strings.add, systemImage: "plus")
+                    Image(systemName: "plus")
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 24, height: 24)
+                        .background(Color.primary.opacity(0.08),
+                                    in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
-                .controlSize(.small)
+                .buttonStyle(.plain)
+                .fixedSize()
+                .help(strings.add)
+                .accessibilityLabel(strings.add)
             }
         }) {
             VStack(spacing: 0) {
