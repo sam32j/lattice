@@ -229,3 +229,45 @@ struct FeatureActivationControl: View {
         }
     }
 }
+
+/// One option in a page's title bar menu: a title, a line of help and a
+/// switch, clickable anywhere on the row.
+struct SettingsMenuToggleRow: View {
+    let title: String
+    let help: String
+    @Binding var isOn: Bool
+    @State private var hovered = false
+
+    var body: some View {
+        Button {
+            isOn.toggle()
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                    Text(help)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Toggle(title, isOn: .constant(isOn))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .allowsHitTesting(false)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(hovered ? Color.primary.opacity(0.06) : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .accessibilityRepresentation {
+            Toggle(title, isOn: $isOn)
+                .accessibilityHint(help)
+        }
+    }
+}
