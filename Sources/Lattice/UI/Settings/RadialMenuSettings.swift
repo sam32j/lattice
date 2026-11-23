@@ -128,7 +128,6 @@ struct RadialMenuSettings: View {
                              isNew: isNew,
                              allowsSubmenu: openSubmenuID == nil,
                              profileColor: selectedProfile.color,
-                             openChildren: item.kind == .submenu ? { openSubmenuID = item.id } : nil,
                              save: { saved in
                                  upsert(saved)
                                  if isNew, saved.kind == .submenu {

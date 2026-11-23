@@ -97,7 +97,7 @@ enum RadialMenuRenderingProbe {
                              ("control", RadialMenuItem(kind: .tool, payload: RadialMenuTool.keepAwake.rawValue))] {
             SettingsRefactorProbe.render("radial-item-editor-\(name)", view: AnyView(
                 RadialItemEditor(text: FeatureStrings.radialMenu(.enUS), item: item, isNew: false,
-                                 allowsSubmenu: true, profileColor: .purple, openChildren: {},
+                                 allowsSubmenu: true, profileColor: .purple,
                                  save: { _ in }, delete: {})),
                 size: CGSize(width: 460, height: 420), output: output, failures: &failures, colorScheme: .dark)
         }

@@ -8,7 +8,6 @@ struct RadialItemEditor: View {
     let isNew: Bool
     let allowsSubmenu: Bool
     var profileColor: RadialMenuColor = .accent
-    var openChildren: (() -> Void)? = nil
     let save: (RadialMenuItem) -> Void
     let delete: (() -> Void)?
 
@@ -156,15 +155,6 @@ struct RadialItemEditor: View {
                                             selection: categoryBinding, exactWidth: Self.fieldWidth)
                     }
                     payloadEditor
-                    if item.kind == .submenu {
-                        editorRow(text.kindSubmenu, help: text.submenuCaption) {
-                            Button(text.editActionButton) {
-                                dismiss()
-                                openChildren?()
-                            }
-                            .disabled(openChildren == nil)
-                        }
-                    }
                 }
             }
 
