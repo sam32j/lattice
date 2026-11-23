@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "保持清醒",
         keepAwakeEndsIn: "剩餘時間",
         keepAwakeUntilDisabled: "保持開啟，直至你手動關閉",
-        keepAwakeNormalRules: "Mac 會依照正常電源規則",
         keepAwakeUntilLabel: "直到",
         keepAwakeUntilStart: "開始",
         durationLabel: "時間長度",
-        clamshellOnCaption: "已完全停用睡眠，請留意電池電量",
-        clamshellNeedsSession: "每當「保持喚醒」啟用時生效",
-        clamshellReady: "準備就緒，切換時無需輸入密碼",
-        clamshellNeedsPassword: "只需要輸入一次管理員密碼",
 
         systemSection: "系統",
         temperatures: "溫度",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "啟用「保持喚醒」快捷鍵",
 
         sessionSection: "時段",
-        defaultDurationLabel: "預設時間長度",
         batteryProtectionSection: "電池保護",
         batteryNever: "從不",
         clamshellSection: "合上機蓋",
         configuring: "設定中…",
         sudoersFailed: "無法啟用合上機蓋模式。請重試。",
-        clamshellExplanation: "「合上機蓋後繼續運作」會在「保持喚醒」啟用期間完全停用睡眠，並在時段結束或 App 結束時自動恢復。建議在連接電源時使用。",
 
         scrollSection: "捲動",
         invertMouseScroll: "反轉滑鼠捲動",

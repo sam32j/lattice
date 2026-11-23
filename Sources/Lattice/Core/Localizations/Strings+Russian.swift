@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "Не усыплять Mac",
         keepAwakeEndsIn: "Завершится через",
         keepAwakeUntilDisabled: "Активно, пока вы не отключите режим",
-        keepAwakeNormalRules: "Mac следует обычным правилам энергосбережения",
         keepAwakeUntilLabel: "До",
         keepAwakeUntilStart: "Начать",
         durationLabel: "Длительность",
-        clamshellOnCaption: "Сон полностью отключён. Следите за питанием",
-        clamshellNeedsSession: "Применяется, когда активен режим «Не давать уснуть»",
-        clamshellReady: "Готово. Переключается без пароля",
-        clamshellNeedsPassword: "Один раз попросит пароль администратора",
 
         systemSection: "Система",
         temperatures: "Температуры",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "Включить горячую клавишу для «Не давать уснуть»",
 
         sessionSection: "Сеанс",
-        defaultDurationLabel: "Длительность по умолчанию",
         batteryProtectionSection: "Защита батареи",
         batteryNever: "Никогда",
         clamshellSection: "Закрытая крышка",
         configuring: "Настройка…",
         sudoersFailed: "Не удалось включить режим закрытой крышки. Попробуйте ещё раз.",
-        clamshellExplanation: "«Работать с закрытой крышкой» полностью отключает сон, пока активен режим «Не давать уснуть», и автоматически возвращает обычное поведение, когда сеанс заканчивается или приложение закрывается. Лучше использовать при подключённом питании.",
 
         scrollSection: "Прокрутка",
         invertMouseScroll: "Инвертировать прокрутку мыши",

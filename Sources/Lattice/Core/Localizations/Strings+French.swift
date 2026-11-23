@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "Rester éveillé",
         keepAwakeEndsIn: "Se termine dans",
         keepAwakeUntilDisabled: "Actif jusqu’à ce que vous le désactiviez",
-        keepAwakeNormalRules: "Le Mac suit ses règles d’énergie normales",
         keepAwakeUntilLabel: "Jusqu’à",
         keepAwakeUntilStart: "Démarrer",
         durationLabel: "Durée",
-        clamshellOnCaption: "Veille entièrement désactivée. Attention à l’énergie",
-        clamshellNeedsSession: "Appliqué dès que «\u{00A0}Garder éveillé\u{00A0}» est actif",
-        clamshellReady: "Prêt. Bascule sans mot de passe",
-        clamshellNeedsPassword: "Demandera le mot de passe administrateur une fois",
 
         systemSection: "Système",
         temperatures: "Températures",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "Activer le raccourci pour «\u{00A0}Garder éveillé\u{00A0}»",
 
         sessionSection: "Session",
-        defaultDurationLabel: "Durée par défaut",
         batteryProtectionSection: "Protection de la batterie",
         batteryNever: "Jamais",
         clamshellSection: "Écran rabattu",
         configuring: "Configuration…",
         sudoersFailed: "Impossible d’activer l’écran rabattu. Réessayez.",
-        clamshellExplanation: "«\u{00A0}Continuer écran rabattu\u{00A0}» désactive entièrement la veille tant que «\u{00A0}Garder éveillé\u{00A0}» est actif et se rétablit automatiquement à la fin de la session ou quand l’app quitte. À privilégier branché sur secteur.",
 
         scrollSection: "Défilement",
         invertMouseScroll: "Inverser le défilement de la souris",

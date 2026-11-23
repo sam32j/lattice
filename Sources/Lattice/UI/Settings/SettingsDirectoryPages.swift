@@ -210,7 +210,7 @@ extension SettingsDirectory {
                                                       FeatureStrings.wallpaper(language).enableManagement]),
                                         (.bluetoothSleep, [FeatureStrings.bluetoothSleep(language).pageTitle,
                                                            FeatureStrings.bluetoothSleep(language).enable]),
-                                        (.keepAwake, [s.keepAwakeTitle, s.defaultDurationLabel,
+                                        (.keepAwake, [s.keepAwakeTitle, FeatureStrings.stayAwakeSettings(language).durationTitle,
                                                       FeatureStrings.stayAwakeSettings(language).shortcutTitle,
                                                       FeatureStrings.stayAwakeSettings(language).autoTitle,
                                                       FeatureStrings.stayAwakeSettings(language).appsTitle,

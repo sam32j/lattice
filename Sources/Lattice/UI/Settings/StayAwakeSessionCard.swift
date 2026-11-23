@@ -56,8 +56,8 @@ struct StayAwakeSessionCard: View {
                 }
             }
             Divider()
-            SettingsRow(symbol: "timer", title: l10n.s.defaultDurationLabel, caption: strings.defaultDurationCaption) {
-                Picker(l10n.s.defaultDurationLabel, selection: $defaultDuration) {
+            SettingsControlRow(title: strings.durationTitle) {
+                Picker(strings.durationTitle, selection: $defaultDuration) {
                     ForEach(DurationPicker.choices, id: \.self) { minutes in
                         Text(DurationPicker.title(for: minutes, l10n.s)).tag(minutes)
                     }
@@ -66,15 +66,13 @@ struct StayAwakeSessionCard: View {
                 .labelsHidden()
                 .fixedSize()
             }
-            ShortcutPreferenceRow(role: .keepAwake, label: strings.shortcutTitle, help: strings.shortcutCaption,
-                                  symbolName: "keyboard") {
+            ShortcutPreferenceRow(role: .keepAwake, label: strings.shortcutTitle) {
                 HotkeyManager.shared.syncWithPreferences()
             }
             if hotkeyEnabled, hotkeys.registrationFailed {
                 Text(l10n.s.shortcutUnavailable)
                     .font(.caption)
                     .foregroundStyle(.orange)
-                    .padding(.leading, settingsRowTextInset)
                     .transition(.settingsReveal)
             }
         }
@@ -136,14 +134,14 @@ struct StayAwakeSessionCard: View {
     }
 
     private func title(for status: StayAwakeStatus) -> String {
-        guard status.isAwake else { return strings.notRunning }
+        guard status.isAwake else { return strings.offTitle }
         guard let end = status.countdownEnd else { return strings.awake }
         return strings.awake + " · " + String(format: strings.leftFormat, DurationPicker.remainingText(until: end))
     }
 
     private func caption(for caption: StayAwakeStatus.Caption) -> String {
         switch caption {
-        case .normalRules: return l10n.s.keepAwakeNormalRules
+        case .normalRules: return strings.offCaption
         case .endsAt(let end):
             return String(format: strings.endsAtFormat,
                           end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(locale)))
@@ -190,32 +188,25 @@ struct StayAwakeSessionCard: View {
         return formatter.string(from: TimeInterval(minutes * 60)) ?? "\(minutes)"
     }
 
-    /// An explicit end time: a time already past today means tomorrow.
+    /// An explicit end time, laid out as a settings row: a time already
+    /// past today means tomorrow, which the caption says.
     private var untilRow: some View {
         let end = HubStayAwakeSupport.nextOccurrence(of: untilTime, now: Date())
-        return HStack(spacing: 8) {
-            Text(strings.untilPrompt)
-                .font(.callout)
-            DatePicker(strings.untilPrompt, selection: $untilTime, displayedComponents: .hourAndMinute)
-                .datePickerStyle(.field)
-                .labelsHidden()
+        let tomorrow = !Calendar.current.isDate(end, inSameDayAs: Date())
+        return SettingsControlRow(title: strings.untilPrompt, caption: tomorrow ? hub.tomorrow : nil) {
+            HStack(spacing: 8) {
+                DatePicker(strings.untilPrompt, selection: $untilTime, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.stepperField)
+                    .labelsHidden()
+                    .fixedSize()
+                    .environment(\.locale, locale)
+                Button(strings.start) {
+                    awake.activate(until: HubStayAwakeSupport.nextOccurrence(of: untilTime, now: Date()))
+                    pickingTime = false
+                }
                 .fixedSize()
-                .environment(\.locale, locale)
-            if !Calendar.current.isDate(end, inSameDayAs: Date()) {
-                Text(hub.tomorrow)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 8)
-            Button(strings.start) {
-                awake.activate(until: HubStayAwakeSupport.nextOccurrence(of: untilTime, now: Date()))
-                pickingTime = false
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
         }
-        .padding(10)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 

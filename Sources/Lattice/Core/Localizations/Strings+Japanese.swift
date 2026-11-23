@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "スリープ解除",
         keepAwakeEndsIn: "残り",
         keepAwakeUntilDisabled: "オフにするまで継続",
-        keepAwakeNormalRules: "Mac は通常の省エネルギー設定に従います",
         keepAwakeUntilLabel: "指定時刻まで",
         keepAwakeUntilStart: "開始",
         durationLabel: "継続時間",
-        clamshellOnCaption: "スリープを完全に無効化中。電源にご注意ください",
-        clamshellNeedsSession: "「スリープ防止」がオンのあいだ常に適用されます",
-        clamshellReady: "準備完了。パスワードなしで切り替えられます",
-        clamshellNeedsPassword: "管理者パスワードは一度だけ求められます",
 
         systemSection: "システム",
         temperatures: "温度",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "「スリープ防止」のショートカットを有効にする",
 
         sessionSection: "セッション",
-        defaultDurationLabel: "デフォルトの継続時間",
         batteryProtectionSection: "バッテリー保護",
         batteryNever: "しない",
         clamshellSection: "ふたを閉じたモード",
         configuring: "設定中…",
         sudoersFailed: "ふたを閉じたモードを有効にできませんでした。もう一度お試しください。",
-        clamshellExplanation: "「ふたを閉じても続ける」は、「スリープ防止」がオンのあいだスリープを完全に無効化し、セッションの終了時またはアプリの終了時に自動的に元に戻ります。電源に接続した状態での使用をおすすめします。",
 
         scrollSection: "スクロール",
         invertMouseScroll: "マウスのスクロールを反転",

@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "Zostať bdelý",
         keepAwakeEndsIn: "Skončí o",
         keepAwakeUntilDisabled: "Aktívny, kým ho nevypnete",
-        keepAwakeNormalRules: "Mac sa riadi bežnými pravidlami úspory energie",
         keepAwakeUntilLabel: "Do",
         keepAwakeUntilStart: "Spustiť",
         durationLabel: "Trvanie",
-        clamshellOnCaption: "Spánok je úplne vypnutý. Sledujte napájanie",
-        clamshellNeedsSession: "Použije sa vždy, keď je „Bdelý režim“ aktívny",
-        clamshellReady: "Pripravené. Prepína sa bez hesla",
-        clamshellNeedsPassword: "Raz si vyžiada heslo správcu",
 
         systemSection: "Systém",
         temperatures: "Teploty",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "Zapnúť skratku pre „Bdelý režim“",
 
         sessionSection: "Relácia",
-        defaultDurationLabel: "Predvolené trvanie",
         batteryProtectionSection: "Ochrana batérie",
         batteryNever: "Nikdy",
         clamshellSection: "Zatvorené veko",
         configuring: "Nastavuje sa…",
         sudoersFailed: "Režim zatvoreného veka sa nepodarilo zapnúť. Skúste to znova.",
-        clamshellExplanation: "„Pokračovať so zatvoreným vekom“ úplne vypne spánok, kým je aktívny „Bdelý režim“, a po skončení relácie alebo ukončení aplikácie sa automaticky vráti späť. Používajte ho radšej pri napájaní zo siete.",
 
         scrollSection: "Rolovanie",
         invertMouseScroll: "Obrátiť rolovanie myšou",

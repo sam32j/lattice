@@ -208,14 +208,9 @@ struct Strings {
     let keepAwakeTitle: String
     let keepAwakeEndsIn: String        // + remaining
     let keepAwakeUntilDisabled: String
-    let keepAwakeNormalRules: String
     let keepAwakeUntilLabel: String
     let keepAwakeUntilStart: String
     let durationLabel: String
-    let clamshellOnCaption: String
-    let clamshellNeedsSession: String
-    let clamshellReady: String
-    let clamshellNeedsPassword: String
 
     // MARK: Panel — system monitor
     let systemSection: String
@@ -290,13 +285,11 @@ struct Strings {
 
     // MARK: Settings — energy
     let sessionSection: String
-    let defaultDurationLabel: String
     let batteryProtectionSection: String
     let batteryNever: String
     let clamshellSection: String
     let configuring: String
     let sudoersFailed: String
-    let clamshellExplanation: String
 
     // MARK: Settings — mouse
     let scrollSection: String
@@ -1205,14 +1198,9 @@ extension Strings {
         keepAwakeTitle: "Ficar acordado",
         keepAwakeEndsIn: "Termina em",
         keepAwakeUntilDisabled: "Ativo até você desativar",
-        keepAwakeNormalRules: "O Mac segue as regras normais de energia",
         keepAwakeUntilLabel: "Até",
         keepAwakeUntilStart: "Iniciar",
         durationLabel: "Duração",
-        clamshellOnCaption: "Suspensão totalmente desativada. Atenção à energia",
-        clamshellNeedsSession: "Será aplicada sempre que “Manter acordado” estiver ativo",
-        clamshellReady: "Pronto. Liga e desliga sem senha",
-        clamshellNeedsPassword: "Pedirá a senha de administrador uma vez",
 
         systemSection: "Sistema",
         temperatures: "Temperaturas",
@@ -1278,13 +1266,11 @@ extension Strings {
         hotkeyToggle: "Ativar atalho para “Manter acordado”",
 
         sessionSection: "Sessão",
-        defaultDurationLabel: "Duração padrão",
         batteryProtectionSection: "Proteção de bateria",
         batteryNever: "Nunca",
         clamshellSection: "Tampa fechada",
         configuring: "Configurando…",
         sudoersFailed: "Não foi possível ativar a tampa fechada. Tente de novo.",
-        clamshellExplanation: "“Continuar com a tampa fechada” desativa completamente a suspensão enquanto “Manter acordado” estiver ativo e é revertido automaticamente quando a sessão termina ou o app é encerrado. Prefira usá-lo conectado à energia.",
 
         scrollSection: "Rolagem",
         invertMouseScroll: "Inverter rolagem do mouse",
@@ -2152,14 +2138,9 @@ extension Strings {
         keepAwakeTitle: "Stay Awake",
         keepAwakeEndsIn: "Ends in",
         keepAwakeUntilDisabled: "Active until you turn it off",
-        keepAwakeNormalRules: "The Mac follows its normal energy rules",
         keepAwakeUntilLabel: "Until",
         keepAwakeUntilStart: "Start",
         durationLabel: "Duration",
-        clamshellOnCaption: "Sleep fully disabled. Mind the power",
-        clamshellNeedsSession: "Applied whenever “Keep awake” is active",
-        clamshellReady: "Ready. Toggles without a password",
-        clamshellNeedsPassword: "Will ask for the administrator password once",
 
         systemSection: "System",
         temperatures: "Temperatures",
@@ -2225,13 +2206,11 @@ extension Strings {
         hotkeyToggle: "Enable shortcut for “Keep awake”",
 
         sessionSection: "Session",
-        defaultDurationLabel: "Default duration",
         batteryProtectionSection: "Battery protection",
         batteryNever: "Never",
         clamshellSection: "Closed lid",
         configuring: "Configuring…",
         sudoersFailed: "Couldn’t turn on closed-lid mode. Try again.",
-        clamshellExplanation: "“Keep going with the lid closed” fully disables sleep while “Keep awake” is active and is reverted automatically when the session ends or the app quits. Prefer using it plugged in.",
 
         scrollSection: "Scrolling",
         invertMouseScroll: "Invert mouse scrolling",
