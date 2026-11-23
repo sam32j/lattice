@@ -5,6 +5,7 @@ import SwiftUI
 
 /// Shared fixed-size chrome for every editable shortcut. Owners keep capture,
 /// validation and persistence; this view keeps the interaction visually stable.
+/// It never shows errors: owners explain a refusal in a dialog.
 struct CompactShortcutField: View {
     @ObservedObject private var l10n = L10n.shared
 
@@ -12,7 +13,6 @@ struct CompactShortcutField: View {
     let isEnabled: Bool
     let isRecording: Bool
     let pressedModifiers: GlobalShortcutModifiers
-    let errorText: String?
     let emptyTitle: String?
     let width: CGFloat
     let shakeAttempts: CGFloat
@@ -34,7 +34,7 @@ struct CompactShortcutField: View {
             .buttonStyle(.plain)
             .disabled(!isEnabled)
 
-            if isEnabled, !isRecording, errorText == nil {
+            if isEnabled, !isRecording {
                 HStack(spacing: 4) {
                     Spacer()
                     if let onReset {
@@ -63,16 +63,7 @@ struct CompactShortcutField: View {
 
     @ViewBuilder
     private var content: some View {
-        if let errorText {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(Color.red)
-            Text(errorText)
-                .font(.system(size: 10.5, weight: .semibold))
-                .foregroundStyle(Color.red)
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-        } else if isRecording {
+        if isRecording {
             Text(pressedModifiers.isEmpty
                  ? cancelPrompt
                  : pressedModifiers.keyCaps.joined(separator: " "))
@@ -109,21 +100,19 @@ struct CompactShortcutField: View {
     }
 
     private var backgroundColor: Color {
-        if errorText != nil { return .red.opacity(0.12) }
         if isRecording { return .accentColor.opacity(0.12) }
         if isHovering { return .primary.opacity(0.06) }
         return .primary.opacity(0.03)
     }
 
     private var borderColor: Color {
-        if errorText != nil { return .red }
         if isRecording { return .accentColor }
         if isHovering { return .primary.opacity(0.25) }
         return .primary.opacity(0.12)
     }
 
     private var borderWidth: CGFloat {
-        (isRecording || errorText != nil) ? 1.5 : (isHovering ? 0.8 : 0.5)
+        isRecording ? 1.5 : (isHovering ? 0.8 : 0.5)
     }
 
     private func actionButton(_ symbol: String, help: String,

@@ -35,17 +35,10 @@ extension RadialItemEditor {
                     isEnabled: true,
                     emptyTitle: l10n.s.shortcutNone,
                     canClear: !item.payload.isEmpty,
-                    errorText: Binding(get: { nil }, set: { message in
-                        if let message { shortcutError = message }
-                    }),
+                    errorText: $shortcutError,
                     onClear: { item.payload = "" },
                     onReset: {},
                     onCapture: { item.payload = $0.storageValue })
-                    .alert(shortcutError ?? "",
-                           isPresented: Binding(get: { shortcutError != nil },
-                                                set: { if !$0 { shortcutError = nil } })) {
-                        Button("OK", role: .cancel) { shortcutError = nil }
-                    }
             }
         case .tool:
             editorRow(text.toolLabel) {

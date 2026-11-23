@@ -22,11 +22,7 @@ extension MouseButtonShortcutsSection {
                     onCapture: { save(button: button, shortcut: $0) },
                     onRecordingChange: { recordingButton = $0 ? button : nil })
             }
-            if let recordError, recordErrorButton == button {
-                Text(recordError)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            } else if recordingButton == button {
+            if recordingButton == button {
                 Text(ShortcutRecordingCaption.text(l10n.s, canClear: false))
                     .font(.caption)
                     .foregroundStyle(.secondary)

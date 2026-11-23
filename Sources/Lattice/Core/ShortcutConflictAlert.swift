@@ -49,6 +49,21 @@ struct ShortcutConflictAlert: Identifiable, Equatable {
 }
 
 extension View {
+    /// A refused shortcut that is not a clash with another action (an
+    /// invalid combination, a refused registration) is explained the same
+    /// way: in a dialog, never in red inside the field.
+    func shortcutErrorAlert(_ message: Binding<String?>) -> some View {
+        self.alert(
+            message.wrappedValue ?? "",
+            isPresented: Binding(
+                get: { message.wrappedValue != nil },
+                set: { if !$0 { message.wrappedValue = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { message.wrappedValue = nil }
+        }
+    }
+
     func shortcutConflictAlert(_ alert: Binding<ShortcutConflictAlert?>) -> some View {
         self.alert(
             alert.wrappedValue?.title ?? "",

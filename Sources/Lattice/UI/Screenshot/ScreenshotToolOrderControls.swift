@@ -64,6 +64,9 @@ struct ScreenshotToolOrderControls: View {
                 onReset: { resetTool(tool) },
                 onError: {
                     showError(for: tool)
+                },
+                onDismissError: {
+                    if errorTool == tool { errorTool = nil }
                 }
             )
         }
@@ -88,17 +91,10 @@ struct ScreenshotToolOrderControls: View {
         }
     }
 
+    /// Explained in a dialog by the tool's own row, never in red inside its
+    /// field; the dialog stays until it is dismissed.
     private func showError(for tool: ScreenshotSupport.Tool) {
         errorTool = tool
-        NSSound.beep()
-        withAnimation(.default) {
-            shakeAttempts[tool, default: 0] += 1
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            if self.errorTool == tool {
-                self.errorTool = nil
-            }
-        }
     }
 }
 
@@ -112,6 +108,7 @@ private struct ToolShortcutRecorder: View {
     let shakeAttempts: CGFloat
     let onReset: () -> Void
     let onError: () -> Void
+    let onDismissError: () -> Void
 
     private var isRecording: Bool { coordinator.activeTool == tool }
 
@@ -134,13 +131,16 @@ private struct ToolShortcutRecorder: View {
             isEnabled: true,
             isRecording: isRecording,
             pressedModifiers: [],
-            errorText: isError ? workflow.shortcutUnavailable : nil,
             emptyTitle: l10n.s.shortcutNone,
             width: recorderWidth,
             shakeAttempts: shakeAttempts,
             onToggleRecording: toggleRecording,
             onClear: currentShortcut != nil ? clearShortcut : nil,
             onReset: isDefaultShortcut ? nil : onReset)
+        .alert(workflow.shortcutUnavailable,
+               isPresented: Binding(get: { isError }, set: { if !$0 { onDismissError() } })) {
+            Button("OK", role: .cancel) { onDismissError() }
+        }
         .onDisappear {
             coordinator.stopRecording(tool: tool)
         }

@@ -138,9 +138,11 @@ struct CommandBarAppShortcutsView: View {
             }
 
             HStack(alignment: .center, spacing: 16) {
-                Text(message ?? text.shortcutCaptureHint)
+                // A refused combination is explained by its row's field in a
+                // dialog; this line only ever explains how to record.
+                Text(text.shortcutCaptureHint)
                     .font(.caption)
-                    .foregroundStyle(message == nil ? Color.secondary : Color.orange)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer()
                 Button(l10n.s.doneButton) { dismiss() }

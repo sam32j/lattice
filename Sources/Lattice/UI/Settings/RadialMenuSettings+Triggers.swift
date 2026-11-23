@@ -53,9 +53,7 @@ extension RadialMenuSettings {
                 width: 140,
                 emptyTitle: l10n.s.shortcutNone,
                 canClear: savedShortcut != nil,
-                errorText: Binding(get: { nil }, set: { message in
-                    if let message { invalidShortcutMessage = message }
-                }),
+                errorText: $invalidShortcutMessage,
                 onClear: { saveShortcut("") },
                 onReset: {},
                 onCapture: { newShortcut in
@@ -67,11 +65,6 @@ extension RadialMenuSettings {
                 })
         }
         .shortcutConflictAlert($conflictAlert)
-        .alert(invalidShortcutMessage ?? "",
-               isPresented: Binding(get: { invalidShortcutMessage != nil },
-                                    set: { if !$0 { invalidShortcutMessage = nil } })) {
-            Button("OK", role: .cancel) { invalidShortcutMessage = nil }
-        }
     }
 
     /// Who already answers to a combination: another Lattice shortcut, a
