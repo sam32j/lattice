@@ -629,8 +629,6 @@ extension Strings {
 
         tabMonitor: "Мониторинг системы",
         monitorMenuBarCaption: "Выберите, что показывать рядом со значком в строке меню.",
-        monitorCombineTemperatures: "Объединять нагрузку и температуру",
-        monitorCombineTemperaturesCaption: "Когда включены и нагрузка, и температура одного и того же элемента, показывать их одним блоком.",
         monitorSeparateMenuBarMetrics: "Выводить метрики отдельными элементами",
         monitorSeparateMenuBarMetricsCaption: "Разделяет активные блоки в строке меню и сохраняет нагрузку и температуру вместе, если включено объединение.",
         monitorNetworkUploadFirst: "Показывать отдачу над загрузкой",

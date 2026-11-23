@@ -1794,6 +1794,7 @@ def main():
     spacing = "Sources/Lattice/App/MenuBarSpacingSupport.swift"
     write("MenuBarBatteryWarning.swift", "import AppKit\nextension MenuBarBatteryWarningTests {\n"
           + declaration("Sources/Lattice/Services/SystemMonitor/SystemMonitor.swift", "enum MemoryPressure {")
+          + declaration("Sources/Lattice/Services/Metrics/MonitorLevel.swift", "enum MonitorLevel:")
           + declaration("Sources/Lattice/Services/Metrics/PowerSampler.swift", "struct PowerReading {")
           + declaration(renderer, "enum MenuBarSegment {")
           + declaration(renderer, "enum MenuBarBlockStyle {")

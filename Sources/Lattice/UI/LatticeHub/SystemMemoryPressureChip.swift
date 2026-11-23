@@ -3,11 +3,14 @@
 
 import SwiftUI
 
+/// The memory detail's pressure chip, in the same level and colors as the
+/// System widget's ring and the menu bar dot.
 struct SystemMemoryPressureChip: View {
-    let fraction: Double
+    @ObservedObject private var l10n = L10n.shared
+    let level: MonitorLevel
 
     var body: some View {
-        let (label, color) = status
+        let color = Color(nsColor: level.statusColor)
         HStack(spacing: 6) {
             Circle()
                 .fill(color)
@@ -21,13 +24,15 @@ struct SystemMemoryPressureChip: View {
         .padding(.vertical, 6)
         .background(color.opacity(0.18), in: Capsule())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Memory pressure")
+        .accessibilityLabel(l10n.s.memoryPressure)
         .accessibilityValue(label)
     }
 
-    private var status: (String, Color) {
-        if fraction >= 0.90 { return ("High", .red) }
-        if fraction >= 0.80 { return ("Elevated", .yellow) }
-        return ("Normal", .green)
+    private var label: String {
+        switch level {
+        case .normal: return l10n.s.pressureNormal
+        case .elevated: return l10n.s.pressureWarning
+        case .critical: return l10n.s.pressureCritical
+        }
     }
 }

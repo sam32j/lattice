@@ -1984,14 +1984,6 @@ enum SwitcherModelFeatureTests {
                "menu bar metric spacing defaults to the compact look")
         suite.expect(registeredDefaults[DefaultsKey.menuBarMetricAppearance] as? String == "values",
                "menu bar usage metrics keep numeric values by default")
-        suite.expect(registeredDefaults[DefaultsKey.menuBarUsageBarNormalColor] as? String == "#64D2FF",
-               "menu bar bars use a bright normal color by default")
-        suite.expect(registeredDefaults[DefaultsKey.menuBarUsageBarElevatedColor] as? String == "#FFD60A"
-               && registeredDefaults[DefaultsKey.menuBarUsageBarCriticalColor] as? String == "#FF453A",
-               "menu bar bars keep visible elevated and critical defaults")
-        suite.expect(registeredDefaults[DefaultsKey.menuBarUsageBarMediumThreshold] as? Int == 70
-               && registeredDefaults[DefaultsKey.menuBarUsageBarHighThreshold] as? Int == 90,
-               "menu bar bar thresholds default to seventy and ninety percent")
         suite.expect(Defaults.sanitizedMonitorAlertCooldown(2) == 2,
                "the two minute alert cooldown is a valid stored choice")
         suite.expect(Defaults.sanitizedMonitorAlertCooldown(7) == 15,
@@ -2022,35 +2014,6 @@ enum SwitcherModelFeatureTests {
                     "menu bar bars clamp readings above full")
         suite.expect(MenuBarUsageBarSupport.fillLevel(for: 0.5, steps: 16) == 8,
                "menu bar bars quantize fractions to visible fill steps")
-        suite.expect(MenuBarUsageBarSupport.level(for: 0.69) == .normal,
-               "menu bar usage stays blue below seventy percent")
-        suite.expect(MenuBarUsageBarSupport.level(for: 0.70) == .elevated,
-               "menu bar usage turns yellow at seventy percent")
-        suite.expect(MenuBarUsageBarSupport.level(for: 0.89) == .elevated,
-               "menu bar usage stays yellow below ninety percent")
-        suite.expect(MenuBarUsageBarSupport.level(for: 0.90) == .critical,
-               "menu bar usage turns red at ninety percent")
-        suite.expect(MenuBarUsageBarSupport.level(for: 0.50,
-                                            mediumPercent: 40,
-                                            highPercent: 80) == .elevated,
-               "custom menu bar medium thresholds change the bar level")
-        suite.expect(MenuBarUsageBarSupport.level(for: 0.80,
-                                            mediumPercent: 40,
-                                            highPercent: 80) == .critical,
-               "custom menu bar high thresholds change the bar level")
-        let repairedBarThresholds = MenuBarUsageBarSupport.thresholds(medium: 100, high: 20)
-        suite.expect(repairedBarThresholds.medium == 99 && repairedBarThresholds.high == 100,
-               "invalid menu bar thresholds keep medium below high")
-        suite.expect(MenuBarUsageBarSupport.sanitizedColorHex(" 64d2ff ", fallback: "#000000") == "#64D2FF",
-               "menu bar colors normalize stored hex values")
-        suite.expect(MenuBarUsageBarSupport.sanitizedColorHex("bad", fallback: "#FFD60A") == "#FFD60A",
-               "invalid menu bar colors use their visible fallback")
-        let customBarRGB = MenuBarUsageBarSupport.rgb(for: "#804020", fallback: "#000000")
-        suite.expectClose(customBarRGB.red, 128.0 / 255.0, "menu bar color parses red")
-        suite.expectClose(customBarRGB.green, 64.0 / 255.0, "menu bar color parses green")
-        suite.expectClose(customBarRGB.blue, 32.0 / 255.0, "menu bar color parses blue")
-        suite.expect(MenuBarUsageBarSupport.hex(red: 1, green: 0.5, blue: 0) == "#FF8000",
-               "menu bar color picker writes stable hex values")
         suite.expect(MenuBarSpacingSupport.digitMatchedReserve(for: "14%") == "88%",
                "compact spacing reserves the current digit count for percentages")
         suite.expect(MenuBarSpacingSupport.digitMatchedReserve(for: "999°") == "888°",
@@ -2766,8 +2729,9 @@ enum SwitcherModelFeatureTests {
         suite.expect(registeredDefaults[DefaultsKey.menuBarMetricOrder] as? String
                == "cpu,cpuTemperature,gpu,gpuTemperature,memory,battery,batteryTime,batteryTemperature,peripheralBattery,network,diskUsage,diskActivity,connectedDevices,power,fanSpeed",
                "menu bar metric order keeps temperature sensors next to their components and disk near live I/O")
-        suite.expect(registeredDefaults[DefaultsKey.menuBarCombineTemperatures] as? Bool == true,
-               "menu bar combines usage and temperature by default")
+        suite.expect([DefaultsKey.menuBarCombineCPU, DefaultsKey.menuBarCombineGPU, DefaultsKey.menuBarCombineBattery]
+                        .allSatisfy { registeredDefaults[$0] as? Bool == true },
+               "the menu bar combines each component's usage and temperature by default")
         suite.expect(registeredDefaults[DefaultsKey.menuBarSeparateMetrics] as? Bool == false,
                "separate menu bar metric items are opt-in")
         suite.expect(registeredDefaults[DefaultsKey.menuBarNetworkUploadFirst] as? Bool == false,

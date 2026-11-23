@@ -818,8 +818,6 @@ struct Strings {
     // MARK: Settings — monitor / menu bar metrics
     let tabMonitor: String
     let monitorMenuBarCaption: String
-    let monitorCombineTemperatures: String
-    let monitorCombineTemperaturesCaption: String
     let monitorSeparateMenuBarMetrics: String
     let monitorSeparateMenuBarMetricsCaption: String
     let monitorNetworkUploadFirst: String
@@ -1749,8 +1747,6 @@ extension Strings {
 
         tabMonitor: "Monitor do Sistema",
         monitorMenuBarCaption: "Escolha o que aparece ao lado do ícone na barra de menus.",
-        monitorCombineTemperatures: "Combinar uso e temperatura",
-        monitorCombineTemperaturesCaption: "Quando uso e temperatura do mesmo item estiverem ativos, mostra tudo em um bloco só.",
         monitorSeparateMenuBarMetrics: "Separar métricas em itens próprios",
         monitorSeparateMenuBarMetricsCaption: "Separa os blocos ativos na barra de menus e mantém uso e temperatura juntos quando combinar estiver ativo.",
         monitorNetworkUploadFirst: "Upload acima do download",
@@ -2665,8 +2661,6 @@ extension Strings {
 
         tabMonitor: "System Monitor",
         monitorMenuBarCaption: "Choose what appears next to the icon in the menu bar.",
-        monitorCombineTemperatures: "Combine usage and temperature",
-        monitorCombineTemperaturesCaption: "When usage and temperature for the same item are enabled, show them in one block.",
         monitorSeparateMenuBarMetrics: "Separate metrics into their own items",
         monitorSeparateMenuBarMetricsCaption: "Separates active blocks in the menu bar and keeps usage and temperature together when combine is on.",
         monitorNetworkUploadFirst: "Upload above download",

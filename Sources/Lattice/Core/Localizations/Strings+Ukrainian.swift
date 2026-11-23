@@ -606,8 +606,6 @@ extension Strings {
         releaseNotesFallback: "В це оновлення ввійшли останні виправлення та вдосконалення.",
         tabMonitor: "Монітор системи",
         monitorMenuBarCaption: "Виберіть, що показувати біля значка на смузі меню.",
-        monitorCombineTemperatures: "Об’єднувати навантаження та температуру",
-        monitorCombineTemperaturesCaption: "Коли увімкнені і навантаження, і температура одного елемента, показувати їх одним блоком.",
         monitorSeparateMenuBarMetrics: "Виводити метрики окремими елементами",
         monitorSeparateMenuBarMetricsCaption: "Розділяє активні блоки на смузі меню та зберігає навантаження і температуру разом, якщо увімкнене об’єднання.",
         monitorNetworkUploadFirst: "Показувати віддачу над завантаженням",

@@ -19,7 +19,12 @@ struct SystemMonitorSettingsStrings {
     let readingsTitle: String
     let readingsCaption: String
     let styleTitle: String
-    let colorsTitle: String
+    let memberUsage: String
+    let memberTemperature: String
+    let memberActivity: String
+    let memberCharge: String
+    let memberTimeLeft: String
+    let combineTitle: String
 }
 
 extension FeatureStrings {
@@ -59,7 +64,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Readings",
         readingsCaption: "Drag to change their order in the menu bar.",
         styleTitle: "Appearance",
-        colorsTitle: "Bar colors"
+        memberUsage: "Usage",
+        memberTemperature: "Temperature",
+        memberActivity: "Activity",
+        memberCharge: "Charge",
+        memberTimeLeft: "Time remaining",
+        combineTitle: "Show as one item"
     )
 
     static let ptBR = SystemMonitorSettingsStrings(
@@ -76,7 +86,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Leituras",
         readingsCaption: "Arraste para mudar a ordem na barra de menus.",
         styleTitle: "Aparência",
-        colorsTitle: "Cores das barras"
+        memberUsage: "Uso",
+        memberTemperature: "Temperatura",
+        memberActivity: "Atividade",
+        memberCharge: "Carga",
+        memberTimeLeft: "Tempo restante",
+        combineTitle: "Mostrar como um item"
     )
 
     static let tr = SystemMonitorSettingsStrings(
@@ -93,7 +108,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Değerler",
         readingsCaption: "Menü çubuğundaki sırayı değiştirmek için sürükleyin.",
         styleTitle: "Görünüm",
-        colorsTitle: "Çubuk renkleri"
+        memberUsage: "Kullanım",
+        memberTemperature: "Sıcaklık",
+        memberActivity: "Etkinlik",
+        memberCharge: "Şarj",
+        memberTimeLeft: "Kalan süre",
+        combineTitle: "Tek öğe olarak göster"
     )
 
     static let ru = SystemMonitorSettingsStrings(
@@ -110,7 +130,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Показатели",
         readingsCaption: "Перетащите, чтобы изменить порядок в строке меню.",
         styleTitle: "Оформление",
-        colorsTitle: "Цвета полос"
+        memberUsage: "Загрузка",
+        memberTemperature: "Температура",
+        memberActivity: "Активность",
+        memberCharge: "Заряд",
+        memberTimeLeft: "Осталось",
+        combineTitle: "Показывать одним элементом"
     )
 
     static let es = SystemMonitorSettingsStrings(
@@ -127,7 +152,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Lecturas",
         readingsCaption: "Arrastra para cambiar el orden en la barra de menús.",
         styleTitle: "Apariencia",
-        colorsTitle: "Colores de las barras"
+        memberUsage: "Uso",
+        memberTemperature: "Temperatura",
+        memberActivity: "Actividad",
+        memberCharge: "Carga",
+        memberTimeLeft: "Tiempo restante",
+        combineTitle: "Mostrar como un elemento"
     )
 
     static let sk = SystemMonitorSettingsStrings(
@@ -144,7 +174,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Hodnoty",
         readingsCaption: "Potiahnutím zmeníte poradie na lište.",
         styleTitle: "Vzhľad",
-        colorsTitle: "Farby pruhov"
+        memberUsage: "Využitie",
+        memberTemperature: "Teplota",
+        memberActivity: "Aktivita",
+        memberCharge: "Nabitie",
+        memberTimeLeft: "Zostávajúci čas",
+        combineTitle: "Zobraziť ako jednu položku"
     )
 
     static let de = SystemMonitorSettingsStrings(
@@ -161,7 +196,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Werte",
         readingsCaption: "Ziehen, um die Reihenfolge in der Menüleiste zu ändern.",
         styleTitle: "Darstellung",
-        colorsTitle: "Balkenfarben"
+        memberUsage: "Auslastung",
+        memberTemperature: "Temperatur",
+        memberActivity: "Aktivität",
+        memberCharge: "Ladung",
+        memberTimeLeft: "Restzeit",
+        combineTitle: "Als ein Objekt anzeigen"
     )
 
     static let fr = SystemMonitorSettingsStrings(
@@ -178,7 +218,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Mesures",
         readingsCaption: "Faites glisser pour changer l’ordre dans la barre des menus.",
         styleTitle: "Apparence",
-        colorsTitle: "Couleurs des barres"
+        memberUsage: "Utilisation",
+        memberTemperature: "Température",
+        memberActivity: "Activité",
+        memberCharge: "Charge",
+        memberTimeLeft: "Temps restant",
+        combineTitle: "Afficher en un seul élément"
     )
 
     static let it = SystemMonitorSettingsStrings(
@@ -195,7 +240,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Valori",
         readingsCaption: "Trascina per cambiare l’ordine nella barra dei menu.",
         styleTitle: "Aspetto",
-        colorsTitle: "Colori delle barre"
+        memberUsage: "Utilizzo",
+        memberTemperature: "Temperatura",
+        memberActivity: "Attività",
+        memberCharge: "Carica",
+        memberTimeLeft: "Tempo rimanente",
+        combineTitle: "Mostra come un elemento"
     )
 
     static let ja = SystemMonitorSettingsStrings(
@@ -212,7 +262,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "項目",
         readingsCaption: "ドラッグしてメニューバーでの順序を変更します。",
         styleTitle: "外観",
-        colorsTitle: "バーの色"
+        memberUsage: "使用率",
+        memberTemperature: "温度",
+        memberActivity: "アクティビティ",
+        memberCharge: "充電",
+        memberTimeLeft: "残り時間",
+        combineTitle: "1つの項目として表示"
     )
 
     static let ko = SystemMonitorSettingsStrings(
@@ -229,7 +284,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "항목",
         readingsCaption: "드래그하여 메뉴 막대의 순서를 바꿉니다.",
         styleTitle: "모양",
-        colorsTitle: "막대 색상"
+        memberUsage: "사용률",
+        memberTemperature: "온도",
+        memberActivity: "활동",
+        memberCharge: "충전량",
+        memberTimeLeft: "남은 시간",
+        combineTitle: "하나의 항목으로 표시"
     )
 
     static let zhHans = SystemMonitorSettingsStrings(
@@ -246,7 +306,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "读数",
         readingsCaption: "拖移以更改在菜单栏中的顺序。",
         styleTitle: "外观",
-        colorsTitle: "条形颜色"
+        memberUsage: "使用率",
+        memberTemperature: "温度",
+        memberActivity: "活动",
+        memberCharge: "电量",
+        memberTimeLeft: "剩余时间",
+        combineTitle: "显示为一个项目"
     )
 
     static let zhTW = SystemMonitorSettingsStrings(
@@ -263,7 +328,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "讀數",
         readingsCaption: "拖移以更改在選單列中的順序。",
         styleTitle: "外觀",
-        colorsTitle: "長條顏色"
+        memberUsage: "使用率",
+        memberTemperature: "溫度",
+        memberActivity: "活動",
+        memberCharge: "電量",
+        memberTimeLeft: "剩餘時間",
+        combineTitle: "顯示為一個項目"
     )
 
     static let zhHK = SystemMonitorSettingsStrings(
@@ -280,7 +350,12 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "讀數",
         readingsCaption: "拖移以更改在選單列中的順序。",
         styleTitle: "外觀",
-        colorsTitle: "長條顏色"
+        memberUsage: "使用率",
+        memberTemperature: "溫度",
+        memberActivity: "活動",
+        memberCharge: "電量",
+        memberTimeLeft: "剩餘時間",
+        combineTitle: "顯示為一個項目"
     )
 
     static let uk = SystemMonitorSettingsStrings(
@@ -297,6 +372,11 @@ extension SystemMonitorSettingsStrings {
         readingsTitle: "Показники",
         readingsCaption: "Перетягніть, щоб змінити порядок у рядку меню.",
         styleTitle: "Вигляд",
-        colorsTitle: "Кольори смуг"
+        memberUsage: "Навантаження",
+        memberTemperature: "Температура",
+        memberActivity: "Активність",
+        memberCharge: "Заряд",
+        memberTimeLeft: "Залишилось часу",
+        combineTitle: "Показувати одним елементом"
     )
 }

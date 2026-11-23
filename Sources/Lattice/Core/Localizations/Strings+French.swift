@@ -628,8 +628,6 @@ extension Strings {
 
         tabMonitor: "Moniteur du système",
         monitorMenuBarCaption: "Choisissez ce qui apparaît à côté de l’icône dans la barre des menus.",
-        monitorCombineTemperatures: "Combiner utilisation et température",
-        monitorCombineTemperaturesCaption: "Quand l’utilisation et la température du même élément sont activées, elles s’affichent dans un seul bloc.",
         monitorSeparateMenuBarMetrics: "Séparer les mesures en éléments dédiés",
         monitorSeparateMenuBarMetricsCaption: "Sépare les blocs actifs dans la barre des menus et garde utilisation et température ensemble quand combiner est actif.",
         monitorNetworkUploadFirst: "Envoi au-dessus du téléchargement",

@@ -174,7 +174,7 @@ enum MenuBarSegment {
     case largeSymbol(String)
     case metricBlock(label: String, value: String, minimumValue: String, style: MenuBarBlockStyle,
                      pressure: MemoryPressure?, warning: BatteryWarning = .none)
-    case usageBarBlock(label: String, fraction: Double?, style: MenuBarBlockStyle, pressure: MemoryPressure?)
+    case usageBarBlock(label: String, fraction: Double?, level: MonitorLevel, style: MenuBarBlockStyle, pressure: MemoryPressure?)
     case networkBlock(down: String, up: String, style: MenuBarBlockStyle)
     case diskActivityBlock(read: String, write: String, style: MenuBarBlockStyle)
     case batteryBlock(percent: Int, isCharging: Bool, externalConnected: Bool,
@@ -281,8 +281,12 @@ enum MenuBarRenderer {
         var groups: [[MenuBarSegment]] = []
         let appearance = MenuBarMetricAppearance.current
         let usesBars = appearance == .bars
-        let combineTemperatures = appearance.allowsCombinedTemperatures
-            && UserDefaults.standard.bool(forKey: DefaultsKey.menuBarCombineTemperatures)
+        let combinesCPU = appearance.allowsCombinedTemperatures
+            && UserDefaults.standard.bool(forKey: DefaultsKey.menuBarCombineCPU)
+        let combinesGPU = appearance.allowsCombinedTemperatures
+            && UserDefaults.standard.bool(forKey: DefaultsKey.menuBarCombineGPU)
+        let combinesBattery = appearance.allowsCombinedTemperatures
+            && UserDefaults.standard.bool(forKey: DefaultsKey.menuBarCombineBattery)
         let enabled = Set(metrics)
         var renderedCPU = false
         var renderedGPU = false
@@ -291,7 +295,7 @@ enum MenuBarRenderer {
         for metric in metrics {
             switch metric {
             case .cpu, .cpuTemperature:
-                if combineTemperatures {
+                if combinesCPU {
                     guard !renderedCPU else { break }
                     renderedCPU = true
                     let usageFraction = enabled.contains(.cpu) ? snapshot.cpuUsage : nil
@@ -329,6 +333,7 @@ enum MenuBarRenderer {
                     if usesBars {
                         groups.append([.usageBarBlock(label: "CPU",
                                                       fraction: usage,
+                                                      level: .usage(usage),
                                                       style: style,
                                                       pressure: nil)])
                     } else {
@@ -340,7 +345,7 @@ enum MenuBarRenderer {
                     }
                 }
             case .gpu, .gpuTemperature:
-                if combineTemperatures {
+                if combinesGPU {
                     guard !renderedGPU else { break }
                     renderedGPU = true
                     let usageFraction = enabled.contains(.gpu) ? snapshot.gpuUsage : nil
@@ -378,6 +383,7 @@ enum MenuBarRenderer {
                     if usesBars {
                         groups.append([.usageBarBlock(label: "GPU",
                                                       fraction: usage,
+                                                      level: .usage(usage),
                                                       style: style,
                                                       pressure: nil)])
                     } else {
@@ -392,9 +398,10 @@ enum MenuBarRenderer {
                 let memoryStyle = MemoryMenuBarStyle.current
                 let memoryValue = snapshot.memoryUsed
                 if usesBars {
+                    let fraction = MenuBarUsageBarSupport.memoryFraction(used: memoryValue, total: snapshot.memoryTotal)
                     groups.append([.usageBarBlock(label: "RAM",
-                                                  fraction: MenuBarUsageBarSupport.memoryFraction(used: memoryValue,
-                                                                                                  total: snapshot.memoryTotal),
+                                                  fraction: fraction,
+                                                  level: .memory(pressure: snapshot.memoryPressure, fraction: fraction),
                                                   style: style,
                                                   pressure: memoryStyle.showsDot ? snapshot.memoryPressure : nil)])
                 } else {
@@ -419,6 +426,7 @@ enum MenuBarRenderer {
                     if usesBars && diskStyle.showsPercentage {
                         groups.append([.usageBarBlock(label: "DSK",
                                                       fraction: disk.usedFraction,
+                                                      level: .usage(disk.usedFraction),
                                                       style: style,
                                                       pressure: nil)])
                     } else {
@@ -436,7 +444,7 @@ enum MenuBarRenderer {
                                                       style: style)])
                 }
             case .battery, .batteryTemperature:
-                if combineTemperatures {
+                if combinesBattery {
                     guard !renderedBattery else { break }
                     renderedBattery = true
                     let charge = enabled.contains(.battery)
@@ -548,6 +556,7 @@ enum MenuBarRenderer {
         if let fraction {
             segments.append(.usageBarBlock(label: label,
                                            fraction: fraction,
+                                           level: .usage(fraction),
                                            style: style,
                                            pressure: nil))
         }
@@ -612,9 +621,10 @@ enum MenuBarRenderer {
                                                     style: style,
                                                     pressure: pressure,
                                                     warning: warning))
-            case let .usageBarBlock(label, fraction, style, pressure):
+            case let .usageBarBlock(label, fraction, level, style, pressure):
                 result.append(usageBarBlockAttachment(label: label,
                                                       fraction: fraction,
+                                                      level: level,
                                                       style: style,
                                                       pressure: pressure))
             case let .networkBlock(down, up, style):
@@ -687,10 +697,12 @@ enum MenuBarRenderer {
 
     private static func usageBarBlockAttachment(label: String,
                                                 fraction: Double?,
+                                                level: MonitorLevel,
                                                 style: MenuBarBlockStyle,
                                                 pressure: MemoryPressure?) -> NSAttributedString {
         let image = usageBarBlockImage(label: label,
                                        fraction: fraction,
+                                       level: level,
                                        style: style,
                                        pressure: pressure)
         let attachment = NSTextAttachment()
@@ -810,16 +822,14 @@ enum MenuBarRenderer {
 
     private static func usageBarBlockImage(label: String,
                                            fraction: Double?,
+                                           level: MonitorLevel,
                                            style: MenuBarBlockStyle,
                                            pressure: MemoryPressure?) -> NSImage {
         let innerSteps = style == .readable ? 17 : 15
         let fillLevel = fraction.map { MenuBarUsageBarSupport.fillLevel(for: $0, steps: innerSteps) }
-        let fillColorHex = fraction.map {
-            MenuBarUsageBarSupport.currentColorHex(for: MenuBarUsageBarSupport.currentLevel(for: $0))
-        } ?? "missing"
         let pressureKey = pressure.map(String.init(describing:)) ?? "none"
         let levelKey = fillLevel.map(String.init) ?? "missing"
-        let cacheKey = "usageBar|\(label)|\(levelKey)|\(fillColorHex)|\(style)|\(pressureKey)" as NSString
+        let cacheKey = "usageBar|\(label)|\(levelKey)|\(level.rawValue)|\(style)|\(pressureKey)" as NSString
         if let cached = blockImageCache.object(forKey: cacheKey) { return cached }
 
         let size = usageBarSize(style: style, showsPressure: pressure != nil)
@@ -874,7 +884,7 @@ enum MenuBarRenderer {
                                       y: innerRect.minY,
                                       width: innerRect.width,
                                       height: fillHeight)
-                usageBarColor(hex: fillColorHex).setFill()
+                level.fillColor.setFill()
                 NSBezierPath(roundedRect: fillRect, xRadius: 1.2, yRadius: 1.2).fill()
             } else if fillLevel == nil {
                 NSColor.secondaryLabelColor.setStroke()
@@ -889,15 +899,6 @@ enum MenuBarRenderer {
         image.isTemplate = false
         blockImageCache.setObject(image, forKey: cacheKey, cost: blockImageCost(image))
         return image
-    }
-
-    private static func usageBarColor(hex: String) -> NSColor {
-        let rgb = MenuBarUsageBarSupport.rgb(for: hex,
-                                             fallback: MenuBarUsageBarSupport.defaultNormalColor)
-        return NSColor(srgbRed: CGFloat(rgb.red),
-                       green: CGFloat(rgb.green),
-                       blue: CGFloat(rgb.blue),
-                       alpha: 1)
     }
 
     private static func networkBlockImage(down: String, up: String, style: MenuBarBlockStyle) -> NSImage {
@@ -1051,12 +1052,8 @@ enum MenuBarRenderer {
     }
 
     static func nsColor(for pressure: MemoryPressure) -> NSColor {
-        switch pressure {
-        case .normal: return .systemGreen
-        case .warning: return .systemYellow
-        case .critical: return .systemRed
-        case .unknown: return .secondaryLabelColor
-        }
+        pressure == .unknown ? .secondaryLabelColor
+            : MonitorLevel.memory(pressure: pressure, fraction: nil).statusColor
     }
 
     /// A compact 0...1 fraction: "5%", "47%", "100%".

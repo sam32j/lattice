@@ -18,6 +18,7 @@ enum MenuBarBatteryWarningTests {
         typealias SystemSnapshot = MenuBarBatteryWarningTests.SystemSnapshot
         typealias MenuBarMetric = MenuBarBatteryWarningTests.MenuBarMetric
         typealias MemoryPressure = MenuBarBatteryWarningTests.MemoryPressure
+        typealias MonitorLevel = MenuBarBatteryWarningTests.MonitorLevel
         typealias PowerReading = MenuBarBatteryWarningTests.PowerReading
         typealias ReviewDefaults = MenuBarBatteryWarningTests.ReviewDefaults
         typealias MenuBarMetricSpacing = MenuBarBatteryWarningTests.MenuBarMetricSpacing
@@ -36,7 +37,8 @@ enum MenuBarBatteryWarningTests {
         // Unrelated branches of the production attributed-string renderer
         // must not be reached by this battery-only fixture.
         static func symbolAttachment(named: String, stacked: Bool, enlarged: Bool = false) -> NSAttributedString { preconditionFailure() }
-        static func usageBarBlockAttachment(label: String, fraction: Double?, style: MenuBarBlockStyle,
+        static func usageBarBlockAttachment(label: String, fraction: Double?, level: MonitorLevel,
+                                            style: MenuBarBlockStyle,
                                             pressure: MemoryPressure?) -> NSAttributedString { preconditionFailure() }
         static func networkBlockAttachment(down: String, up: String, style: MenuBarBlockStyle) -> NSAttributedString { preconditionFailure() }
         static func diskActivityBlockAttachment(read: String, write: String, style: MenuBarBlockStyle) -> NSAttributedString { preconditionFailure() }
@@ -58,9 +60,31 @@ enum MenuBarBatteryWarningTests {
         defaults.set(true, forKey: DefaultsKey.notchLowBatteryMenuBar)
         defaults.set(10, forKey: DefaultsKey.notchLowBatteryThreshold)
         defaults.set(20, forKey: DefaultsKey.notchLowBatteryEarlyThreshold)
-        defaults.set(true, forKey: DefaultsKey.menuBarCombineTemperatures)
+        defaults.set(true, forKey: DefaultsKey.menuBarCombineBattery)
         segmentContracts(suite, defaults: defaults)
         imageContracts(suite, defaults: defaults)
+        levelContracts(suite)
+    }
+
+    /// One level for every surface: usage at 70% and 90%, battery at 20%
+    /// and 10% left, memory by the pressure macOS reports.
+    private static func levelContracts(_ suite: TestSuite) {
+        suite.expect(MonitorLevel.usage(0.69) == .normal && MonitorLevel.usage(0.70) == .elevated
+                        && MonitorLevel.usage(0.89) == .elevated && MonitorLevel.usage(0.90) == .critical,
+                     "usage turns elevated at seventy percent and critical at ninety")
+        suite.expect(MonitorLevel.remaining(0.21) == .normal && MonitorLevel.remaining(0.20) == .elevated
+                        && MonitorLevel.remaining(0.10) == .critical,
+                     "a battery turns elevated at twenty percent left and critical at ten")
+        suite.expect(MonitorLevel.memory(pressure: .normal, fraction: 0.95) == .normal
+                        && MonitorLevel.memory(pressure: .warning, fraction: 0.20) == .elevated
+                        && MonitorLevel.memory(pressure: .critical, fraction: nil) == .critical,
+                     "memory follows the pressure macOS reports, not how much is in use")
+        suite.expect(MonitorLevel.memory(pressure: .unknown, fraction: 0.92) == .critical
+                        && MonitorLevel.memory(pressure: nil, fraction: nil) == .normal,
+                     "memory falls back to its share in use only when there is no pressure reading")
+        suite.expect(MonitorLevel.elevated.statusColor == MonitorLevel.elevated.fillColor
+                        && MonitorLevel.critical.statusColor == MonitorLevel.critical.fillColor,
+                     "a mark and a fill share the same color once a reading needs attention")
     }
 
     private static func snapshot(_ percent: Int? = 10, temperature: Double? = 35, plugged: Bool = false) -> SystemSnapshot {
@@ -102,10 +126,10 @@ enum MenuBarBatteryWarningTests {
             suite.expect(warnings(Renderer.blockSegments(for: snapshot(), metrics: [.batteryTemperature], style: style)) == [.none]
                          && warnings(Renderer.blockSegments(for: snapshot(nil), metrics: [.battery, .batteryTemperature], style: style)) == [.none],
                          "temperature alone never inherits a low-charge warning")
-            defaults.set(false, forKey: DefaultsKey.menuBarCombineTemperatures)
+            defaults.set(false, forKey: DefaultsKey.menuBarCombineBattery)
             suite.expect(warnings(Renderer.blockSegments(for: snapshot(), metrics: [.battery, .batteryTemperature], style: style)) == [.low, .none],
                          "separate charge and temperature readings tint only the charge")
-            defaults.set(true, forKey: DefaultsKey.menuBarCombineTemperatures)
+            defaults.set(true, forKey: DefaultsKey.menuBarCombineBattery)
         }
         for key in [DefaultsKey.notchLowBatteryTint, DefaultsKey.notchLowBatteryMenuBar] {
             defaults.set(false, forKey: key)
@@ -155,8 +179,8 @@ enum MenuBarBatteryWarningTests {
         Renderer.overrideSegments = [.metricBlock(label: "RAM", value: "42%", minimumValue: "100%", style: .dense, pressure: .warning)]
         let memory = image()
         suite.expect(warnings(Renderer.overrideSegments!) == [.none]
-                     && memory.map { matchingPixels($0, color: .systemYellow) > 0 && matchingPixels($0, color: .systemRed) == 0 } == true,
-                     "other metric blocks retain the default warning and their existing pressure color")
+                     && memory.map { matchingPixels($0, color: .systemOrange) > 0 && matchingPixels($0, color: .systemRed) == 0 } == true,
+                     "other metric blocks keep the default warning, and memory pressure draws in the shared elevated color")
         Renderer.overrideSegments = nil
     }
 

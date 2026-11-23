@@ -623,21 +623,30 @@ final class StatusItemController {
     /// How the enabled metrics split into separate items. Static so the
     /// Settings preview draws the same split the bar does.
     static func metricStatusGroups(for metrics: [MenuBarMetric], strings: Strings) -> [MetricStatusGroup] {
-        guard MenuBarMetricAppearance.current.allowsCombinedTemperatures,
-              UserDefaults.standard.bool(forKey: DefaultsKey.menuBarCombineTemperatures) else {
-            return metrics.map {
-                MetricStatusGroup(id: $0.rawValue, metrics: [$0], focusMetric: $0, title: $0.title(strings))
-            }
-        }
-
         let enabled = Set(metrics)
         var emittedIDs = Set<String>()
         var groups: [MetricStatusGroup] = []
+        let canCombine = MenuBarMetricAppearance.current.allowsCombinedTemperatures
 
+        func appendSingle(_ metric: MenuBarMetric) {
+            let id = metric.rawValue
+            guard emittedIDs.insert(id).inserted else { return }
+            groups.append(MetricStatusGroup(id: id, metrics: [metric], focusMetric: metric,
+                                            title: metric.title(strings)))
+        }
+
+        /// A component whose usage and temperature combine shares one item;
+        /// one that does not gives each reading its own.
         func appendComponentGroup(id: String,
                                   primary: MenuBarMetric,
                                   temperature: MenuBarMetric,
-                                  primaryTitle: String) {
+                                  primaryTitle: String,
+                                  combineKey: String,
+                                  current: MenuBarMetric) {
+            guard canCombine, UserDefaults.standard.bool(forKey: combineKey) else {
+                appendSingle(current)
+                return
+            }
             guard emittedIDs.insert(id).inserted else { return }
             var groupedMetrics: [MenuBarMetric] = []
             if enabled.contains(primary) { groupedMetrics.append(primary) }
@@ -656,25 +665,26 @@ final class StatusItemController {
                 appendComponentGroup(id: "cpu",
                                      primary: .cpu,
                                      temperature: .cpuTemperature,
-                                     primaryTitle: strings.monitorShowCPU)
+                                     primaryTitle: strings.monitorShowCPU,
+                                     combineKey: DefaultsKey.menuBarCombineCPU,
+                                     current: metric)
             case .gpu, .gpuTemperature:
                 appendComponentGroup(id: "gpu",
                                      primary: .gpu,
                                      temperature: .gpuTemperature,
-                                     primaryTitle: strings.monitorShowGPU)
+                                     primaryTitle: strings.monitorShowGPU,
+                                     combineKey: DefaultsKey.menuBarCombineGPU,
+                                     current: metric)
             case .battery, .batteryTemperature:
                 appendComponentGroup(id: "battery",
                                      primary: .battery,
                                      temperature: .batteryTemperature,
-                                     primaryTitle: strings.batteryLabel)
+                                     primaryTitle: strings.batteryLabel,
+                                     combineKey: DefaultsKey.menuBarCombineBattery,
+                                     current: metric)
             case .memory, .network, .diskUsage, .diskActivity, .batteryTime, .peripheralBattery, .power,
                  .fanSpeed, .connectedDevices:
-                let id = metric.rawValue
-                guard emittedIDs.insert(id).inserted else { continue }
-                groups.append(MetricStatusGroup(id: id,
-                                                metrics: [metric],
-                                                focusMetric: metric,
-                                                title: metric.title(strings)))
+                appendSingle(metric)
             }
         }
 

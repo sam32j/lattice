@@ -628,8 +628,6 @@ extension Strings {
 
         tabMonitor: "系统监视器",
         monitorMenuBarCaption: "选择菜单栏中图标旁显示的内容。",
-        monitorCombineTemperatures: "合并使用率和温度",
-        monitorCombineTemperaturesCaption: "同一项目的使用率和温度都启用时，在一个区块中显示。",
         monitorSeparateMenuBarMetrics: "将指标分成独立项目",
         monitorSeparateMenuBarMetricsCaption: "将已启用的区块拆成单独的菜单栏项目，合并开启时使用率和温度仍保持在一起。",
         monitorNetworkUploadFirst: "上传显示在下载上方",
