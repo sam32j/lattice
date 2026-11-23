@@ -453,6 +453,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchBrowserArtworkSupport.swift
         Sources/Lattice/UI/Notch/NotchEqualizerBars.swift
         Sources/Lattice/UI/Notch/NotchScrollEdgeFade.swift
+        Sources/Lattice/UI/Notch/NotchAgentComponents.swift
         Sources/Lattice/UI/Notch/NotchAgentAnimationView.swift
         Sources/Lattice/UI/WindowVisibilityReader.swift
         Sources/Lattice/Services/Notch/NotchMusicAutomationSupport.swift
