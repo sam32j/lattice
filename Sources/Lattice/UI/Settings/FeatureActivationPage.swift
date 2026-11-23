@@ -50,6 +50,8 @@ struct FeatureActivationPage<Content: View>: View {
                     Image(systemName: "slider.horizontal.3")
                 }
                 .buttonStyle(FlatSettingsOptionsButtonStyle())
+                // The page hands this button first focus as it opens; no ring for that.
+                .focusEffectDisabled()
                 .help(FeatureStrings.recorder(l10n.language).moreOptions)
                 .accessibilityLabel(FeatureStrings.recorder(l10n.language).moreOptions)
                 .popover(isPresented: $showingOptions) { options() }

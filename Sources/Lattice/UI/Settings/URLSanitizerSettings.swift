@@ -231,6 +231,8 @@ private struct URLSanitizerTitleBarControls: View {
                 .foregroundStyle(showingMenu ? Color.accentColor : Color.primary)
         }
         .buttonStyle(FlatSettingsOptionsButtonStyle())
+        // The page hands the gear first focus as it opens; no ring for that.
+        .focusEffectDisabled()
         .help(strings.settingsButton)
         .accessibilityLabel(strings.settingsButton)
         .accessibilityAddTraits(showingMenu ? .isSelected : [])
