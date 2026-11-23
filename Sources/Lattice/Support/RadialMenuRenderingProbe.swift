@@ -94,7 +94,11 @@ enum RadialMenuRenderingProbe {
                                      colorScheme: .dark)
         for (name, item) in [("submenu", submenu),
                              ("window", RadialMenuItem(kind: .windowLayout, payload: WindowLayoutAction.nextDisplay.rawValue)),
-                             ("control", RadialMenuItem(kind: .tool, payload: RadialMenuTool.keepAwake.rawValue))] {
+                             ("control", RadialMenuItem(kind: .tool, payload: RadialMenuTool.keepAwake.rawValue)),
+                             ("app-new", RadialMenuItem(kind: .app)),
+                             ("app", RadialMenuItem(kind: .app, payload: "/System/Applications/Calculator.app")),
+                             ("file-new", RadialMenuItem(kind: .file)),
+                             ("file", RadialMenuItem(kind: .file, payload: NSHomeDirectory()))] {
             SettingsRefactorProbe.render("radial-item-editor-\(name)", view: AnyView(
                 RadialItemEditor(text: FeatureStrings.radialMenu(.enUS), item: item, isNew: false,
                                  allowsSubmenu: true, profileColor: .purple,

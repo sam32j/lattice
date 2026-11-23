@@ -724,6 +724,8 @@ extension RadialMenuItem {
         if stableToggles, kind == .quickToggle, let quickToggle { return quickToggle.settingsTitle(text) }
         switch kind {
         case .app, .file:
+            // Nothing chosen yet: an empty path would name the working folder.
+            guard !payload.isEmpty else { return kind == .app ? text.kindApp : text.kindFile }
             return RadialMenuIconStore.fileName(for: payload)
         case .url:
             let normalized = RadialMenuSupport.normalizedURL(payload) ?? payload
@@ -758,8 +760,9 @@ extension RadialMenuItem {
         }
     }
 
+    /// Only once something is chosen: an empty path draws a blank document.
     var usesFileIcon: Bool {
-        (kind == .app || kind == .file) && symbolName.isEmpty
+        (kind == .app || kind == .file) && symbolName.isEmpty && !payload.isEmpty
     }
 }
 

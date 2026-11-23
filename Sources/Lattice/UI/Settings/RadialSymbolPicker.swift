@@ -16,7 +16,7 @@ struct RadialIconPreview: View {
                 .font(.system(size: size * 0.8, weight: .semibold))
         } else if let custom = RadialMenuIconStore.customIcon(for: item) {
             Image(nsImage: custom).resizable().interpolation(.high).frame(width: size, height: size)
-        } else if item.usesFileIcon, !item.payload.isEmpty {
+        } else if item.usesFileIcon {
             Image(nsImage: RadialMenuIconStore.fileIcon(for: item.payload))
                 .resizable().interpolation(.high).frame(width: size + 2, height: size + 2)
         } else {
