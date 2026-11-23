@@ -286,16 +286,19 @@ extension URLCleaning {
     /// Prefixes a link's host may carry that do not change which site it is.
     static let ignoredHostPrefixes = ["www.", "m.", "mobile.", "open."]
 
-    /// Lowercased, with one leading `www.`, `m.`, `mobile.` or `open.` taken
-    /// off. Only a prefix in front of a whole domain goes: `open.com` is the
-    /// site itself, not `com` opened.
+    /// Lowercased, with every leading `www.`, `m.`, `mobile.` or `open.`
+    /// taken off, so `www.m.youtube.com` is `youtube.com` and normalizing
+    /// twice changes nothing: the domain a sheet checks for an owner is the
+    /// one the rules store. Only a prefix in front of a whole domain goes:
+    /// `open.com` is the site itself, not `com` opened.
     static func matchingHost(_ host: String) -> String {
-        let lowered = host.lowercased()
-        for prefix in ignoredHostPrefixes where lowered.hasPrefix(prefix) {
-            let rest = lowered.dropFirst(prefix.count)
-            if rest.contains(".") { return String(rest) }
+        var value = host.lowercased()
+        while let prefix = ignoredHostPrefixes.first(where: {
+            value.hasPrefix($0) && value.dropFirst($0.count).contains(".")
+        }) {
+            value.removeFirst(prefix.count)
         }
-        return lowered
+        return value
     }
 
     /// Accepts what someone is likely to paste into the domain field — a bare
