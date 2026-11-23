@@ -476,7 +476,8 @@ def main():
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift",
                         "    func reconcile(")
           + "}\n")
-    write("SwitcherWindowTitles.swift", "import AppKit\nimport ApplicationServices\n"
+    (OUTPUT / "SwitcherWindowTitles.swift").unlink(missing_ok=True)
+    write("SwitcherWindowTitlesContract.swift", "import AppKit\nimport ApplicationServices\n"
           + "extension SwitcherWindowTitleTests {\n"
           + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowTitles.swift",
                         "final class SwitcherWindowTitles {")
