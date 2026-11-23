@@ -21,21 +21,11 @@ struct FeatureActivationPage<Content: View>: View {
             if feature.isAvailable {
                 content()
             } else {
-                GeometryReader { geometry in
-                    ScrollView {
-                        ContentUnavailableView {
-                            Label(title, systemImage: feature.symbolName)
-                        } description: {
-                            Text(feature.hubDescription(FeatureStrings.hub(l10n.language)))
-                        } actions: {
-                            FeatureActivationControl(feature: feature)
-                                .toggleStyle(.button)
-                                .buttonStyle(.borderedProminent)
-                        }
-                        .frame(maxWidth: .infinity,
-                               minHeight: max(0, geometry.size.height - 44))
-                        .padding(22)
-                    }
+                SettingsFeatureEmptyState(title: title, symbol: feature.symbolName,
+                                          description: feature.emptyStateDescription(FeatureStrings.hub(l10n.language))) {
+                    FeatureActivationControl(feature: feature)
+                        .toggleStyle(.button)
+                        .buttonStyle(.borderedProminent)
                 }
             }
         }
@@ -72,6 +62,31 @@ struct FeatureActivationPage<Content: View>: View {
         .padding(.horizontal, 8)
     }
 
+}
+
+/// A switched-off feature's whole page: its symbol, name and what it does,
+/// centered, with a button that turns it on.
+struct SettingsFeatureEmptyState<Actions: View>: View {
+    let title: String
+    let symbol: String
+    let description: String
+    @ViewBuilder let actions: () -> Actions
+
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                ContentUnavailableView {
+                    Label(title, systemImage: symbol)
+                } description: {
+                    Text(description)
+                } actions: {
+                    actions()
+                }
+                .frame(maxWidth: .infinity, minHeight: max(0, geometry.size.height - 44))
+                .padding(22)
+            }
+        }
+    }
 }
 
 /// A page's own controls on the trailing side of the settings title bar,
