@@ -442,6 +442,7 @@ final class StatusItemController {
                 DispatchQueue.main.async { [weak self] in self?.refresh() }
             }
         }
+        Self.disableStatusBarResizeAnimation(window: statusItem?.button?.window)
         Self.withoutStatusBarAnimation { performRefresh() }
     }
 
@@ -458,6 +459,26 @@ final class StatusItemController {
             body()
             CATransaction.commit()
         }
+    }
+
+    private static var statusBarResizeAnimationDisabled = false
+
+    /// AppKit grows and shrinks a status item's window with an animated
+    /// frame change, timed by the window's `animationResizeTime(_:)`, which
+    /// is what made a reading slide in. That window class is AppKit's own and
+    /// has no setting for it, so this app's copy of the method answers zero:
+    /// a resize is then immediate. Only this process's status bar windows are
+    /// affected, and only once a status item window exists to name the class.
+    static func disableStatusBarResizeAnimation(window: NSWindow?) {
+        guard !statusBarResizeAnimationDisabled, let window else { return }
+        let windowClass: AnyClass = type(of: window)
+        guard NSStringFromClass(windowClass).contains("StatusBar") else { return }
+        let selector = #selector(NSWindow.animationResizeTime(_:))
+        let instant: @convention(block) (NSWindow, NSRect) -> TimeInterval = { _, _ in 0 }
+        guard let method = class_getInstanceMethod(windowClass, selector) else { return }
+        class_replaceMethod(windowClass, selector, imp_implementationWithBlock(instant),
+                            method_getTypeEncoding(method))
+        statusBarResizeAnimationDisabled = true
     }
 
     private func performRefresh() {
