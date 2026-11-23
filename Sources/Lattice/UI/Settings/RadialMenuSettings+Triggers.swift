@@ -23,38 +23,12 @@ extension RadialMenuSettings {
                         .padding(.leading, settingsRowTextInset)
                     trackpadRow
                         .padding(.leading, settingsRowTextInset)
-                    RadialMouseButtonRow(raw: $mouseButtonRaw, previewRaw: $mouseButtonPreview,
-                                         text: text, isEnabled: featureOn)
+                    RadialMouseButtonRow(raw: $mouseButtonRaw, text: text, isEnabled: featureOn)
                         .padding(.leading, settingsRowTextInset)
                 }
             }
         }
     }
-
-#if LATTICE_DEVELOPMENT
-    /// Developer builds only, outside the card: cycles the mouse button row
-    /// through set, unset and the real setting without saving anything.
-    var mouseButtonDebugToggle: some View {
-        HStack {
-            Spacer()
-            Button {
-                switch mouseButtonPreview {
-                case nil: mouseButtonPreview = RadialMenuMouseTrigger.back.rawValue
-                case RadialMenuMouseTrigger.back.rawValue: mouseButtonPreview = RadialMenuMouseTrigger.off.rawValue
-                default: mouseButtonPreview = nil
-                }
-            } label: {
-                Label(mouseButtonPreview == nil ? "Preview mouse button: real"
-                      : (mouseButtonPreview == RadialMenuMouseTrigger.off.rawValue
-                         ? "Preview mouse button: unset" : "Preview mouse button: set"),
-                      systemImage: mouseButtonPreview == nil ? "ladybug" : "ladybug.fill")
-                    .font(.caption)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(mouseButtonPreview == nil ? Color.secondary : Color.purple)
-        }
-    }
-#endif
 
     // MARK: - Keyboard shortcut
 
@@ -266,8 +240,6 @@ struct RadialRowNote: View {
 /// capture at once and the menu's own tap lets the press through.
 struct RadialMouseButtonRow: View {
     @Binding var raw: String
-    /// Developer builds only: shows the row as set or unset without saving.
-    @Binding var previewRaw: String?
     let text: RadialMenuFeatureStrings
     let isEnabled: Bool
 
@@ -284,12 +256,11 @@ struct RadialMouseButtonRow: View {
     @State private var shakes: CGFloat = 0
     @State private var monitors: [Any] = []
     @State private var recordingToken = 0
-    /// Developer builds only: shows the row as set or unset without saving.
 
     /// How long a recording waits before saying nothing has arrived.
     static let nothingSeenDelay: TimeInterval = 5
 
-    private var trigger: RadialMenuMouseTrigger { RadialMenuMouseTrigger.sanitized(previewRaw ?? raw) }
+    private var trigger: RadialMenuMouseTrigger { RadialMenuMouseTrigger.sanitized(raw) }
 
     var body: some View {
         RadialTriggerRow(title: text.mouseButtonLabel, status: status) {
@@ -310,7 +281,6 @@ struct RadialMouseButtonRow: View {
                         .accessibilityElement(children: .combine)
                         .accessibilityValue(activeHelp(button))
                         Button {
-                            if previewRaw != nil { previewRaw = RadialMenuMouseTrigger.off.rawValue; return }
                             raw = RadialMenuMouseTrigger.off.rawValue
                             RadialMenuService.shared.syncWithPreferences()
                         } label: {
@@ -358,7 +328,7 @@ struct RadialMouseButtonRow: View {
 
     private var status: RadialRowNote.Content? {
         guard !recording, let button = trigger.buttonNumber else { return nil }
-        if previewRaw == nil, isEnabled, permissions.accessibility, !service.isWatchingMouseButton {
+        if isEnabled, permissions.accessibility, !service.isWatchingMouseButton {
             return .problem(text.mouseButtonBlind)
         }
         _ = button
@@ -472,7 +442,6 @@ struct RadialMouseButtonRow: View {
 
     private func handle(_ seen: Int64?) {
         guard recording, let seen, MouseButtonShortcutSupport.buttonRange.contains(seen) else { return }
-        previewRaw = nil
         raw = RadialMenuMouseTrigger.button(seen).rawValue
         stop()
         RadialMenuService.shared.syncWithPreferences()
