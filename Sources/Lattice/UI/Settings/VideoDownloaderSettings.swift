@@ -318,10 +318,11 @@ struct VideoDownloaderSettings: View {
         .accessibilityLabel(FeatureStrings.recorder(l10n.language).moreOptions)
         .accessibilityAddTraits(showingMenu ? .isSelected : [])
         .popover(isPresented: $showingMenu, arrowEdge: .bottom) {
+            // Sized to its content, so no line ever wraps.
             browserSignInRow
+                .fixedSize()
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .frame(width: 360)
         }
         .onChange(of: showingMenu) { _, open in
             if !open { menuClosedAt = Date() }
@@ -334,6 +335,7 @@ struct VideoDownloaderSettings: View {
                 HStack(alignment: .center, spacing: 5) {
                     Text(VideoDownloaderStrings.browserSessionTitle)
                         .font(.body)
+                        .lineLimit(1)
 
                     browserSessionStatusSpan
                 }
@@ -341,7 +343,7 @@ struct VideoDownloaderSettings: View {
                 Text(VideoDownloaderStrings.browserSignInDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
             }
 
             Spacer(minLength: 12)
@@ -354,6 +356,8 @@ struct VideoDownloaderSettings: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
             .fixedSize()
+            // The menu hands Manage first focus as it opens; no ring for that.
+            .focusEffectDisabled()
         }
     }
 
