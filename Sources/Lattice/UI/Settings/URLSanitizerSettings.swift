@@ -196,7 +196,7 @@ private struct URLSanitizerTitleBarControls: View {
     @Binding var enabled: Bool
     @Binding var autoRemove: Bool
     @State private var showingMenu = false
-    /// A click on the gear while the menu is open first closes it as a click
+    /// A click on the menu button while the menu is open first closes it as a click
     /// outside; this keeps that same click from opening it again.
     @State private var menuClosedAt = Date.distantPast
 
@@ -227,11 +227,11 @@ private struct URLSanitizerTitleBarControls: View {
             guard Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
             showingMenu.toggle()
         } label: {
-            Image(systemName: "gearshape")
+            Image(systemName: "slider.horizontal.3")
                 .foregroundStyle(showingMenu ? Color.accentColor : Color.primary)
         }
         .buttonStyle(FlatSettingsOptionsButtonStyle())
-        // The page hands the gear first focus as it opens; no ring for that.
+        // The page hands this button first focus as it opens; no ring for that.
         .focusEffectDisabled()
         .help(strings.settingsButton)
         .accessibilityLabel(strings.settingsButton)
@@ -245,7 +245,7 @@ private struct URLSanitizerTitleBarControls: View {
     }
 }
 
-/// The gear's menu: one row per option, each a title, a line of help and a
+/// The title bar menu: one row per option, each a title, a line of help and a
 /// switch, clickable anywhere. More options add more rows.
 private struct URLSanitizerSettingsMenu: View {
     @ObservedObject private var l10n = L10n.shared
