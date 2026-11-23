@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Values or bars, each drawn the way the menu bar would draw a CPU reading.
 struct MenuBarStyleChoice: View {
@@ -165,17 +166,21 @@ struct MenuBarReadingsList: View {
             ForEach(Array(groups.enumerated()), id: \.element) { index, group in
                 // Dragging moves within the full saved order, so components
                 // hidden by a module keep their slot for their return.
-                VStack(spacing: 0) {
-                    PanelReorderableItem(item: group, cornerRadius: 8, order: $order, dragging: $dragging) {
+                // The divider is part of the row's drop area, so there is no
+                // gap between rows that refuses the drop.
+                PanelReorderableItem(item: group, cornerRadius: 8, order: $order, dragging: $dragging) {
+                    VStack(spacing: 0) {
                         MenuBarReadingRow(group: group, members: visibleMembers(of: group))
+                        if index < groups.count - 1 {
+                            Divider().padding(.leading, 52)
+                        }
                     }
-                    if index < groups.count - 1 {
-                        Divider().padding(.leading, 52)
-                    }
+                    .background(Color.clear.contentShape(Rectangle()))
                 }
                 .transition(.settingsReveal)
             }
         }
+        .onDrop(of: [UTType.text], delegate: PanelReorderDropCatcher(dragging: $dragging))
         .onAppear { reload() }
         .onChange(of: order) { _, order in
             // Only a drag writes; reloading the saved order must not.

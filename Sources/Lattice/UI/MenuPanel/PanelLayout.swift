@@ -33,7 +33,9 @@ struct PanelReorderableItem<Item: PanelOrderItem, Content: View>: View {
     var body: some View {
         if isEnabled {
             content()
-                .opacity(dragging == item ? 0.2 : 1.0)
+                // Only the outlined gap stays behind while dragging, so the
+                // landing preview and the row never show twice.
+                .opacity(dragging == item ? 0 : 1.0)
                 .overlay {
                     if dragging == item {
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -55,6 +57,21 @@ struct PanelReorderableItem<Item: PanelOrderItem, Content: View>: View {
     }
 }
 
+/// Accepts a reorder dropped anywhere in a list, between rows included, so
+/// the drag always lands where it is instead of sliding back to its start.
+struct PanelReorderDropCatcher<Item: PanelOrderItem>: DropDelegate {
+    @Binding var dragging: Item?
+
+    func performDrop(info: DropInfo) -> Bool {
+        dragging = nil
+        return true
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+}
+
 private struct PanelItemDropDelegate<Item: PanelOrderItem>: DropDelegate {
     let item: Item
     @Binding var order: [Item]
@@ -65,7 +82,9 @@ private struct PanelItemDropDelegate<Item: PanelOrderItem>: DropDelegate {
               let from = order.firstIndex(of: dragging),
               let to = order.firstIndex(of: item) else { return }
         if from != to {
-            order.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+            withAnimation(.easeInOut(duration: 0.18)) {
+                order.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+            }
         }
     }
 
