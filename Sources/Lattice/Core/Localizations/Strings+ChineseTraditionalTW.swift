@@ -134,8 +134,6 @@ extension Strings {
 
         sessionSection: "工作階段",
         defaultDurationLabel: "預設持續時間",
-        keepAwakeAutoStart: "開啟 Lattice 時保持喚醒",
-        keepAwakeAutoStartCaption: "使用預設時間啟動工作階段。",
         batteryProtectionSection: "電池保護",
         batteryDisableBelow: "電量低於以下值時關閉",
         batteryNever: "從不",
@@ -915,8 +913,6 @@ extension Strings {
         monitorMemoryMetricLabel: "記憶體計量方式",
         memoryMetricUsed: "已用記憶體",
         memoryMetricApp: "App 記憶體",
-        keepAwakeRightClickToggle: "在選單列圖示按右鍵來切換「保持喚醒」",
-        keepAwakeRightClickToggleCaption: "會取代按右鍵選單。",
         urlCleanerRemovedFormat: "已移除 %@",
         switcherSearchPlaceholder: "搜尋",
         invertVerticalScroll: "反轉垂直捲動",

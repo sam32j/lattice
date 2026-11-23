@@ -184,14 +184,6 @@ extension KeepAwakeManager {
         }
     }
 
-    func activateOnLaunchIfNeeded() {
-        guard AppFeature.keepAwake.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeAutoStart),
-              !isActive else { return }
-        activate(minutes: Defaults.sanitizedDefaultDuration(
-            UserDefaults.standard.integer(forKey: DefaultsKey.defaultDuration)))
-    }
-
     func extend(minutes: Int) {
         guard isActive, let current = endDate else { return }
         let newEnd = HubStayAwakeSupport.durationEnd(minutes: minutes, isTimed: true, end: current, now: Date())

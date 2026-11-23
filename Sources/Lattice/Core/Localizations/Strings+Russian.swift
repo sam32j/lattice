@@ -134,8 +134,6 @@ extension Strings {
 
         sessionSection: "Сеанс",
         defaultDurationLabel: "Длительность по умолчанию",
-        keepAwakeAutoStart: "Не давать уснуть при запуске Lattice",
-        keepAwakeAutoStartCaption: "Запускает сеанс с длительностью по умолчанию.",
         batteryProtectionSection: "Защита батареи",
         batteryDisableBelow: "Отключать, когда заряд упадёт ниже",
         batteryNever: "Никогда",
@@ -915,8 +913,6 @@ extension Strings {
         monitorMemoryMetricLabel: "Как измерять память",
         memoryMetricUsed: "Занято памяти",
         memoryMetricApp: "Память приложений",
-        keepAwakeRightClickToggle: "Щёлкните правой кнопкой значок в строке меню, чтобы включить или выключить «Не давать уснуть»",
-        keepAwakeRightClickToggleCaption: "Заменяет контекстное меню правой кнопки мыши.",
         urlCleanerRemovedFormat: "Удалено: %@",
         switcherSearchPlaceholder: "Поиск",
         invertVerticalScroll: "Инвертировать вертикальную прокрутку",

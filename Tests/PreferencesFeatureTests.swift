@@ -80,14 +80,31 @@ enum PreferencesFeatureTests {
                "stored appearance values survive a relaunch")
         suite.expect(AppAppearance.allCases.map(\.rawValue) == ["system", "light", "dark"],
                "appearance raw values are persisted keys and their order is the picker order")
-        suite.expect(registeredDefaults[DefaultsKey.keepAwakeAutoStart] as? Bool == false,
-               "Keep Awake launch restore is opt-in")
-        suite.expect(registeredDefaults[DefaultsKey.keepAwakeRightClickToggle] as? Bool == false,
-               "right-click Keep Awake toggle is opt-in")
+        let retiredKeepAwakeKeys = ["keepAwakeAutoStart", "keepAwakeRightClickToggle",
+                                    "keepAwakeSwitchUsesUntil", "keepAwakeUntilTime"]
+        suite.expect(retiredKeepAwakeKeys.allSatisfy { registeredDefaults[$0] == nil
+                        && !SettingsBackupSupport.exportKeys().contains($0) },
+               "Stay Awake's retired launch, right-click and last-pick settings are neither registered nor exported")
+        let retiredDomain = "io.github.sam32j.lattice.tests.keep-awake-retired.\(UUID().uuidString)"
+        let retiredDefaults = UserDefaults(suiteName: retiredDomain)!
+        defer { retiredDefaults.removePersistentDomain(forName: retiredDomain) }
+        for key in retiredKeepAwakeKeys { retiredDefaults.set(true, forKey: key) }
+        Defaults.retireKeepAwakeLaunchAndRightClick(in: retiredDefaults)
+        Defaults.retireKeepAwakeLastPick(in: retiredDefaults)
+        suite.expect(retiredKeepAwakeKeys.allSatisfy { retiredDefaults.object(forKey: $0) == nil },
+               "launch clears Stay Awake's retired saved settings")
+        let oldKeepAwakeBackup: [String: Any] = [
+            SettingsBackupSupport.formatVersionKey: SettingsBackupSupport.formatVersion,
+            SettingsBackupSupport.settingsKey: ["keepAwakeAutoStart": true, "keepAwakeRightClickToggle": true,
+                                                DefaultsKey.keepAwakeAllowDisplaySleep: true] as [String: Any],
+        ]
+        let restoredKeepAwake = SettingsBackupSupport.sanitizedSettings(from: oldKeepAwakeBackup)
+        suite.expect(restoredKeepAwake?["keepAwakeAutoStart"] == nil
+                        && restoredKeepAwake?["keepAwakeRightClickToggle"] == nil
+                        && restoredKeepAwake?[DefaultsKey.keepAwakeAllowDisplaySleep] as? Bool == true,
+               "an older backup restores Stay Awake's settings but not the retired launch and right-click ones")
         suite.expect(registeredDefaults[DefaultsKey.keepAwakeAllowDisplaySleep] as? Bool == false,
                "Keep Awake keeps the display on by default")
-        suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.keepAwakeRightClickToggle),
-               "right-click Keep Awake preference follows settings backups")
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.keepAwakeAllowDisplaySleep),
                "display sleep preference follows settings backups")
         suite.expect(registeredDefaults[DefaultsKey.keepAwakeExternalDisplay] as? Bool == false,

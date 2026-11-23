@@ -91,12 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             LatticeHubService.shared.toggle(forceFloating: true, anchoredBelow: anchorRect)
         }
         statusController.onRightClick = { [weak self] button in
-            if AppFeature.keepAwake.isAvailable
-                && UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeRightClickToggle) {
-                KeepAwakeManager.shared.toggle()
-            } else {
-                self?.showContextMenu(from: button)
-            }
+            self?.showContextMenu(from: button)
         }
         statusController.onMetricClick = { [weak self] metric, button in
             self?.showMetricPanel(for: metric, anchoredTo: button)
@@ -127,9 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         HotkeyManager.shared.syncWithPreferences()
         QuickTogglesService.shared.syncWithPreferences()
 
-        KeepAwakeManager.shared.recoverIfNeeded {
-            KeepAwakeManager.shared.activateOnLaunchIfNeeded()
-        }
+        KeepAwakeManager.shared.recoverIfNeeded()
         FanControlService.recoverIfNeeded()
         SpacesOrderHold.recoverIfNeeded()
         // One binding per feature: only available features are touched, so a

@@ -134,8 +134,6 @@ extension Strings {
 
         sessionSection: "Relácia",
         defaultDurationLabel: "Predvolené trvanie",
-        keepAwakeAutoStart: "Zapnúť bdelý režim po otvorení Latticeu",
-        keepAwakeAutoStartCaption: "Spustí reláciu s predvoleným trvaním.",
         batteryProtectionSection: "Ochrana batérie",
         batteryDisableBelow: "Vypnúť, keď batéria klesne pod",
         batteryNever: "Nikdy",
@@ -914,8 +912,6 @@ extension Strings {
         monitorMemoryMetricLabel: "Merať pamäť ako",
         memoryMetricUsed: "Využitá pamäť",
         memoryMetricApp: "Pamäť aplikácií",
-        keepAwakeRightClickToggle: "Pravým kliknutím na ikonu v lište prepínať bdelý režim",
-        keepAwakeRightClickToggleCaption: "Nahradí kontextovú ponuku po pravom kliknutí.",
         urlCleanerRemovedFormat: "Odstránené: %@",
         switcherSearchPlaceholder: "Hľadať",
         invertVerticalScroll: "Obrátiť zvislé rolovanie",
