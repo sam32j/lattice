@@ -211,12 +211,7 @@ struct Strings {
     let keepAwakeNormalRules: String
     let keepAwakeUntilLabel: String
     let keepAwakeUntilStart: String
-    let keepAwakeOptions: String
-    let keepAwakeMouseJiggle: String
-    let keepAwakeMouseJiggleCaption: String
-    let keepAwakeMouseJiggleInterval: String
     let durationLabel: String
-    let clamshellTitle: String
     let clamshellOnCaption: String
     let clamshellNeedsSession: String
     let clamshellReady: String
@@ -290,7 +285,6 @@ struct Strings {
     let launchAtLogin: String
     let languageLabel: String
     let menuBarSection: String
-    let showCountdown: String
     let globalHotkeySection: String
     let hotkeyToggle: String
 
@@ -298,15 +292,11 @@ struct Strings {
     let sessionSection: String
     let defaultDurationLabel: String
     let batteryProtectionSection: String
-    let batteryDisableBelow: String
     let batteryNever: String
-    let batteryProtectionCaption: String
     let clamshellSection: String
     let configuring: String
     let sudoersFailed: String
     let clamshellExplanation: String
-    let dimScreenOnLidCloseTitle: String
-    let dimScreenOnLidCloseCaption: String
 
     // MARK: Settings — mouse
     let scrollSection: String
@@ -1218,12 +1208,7 @@ extension Strings {
         keepAwakeNormalRules: "O Mac segue as regras normais de energia",
         keepAwakeUntilLabel: "Até",
         keepAwakeUntilStart: "Iniciar",
-        keepAwakeOptions: "Opções",
-        keepAwakeMouseJiggle: "Mover cursor levemente",
-        keepAwakeMouseJiggleCaption: "Durante uma sessão, move o cursor um pouco no intervalo escolhido.",
-        keepAwakeMouseJiggleInterval: "Intervalo",
         durationLabel: "Duração",
-        clamshellTitle: "Continuar com a tampa fechada",
         clamshellOnCaption: "Suspensão totalmente desativada. Atenção à energia",
         clamshellNeedsSession: "Será aplicada sempre que “Manter acordado” estiver ativo",
         clamshellReady: "Pronto. Liga e desliga sem senha",
@@ -1289,22 +1274,17 @@ extension Strings {
         launchAtLogin: "Iniciar junto com o Mac",
         languageLabel: "Idioma",
         menuBarSection: "Barra de menus",
-        showCountdown: "Mostrar tempo restante ao lado do ícone",
         globalHotkeySection: "Atalho global",
         hotkeyToggle: "Ativar atalho para “Manter acordado”",
 
         sessionSection: "Sessão",
         defaultDurationLabel: "Duração padrão",
         batteryProtectionSection: "Proteção de bateria",
-        batteryDisableBelow: "Desativar com bateria abaixo de",
         batteryNever: "Nunca",
-        batteryProtectionCaption: "Evita que uma sessão esquecida drene a bateria do MacBook.",
         clamshellSection: "Tampa fechada",
         configuring: "Configurando…",
         sudoersFailed: "Não foi possível ativar a tampa fechada. Tente de novo.",
         clamshellExplanation: "“Continuar com a tampa fechada” desativa completamente a suspensão enquanto “Manter acordado” estiver ativo e é revertido automaticamente quando a sessão termina ou o app é encerrado. Prefira usá-lo conectado à energia.",
-        dimScreenOnLidCloseTitle: "Escurecer a tela completamente",
-        dimScreenOnLidCloseCaption: "Escurece a tela quando a tampa fecha e restaura o brilho quando ela abre.",
 
         scrollSection: "Rolagem",
         invertMouseScroll: "Inverter rolagem do mouse",
@@ -2175,12 +2155,7 @@ extension Strings {
         keepAwakeNormalRules: "The Mac follows its normal energy rules",
         keepAwakeUntilLabel: "Until",
         keepAwakeUntilStart: "Start",
-        keepAwakeOptions: "Options",
-        keepAwakeMouseJiggle: "Move pointer slightly",
-        keepAwakeMouseJiggleCaption: "During a session, moves the pointer a little at the chosen interval.",
-        keepAwakeMouseJiggleInterval: "Interval",
         durationLabel: "Duration",
-        clamshellTitle: "Keep going with the lid closed",
         clamshellOnCaption: "Sleep fully disabled. Mind the power",
         clamshellNeedsSession: "Applied whenever “Keep awake” is active",
         clamshellReady: "Ready. Toggles without a password",
@@ -2246,22 +2221,17 @@ extension Strings {
         launchAtLogin: "Launch at login",
         languageLabel: "Language",
         menuBarSection: "Menu Bar",
-        showCountdown: "Show remaining time next to the icon",
         globalHotkeySection: "Global shortcut",
         hotkeyToggle: "Enable shortcut for “Keep awake”",
 
         sessionSection: "Session",
         defaultDurationLabel: "Default duration",
         batteryProtectionSection: "Battery protection",
-        batteryDisableBelow: "Disable when battery drops below",
         batteryNever: "Never",
-        batteryProtectionCaption: "Keeps a forgotten session from draining the MacBook battery.",
         clamshellSection: "Closed lid",
         configuring: "Configuring…",
         sudoersFailed: "Couldn’t turn on closed-lid mode. Try again.",
         clamshellExplanation: "“Keep going with the lid closed” fully disables sleep while “Keep awake” is active and is reverted automatically when the session ends or the app quits. Prefer using it plugged in.",
-        dimScreenOnLidCloseTitle: "Dim the display to zero",
-        dimScreenOnLidCloseCaption: "Dims the display when the lid closes and brings the brightness back when it opens.",
 
         scrollSection: "Scrolling",
         invertMouseScroll: "Invert mouse scrolling",
