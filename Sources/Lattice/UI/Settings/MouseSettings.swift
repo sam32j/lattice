@@ -39,6 +39,9 @@ struct MouseSettings: View {
     @AppStorage(DefaultsKey.middleClickEnabled) var middleClickEnabled = false
     @AppStorage(DefaultsKey.middleClickTapFingers) var middleClickTapFingers = 0
     @AppStorage(DefaultsKey.middleClickClickFingers) var middleClickClickFingers = 3
+    // Read so the Middle Click rows follow the Radial Menu's gesture.
+    @AppStorage(DefaultsKey.radialMenuTrackpadGesture) var radialMenuTrackpadGesture = RadialMenuTrackpadGesture.off.rawValue
+    @AppStorage(DefaultsKey.radialMenuEnabled) var radialMenuEnabled = false
     @AppStorage(DefaultsKey.mouseClickDebounceEnabled) var mouseClickDebounceEnabled = false
     @AppStorage(DefaultsKey.mouseClickDebounceWindowMs) var mouseClickDebounceWindow =
         Defaults.defaultMouseClickDebounceWindowMs

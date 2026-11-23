@@ -57,6 +57,9 @@ final class MiddleClickService: ObservableObject {
     /// A duplicate native down was dropped; its drag and up must be dropped as
     /// well instead of leaking an orphan event or ending the real held click.
     private var suppressedButtonSequence = false
+    /// A four-finger press opened or closed the Radial Menu: its drag and up
+    /// are consumed too, so nothing under the wheel is clicked or selected.
+    private var radialPressSequence = false
     /// The process that received the transformed down. A recovery up targets
     /// the same process even while this app is terminating.
     private var middleButtonTargetPID: pid_t?
@@ -84,6 +87,9 @@ final class MiddleClickService: ObservableObject {
     private var tapFingers = 0
     private var clickFingers = 3
     private var radialMenuTapFingers = 0
+    /// The Radial Menu's trackpad gesture while it holds one; under
+    /// `stateLock` like the finger counts.
+    private var radialGesture = RadialMenuTrackpadGesture.off
     /// The finger count the current candidate started with: the larger count
     /// takes over when both taps are on and a fourth finger lands.
     private var tapCandidateFingers = 0
@@ -109,26 +115,29 @@ final class MiddleClickService: ObservableObject {
         let defaults = UserDefaults.standard
         let enabled = AppFeature.middleClick.isAvailable
             && defaults.bool(forKey: DefaultsKey.middleClickEnabled)
-        let tap = enabled ? Defaults.sanitizedMiddleClickTapFingers(
-            defaults.integer(forKey: DefaultsKey.middleClickTapFingers)) : 0
+        // The Radial Menu takes precedence on the four-finger gesture it
+        // uses. Middle Click's saved choices stay as they are; only what it
+        // answers changes, and it gets them back once the menu lets go.
+        let gesture = RadialMenuSupport.effectiveTrackpadGesture(defaults: defaults)
+        let tap = enabled ? MiddleClickSupport.effectiveTapFingers(
+            stored: Defaults.sanitizedMiddleClickTapFingers(
+                defaults.integer(forKey: DefaultsKey.middleClickTapFingers)),
+            systemOwnsThreeFingerTap: false,
+            radialGesture: gesture) : 0
         let click = Defaults.sanitizedMiddleClickClickFingers(
             defaults.integer(forKey: DefaultsKey.middleClickClickFingers))
-        let radialMenuTap = MiddleClickSupport.radialMenuTapFingers(
-            radialMenuWantsTap: AppFeature.radialMenu.isAvailable
-                && defaults.bool(forKey: DefaultsKey.radialMenuEnabled)
-                && RadialMenuSupport.decodeProfiles(defaults.data(forKey: DefaultsKey.radialMenuProfiles),
-                                                    defaults: defaults).contains(where: \.trackpadTap),
-            middleClickTapFingers: tap)
+        let radialMenuTap = gesture == .tap ? MiddleClickSupport.radialMenuGestureFingers(radialGesture: gesture) : 0
         tapStateLock.withLock { middleClickOn = enabled }
         stateLock.lock()
         tapFingers = tap
         clickFingers = click
         radialMenuTapFingers = radialMenuTap
+        radialGesture = gesture
         resetTapCandidateLocked()
         stateLock.unlock()
         refreshDragGestureConflict()
         if SessionActivitySupport.tapShouldRun(
-            featureWanted: enabled || radialMenuTap > 0,
+            featureWanted: enabled || gesture != .off,
             accessibilityGranted: AXIsProcessTrusted(),
             sessionIsActive: SessionActivity.shared.isActive
         ) {
@@ -264,6 +273,7 @@ final class MiddleClickService: ObservableObject {
         tapStateLock.withLock {
             lastTransformEnd = nil
             suppressedButtonSequence = false
+            radialPressSequence = false
         }
         stateLock.lock()
         fingerCount = 0
@@ -511,7 +521,7 @@ final class MiddleClickService: ObservableObject {
             releaseHeldMiddleButton()
             let enabled = AppFeature.middleClick.isAvailable
                 && UserDefaults.standard.bool(forKey: DefaultsKey.middleClickEnabled)
-                || stateLock.withLock { radialMenuTapFingers > 0 }
+                || stateLock.withLock { radialGesture != .off }
             let shouldRearm = SessionActivitySupport.tapShouldRun(
                 featureWanted: enabled,
                 accessibilityGranted: AXIsProcessTrusted(),
@@ -543,7 +553,26 @@ final class MiddleClickService: ObservableObject {
         case .leftMouseDown, .rightMouseDown:
             stateLock.lock()
             if tapStartUptime != nil { tapSawButton = true }
+            let pressCount = fingerCount
+            let pressAge = now - lastFrameUptime
+            let pressSettled = now - fingerCountSince
+            let pressGesture = radialGesture
             stateLock.unlock()
+            // The Radial Menu's four-finger click comes first, before Middle
+            // Click and its exception list (which is Middle Click's, not the
+            // menu's). The whole press is consumed: nothing under the wheel
+            // is clicked, and releasing does nothing.
+            if MiddleClickSupport.radialClickOpens(fingerCount: pressCount, frameAge: pressAge,
+                                                   settledFor: pressSettled, radialGesture: pressGesture) {
+                let alreadyHeld = tapStateLock.withLock { () -> Bool in
+                    defer { radialPressSequence = true }
+                    return radialPressSequence
+                }
+                if !alreadyHeld {
+                    DispatchQueue.main.async { RadialMenuService.shared.toggleFromTrackpad() }
+                }
+                return nil
+            }
             tapStateLock.lock()
             guard middleClickOn else {
                 tapStateLock.unlock()
@@ -590,7 +619,8 @@ final class MiddleClickService: ObservableObject {
                 settledFor: settledFor,
                 sinceLastTransformEnd: sinceLastTransformEnd.map { now - $0 },
                 systemDragGestureEnabled: dragGestureEnabled(now: now),
-                clickFingers: pressFingers
+                clickFingers: pressFingers,
+                radialGesture: pressGesture
             )
             switch action {
             case .passThrough:
@@ -609,7 +639,7 @@ final class MiddleClickService: ObservableObject {
             }
         case .leftMouseDragged, .rightMouseDragged:
             let (held, suppressed) = tapStateLock.withLock {
-                (middleButtonHeld, suppressedButtonSequence)
+                (middleButtonHeld, suppressedButtonSequence || radialPressSequence)
             }
             if held {
                 return Unmanaged.passUnretained(asMiddle(event, type: .otherMouseDragged))
@@ -617,6 +647,11 @@ final class MiddleClickService: ObservableObject {
             return suppressed ? nil : Unmanaged.passUnretained(event)
         case .leftMouseUp, .rightMouseUp:
             tapStateLock.lock()
+            if radialPressSequence {
+                radialPressSequence = false
+                tapStateLock.unlock()
+                return nil
+            }
             if suppressedButtonSequence {
                 suppressedButtonSequence = false
                 tapStateLock.unlock()
