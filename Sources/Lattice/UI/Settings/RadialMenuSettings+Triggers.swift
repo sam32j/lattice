@@ -71,7 +71,7 @@ extension RadialMenuSettings {
         // other shortcut rows use, never in red inside the field; only a
         // lasting refusal by macOS keeps a mark.
         let status: RadialRowNote.Content? = service.registrationFailed ? .problem(text.shortcutRefused) : nil
-        return RadialTriggerRow(title: text.shortcutLabel, info: text.openInfoBody, status: status) {
+        return RadialTriggerRow(title: text.shortcutLabel, status: status) {
             CompactShortcutBindingRecorder(
                 recordingID: "radial-menu-shortcut",
                 shortcut: savedShortcut,
@@ -115,7 +115,7 @@ extension RadialMenuSettings {
     private var trackpadRow: some View {
         let status: RadialRowNote.Content? = trackpadGesture != .off && middleClick.touchDeviceMissing
             ? .problem(l10n.s.middleClickNoTrackpad) : nil
-        return RadialTriggerRow(title: text.trackpadLabel, info: text.trackpadHelp, status: status) {
+        return RadialTriggerRow(title: text.trackpadLabel, status: status) {
             SettingsPopUpPicker(title: text.trackpadLabel, options: [
                 .init(value: RadialMenuTrackpadGesture.off, title: text.trackpadOff),
                 .init(value: RadialMenuTrackpadGesture.tap, title: text.trackpadTap),
@@ -190,11 +190,8 @@ extension RadialMenuSettings {
 struct RadialTriggerRow<Control: View>: View {
     let title: String
     var help: String? = nil
-    /// A short explanation behind an ⓘ beside the title.
-    var info: String? = nil
     let status: RadialRowNote.Content?
     @ViewBuilder let control: Control
-    @State private var showsInfo = false
 
     /// The one width every trigger control shares.
     static var controlWidth: CGFloat { 140 }
@@ -209,23 +206,6 @@ struct RadialTriggerRow<Control: View>: View {
             Spacer(minLength: 12)
             if let status {
                 RadialStatusMark(content: status)
-            }
-            // Beside the control it explains, opened by a click only.
-            if let info {
-                Button { showsInfo.toggle() } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(info)
-                .popover(isPresented: $showsInfo, arrowEdge: .bottom) {
-                    Text(info)
-                        .font(.callout)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(width: 240, alignment: .leading)
-                        .padding(14)
-                }
             }
             control
         }
