@@ -50,6 +50,17 @@ extension URLCleaning {
             tokens.first { $0.isBlocked && $0.matches(parameter) }
         }
 
+        /// The token that settles `parameter` for this site, blocked or
+        /// allowed, or nil when the site has nothing to say about it. A name
+        /// listed exactly beats a wildcard, so `utm_source` allowed beside
+        /// `utm_*` blocked keeps `utm_source`. `parameter` must already be
+        /// lowercased.
+        func decidingToken(for parameter: String) -> Token? {
+            tokens.first { !$0.isWildcard && $0.name == parameter }
+                ?? tokens.first { $0.isBlocked && $0.matches(parameter) }
+                ?? tokens.first { $0.matches(parameter) }
+        }
+
         /// Whether a link to `host`, already normalized with `matchingHost`,
         /// belongs to this site, and through how long a domain.
         func matchLength(forHost host: String) -> Int? {
