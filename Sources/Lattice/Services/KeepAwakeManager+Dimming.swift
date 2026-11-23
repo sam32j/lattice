@@ -7,7 +7,9 @@ import os
 extension KeepAwakeManager {
     // MARK: - Closed-lid screen dimming
 
-    /// Runs whenever the closed-lid mode or the dimming preference changes.
+    /// Runs whenever the closed-lid mode changes. While it is in effect the
+    /// built-in display always goes dark behind a closed lid: with sleep
+    /// disabled, nothing else turns the panel off.
     /// An `IOPMrootDomain` general-interest notification is cheaper than
     /// polling and is already how `BrightnessService` watches the lid for
     /// its own deferred-restoration case; this registers its own interest
@@ -16,7 +18,7 @@ extension KeepAwakeManager {
     /// the mode ending, the same way `BrightnessService`'s own deferred
     /// display restoration outlives whatever asked for it.
     func syncLidDimmingObserver() {
-        let armed = clamshellActive && dimScreenOnLidClose
+        let armed = clamshellActive
         if !armed { applyDimmingAction(LidDimmingSupport.restoring(saved: savedDisplayBrightness)) }
         guard armed || savedDisplayBrightness != nil else {
             if lidDimmingNotification != 0 { IOObjectRelease(lidDimmingNotification) }
@@ -58,12 +60,12 @@ extension KeepAwakeManager {
     /// callback already queued when the feature was torn down: it lands here
     /// as a no-op instead of acting on a mode that already ended.
     func lidStateMayHaveChangedForDimming() {
-        guard (clamshellActive && dimScreenOnLidClose) || savedDisplayBrightness != nil else { return }
+        guard clamshellActive || savedDisplayBrightness != nil else { return }
         let closed = BrightnessService.lidClosed() ?? false
         guard closed != lidClosedForDimming else { return }
         lidClosedForDimming = closed
         if closed {
-            if clamshellActive, dimScreenOnLidClose {
+            if clamshellActive {
                 applyDimmingAction(LidDimmingSupport.lidClosed(currentBrightness: LidDisplayDimmer.currentBrightness()))
             }
         } else {

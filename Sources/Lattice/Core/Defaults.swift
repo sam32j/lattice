@@ -10,7 +10,6 @@ enum DefaultsKey {
     static let language = "appLanguage"                   // AppLanguage.rawValue
     static let appearance = "appAppearance"               // AppAppearance.rawValue
     static let clamshellPreferred = "clamshellPreferred"  // apply closed-lid mode to every session
-    static let dimScreenOnLidClose = "dimScreenOnLidClose" // dim the built-in display to zero while the lid is closed
     static let lastLaunchedVersion = "lastUpdateIntroVersion"
     static let featureHubKeptFeatures = "featureHubKeptFeatures" // comma-joined AppFeature raw values
     static let pendingPermissionActivation = "pendingPermissionActivation"
@@ -961,7 +960,6 @@ enum Defaults {
         DefaultsKey.notchVideoDownloader: true,
         DefaultsKey.appearance: AppAppearance.fallback.rawValue,
         DefaultsKey.clamshellPreferred: false,
-        DefaultsKey.dimScreenOnLidClose: false,
         DefaultsKey.defaultDuration: 0,
         DefaultsKey.batteryLimit: 10,
         DefaultsKey.keepAwakeAllowDisplaySleep: false,

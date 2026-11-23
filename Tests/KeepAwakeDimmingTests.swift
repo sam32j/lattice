@@ -10,26 +10,24 @@ import Foundation
 enum KeepAwakeDimmingTests {
     private typealias C = KeepAwakeLidSleepContract
 
-    /// A session with the option armed and the lid open, ready to be closed.
+    /// A closed-lid session with the lid open, ready to be closed.
     private static func armed(reading: Double? = 0.6) -> C.Service {
         let service = C.reset()
         C.BrightnessService.lid = false
+        C.LidDisplayDimmer.reading = reading
         service.isActive = true
         service.clamshellActive = true
-        C.LidDisplayDimmer.reading = reading
-        service.dimScreenOnLidClose = true
         return service
     }
 
     static func run(expect: (Bool, String) -> Void) {
         let alreadyClosed = C.reset()
+        C.LidDisplayDimmer.reading = 0.7
         alreadyClosed.isActive = true
         alreadyClosed.clamshellActive = true
-        C.LidDisplayDimmer.reading = 0.7
-        alreadyClosed.dimScreenOnLidClose = true
         expect(C.LidDisplayDimmer.written == [0]
                && alreadyClosed.savedDisplayBrightness == 0.7,
-               "enabling dimming with the lid already closed dims without waiting for another lid event")
+               "the closed-lid mode starting with the lid already closed dims without waiting for another lid event")
 
         let closing = armed()
         C.BrightnessService.lid = true
@@ -60,14 +58,6 @@ enum KeepAwakeDimmingTests {
                && C.UserDefaults.standard.doubles[C.DefaultsKey.dimmedDisplaySavedBrightness] == nil,
                "opening the lid restores the saved brightness and clears the recovery marker")
 
-        let toggledOff = armed()
-        C.BrightnessService.lid = true
-        C.DimmingObserver.callback?()
-        C.drain()
-        toggledOff.dimScreenOnLidClose = false
-        expect(C.LidDisplayDimmer.written == [0, 0.6] && toggledOff.savedDisplayBrightness == nil,
-               "switching the option off while dimmed restores at once, without waiting for the lid to open")
-
         let sessionEnded = armed()
         C.BrightnessService.lid = true
         C.DimmingObserver.callback?()
@@ -81,7 +71,7 @@ enum KeepAwakeDimmingTests {
         C.DimmingObserver.callback?()
         C.drain()
         let stale = C.DimmingObserver.callback
-        tornDown.dimScreenOnLidClose = false
+        tornDown.clamshellActive = false
         C.LidDisplayDimmer.written = []
         stale?()
         C.drain()
@@ -118,7 +108,7 @@ enum KeepAwakeDimmingTests {
         expect(C.LidDisplayDimmer.written == [0, 0.6] && retrying.savedDisplayBrightness == nil,
                "the queued retry restores it once the panel answers, with no further lid event needed")
 
-        // Exhausting every retry while the option is switched off keeps the
+        // Exhausting every retry after the closed-lid mode ends keeps the
         // lid observer armed instead of tearing it down, so a later real
         // lid-open event still gets a chance to finish the restore.
         let exhausted = armed()
@@ -126,12 +116,12 @@ enum KeepAwakeDimmingTests {
         C.DimmingObserver.callback?()
         C.drain()
         C.LidDisplayDimmer.writeSucceeds = false
-        exhausted.dimScreenOnLidClose = false
+        exhausted.clamshellActive = false
         for _ in 0..<8 { C.DispatchQueue.main.advance() }
         expect(C.LidDisplayDimmer.written == [0] && exhausted.savedDisplayBrightness == 0.6
                && C.UserDefaults.standard.doubles[C.DefaultsKey.dimmedDisplaySavedBrightness] == 0.6
                && C.DimmingObserver.destroyedPorts == 0,
-               "exhausting the retries after the option is switched off still owes the restore and keeps watching the lid")
+               "exhausting the retries after the closed-lid mode ends still owes the restore and keeps watching the lid")
         C.LidDisplayDimmer.writeSucceeds = true
         C.BrightnessService.lid = false
         C.DimmingObserver.callback?()
