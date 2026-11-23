@@ -28,9 +28,6 @@ struct MonitorAlertsControls: View {
         FeatureStrings.monitorAlerts(l10n.language)
     }
 
-    private var settings: SystemMonitorSettingsStrings {
-        FeatureStrings.systemMonitorSettings(l10n.language)
-    }
 
     private func temperature(_ celsius: Int) -> String {
         MetricFormat.temperature(Double(celsius))
@@ -42,7 +39,7 @@ struct MonitorAlertsControls: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                 if index > 0 { Divider() }
-                MonitorAlertRow(row: row, off: settings.offOption, reduceMotion: reduceMotion)
+                MonitorAlertRow(row: row, reduceMotion: reduceMotion)
             }
             Divider()
                 .padding(.vertical, 4)
@@ -102,8 +99,7 @@ struct MonitorAlertsControls: View {
                                            values: Array(stride(from: 70, through: 105, by: 5)), label: temperature)))
         }
         if AppFeature.monitorMemory.isAvailable {
-            rows.append(.init(id: "memory", symbol: "memorychip", title: text.memory, isOn: $alertMemory,
-                              limit: nil, onTitle: settings.whenCritical))
+            rows.append(.init(id: "memory", symbol: "memorychip", title: text.memory, isOn: $alertMemory, limit: nil))
         }
         if AppFeature.monitorDisk.isAvailable {
             rows.append(.init(id: "disk", symbol: "internaldrive", title: text.disk, isOn: $alertDisk,
@@ -151,8 +147,8 @@ struct MonitorAlertsControls: View {
     }
 }
 
-/// One alert in one row: its name, and a menu that is both its switch and
-/// its limit: Off, or the level it fires at ("Above 90%").
+/// One alert in one row: its name and its switch. Once it is on, the limit
+/// it fires at appears beside the switch; an alert that is off shows none.
 struct MonitorAlertRow: View {
     struct Limit {
         let format: String
@@ -167,49 +163,30 @@ struct MonitorAlertRow: View {
         let title: String
         let isOn: Binding<Bool>
         let limit: Limit?
-        /// The menu's on choice for an alert without a limit.
-        var onTitle: String = ""
     }
 
     let row: Model
-    let off: String
     let reduceMotion: Bool
-
-    /// Zero is Off; any other tag is the limit itself, or 1 for "on" when
-    /// the alert has no limit.
-    private var selection: Binding<Int> {
-        Binding(get: {
-            guard row.isOn.wrappedValue else { return 0 }
-            return row.limit?.value.wrappedValue ?? 1
-        }, set: { choice in
-            if choice == 0 {
-                row.isOn.wrappedValue = false
-            } else {
-                if let limit = row.limit { limit.value.wrappedValue = choice }
-                row.isOn.wrappedValue = true
-            }
-        })
-    }
 
     var body: some View {
         HStack(spacing: 12) {
             Text(row.title)
                 .lineLimit(1)
             Spacer(minLength: 8)
-            Picker(row.title, selection: selection.animation(reduceMotion ? nil : .settingsExpansion)) {
-                Text(off).tag(0)
-                Divider()
-                if let limit = row.limit {
+            if row.isOn.wrappedValue, let limit = row.limit {
+                Picker(row.title, selection: limit.value) {
                     ForEach(limit.values, id: \.self) { value in
                         Text(String(format: limit.format, limit.label(value))).tag(value)
                     }
-                } else {
-                    Text(row.onTitle).tag(1)
                 }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+                .transition(.opacity)
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .fixedSize()
+            Toggle(row.title, isOn: row.isOn.animation(reduceMotion ? nil : .settingsExpansion))
+                .labelsHidden()
+                .toggleStyle(.switch)
         }
         .padding(.vertical, 6)
     }
