@@ -19,7 +19,6 @@ struct VideoDownloaderSettings: View {
     @State var pasteboardChangeCount = -1
     @State var skeletonPulsing = false
     @State var isSearchHovered = false
-    @State private var showsBrowserSessionPath = false
     @State private var showingMenu = false
     /// A click on the menu button while the menu is open first closes it as a
     /// click outside; this keeps that same click from opening it again.
@@ -396,24 +395,8 @@ struct VideoDownloaderSettings: View {
         .padding(.vertical, 2.5)
         .frame(width: chipWidth, alignment: .leading)
         .background(Capsule().fill(Color.primary.opacity(0.06)))
-        // The native .help tooltip wraps long profile identifiers at arbitrary
-        // characters. A one-line popover keeps the complete path on one line;
-        // exceptionally long paths can scroll horizontally instead.
-        .onHover { showsBrowserSessionPath = $0 }
-        .popover(isPresented: $showsBrowserSessionPath, arrowEdge: .bottom) {
-            let pathFont = NSFont.systemFont(ofSize: 11)
-            let pathWidth = ceil((fullPath as NSString).size(withAttributes: [.font: pathFont]).width)
-            let screenWidth = (NSScreen.main?.visibleFrame.width ?? 1024) - 80
-            let tooltipWidth = min(max(180, pathWidth + 20), max(180, screenWidth))
-            ScrollView(.horizontal, showsIndicators: false) {
-                Text(fullPath)
-                    .font(.system(size: 11))
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 6)
-            }
-            .frame(width: tooltipWidth, height: 22)
-            .padding(6)
-        }
+        // A plain tooltip with the folder; the home folder reads as ~ so the
+        // path fits on one line.
+        .help((fullPath as NSString).abbreviatingWithTildeInPath)
     }
 }
