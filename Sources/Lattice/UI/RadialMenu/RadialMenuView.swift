@@ -457,121 +457,128 @@ private struct RadialChipView: View {
     }
 }
 
-/// The profile tabs on an arc above the wheel: a gradient dot per profile,
-/// the current one opened up to show its name, the primary marked with a
-/// star. Clicking one switches to it; the frames go back to the service so
-/// resting the pointer on one works while the summoner is held.
+/// The profile tabs on an arc above the wheel: curved pills that follow the
+/// rim, a gradient dot per profile, the current one opened up to show its
+/// name, the primary marked with a star. The angles go back to the service,
+/// which hit-tests the pointer for clicks, release and the hold dwell.
 private struct RadialTabArc: View {
     @ObservedObject var service: RadialMenuService
     let text: RadialMenuFeatureStrings
     let colorScheme: ColorScheme
 
-    var body: some View {
+    private static let nameFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+
+    private struct Placed: Identifiable {
+        let tab: RadialProfileTabs.VisibleTab
+        let span: ClosedRange<Double>
+        var id: Int { tab.index }
+    }
+
+    private func width(of tab: RadialProfileTabs.VisibleTab) -> CGFloat {
+        let star: CGFloat = tab.index == 0 ? 13 : 0
+        guard tab.index == service.activeProfileIndex else { return star + 10 + 12 }
+        let name = service.sessionProfiles[tab.index].displayName(text) as NSString
+        let textWidth = min(ceil(name.size(withAttributes: [.font: Self.nameFont]).width), 120)
+        return star + 7 + 5 + textWidth + 18
+    }
+
+    private var placed: [Placed] {
         let tabs = RadialProfileTabs.visibleTabs(count: service.sessionProfiles.count,
                                                  current: service.activeProfileIndex)
-        RadialTabArcLayout(radius: RadialMenuLayout.tabArcRadius,
-                           maxSpan: RadialMenuLayout.tabArcMaxSpan) {
-            ForEach(tabs, id: \.index) { tab in
-                pill(tab)
-            }
+        let spans = RadialProfileTabs.arcSpans(widths: tabs.map(width(of:)),
+                                               radius: RadialMenuLayout.tabArcRadius,
+                                               capHeight: RadialMenuLayout.tabPillHeight,
+                                               maxSpan: RadialMenuLayout.tabArcMaxSpan)
+        return zip(tabs, spans).map { Placed(tab: $0, span: $1) }
+    }
+
+    var body: some View {
+        let placed = placed
+        ZStack {
+            ForEach(placed) { item in band(item) }
+            ForEach(placed) { item in label(item) }
         }
         .frame(width: service.panelSide, height: service.panelSide)
-        .onPreferenceChange(RadialTabFramesKey.self) { frames in
-            service.updateTabFrames(frames)
-        }
+        .animation(.easeOut(duration: 0.18), value: service.activeProfileIndex)
+        .onAppear { report(placed) }
+        .onChange(of: placed.map(\.span)) { _, _ in report(placed) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(text.profilesHeader)
     }
 
-    private func pill(_ tab: RadialProfileTabs.VisibleTab) -> some View {
-        let profile = service.sessionProfiles[tab.index]
-        let current = tab.index == service.activeProfileIndex
-        let hovered = tab.index == service.hoveredTabIndex
-        let name = profile.displayName(text)
-        return Button {
-            service.switchProfile(to: tab.index)
-        } label: {
-            HStack(spacing: 5) {
-                if tab.index == 0 {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(current ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
-                                                 : AnyShapeStyle(.secondary))
-                }
-                RadialProfileDot(color: profile.color, size: current ? 7 : 10, onOwnFill: current)
-                if current {
-                    Text(name)
-                        .font(.caption.weight(.semibold))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .frame(maxWidth: 120)
-                        .foregroundStyle(profile.color.foreground(for: colorScheme))
-                }
-            }
-            .padding(.horizontal, current ? 9 : 6)
-            .frame(height: RadialMenuLayout.tabPillHeight)
-            .background(
-                Capsule().fill(current ? AnyShapeStyle(profile.color.gradient(for: colorScheme))
-                                       : AnyShapeStyle(PanelSurface.raisedFill(for: colorScheme)))
-            )
-            .overlay(Capsule().strokeBorder(hovered && !current
-                                            ? profile.color.color(for: colorScheme)
-                                            : PanelSurface.raisedBorder(for: colorScheme),
-                                            lineWidth: hovered && !current ? 1.5 : 0.8))
-            .shadow(color: PanelSurface.raisedShadow(for: colorScheme), radius: 4, y: 1)
-            .contentShape(Capsule())
+    private func report(_ placed: [Placed]) {
+        service.updateTabSpans(Dictionary(uniqueKeysWithValues: placed.map { ($0.tab.index, $0.span) }))
+    }
+
+    @ViewBuilder
+    private func band(_ item: Placed) -> some View {
+        let profile = service.sessionProfiles[item.tab.index]
+        let current = item.tab.index == service.activeProfileIndex
+        let hovered = item.tab.index == service.hoveredTabIndex && !current
+        let pill = RadialArcPill(span: item.span, radius: RadialMenuLayout.tabArcRadius,
+                                 thickness: RadialMenuLayout.tabPillHeight)
+        ZStack {
+            pill.fill(current ? AnyShapeStyle(profile.color.gradient(for: colorScheme))
+                              : AnyShapeStyle(PanelSurface.raisedFill(for: colorScheme)))
+            pill.stroke(hovered ? profile.color.color(for: colorScheme) : PanelSurface.raisedBorder(for: colorScheme),
+                        lineWidth: hovered ? 1.5 : 0.8)
         }
-        .buttonStyle(.plain)
-        .opacity(tab.faded ? 0.4 : 1)
-        .background(GeometryReader { proxy in
-            Color.clear.preference(key: RadialTabFramesKey.self,
-                                   value: [tab.index: proxy.frame(in: .named(RadialMenuView.coordinateSpace))])
-        })
+        .shadow(color: PanelSurface.raisedShadow(for: colorScheme), radius: 4, y: 1)
+        .opacity(item.tab.faded ? 0.4 : 1)
+        .allowsHitTesting(false)
+    }
+
+    private func label(_ item: Placed) -> some View {
+        let profile = service.sessionProfiles[item.tab.index]
+        let current = item.tab.index == service.activeProfileIndex
+        let middle = (item.span.lowerBound + item.span.upperBound) / 2
+        let radius = RadialMenuLayout.tabArcRadius
+        let name = profile.displayName(text)
+        return HStack(spacing: 5) {
+            if item.tab.index == 0 {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(current ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
+                                             : AnyShapeStyle(.secondary))
+            }
+            RadialProfileDot(color: profile.color, size: current ? 7 : 10, onOwnFill: current)
+            if current {
+                Text(name)
+                    .font(Font(Self.nameFont))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 120)
+                    .foregroundStyle(profile.color.foreground(for: colorScheme))
+            }
+        }
+        .fixedSize()
+        // Turned to the arc's tangent, so the content runs along the band.
+        .rotationEffect(.radians(middle))
+        .offset(x: radius * CGFloat(sin(middle)), y: -radius * CGFloat(cos(middle)))
+        .opacity(item.tab.faded ? 0.4 : 1)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(name)
         .accessibilityAddTraits(current ? [.isButton, .isSelected] : .isButton)
-        .accessibilityValue(tab.index == 0 ? text.primaryHelp : "")
+        .accessibilityValue(item.tab.index == 0 ? text.primaryHelp : "")
+        .accessibilityAction { service.switchProfile(to: item.tab.index) }
     }
 }
 
-private struct RadialTabFramesKey: PreferenceKey {
-    static var defaultValue: [Int: CGRect] = [:]
-    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
-        value.merge(nextValue()) { $1 }
-    }
-}
-
-/// Lays its subviews out left to right along an arc centered over twelve
-/// o'clock, each kept upright, spaced by its own width so an opened-up tab
-/// pushes its neighbours aside.
-private struct RadialTabArcLayout: Layout {
+/// A pill bent to the wheel's rim: the outline of the tab band's centre
+/// arc stroked with round caps, so it can be filled and outlined like any
+/// other shape.
+private struct RadialArcPill: Shape {
+    let span: ClosedRange<Double>
     let radius: CGFloat
-    let maxSpan: Double
-    var gap: CGFloat = 5
+    let thickness: CGFloat
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        proposal.replacingUnspecifiedDimensions()
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
-        let widths = sizes.map(\.width)
-        var spacing = gap
-        let natural = widths.reduce(0, +) + gap * CGFloat(max(widths.count - 1, 0))
-        let limit = CGFloat(maxSpan) * radius
-        if natural > limit, widths.count > 1 {
-            spacing = max(0, gap - (natural - limit) / CGFloat(widths.count - 1))
-        }
-        let total = widths.reduce(0, +) + spacing * CGFloat(max(widths.count - 1, 0))
-        var run = -total / 2
-        let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        for (index, subview) in subviews.enumerated() {
-            let middle = run + widths[index] / 2
-            let angle = Double(middle / radius)
-            let point = CGPoint(x: center.x + radius * CGFloat(sin(angle)),
-                                y: center.y - radius * CGFloat(cos(angle)))
-            subview.place(at: point, anchor: .center, proposal: ProposedViewSize(sizes[index]))
-            run += widths[index] + spacing
-        }
+    func path(in rect: CGRect) -> Path {
+        var arc = Path()
+        arc.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: radius,
+                   startAngle: .radians(span.lowerBound - .pi / 2),
+                   endAngle: .radians(span.upperBound - .pi / 2), clockwise: false)
+        return arc.strokedPath(StrokeStyle(lineWidth: thickness, lineCap: .round))
     }
 }
 
@@ -657,9 +664,14 @@ enum RadialMenuIconStore {
 /// Name resolution shared by the wheel and the Settings editor: a custom name
 /// wins, everything else derives from the target in the user's language.
 extension RadialMenuItem {
+    /// `stableToggles` names a state-dependent quick toggle by what it does
+    /// ("Toggle System Appearance") rather than by what it would do right now,
+    /// for Settings, where the state of the moment means nothing.
     func displayName(_ text: RadialMenuFeatureStrings,
-                     nowPlayingState: RadialNowPlayingState? = nil) -> String {
+                     nowPlayingState: RadialNowPlayingState? = nil,
+                     stableToggles: Bool = false) -> String {
         if !name.isEmpty { return name }
+        if stableToggles, kind == .quickToggle, let quickToggle { return quickToggle.settingsTitle(text) }
         switch kind {
         case .app, .file:
             return RadialMenuIconStore.fileName(for: payload)
@@ -702,6 +714,11 @@ extension RadialMenuItem {
 }
 
 extension RadialMenuQuickToggle {
+    /// A name that does not change with the system's state.
+    func settingsTitle(_ text: RadialMenuFeatureStrings) -> String {
+        stableTitle(text) ?? radialTitle
+    }
+
     var radialTitle: String {
         let strings = FeatureStrings.quickToggles(L10n.shared.language)
         let toggles = QuickTogglesService.shared

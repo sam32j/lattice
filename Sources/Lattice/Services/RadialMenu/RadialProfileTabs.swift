@@ -88,6 +88,42 @@ enum RadialProfileTabs {
         return profiles[1]
     }
 
+    /// Where each tab of the arc sits, as the angle range of its band's
+    /// centre line (radians clockwise from twelve o'clock); the rounded ends
+    /// reach `capHeight / 2` beyond it. `widths` are the tabs' full lengths,
+    /// ends included. The run is centred over twelve o'clock and squeezed
+    /// (gaps first) to stay inside `maxSpan`.
+    static func arcSpans(widths: [CGFloat], radius: CGFloat, capHeight: CGFloat,
+                         gap: CGFloat = 5, maxSpan: Double) -> [ClosedRange<Double>] {
+        guard !widths.isEmpty, radius > 0 else { return [] }
+        var spacing = gap
+        let natural = widths.reduce(0, +) + gap * CGFloat(widths.count - 1)
+        let limit = CGFloat(maxSpan) * radius
+        if natural > limit, widths.count > 1 {
+            spacing = max(0, gap - (natural - limit) / CGFloat(widths.count - 1))
+        }
+        let total = widths.reduce(0, +) + spacing * CGFloat(widths.count - 1)
+        var run = -total / 2
+        return widths.map { width in
+            let start = Double((run + capHeight / 2) / radius)
+            let end = Double((run + max(width - capHeight / 2, capHeight / 2 + 0.01)) / radius)
+            run += width + spacing
+            return start...max(start, end)
+        }
+    }
+
+    /// The tab under a point given relative to the wheel's centre (dyUp
+    /// towards the top), or nil off the arc's band.
+    static func tabIndex(dx: CGFloat, dyUp: CGFloat, spans: [Int: ClosedRange<Double>],
+                         radius: CGFloat, capHeight: CGFloat, slack: CGFloat = 4) -> Int? {
+        let distance = (dx * dx + dyUp * dyUp).squareRoot()
+        guard abs(distance - radius) <= capHeight / 2 + slack, radius > 0 else { return nil }
+        var angle = Double(RadialMenuGeometry.angle(dx: dx, dyUp: dyUp))
+        if angle > .pi { angle -= 2 * .pi }
+        let cap = Double((capHeight / 2 + slack) / radius)
+        return spans.first { angle >= $0.value.lowerBound - cap && angle <= $0.value.upperBound + cap }?.key
+    }
+
     private static func wrapped(_ value: Int, count: Int) -> Int {
         ((value % count) + count) % count
     }
