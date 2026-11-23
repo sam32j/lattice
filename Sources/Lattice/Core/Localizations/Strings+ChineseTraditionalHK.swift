@@ -629,7 +629,7 @@ extension Strings {
 
         tabMonitor: "系統監視器",
         monitorMenuBarCaption: "選取選單列中圖示旁顯示的內容。",
-        monitorSeparateMenuBarMetrics: "將指標分開顯示",
+        monitorSeparateMenuBarMetrics: "分開顯示讀數",
         monitorSeparateMenuBarMetricsCaption: "將已啟用的區塊拆成獨立的選單列項目；合併開啟時，使用率和溫度仍會放在一起。",
         monitorNetworkUploadFirst: "上傳顯示在下載上方",
         monitorShowCPU: "CPU",
@@ -708,7 +708,7 @@ extension Strings {
         menuBarSpacingLabel: "選單列間距",
         menuBarSpacingStandard: "標準",
         menuBarSpacingCompact: "緊湊",
-        menuBarHideIconToggle: "顯示指標時隱藏 App 圖示",
+        menuBarHideIconToggle: "隱藏 Lattice 圖示",
         menuBarHideIconCaption: "當指標離開選單列，或有需要提示的內容（更新就緒、「保持喚醒」開啟中或麥克風已靜音）時，圖示會自動回來。",
         monitorLabelStyleLabel: "標籤",
         menuBarLabelStyleCompact: "緊湊",

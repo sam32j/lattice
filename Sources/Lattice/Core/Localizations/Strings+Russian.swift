@@ -629,7 +629,7 @@ extension Strings {
 
         tabMonitor: "Мониторинг системы",
         monitorMenuBarCaption: "Выберите, что показывать рядом со значком в строке меню.",
-        monitorSeparateMenuBarMetrics: "Выводить метрики отдельными элементами",
+        monitorSeparateMenuBarMetrics: "Показывать показатели отдельно",
         monitorSeparateMenuBarMetricsCaption: "Разделяет активные блоки в строке меню и сохраняет нагрузку и температуру вместе, если включено объединение.",
         monitorNetworkUploadFirst: "Показывать отдачу над загрузкой",
         monitorShowCPU: "CPU",
@@ -708,7 +708,7 @@ extension Strings {
         menuBarSpacingLabel: "Интервал в строке меню",
         menuBarSpacingStandard: "Стандартный",
         menuBarSpacingCompact: "Компактный",
-        menuBarHideIconToggle: "Скрывать значок приложения, пока показаны метрики",
+        menuBarHideIconToggle: "Скрывать значок Lattice",
         menuBarHideIconCaption: "Значок возвращается сам, когда метрики исчезают из строки меню, а также когда есть что сообщить (готово обновление, включено «Не давать Mac уснуть» или выключен микрофон).",
         monitorLabelStyleLabel: "Подписи",
         menuBarLabelStyleCompact: "Компактные",

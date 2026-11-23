@@ -629,7 +629,7 @@ extension Strings {
 
         tabMonitor: "시스템 모니터",
         monitorMenuBarCaption: "메뉴 막대의 아이콘 옆에 표시할 항목을 선택합니다.",
-        monitorSeparateMenuBarMetrics: "지표를 개별 메뉴 막대 항목으로 분리",
+        monitorSeparateMenuBarMetrics: "항목을 따로 표시",
         monitorSeparateMenuBarMetricsCaption: "활성화된 블록을 메뉴 막대에서 분리하고, 결합이 켜져 있으면 사용량과 온도를 함께 표시합니다.",
         monitorNetworkUploadFirst: "업로드를 다운로드 위에 표시",
         monitorShowCPU: "CPU",
@@ -708,7 +708,7 @@ extension Strings {
         menuBarSpacingLabel: "메뉴 막대 간격",
         menuBarSpacingStandard: "표준",
         menuBarSpacingCompact: "좁게",
-        menuBarHideIconToggle: "지표가 표시될 때 앱 아이콘 숨기기",
+        menuBarHideIconToggle: "Lattice 아이콘 숨기기",
         menuBarHideIconCaption: "지표가 막대에서 사라지거나 알릴 내용이 있을 때(업데이트 준비 완료, 절전 방지 켜짐 또는 마이크 음소거) 아이콘이 자동으로 돌아옵니다.",
         monitorLabelStyleLabel: "레이블",
         menuBarLabelStyleCompact: "축약",

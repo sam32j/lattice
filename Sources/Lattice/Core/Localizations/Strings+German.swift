@@ -628,7 +628,7 @@ extension Strings {
 
         tabMonitor: "Systemmonitor",
         monitorMenuBarCaption: "Wähle, was neben dem Symbol in der Menüleiste erscheint.",
-        monitorSeparateMenuBarMetrics: "Messwerte in eigene Elemente trennen",
+        monitorSeparateMenuBarMetrics: "Werte einzeln anzeigen",
         monitorSeparateMenuBarMetricsCaption: "Trennt aktive Blöcke in der Menüleiste und hält Auslastung und Temperatur zusammen, wenn Kombinieren aktiv ist.",
         monitorNetworkUploadFirst: "Upload über Download",
         monitorShowCPU: "CPU",
@@ -707,7 +707,7 @@ extension Strings {
         menuBarSpacingLabel: "Abstand in der Menüleiste",
         menuBarSpacingStandard: "Standard",
         menuBarSpacingCompact: "Kompakt",
-        menuBarHideIconToggle: "App-Symbol ausblenden, solange Messwerte angezeigt werden",
+        menuBarHideIconToggle: "Lattice-Symbol ausblenden",
         menuBarHideIconCaption: "Das Symbol kehrt von selbst zurück, wenn die Messwerte die Leiste verlassen und wenn es etwas zu melden gibt (ein Update bereit, „Wachhalten“ aktiv oder das Mikrofon stumm).",
         monitorLabelStyleLabel: "Beschriftungen",
         menuBarLabelStyleCompact: "Kompakt",

@@ -628,7 +628,7 @@ extension Strings {
 
         tabMonitor: "系统监视器",
         monitorMenuBarCaption: "选择菜单栏中图标旁显示的内容。",
-        monitorSeparateMenuBarMetrics: "将指标分成独立项目",
+        monitorSeparateMenuBarMetrics: "分开显示读数",
         monitorSeparateMenuBarMetricsCaption: "将已启用的区块拆成单独的菜单栏项目，合并开启时使用率和温度仍保持在一起。",
         monitorNetworkUploadFirst: "上传显示在下载上方",
         monitorShowCPU: "CPU",
@@ -707,7 +707,7 @@ extension Strings {
         menuBarSpacingLabel: "菜单栏间距",
         menuBarSpacingStandard: "标准",
         menuBarSpacingCompact: "紧凑",
-        menuBarHideIconToggle: "显示指标时隐藏 App 图标",
+        menuBarHideIconToggle: "隐藏 Lattice 图标",
         menuBarHideIconCaption: "当指标离开菜单栏，或有需要提示的内容（更新就绪、“保持唤醒”开启中或麦克风已静音）时，图标会自动回来。",
         monitorLabelStyleLabel: "标签",
         menuBarLabelStyleCompact: "紧凑",
