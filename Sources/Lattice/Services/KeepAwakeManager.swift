@@ -62,18 +62,6 @@ final class KeepAwakeManager: ObservableObject {
         }
     }
 
-    /// Persistent preference: dims the built-in display to zero while the
-    /// closed-lid mode is actually in effect, restoring the captured
-    /// brightness when the lid opens again.
-    @Published var dimScreenOnLidClose: Bool {
-        didSet {
-            guard dimScreenOnLidClose != oldValue else { return }
-            UserDefaults.standard.set(dimScreenOnLidClose, forKey: DefaultsKey.dimScreenOnLidClose)
-            if !dimScreenOnLidClose { applyDimmingAction(LidDimmingSupport.restoring(saved: savedDisplayBrightness)) }
-            syncLidDimmingObserver()
-        }
-    }
-
     var onSessionEnded: ((EndReason) -> Void)?
 
     let assertions = KeepAwakeAssertions()
@@ -117,6 +105,5 @@ final class KeepAwakeManager: ObservableObject {
 
     private init() {
         clamshellPreferred = UserDefaults.standard.bool(forKey: DefaultsKey.clamshellPreferred)
-        dimScreenOnLidClose = UserDefaults.standard.bool(forKey: DefaultsKey.dimScreenOnLidClose)
     }
 }

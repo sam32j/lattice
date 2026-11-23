@@ -157,13 +157,6 @@ struct StayAwakeSettings: View {
                     .padding(.leading, settingsRowTextInset)
                     .transition(.settingsReveal)
             }
-            if awake.clamshellPreferred {
-                SettingsControlRow(title: strings.dimTitle, caption: strings.dimCaption) {
-                    Toggle(strings.dimTitle, isOn: $awake.dimScreenOnLidClose).labelsHidden()
-                }
-                .padding(.leading, settingsRowTextInset)
-                .transition(.settingsReveal)
-            }
             SettingsRow(symbol: "battery.25percent", title: strings.batteryTitle, caption: strings.batteryCaption) {
                 Picker(strings.batteryTitle, selection: $batteryLimit) {
                     Text(l10n.s.batteryNever).tag(0)
