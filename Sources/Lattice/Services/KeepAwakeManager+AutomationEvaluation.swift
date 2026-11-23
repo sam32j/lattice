@@ -27,11 +27,13 @@ extension KeepAwakeManager {
         screenLocked = false
         sessionPausedForScreenLock = false
         activeAutomationConditions.removeAll()
+        if !liveAutomationConditions.isEmpty { liveAutomationConditions.removeAll() }
     }
 
     func evaluateAutomation() {
         guard recoveryCompleted, !isTerminating else { return }
         let matches = currentMatchingAutomationConditions()
+        if liveAutomationConditions != matches { liveAutomationConditions = matches }
         let enabled = currentEnabledAutomationConditions()
         let requireAll = automationRequiresAllConditions()
         let satisfied = KeepAwakeAutomationSupport.conditionsSatisfied(

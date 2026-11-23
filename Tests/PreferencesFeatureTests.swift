@@ -272,12 +272,12 @@ enum PreferencesFeatureTests {
             sessionActive: true,
             automaticSessionActive: true
         ) == .none, "the same unplug leaves an Any session running, which is why All exists")
-        let automationEditor = (try? String(
-            contentsOfFile: "Sources/Lattice/UI/KeepAwakeAutomationView.swift",
+        let stayAwakePage = (try? String(
+            contentsOfFile: "Sources/Lattice/UI/Settings/StayAwakeSettings.swift",
             encoding: .utf8)) ?? ""
-        suite.expect(automationEditor.contains(".pickerStyle(.segmented)")
-                && automationEditor.contains(".controlSize(compact ? .small : .regular)"),
-               "the match mode picker follows the compact layout of the panel card")
+        suite.expect(stayAwakePage.contains(".pickerStyle(.segmented)")
+                && stayAwakePage.contains("if selectedConditionCount > 1 {"),
+               "the match mode picker sits in the Start automatically header only while two conditions can combine")
         let matchModeWidth = 308.0 - 20 - 19 - 22
         for language in AppLanguage.allCases {
             let strings = FeatureStrings.keepAwakeAutomation(language)

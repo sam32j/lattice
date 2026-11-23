@@ -16,7 +16,14 @@ extension SettingsView {
         case .notchMascot: NotchMascotSettings()
         case .radialMenu: FeatureConfigurationPage(feature: .radialMenu) { RadialMenuSettings() }
         case .commandBar: FeatureConfigurationPage(feature: .commandBar) { CommandBarSettings() }
-        case .energy: DisplaySettings(focus: router.destination.sectionAnchor)
+        case .energy:
+            if router.destination.sectionAnchor == .keepAwake {
+                FeatureActivationPage(feature: .keepAwake, options: { AnyView(StayAwakeSettingsMenu()) }) {
+                    StayAwakeSettings()
+                }
+            } else {
+                DisplaySettings(focus: router.destination.sectionAnchor)
+            }
         case .monitor: MonitorSettings()
         case .mouse: MouseSettings()
         case .dock: DockSettings()

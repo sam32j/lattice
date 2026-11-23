@@ -210,16 +210,22 @@ extension SettingsDirectory {
                                                       FeatureStrings.wallpaper(language).enableManagement]),
                                         (.bluetoothSleep, [FeatureStrings.bluetoothSleep(language).pageTitle,
                                                            FeatureStrings.bluetoothSleep(language).enable]),
-                                        (.keepAwake, [s.keepAwakeTitle, s.clamshellTitle,
-                                                      s.defaultDurationLabel, s.showCountdown,
+                                        (.keepAwake, [s.keepAwakeTitle, s.defaultDurationLabel,
+                                                      FeatureStrings.stayAwakeSettings(language).shortcutTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).autoTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).appsTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).whileAwakeTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).displaySleepTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).pointerTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).pauseLockedTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).lidBatteryTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).lidTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).batteryTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).countdownTitle,
                                                       FeatureStrings.keepAwakeAutomation(language)
                                                         .externalDisplayToggle,
                                                       FeatureStrings.keepAwakeAutomation(language)
-                                                        .powerToggle,
-                                                      FeatureStrings.keepAwakeAutomation(language)
-                                                        .pauseWhenLockedToggle,
-                                                      FeatureStrings.keepAwakeDisplaySleep(language)
-                                                        .allowDisplaySleep]),
+                                                        .powerToggle]),
                                       ],
                                       followupKeywords: [
                                         (.brightness, DefaultsKey.brightnessControlEnabled,

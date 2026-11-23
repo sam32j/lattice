@@ -28,6 +28,9 @@ final class KeepAwakeManager: ObservableObject {
     @Published var sessionStartDate: Date?
     @Published var runningAppBundleIDs: [String] = []
     @Published var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()
+    /// The enabled conditions that hold right now, whether or not a session
+    /// runs, so Settings can mark each one Now or Not now.
+    @Published var liveAutomationConditions = Set<KeepAwakeAutomationCondition>()
     @Published var clamshellActive = false {
         didSet {
             guard clamshellActive != oldValue else { return }
