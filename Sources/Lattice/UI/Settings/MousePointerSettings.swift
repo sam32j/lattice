@@ -144,8 +144,7 @@ extension MouseSettings {
                 }
                 if middleClickEnabled {
                     VStack(alignment: .leading, spacing: 8) {
-                        fingerPickerRow(title: strings.clickWith, note: clickNote,
-                                        opensRadialMenu: radial == .click, openTitle: strings.openRadialMenu) {
+                        fingerPickerRow(title: strings.clickWith, note: clickNote) {
                             SettingsPopUpPicker(title: strings.clickWith, options: clickOptions,
                                                 selection: Binding(
                                 get: { effectiveClick },
@@ -153,8 +152,7 @@ extension MouseSettings {
                             .fixedSize()
                             .onChange(of: middleClickClickFingers) { _, _ in middleClick.syncWithPreferences() }
                         }
-                        fingerPickerRow(title: l10n.s.middleClickTapPicker, note: tapNote,
-                                        opensRadialMenu: radial == .tap, openTitle: strings.openRadialMenu) {
+                        fingerPickerRow(title: l10n.s.middleClickTapPicker, note: tapNote) {
                             SettingsPopUpPicker(title: l10n.s.middleClickTapPicker, options: [
                                 .init(value: 0, title: l10n.s.middleClickTapOff),
                                 threeFingerOption(available: !tapOwnsThree),
@@ -182,20 +180,14 @@ extension MouseSettings {
 
     /// A finger picker with a one-line note under its title while something
     /// else is using a choice: macOS its three fingers, or the Radial Menu
-    /// its four, with a button over to that page. The note belongs to the
-    /// row, so the rows keep their rhythm.
+    /// its four. The note belongs to the row, so the rows keep their rhythm.
     private func fingerPickerRow<Control: View>(title: String, note: RadialRowNote.Content?,
-                                               opensRadialMenu: Bool = false, openTitle: String = "",
                                                @ViewBuilder picker: () -> Control) -> some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                 if let note {
                     RadialRowNote(content: note)
-                }
-                if opensRadialMenu {
-                    Button(openTitle) { SettingsRouter.shared.page = .radialMenu }
-                        .controlSize(.small)
                 }
             }
             Spacer(minLength: 12)

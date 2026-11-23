@@ -70,6 +70,19 @@ enum RadialMenuRenderingProbe {
                                          size: CGSize(width: 480, height: 480),
                                          output: output, failures: &failures, colorScheme: scheme)
         }
+        for dark in [false, true] {
+            let scheme: ColorScheme = dark ? .dark : .light
+            SettingsRefactorProbe.render("radial-item-editor-\(dark ? "dark" : "light")", view: AnyView(
+                RadialItemEditor(text: FeatureStrings.radialMenu(.enUS),
+                                 item: RadialMenuItem(kind: .quickToggle, payload: RadialMenuQuickToggle.darkMode.rawValue),
+                                 isNew: false, allowsSubmenu: true, profileColor: .purple,
+                                 save: { _ in }, delete: {})),
+                size: CGSize(width: 460, height: 420), output: output, failures: &failures, colorScheme: scheme)
+            SettingsRefactorProbe.render("radial-profile-sheet-\(dark ? "dark" : "light")", view: AnyView(
+                RadialProfileEditSheet(profile: filled[0], text: FeatureStrings.radialMenu(.enUS),
+                                       cancelTitle: "Cancel", save: { _, _ in })),
+                size: CGSize(width: 380, height: 330), output: output, failures: &failures, colorScheme: scheme)
+        }
         SettingsRefactorProbe.setPreviewAvailability(.middleClick, enabled: true)
         defaults.set(true, forKey: DefaultsKey.middleClickEnabled)
         defaults.set(4, forKey: DefaultsKey.middleClickTapFingers)

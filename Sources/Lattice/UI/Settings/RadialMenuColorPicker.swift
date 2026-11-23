@@ -11,10 +11,12 @@ struct RadialMenuColorPicker: View {
     let strings: RadialMenuFeatureStrings
     @Environment(\.colorScheme) private var colorScheme
 
-    private let columns = Array(repeating: GridItem(.fixed(28), spacing: 10), count: 6)
+    /// Flexible columns spread the swatches across the whole width, so the
+    /// grid sits balanced in whatever holds it.
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
 
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+        LazyVGrid(columns: columns, alignment: .center, spacing: 12) {
             ForEach(RadialMenuColor.allCases) { color in
                 let chosen = selection == color
                 Button {
@@ -41,6 +43,7 @@ struct RadialMenuColorPicker: View {
                 .accessibilityAddTraits(chosen ? [.isButton, .isSelected] : .isButton)
             }
         }
-        .padding(4)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity)
     }
 }

@@ -66,10 +66,7 @@ struct RadialMenuFeatureStrings {
     let colorCyan: String
     let colorIndigo: String
     let colorGraphite: String
-    let fetchFaviconButton: String
     let fetchFaviconDisclaimer: String
-    let fetchFaviconLoading: String
-    let fetchFaviconSuccess: String
     let fetchFaviconError: String
     let resetActionsButton: String
     let resetActionsConfirm: String
@@ -111,6 +108,19 @@ struct RadialMenuFeatureStrings {
     let slotAccessibilityFormat: String
     let inMenuNoActions: String
     let deleteProfileConfirmButton: String
+    let trackpadHelp: String
+    let profilesHelp: String
+    let mouseButtonSet: String
+    let mouseButtonClearShort: String
+    let mouseButtonPrimaryRefusedShort: String
+    let mouseButtonNothingSeenShort: String
+    let iconSuggested: String
+    let iconAll: String
+    let newBlankProfileButton: String
+    let presetProfilesHeader: String
+    let toggleSystemAppearance: String
+    let toggleHiddenFiles: String
+    let toggleDesktopIcons: String
 }
 
 extension FeatureStrings {
@@ -199,17 +209,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Cyan",
         colorIndigo: "Indigo",
         colorGraphite: "Graphite",
-        fetchFaviconButton: "Fetch Website Icon",
         fetchFaviconDisclaimer: "Connects to the website once to download its icon. Saved locally.",
-        fetchFaviconLoading: "Fetching icon…",
-        fetchFaviconSuccess: "Icon downloaded",
         fetchFaviconError: "Could not find a website icon",
         resetActionsButton: "Reset actions…",
         resetActionsConfirm: "Reset actions",
         resetActionsConfirmMessage: "Restore the default actions for this profile? Custom actions will be replaced.",
         openCardTitle: "Open the menu",
         openInfoButton: "How opening works",
-        openInfoBody: "Press the shortcut or mouse button quickly and the menu stays open: click an action to run it. Or hold it, point at an action and let go. Letting go without pointing at anything closes the menu.\n\nA four-finger tap or click opens the menu until you choose an action, press Esc or click outside it.\n\nSwitch profiles with the tabs above the wheel, with Tab, or by scrolling.",
+        openInfoBody: "Tap to keep the menu open. Hold, point at an action and let go to run it.",
         shortcutLabel: "Keyboard shortcut",
         shortcutRefused: "Another app is using this shortcut.",
         trackpadLabel: "Trackpad",
@@ -243,7 +250,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d of %2$d actions",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d of %4$d",
         inMenuNoActions: "No actions",
-        deleteProfileConfirmButton: "Delete profile"
+        deleteProfileConfirmButton: "Delete profile",
+        trackpadHelp: "Opens the menu until you choose an action, press Esc or click outside.",
+        profilesHelp: "In the menu, press Tab or scroll to switch profiles.",
+        mouseButtonSet: "Set…",
+        mouseButtonClearShort: "Clear",
+        mouseButtonPrimaryRefusedShort: "Use an extra button",
+        mouseButtonNothingSeenShort: "No button detected",
+        iconSuggested: "Suggested",
+        iconAll: "All icons",
+        newBlankProfileButton: "New Blank Profile…",
+        presetProfilesHeader: "Preset Profiles",
+        toggleSystemAppearance: "Toggle System Appearance",
+        toggleHiddenFiles: "Toggle Hidden Files",
+        toggleDesktopIcons: "Toggle Desktop Icons"
     )
 
     static let ptBR = RadialMenuFeatureStrings(
@@ -309,17 +329,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Ciano",
         colorIndigo: "Índigo",
         colorGraphite: "Grafite",
-        fetchFaviconButton: "Buscar ícone do site",
         fetchFaviconDisclaimer: "Conecta ao site uma única vez para baixar o ícone. Salvo localmente.",
-        fetchFaviconLoading: "Buscando ícone…",
-        fetchFaviconSuccess: "Ícone baixado",
         fetchFaviconError: "Não foi possível encontrar o ícone do site",
         resetActionsButton: "Redefinir ações…",
         resetActionsConfirm: "Redefinir ações",
         resetActionsConfirmMessage: "Restaurar as ações padrão deste perfil? As ações personalizadas serão substituídas.",
         openCardTitle: "Abrir o menu",
         openInfoButton: "Como o menu abre",
-        openInfoBody: "Pressione rapidamente o atalho ou o botão do mouse e o menu fica aberto: clique em uma ação para executá-la. Ou segure, aponte para uma ação e solte. Se soltar sem apontar para nada, o menu fecha.\n\nUm toque ou clique com quatro dedos abre o menu até você escolher uma ação, apertar Esc ou clicar fora dele.\n\nTroque de perfil pelas abas acima da roda, com Tab ou rolando.",
+        openInfoBody: "Toque para manter o menu aberto. Segure, aponte para uma ação e solte para executá-la.",
         shortcutLabel: "Atalho de teclado",
         shortcutRefused: "Outro app está usando este atalho.",
         trackpadLabel: "Trackpad",
@@ -353,7 +370,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d de %2$d ações",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d de %4$d",
         inMenuNoActions: "Nenhuma ação",
-        deleteProfileConfirmButton: "Excluir perfil"
+        deleteProfileConfirmButton: "Excluir perfil",
+        trackpadHelp: "Abre o menu até você escolher uma ação, apertar Esc ou clicar fora.",
+        profilesHelp: "No menu, aperte Tab ou role para trocar de perfil.",
+        mouseButtonSet: "Definir…",
+        mouseButtonClearShort: "Limpar",
+        mouseButtonPrimaryRefusedShort: "Use um botão extra",
+        mouseButtonNothingSeenShort: "Nenhum botão detectado",
+        iconSuggested: "Sugeridos",
+        iconAll: "Todos os ícones",
+        newBlankProfileButton: "Novo perfil em branco…",
+        presetProfilesHeader: "Perfis predefinidos",
+        toggleSystemAppearance: "Alternar aparência do sistema",
+        toggleHiddenFiles: "Alternar arquivos ocultos",
+        toggleDesktopIcons: "Alternar ícones da mesa"
     )
 
     static let tr = RadialMenuFeatureStrings(
@@ -419,17 +449,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Camgöbeği",
         colorIndigo: "Çivit",
         colorGraphite: "Grafit",
-        fetchFaviconButton: "Web Sitesi Simgesini Getir",
         fetchFaviconDisclaimer: "Simgeyi indirmek için web sitesine bir kez bağlanır. Yerel olarak kaydedilir.",
-        fetchFaviconLoading: "Simge getiriliyor…",
-        fetchFaviconSuccess: "Simge indirildi",
         fetchFaviconError: "Web sitesi simgesi bulunamadı",
         resetActionsButton: "Eylemleri sıfırla…",
         resetActionsConfirm: "Eylemleri sıfırla",
         resetActionsConfirmMessage: "Bu profil için saptanmış eylemler geri yüklensin mi? Özel eylemler değiştirilecek.",
         openCardTitle: "Menüyü açma",
         openInfoButton: "Menü nasıl açılır",
-        openInfoBody: "Kısayola veya fare düğmesine kısaca basarsanız menü açık kalır: çalıştırmak için bir eyleme tıklayın. Ya da basılı tutun, bir eylemin üzerine gelin ve bırakın. Hiçbir şeyin üzerine gelmeden bırakırsanız menü kapanır.\n\nDört parmakla dokunma veya tıklama, bir eylem seçene, Esc’e basana ya da dışına tıklayana kadar menüyü açık tutar.\n\nProfiller arasında çarkın üstündeki sekmelerle, Tab ile veya kaydırarak geçiş yapın.",
+        openInfoBody: "Menüyü açık tutmak için kısaca basın. Bir eylemi çalıştırmak için basılı tutun, üzerine gelin ve bırakın.",
         shortcutLabel: "Klavye kısayolu",
         shortcutRefused: "Bu kısayolu başka bir uygulama kullanıyor.",
         trackpadLabel: "İzleme dörtgeni",
@@ -463,7 +490,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d / %2$d eylem",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d / %4$d",
         inMenuNoActions: "Eylem yok",
-        deleteProfileConfirmButton: "Profili sil"
+        deleteProfileConfirmButton: "Profili sil",
+        trackpadHelp: "Bir eylem seçene, Esc’e basana veya dışına tıklayana kadar menüyü açık tutar.",
+        profilesHelp: "Menüde profiller arasında geçmek için Tab’e basın veya kaydırın.",
+        mouseButtonSet: "Ayarla…",
+        mouseButtonClearShort: "Temizle",
+        mouseButtonPrimaryRefusedShort: "Ek bir düğme kullanın",
+        mouseButtonNothingSeenShort: "Düğme algılanmadı",
+        iconSuggested: "Önerilenler",
+        iconAll: "Tüm simgeler",
+        newBlankProfileButton: "Yeni boş profil…",
+        presetProfilesHeader: "Hazır profiller",
+        toggleSystemAppearance: "Sistem görünümünü değiştir",
+        toggleHiddenFiles: "Gizli dosyaları aç/kapat",
+        toggleDesktopIcons: "Masaüstü simgelerini aç/kapat"
     )
 
     static let ru = RadialMenuFeatureStrings(
@@ -529,17 +569,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Голубой",
         colorIndigo: "Индиго",
         colorGraphite: "Графит",
-        fetchFaviconButton: "Загрузить значок сайта",
         fetchFaviconDisclaimer: "Подключается к сайту один раз для загрузки значка. Сохраняется локально.",
-        fetchFaviconLoading: "Загрузка значка…",
-        fetchFaviconSuccess: "Значок загружен",
         fetchFaviconError: "Не удалось найти значок сайта",
         resetActionsButton: "Сбросить действия…",
         resetActionsConfirm: "Сбросить действия",
         resetActionsConfirmMessage: "Восстановить действия по умолчанию для этого профиля? Пользовательские действия будут заменены.",
         openCardTitle: "Открытие меню",
         openInfoButton: "Как открывается меню",
-        openInfoBody: "Если коротко нажать сочетание клавиш или кнопку мыши, меню останется открытым: нажмите на действие, чтобы запустить его. Или удерживайте, наведите на действие и отпустите. Если отпустить, ни на что не наведя, меню закроется.\n\nКасание или нажатие четырьмя пальцами открывает меню, пока вы не выберете действие, не нажмёте Esc или не щёлкнете за его пределами.\n\nПереключайте профили вкладками над колесом, клавишей Tab или прокруткой.",
+        openInfoBody: "Коротко нажмите, чтобы меню осталось открытым. Удерживайте, наведите на действие и отпустите, чтобы запустить его.",
         shortcutLabel: "Сочетание клавиш",
         shortcutRefused: "Это сочетание использует другое приложение.",
         trackpadLabel: "Трекпад",
@@ -573,7 +610,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "Действий: %1$d из %2$d",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d из %4$d",
         inMenuNoActions: "Нет действий",
-        deleteProfileConfirmButton: "Удалить профиль"
+        deleteProfileConfirmButton: "Удалить профиль",
+        trackpadHelp: "Открывает меню, пока вы не выберете действие, не нажмёте Esc или не щёлкнете вне его.",
+        profilesHelp: "В меню нажмите Tab или прокрутите, чтобы сменить профиль.",
+        mouseButtonSet: "Задать…",
+        mouseButtonClearShort: "Очистить",
+        mouseButtonPrimaryRefusedShort: "Нужна дополнительная кнопка",
+        mouseButtonNothingSeenShort: "Кнопка не обнаружена",
+        iconSuggested: "Предлагаемые",
+        iconAll: "Все значки",
+        newBlankProfileButton: "Новый пустой профиль…",
+        presetProfilesHeader: "Готовые профили",
+        toggleSystemAppearance: "Переключить оформление системы",
+        toggleHiddenFiles: "Показать или скрыть скрытые файлы",
+        toggleDesktopIcons: "Показать или скрыть значки рабочего стола"
     )
 
     static let es = RadialMenuFeatureStrings(
@@ -639,17 +689,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Cian",
         colorIndigo: "Índigo",
         colorGraphite: "Grafito",
-        fetchFaviconButton: "Obtener icono del sitio web",
         fetchFaviconDisclaimer: "Se conecta al sitio web una sola vez para descargar el icono. Guardado localmente.",
-        fetchFaviconLoading: "Obteniendo icono…",
-        fetchFaviconSuccess: "Icono descargado",
         fetchFaviconError: "No se pudo encontrar el icono del sitio web",
         resetActionsButton: "Restablecer acciones…",
         resetActionsConfirm: "Restablecer acciones",
         resetActionsConfirmMessage: "¿Restaurar las acciones predeterminadas de este perfil? Se reemplazarán las acciones personalizadas.",
         openCardTitle: "Abrir el menú",
         openInfoButton: "Cómo se abre el menú",
-        openInfoBody: "Pulsa el atajo o el botón del ratón brevemente y el menú se queda abierto: haz clic en una acción para ejecutarla. O mantenlo pulsado, apunta a una acción y suelta. Si sueltas sin apuntar a nada, el menú se cierra.\n\nUn toque o clic con cuatro dedos abre el menú hasta que eliges una acción, pulsas Esc o haces clic fuera.\n\nCambia de perfil con las pestañas sobre la rueda, con Tab o desplazándote.",
+        openInfoBody: "Pulsa brevemente para dejar el menú abierto. Mantén pulsado, apunta a una acción y suelta para ejecutarla.",
         shortcutLabel: "Atajo de teclado",
         shortcutRefused: "Otra app está usando este atajo.",
         trackpadLabel: "Trackpad",
@@ -683,7 +730,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d de %2$d acciones",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d de %4$d",
         inMenuNoActions: "Sin acciones",
-        deleteProfileConfirmButton: "Eliminar perfil"
+        deleteProfileConfirmButton: "Eliminar perfil",
+        trackpadHelp: "Abre el menú hasta que eliges una acción, pulsas Esc o haces clic fuera.",
+        profilesHelp: "En el menú, pulsa Tab o desplázate para cambiar de perfil.",
+        mouseButtonSet: "Definir…",
+        mouseButtonClearShort: "Borrar",
+        mouseButtonPrimaryRefusedShort: "Usa un botón extra",
+        mouseButtonNothingSeenShort: "No se detectó ningún botón",
+        iconSuggested: "Sugeridos",
+        iconAll: "Todos los iconos",
+        newBlankProfileButton: "Nuevo perfil en blanco…",
+        presetProfilesHeader: "Perfiles predefinidos",
+        toggleSystemAppearance: "Alternar apariencia del sistema",
+        toggleHiddenFiles: "Alternar archivos ocultos",
+        toggleDesktopIcons: "Alternar iconos del escritorio"
     )
 
     static let sk = RadialMenuFeatureStrings(
@@ -749,17 +809,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Azúrová",
         colorIndigo: "Indigová",
         colorGraphite: "Grafitová",
-        fetchFaviconButton: "Načítať ikonu webu",
         fetchFaviconDisclaimer: "Raz sa pripojí na web a stiahne jeho ikonu. Uložené lokálne.",
-        fetchFaviconLoading: "Načítava sa ikona…",
-        fetchFaviconSuccess: "Ikona stiahnutá",
         fetchFaviconError: "Ikonu webu sa nepodarilo nájsť",
         resetActionsButton: "Obnoviť akcie…",
         resetActionsConfirm: "Obnoviť akcie",
         resetActionsConfirmMessage: "Obnoviť predvolené akcie pre tento profil? Vlastné akcie budú nahradené.",
         openCardTitle: "Otvorenie menu",
         openInfoButton: "Ako sa menu otvára",
-        openInfoBody: "Krátko stlačte skratku alebo tlačidlo myši a menu zostane otvorené: kliknutím na akciu ju spustíte. Alebo ich podržte, ukážte na akciu a pustite. Ak pustíte bez ukázania na niečo, menu sa zavrie.\n\nŤuknutie alebo kliknutie štyrmi prstami otvorí menu, kým nevyberiete akciu, nestlačíte Esc alebo nekliknete mimo neho.\n\nProfily prepínajte kartami nad kolesom, klávesom Tab alebo posúvaním.",
+        openInfoBody: "Krátkym stlačením necháte menu otvorené. Podržte, ukážte na akciu a pustite, aby sa spustila.",
         shortcutLabel: "Klávesová skratka",
         shortcutRefused: "Túto skratku používa iná aplikácia.",
         trackpadLabel: "Trackpad",
@@ -793,7 +850,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d z %2$d akcií",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d z %4$d",
         inMenuNoActions: "Žiadne akcie",
-        deleteProfileConfirmButton: "Vymazať profil"
+        deleteProfileConfirmButton: "Vymazať profil",
+        trackpadHelp: "Otvorí menu, kým nevyberiete akciu, nestlačíte Esc alebo nekliknete mimo neho.",
+        profilesHelp: "V menu prepnete profil klávesom Tab alebo posúvaním.",
+        mouseButtonSet: "Nastaviť…",
+        mouseButtonClearShort: "Vymazať",
+        mouseButtonPrimaryRefusedShort: "Použite ďalšie tlačidlo",
+        mouseButtonNothingSeenShort: "Nezistilo sa žiadne tlačidlo",
+        iconSuggested: "Navrhované",
+        iconAll: "Všetky ikony",
+        newBlankProfileButton: "Nový prázdny profil…",
+        presetProfilesHeader: "Prednastavené profily",
+        toggleSystemAppearance: "Prepnúť vzhľad systému",
+        toggleHiddenFiles: "Prepnúť skryté súbory",
+        toggleDesktopIcons: "Prepnúť ikony na ploche"
     )
 
     static let de = RadialMenuFeatureStrings(
@@ -859,17 +929,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Cyan",
         colorIndigo: "Indigo",
         colorGraphite: "Graphit",
-        fetchFaviconButton: "Website-Icon laden",
         fetchFaviconDisclaimer: "Verbindet sich einmal mit der Website, um das Icon zu laden. Lokal gespeichert.",
-        fetchFaviconLoading: "Icon wird geladen…",
-        fetchFaviconSuccess: "Icon heruntergeladen",
         fetchFaviconError: "Website-Icon konnte nicht gefunden werden",
         resetActionsButton: "Aktionen zurücksetzen …",
         resetActionsConfirm: "Aktionen zurücksetzen",
         resetActionsConfirmMessage: "Standardaktionen für dieses Profil wiederherstellen? Eigene Aktionen werden ersetzt.",
         openCardTitle: "Menü öffnen",
         openInfoButton: "So öffnet sich das Menü",
-        openInfoBody: "Drückst du den Kurzbefehl oder die Maustaste kurz, bleibt das Menü offen: Klicke auf eine Aktion, um sie auszuführen. Oder halte sie gedrückt, zeige auf eine Aktion und lass los. Lässt du los, ohne auf etwas zu zeigen, schließt sich das Menü.\n\nEin Tippen oder Klicken mit vier Fingern öffnet das Menü, bis du eine Aktion wählst, Esc drückst oder daneben klickst.\n\nWechsle Profile mit den Tabs über dem Rad, mit Tab oder durch Scrollen.",
+        openInfoBody: "Kurz drücken lässt das Menü offen. Gedrückt halten, auf eine Aktion zeigen und loslassen führt sie aus.",
         shortcutLabel: "Tastaturkurzbefehl",
         shortcutRefused: "Eine andere App verwendet diesen Kurzbefehl.",
         trackpadLabel: "Trackpad",
@@ -903,7 +970,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d von %2$d Aktionen",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d von %4$d",
         inMenuNoActions: "Keine Aktionen",
-        deleteProfileConfirmButton: "Profil löschen"
+        deleteProfileConfirmButton: "Profil löschen",
+        trackpadHelp: "Öffnet das Menü, bis du eine Aktion wählst, Esc drückst oder daneben klickst.",
+        profilesHelp: "Im Menü wechselst du Profile mit Tab oder durch Scrollen.",
+        mouseButtonSet: "Festlegen …",
+        mouseButtonClearShort: "Entfernen",
+        mouseButtonPrimaryRefusedShort: "Zusatztaste verwenden",
+        mouseButtonNothingSeenShort: "Keine Taste erkannt",
+        iconSuggested: "Vorschläge",
+        iconAll: "Alle Symbole",
+        newBlankProfileButton: "Neues leeres Profil …",
+        presetProfilesHeader: "Vorgefertigte Profile",
+        toggleSystemAppearance: "Systemdarstellung umschalten",
+        toggleHiddenFiles: "Versteckte Dateien umschalten",
+        toggleDesktopIcons: "Schreibtischsymbole umschalten"
     )
 
     static let fr = RadialMenuFeatureStrings(
@@ -969,17 +1049,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Cyan",
         colorIndigo: "Indigo",
         colorGraphite: "Graphite",
-        fetchFaviconButton: "Récupérer l’icône du site",
         fetchFaviconDisclaimer: "Se connecte au site web une seule fois pour télécharger l’icône. Enregistrée localement.",
-        fetchFaviconLoading: "Récupération de l’icône…",
-        fetchFaviconSuccess: "Icône téléchargée",
         fetchFaviconError: "Impossible de trouver l’icône du site web",
         resetActionsButton: "Réinitialiser les actions…",
         resetActionsConfirm: "Réinitialiser les actions",
         resetActionsConfirmMessage: "Restaurer les actions par défaut de ce profil\u{00A0}? Les actions personnalisées seront remplacées.",
         openCardTitle: "Ouvrir le menu",
         openInfoButton: "Comment le menu s’ouvre",
-        openInfoBody: "Appuyez brièvement sur le raccourci ou le bouton de la souris et le menu reste ouvert\u{00A0}: cliquez sur une action pour la lancer. Ou maintenez-le, pointez une action et relâchez. Relâcher sans rien pointer ferme le menu.\n\nUn toucher ou un clic à quatre doigts ouvre le menu jusqu’à ce que vous choisissiez une action, appuyiez sur Échap ou cliquiez en dehors.\n\nChangez de profil avec les onglets au-dessus de la roue, avec Tab ou en faisant défiler.",
+        openInfoBody: "Appuyez brièvement pour garder le menu ouvert. Maintenez, pointez une action et relâchez pour la lancer.",
         shortcutLabel: "Raccourci clavier",
         shortcutRefused: "Une autre app utilise ce raccourci.",
         trackpadLabel: "Trackpad",
@@ -1013,7 +1090,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d actions sur %2$d",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d sur %4$d",
         inMenuNoActions: "Aucune action",
-        deleteProfileConfirmButton: "Supprimer le profil"
+        deleteProfileConfirmButton: "Supprimer le profil",
+        trackpadHelp: "Ouvre le menu jusqu’à ce que vous choisissiez une action, appuyiez sur Échap ou cliquiez en dehors.",
+        profilesHelp: "Dans le menu, appuyez sur Tab ou faites défiler pour changer de profil.",
+        mouseButtonSet: "Définir…",
+        mouseButtonClearShort: "Effacer",
+        mouseButtonPrimaryRefusedShort: "Utilisez un bouton supplémentaire",
+        mouseButtonNothingSeenShort: "Aucun bouton détecté",
+        iconSuggested: "Suggestions",
+        iconAll: "Toutes les icônes",
+        newBlankProfileButton: "Nouveau profil vierge…",
+        presetProfilesHeader: "Profils prédéfinis",
+        toggleSystemAppearance: "Changer l’apparence du système",
+        toggleHiddenFiles: "Afficher ou masquer les fichiers cachés",
+        toggleDesktopIcons: "Afficher ou masquer les icônes du bureau"
     )
 
     static let it = RadialMenuFeatureStrings(
@@ -1079,17 +1169,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Ciano",
         colorIndigo: "Indaco",
         colorGraphite: "Grafite",
-        fetchFaviconButton: "Scarica icona del sito",
         fetchFaviconDisclaimer: "Si connette al sito una sola volta per scaricare l’icona. Salvata localmente.",
-        fetchFaviconLoading: "Scaricamento icona…",
-        fetchFaviconSuccess: "Icona scaricata",
         fetchFaviconError: "Impossibile trovare l’icona del sito",
         resetActionsButton: "Ripristina azioni…",
         resetActionsConfirm: "Ripristina azioni",
         resetActionsConfirmMessage: "Ripristinare le azioni predefinite per questo profilo? Le azioni personalizzate verranno sostituite.",
         openCardTitle: "Apri il menu",
         openInfoButton: "Come si apre il menu",
-        openInfoBody: "Premi brevemente l’abbreviazione o il pulsante del mouse e il menu resta aperto: fai clic su un’azione per eseguirla. Oppure tienilo premuto, punta un’azione e rilascia. Se rilasci senza puntare nulla, il menu si chiude.\n\nUn tocco o un clic con quattro dita apre il menu finché non scegli un’azione, premi Esc o fai clic fuori.\n\nCambia profilo con le schede sopra la ruota, con Tab o scorrendo.",
+        openInfoBody: "Premi brevemente per tenere aperto il menu. Tieni premuto, punta un’azione e rilascia per eseguirla.",
         shortcutLabel: "Abbreviazione da tastiera",
         shortcutRefused: "Un’altra app sta usando questa abbreviazione.",
         trackpadLabel: "Trackpad",
@@ -1123,7 +1210,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d di %2$d azioni",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d di %4$d",
         inMenuNoActions: "Nessuna azione",
-        deleteProfileConfirmButton: "Elimina profilo"
+        deleteProfileConfirmButton: "Elimina profilo",
+        trackpadHelp: "Apre il menu finché non scegli un’azione, premi Esc o fai clic fuori.",
+        profilesHelp: "Nel menu, premi Tab o scorri per cambiare profilo.",
+        mouseButtonSet: "Imposta…",
+        mouseButtonClearShort: "Cancella",
+        mouseButtonPrimaryRefusedShort: "Usa un pulsante extra",
+        mouseButtonNothingSeenShort: "Nessun pulsante rilevato",
+        iconSuggested: "Suggerite",
+        iconAll: "Tutte le icone",
+        newBlankProfileButton: "Nuovo profilo vuoto…",
+        presetProfilesHeader: "Profili predefiniti",
+        toggleSystemAppearance: "Alterna aspetto del sistema",
+        toggleHiddenFiles: "Mostra o nascondi i file nascosti",
+        toggleDesktopIcons: "Mostra o nascondi le icone della scrivania"
     )
 
     static let ja = RadialMenuFeatureStrings(
@@ -1189,17 +1289,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "シアン",
         colorIndigo: "インディゴ",
         colorGraphite: "グラファイト",
-        fetchFaviconButton: "Webサイトのアイコンを取得",
         fetchFaviconDisclaimer: "アイコンをダウンロードするために1回だけWebサイトに接続します。ローカルに保存されます。",
-        fetchFaviconLoading: "アイコンを取得中…",
-        fetchFaviconSuccess: "アイコンをダウンロードしました",
         fetchFaviconError: "Webサイトのアイコンが見つかりませんでした",
         resetActionsButton: "アクションをリセット…",
         resetActionsConfirm: "アクションをリセット",
         resetActionsConfirmMessage: "このプロファイルのデフォルトアクションに戻しますか？カスタムアクションは置き換えられます。",
         openCardTitle: "メニューを開く",
         openInfoButton: "メニューの開き方",
-        openInfoBody: "ショートカットやマウスボタンを短く押すと、メニューは開いたままになります。アクションをクリックすると実行されます。長押ししたままアクションを指して放すこともできます。何も指さずに放すとメニューは閉じます。\n\n4本指のタップまたはクリックでは、アクションを選ぶか、Escを押すか、外側をクリックするまでメニューが開いたままになります。\n\nプロファイルはホイール上部のタブ、Tabキー、またはスクロールで切り替えます。",
+        openInfoBody: "短く押すとメニューが開いたままになります。長押ししてアクションを指し、放すと実行されます。",
         shortcutLabel: "キーボードショートカット",
         shortcutRefused: "このショートカットはほかのアプリで使用されています。",
         trackpadLabel: "トラックパッド",
@@ -1233,7 +1330,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%2$d個中%1$d個のアクション",
         slotAccessibilityFormat: "%1$@、%2$@、%4$d個中%3$d番目",
         inMenuNoActions: "アクションなし",
-        deleteProfileConfirmButton: "プロファイルを削除"
+        deleteProfileConfirmButton: "プロファイルを削除",
+        trackpadHelp: "アクションを選ぶか、Escを押すか、外側をクリックするまでメニューを開きます。",
+        profilesHelp: "メニュー内では Tab キーまたはスクロールでプロファイルを切り替えます。",
+        mouseButtonSet: "設定…",
+        mouseButtonClearShort: "消去",
+        mouseButtonPrimaryRefusedShort: "追加のボタンを使用",
+        mouseButtonNothingSeenShort: "ボタンが検出されません",
+        iconSuggested: "おすすめ",
+        iconAll: "すべてのアイコン",
+        newBlankProfileButton: "新規空白プロファイル…",
+        presetProfilesHeader: "プリセットのプロファイル",
+        toggleSystemAppearance: "システムの外観を切り替え",
+        toggleHiddenFiles: "不可視ファイルの表示を切り替え",
+        toggleDesktopIcons: "デスクトップアイコンの表示を切り替え"
     )
 
     static let ko = RadialMenuFeatureStrings(
@@ -1299,17 +1409,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "청록색",
         colorIndigo: "남색",
         colorGraphite: "흑연색",
-        fetchFaviconButton: "웹사이트 아이콘 가져오기",
         fetchFaviconDisclaimer: "아이콘을 다운로드하기 위해 웹사이트에 한 번 연결합니다. 로컬에 저장됩니다.",
-        fetchFaviconLoading: "아이콘 가져오는 중…",
-        fetchFaviconSuccess: "아이콘 다운로드됨",
         fetchFaviconError: "웹사이트 아이콘을 찾을 수 없습니다",
         resetActionsButton: "동작 재설정…",
         resetActionsConfirm: "동작 재설정",
         resetActionsConfirmMessage: "이 프로필의 기본 동작을 복원할까요? 사용자 설정 동작이 대체됩니다.",
         openCardTitle: "메뉴 열기",
         openInfoButton: "메뉴가 열리는 방식",
-        openInfoBody: "단축키나 마우스 버튼을 짧게 누르면 메뉴가 열린 채로 유지됩니다. 동작을 클릭하면 실행됩니다. 또는 길게 누른 채로 동작을 가리킨 뒤 놓으세요. 아무것도 가리키지 않고 놓으면 메뉴가 닫힙니다.\n\n네 손가락 탭이나 클릭은 동작을 고르거나, Esc를 누르거나, 바깥을 클릭할 때까지 메뉴를 엽니다.\n\n휠 위의 탭, Tab 키 또는 스크롤로 프로필을 전환하세요.",
+        openInfoBody: "짧게 누르면 메뉴가 열린 채로 유지됩니다. 길게 누른 채 동작을 가리키고 놓으면 실행됩니다.",
         shortcutLabel: "키보드 단축키",
         shortcutRefused: "다른 앱에서 이 단축키를 사용 중입니다.",
         trackpadLabel: "트랙패드",
@@ -1343,7 +1450,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "동작 %2$d개 중 %1$d개",
         slotAccessibilityFormat: "%1$@, %2$@, %4$d개 중 %3$d번째",
         inMenuNoActions: "동작 없음",
-        deleteProfileConfirmButton: "프로필 삭제"
+        deleteProfileConfirmButton: "프로필 삭제",
+        trackpadHelp: "동작을 고르거나, Esc를 누르거나, 바깥을 클릭할 때까지 메뉴를 엽니다.",
+        profilesHelp: "메뉴에서 Tab 키를 누르거나 스크롤하여 프로필을 전환하세요.",
+        mouseButtonSet: "설정…",
+        mouseButtonClearShort: "지우기",
+        mouseButtonPrimaryRefusedShort: "추가 버튼을 사용하세요",
+        mouseButtonNothingSeenShort: "감지된 버튼 없음",
+        iconSuggested: "추천",
+        iconAll: "모든 아이콘",
+        newBlankProfileButton: "새로운 빈 프로필…",
+        presetProfilesHeader: "프리셋 프로필",
+        toggleSystemAppearance: "시스템 화면 모드 전환",
+        toggleHiddenFiles: "숨겨진 파일 보기 전환",
+        toggleDesktopIcons: "데스크탑 아이콘 보기 전환"
     )
 
     static let zhHans = RadialMenuFeatureStrings(
@@ -1409,17 +1529,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "青色",
         colorIndigo: "靛蓝",
         colorGraphite: "石墨灰",
-        fetchFaviconButton: "获取网站图标",
         fetchFaviconDisclaimer: "仅连接网站一次以下载图标。保存在本地。",
-        fetchFaviconLoading: "正在获取图标…",
-        fetchFaviconSuccess: "图标已下载",
         fetchFaviconError: "未找到网站图标",
         resetActionsButton: "重置操作…",
         resetActionsConfirm: "重置动作",
         resetActionsConfirmMessage: "恢复此描述文件的默认动作？自定义动作将被替换。",
         openCardTitle: "打开菜单",
         openInfoButton: "菜单如何打开",
-        openInfoBody: "短按快捷键或鼠标按钮，菜单会保持打开：点按一个操作即可执行。也可以按住，指向一个操作后松开。如果松开时没有指向任何操作，菜单会关闭。\n\n四指轻点或四指点按会打开菜单，直到你选择一个操作、按下 Esc 或点按菜单外部。\n\n使用转盘上方的标签、Tab 键或滚动来切换配置。",
+        openInfoBody: "短按可让菜单保持打开。按住、指向一个操作后松开即可执行。",
         shortcutLabel: "键盘快捷键",
         shortcutRefused: "另一个 App 正在使用此快捷键。",
         trackpadLabel: "触控板",
@@ -1453,7 +1570,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d / %2$d 个操作",
         slotAccessibilityFormat: "%1$@，%2$@，第 %3$d 个，共 %4$d 个",
         inMenuNoActions: "没有操作",
-        deleteProfileConfirmButton: "删除配置"
+        deleteProfileConfirmButton: "删除配置",
+        trackpadHelp: "打开菜单，直到你选择一个操作、按下 Esc 或点按菜单外部。",
+        profilesHelp: "在菜单中，按 Tab 键或滚动来切换配置。",
+        mouseButtonSet: "设定…",
+        mouseButtonClearShort: "清除",
+        mouseButtonPrimaryRefusedShort: "请使用额外按钮",
+        mouseButtonNothingSeenShort: "未检测到按钮",
+        iconSuggested: "建议",
+        iconAll: "所有图标",
+        newBlankProfileButton: "新建空白配置…",
+        presetProfilesHeader: "预设配置",
+        toggleSystemAppearance: "切换系统外观",
+        toggleHiddenFiles: "切换隐藏文件",
+        toggleDesktopIcons: "切换桌面图标"
     )
 
     static let zhTW = RadialMenuFeatureStrings(
@@ -1519,17 +1649,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "青色",
         colorIndigo: "靛青",
         colorGraphite: "石墨灰",
-        fetchFaviconButton: "取得網站圖示",
         fetchFaviconDisclaimer: "僅連接網站一次以下載圖示。儲存在本機。",
-        fetchFaviconLoading: "正在取得圖示…",
-        fetchFaviconSuccess: "圖示已下載",
         fetchFaviconError: "找不到網站圖示",
         resetActionsButton: "重設動作…",
         resetActionsConfirm: "重設動作",
         resetActionsConfirmMessage: "恢復此設定檔的預設動作？自訂動作將會被取代。",
         openCardTitle: "打開選單",
         openInfoButton: "選單如何打開",
-        openInfoBody: "短按快速鍵或滑鼠按鈕，選單會保持開啟：按一下動作即可執行。也可以按住，指向動作後放開。若放開時沒有指向任何動作，選單會關閉。\n\n四指輕點或四指按一下會打開選單，直到你選擇動作、按下 Esc 或按一下選單外部。\n\n使用轉盤上方的標籤、Tab 鍵或捲動來切換設定檔。",
+        openInfoBody: "短按可讓選單保持開啟。按住、指向動作後放開即可執行。",
         shortcutLabel: "鍵盤快速鍵",
         shortcutRefused: "另一個 App 正在使用此快速鍵。",
         trackpadLabel: "觸控式軌跡板",
@@ -1563,7 +1690,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d / %2$d 個動作",
         slotAccessibilityFormat: "%1$@，%2$@，第 %3$d 個，共 %4$d 個",
         inMenuNoActions: "沒有動作",
-        deleteProfileConfirmButton: "刪除設定檔"
+        deleteProfileConfirmButton: "刪除設定檔",
+        trackpadHelp: "打開選單，直到你選擇動作、按下 Esc 或按一下選單外部。",
+        profilesHelp: "在選單中，按 Tab 鍵或捲動來切換設定檔。",
+        mouseButtonSet: "設定…",
+        mouseButtonClearShort: "清除",
+        mouseButtonPrimaryRefusedShort: "請使用額外按鈕",
+        mouseButtonNothingSeenShort: "未偵測到按鈕",
+        iconSuggested: "建議",
+        iconAll: "所有圖像",
+        newBlankProfileButton: "新增空白設定檔…",
+        presetProfilesHeader: "預設設定檔",
+        toggleSystemAppearance: "切換系統外觀",
+        toggleHiddenFiles: "切換隱藏的檔案",
+        toggleDesktopIcons: "切換桌面圖像"
     )
 
     static let zhHK = RadialMenuFeatureStrings(
@@ -1629,17 +1769,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "青色",
         colorIndigo: "靛青",
         colorGraphite: "石墨灰",
-        fetchFaviconButton: "取得網站圖示",
         fetchFaviconDisclaimer: "僅連線網站一次以下載圖示。儲存在本機。",
-        fetchFaviconLoading: "正在取得圖示…",
-        fetchFaviconSuccess: "圖示已下載",
         fetchFaviconError: "找不到網站圖示",
         resetActionsButton: "重設動作…",
         resetActionsConfirm: "重設動作",
         resetActionsConfirmMessage: "恢復此設定檔的預設動作？自訂動作將會被取代。",
         openCardTitle: "打開選單",
         openInfoButton: "選單如何打開",
-        openInfoBody: "短按快捷鍵或滑鼠按鈕，選單會保持開啟：點按動作即可執行。也可以按住，指向動作後放開。若放開時沒有指向任何動作，選單會關閉。\n\n四指輕點或四指點按會打開選單，直到你選擇動作、按下 Esc 或點按選單外部。\n\n使用轉盤上方的標籤、Tab 鍵或捲動來切換設定檔。",
+        openInfoBody: "短按可讓選單保持開啟。按住、指向動作後放開即可執行。",
         shortcutLabel: "鍵盤快捷鍵",
         shortcutRefused: "另一個 App 正在使用此快捷鍵。",
         trackpadLabel: "觸控板",
@@ -1673,7 +1810,20 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "%1$d / %2$d 個動作",
         slotAccessibilityFormat: "%1$@，%2$@，第 %3$d 個，共 %4$d 個",
         inMenuNoActions: "沒有動作",
-        deleteProfileConfirmButton: "刪除設定檔"
+        deleteProfileConfirmButton: "刪除設定檔",
+        trackpadHelp: "打開選單，直到你選擇動作、按下 Esc 或點按選單外部。",
+        profilesHelp: "在選單中，按 Tab 鍵或捲動來切換設定檔。",
+        mouseButtonSet: "設定…",
+        mouseButtonClearShort: "清除",
+        mouseButtonPrimaryRefusedShort: "請使用額外按鈕",
+        mouseButtonNothingSeenShort: "未偵測到按鈕",
+        iconSuggested: "建議",
+        iconAll: "所有圖像",
+        newBlankProfileButton: "新增空白設定檔…",
+        presetProfilesHeader: "預設設定檔",
+        toggleSystemAppearance: "切換系統外觀",
+        toggleHiddenFiles: "切換隱藏的檔案",
+        toggleDesktopIcons: "切換桌面圖像"
     )
     static let uk = RadialMenuFeatureStrings(
         pageTitle: "Радіальне меню",
@@ -1738,17 +1888,14 @@ extension RadialMenuFeatureStrings {
         colorCyan: "Блакитний",
         colorIndigo: "Індиго",
         colorGraphite: "Графіт",
-        fetchFaviconButton: "Завантажити значок сайту",
         fetchFaviconDisclaimer: "З’єднується з сайтом один раз, щоб завантажити його значок. Зберігається локально.",
-        fetchFaviconLoading: "Завантаження значка…",
-        fetchFaviconSuccess: "Значок завантажено",
         fetchFaviconError: "Не вдалося знайти значок сайту",
         resetActionsButton: "Скинути дії…",
         resetActionsConfirm: "Скинути дії",
         resetActionsConfirmMessage: "Відновити дії за замовчуванням для цього профілю? Ваші власні дії буде замінено.",
         openCardTitle: "Відкриття меню",
         openInfoButton: "Як відкривається меню",
-        openInfoBody: "Якщо коротко натиснути клавіатурне скорочення або кнопку миші, меню залишиться відкритим: клацніть дію, щоб запустити її. Або утримуйте, наведіть на дію та відпустіть. Якщо відпустити, ні на що не навівши, меню закриється.\n\nДотик або натискання чотирма пальцями відкриває меню, доки ви не виберете дію, не натиснете Esc або не клацнете поза ним.\n\nПеремикайте профілі вкладками над колесом, клавішею Tab або прокручуванням.",
+        openInfoBody: "Коротко натисніть, щоб меню лишалося відкритим. Утримуйте, наведіть на дію та відпустіть, щоб її запустити.",
         shortcutLabel: "Клавіатурне скорочення",
         shortcutRefused: "Це скорочення використовує інша програма.",
         trackpadLabel: "Трекпад",
@@ -1782,6 +1929,19 @@ extension RadialMenuFeatureStrings {
         actionCountFormat: "Дій: %1$d з %2$d",
         slotAccessibilityFormat: "%1$@, %2$@, %3$d з %4$d",
         inMenuNoActions: "Немає дій",
-        deleteProfileConfirmButton: "Видалити профіль"
+        deleteProfileConfirmButton: "Видалити профіль",
+        trackpadHelp: "Відкриває меню, доки ви не виберете дію, не натиснете Esc або не клацнете поза ним.",
+        profilesHelp: "У меню натисніть Tab або прокрутіть, щоб змінити профіль.",
+        mouseButtonSet: "Задати…",
+        mouseButtonClearShort: "Очистити",
+        mouseButtonPrimaryRefusedShort: "Потрібна додаткова кнопка",
+        mouseButtonNothingSeenShort: "Кнопку не виявлено",
+        iconSuggested: "Пропоновані",
+        iconAll: "Усі значки",
+        newBlankProfileButton: "Новий порожній профіль…",
+        presetProfilesHeader: "Готові профілі",
+        toggleSystemAppearance: "Перемкнути оформлення системи",
+        toggleHiddenFiles: "Показати або сховати приховані файли",
+        toggleDesktopIcons: "Показати або сховати значки робочого столу"
     )
 }

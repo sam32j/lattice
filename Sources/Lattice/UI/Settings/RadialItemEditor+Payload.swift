@@ -1,70 +1,34 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Samuel Ji
+
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 extension RadialItemEditor {
+    /// The target row for the chosen kind of action, in the same one-line
+    /// shape as the rest of the editor. Errors show in the control or as a
+    /// mark beside it, never as a paragraph.
     @ViewBuilder
     var payloadEditor: some View {
         switch item.kind {
         case .app:
-            LabeledContent(text.kindApp) {
+            editorRow(text.kindApp) {
                 Button(chooseTitle) { choose(applications: true) }
             }
         case .file:
-            LabeledContent(text.kindFile) {
+            editorRow(text.kindFile) {
                 Button(chooseTitle) { choose(applications: false) }
             }
         case .url:
-            VStack(alignment: .leading, spacing: 6) {
+            editorRow(text.kindURL,
+                      status: urlIsInvalid && !item.payload.isEmpty ? .problem(text.urlInvalid) : nil) {
                 TextField(text.kindURL, text: $item.payload, prompt: Text(text.urlPlaceholder))
-                    .onChange(of: item.payload) { _, _ in
-                        faviconStatus = nil
-                    }
-
-                HStack(spacing: 8) {
-                    Button {
-                        fetchWebsiteFavicon()
-                    } label: {
-                        if isFetchingFavicon {
-                            HStack(spacing: 4) {
-                                ProgressView()
-                                    .controlSize(.small)
-                                Text(text.fetchFaviconLoading)
-                            }
-                        } else {
-                            Text(text.fetchFaviconButton)
-                        }
-                    }
-                    .disabled(isFetchingFavicon || item.payload.trimmingCharacters(in: .whitespaces).isEmpty || urlIsInvalid)
-
-                    if let faviconStatus {
-                        switch faviconStatus {
-                        case .success:
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                Text(text.fetchFaviconSuccess)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        case .error:
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundStyle(.orange)
-                                Text(text.fetchFaviconError)
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-                    }
-                }
-
-                Text(text.fetchFaviconDisclaimer)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .textFieldStyle(.roundedBorder)
+                    .labelsHidden()
+                    .frame(width: 220)
             }
         case .shortcut:
-            LabeledContent(text.kindShortcut) {
+            editorRow(text.kindShortcut) {
                 CompactShortcutBindingRecorder(
                     recordingID: "radial-item-shortcut",
                     shortcut: GlobalShortcut(storageValue: item.payload),
@@ -83,38 +47,53 @@ extension RadialItemEditor {
                     })
             }
         case .tool:
-            Picker(text.toolLabel, selection: $item.payload) {
-                ForEach(availableTools) { tool in
-                    Text(tool.feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)))
-                        .tag(tool.rawValue)
+            editorRow(text.toolLabel) {
+                menuPicker(text.toolLabel) {
+                    ForEach(availableTools) { tool in
+                        Label(tool.feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)),
+                              systemImage: tool.symbolName)
+                            .tag(tool.rawValue)
+                    }
                 }
             }
         case .quickToggle:
-            let quickToggleText = FeatureStrings.quickToggles(l10n.language)
-            Picker(quickToggleText.pageTitle, selection: $item.payload) {
-                ForEach(availableQuickToggles) { action in
-                    Label(action.radialTitle, systemImage: action.symbolName)
-                        .tag(action.rawValue)
+            let title = FeatureStrings.quickToggles(l10n.language).pageTitle
+            editorRow(title) {
+                menuPicker(title) {
+                    ForEach(availableQuickToggles) { action in
+                        Label(action.settingsTitle(text), systemImage: action.symbolName)
+                            .tag(action.rawValue)
+                    }
                 }
             }
         case .windowLayout:
             let windowText = FeatureStrings.windowLayout(l10n.language)
-            Picker(windowText.title, selection: $item.payload) {
-                ForEach(WindowLayoutAction.allCases) { action in
-                    Label(action.title(windowText), systemImage: action.symbolName)
-                        .tag(action.rawValue)
+            editorRow(windowText.title) {
+                menuPicker(windowText.title) {
+                    ForEach(WindowLayoutAction.allCases) { action in
+                        Label(action.title(windowText), systemImage: action.symbolName)
+                            .tag(action.rawValue)
+                    }
                 }
             }
         case .media:
-            Picker(text.mediaLabel, selection: $item.payload) {
-                Text(text.mediaPlayPause).tag(RadialMenuMediaKey.playPause.rawValue)
-                Text(text.mediaPrevious).tag(RadialMenuMediaKey.previousTrack.rawValue)
-                Text(text.mediaNext).tag(RadialMenuMediaKey.nextTrack.rawValue)
-                Text(text.mediaNowPlaying).tag(RadialMenuMediaKey.nowPlaying.rawValue)
+            editorRow(text.mediaLabel) {
+                menuPicker(text.mediaLabel) {
+                    Text(text.mediaPlayPause).tag(RadialMenuMediaKey.playPause.rawValue)
+                    Text(text.mediaPrevious).tag(RadialMenuMediaKey.previousTrack.rawValue)
+                    Text(text.mediaNext).tag(RadialMenuMediaKey.nextTrack.rawValue)
+                    Text(text.mediaNowPlaying).tag(RadialMenuMediaKey.nowPlaying.rawValue)
+                }
             }
         case .submenu:
             EmptyView()
         }
     }
 
+    func menuPicker<Options: View>(_ title: String, @ViewBuilder options: () -> Options) -> some View {
+        Picker(title, selection: $item.payload) { options() }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .fixedSize()
+    }
 }

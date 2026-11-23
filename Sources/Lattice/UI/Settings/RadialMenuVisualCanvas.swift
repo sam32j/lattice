@@ -7,9 +7,10 @@ import SwiftUI
 /// The wheel in the Settings editor, drawn with the live menu's own disc,
 /// chips and wedge so it previews the menu in either appearance. The only
 /// place actions are added, edited, moved and removed: click a slot to edit
-/// it, drag it onto another to swap, right-click for more. While the level
-/// has room, a dashed slot sits where the next action lands. Every slot is
-/// a focusable button: arrows move round the wheel, Return or Space edits,
+/// it, drag it onto another to swap, right-click for more. Actions sit where
+/// the live menu puts them; hovering or focusing Add action makes room on the
+/// wheel and shows a dashed slot where the new one lands. Every slot is a
+/// focusable button: arrows move round the wheel, Return or Space edits,
 /// Option-arrow moves the action, Delete removes it.
 struct RadialMenuVisualCanvas: View {
     let items: [RadialMenuItem]
@@ -33,6 +34,8 @@ struct RadialMenuVisualCanvas: View {
     @State private var draggingIndex: Int?
     @State private var dragPosition: CGPoint = .zero
     @State private var targetIndex: Int?
+    @State private var addHovered = false
+    @State private var ghostHovered = false
     @FocusState private var focusedSlot: Slot?
 
     @Environment(\.colorScheme) private var colorScheme
@@ -44,12 +47,14 @@ struct RadialMenuVisualCanvas: View {
     static let hubDiameter: CGFloat = 68
     static let deadZoneRadius: CGFloat = 36
 
+    private var canAdd: Bool { items.count < RadialMenuSupport.maxItemsPerWheel }
+
+    /// Only while Add action is pointed at or focused does the wheel lay out
+    /// as if the new action were there; otherwise it matches the live menu.
     private var showsAddSlot: Bool {
-        !items.isEmpty && items.count < RadialMenuSupport.maxItemsPerWheel
+        canAdd && !items.isEmpty && (addHovered || ghostHovered || focusedSlot == .add)
     }
 
-    /// The wheel lays out as if the add slot were an action already, so the
-    /// user sees exactly where the next one lands.
     private var slotCount: Int { items.count + (showsAddSlot ? 1 : 0) }
 
     var body: some View {
@@ -68,7 +73,40 @@ struct RadialMenuVisualCanvas: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
             .coordinateSpace(name: "RadialCanvas")
         }
+        .overlay(alignment: .bottom) { bottomBar }
         .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82), value: items.map(\.id))
+        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82), value: showsAddSlot)
+    }
+
+    /// Add action on the leading side, the action count on the trailing one.
+    private var bottomBar: some View {
+        HStack {
+            if canAdd && !items.isEmpty {
+                Button(action: onAdd) {
+                    Label(text.addButton, systemImage: "plus")
+                        .font(.callout)
+                }
+                .buttonStyle(.borderless)
+                .onHover { addHovered = $0 }
+                .focused($focusedSlot, equals: .add)
+                .onKeyPress(phases: .down) { press in
+                    switch press.key {
+                    case .leftArrow, .upArrow: focus(items.count - 1); return .handled
+                    case .rightArrow, .downArrow: focus(0); return .handled
+                    default: return .ignored
+                    }
+                }
+                .help(text.addButton)
+            }
+            Spacer()
+            Text("\(items.count) / \(RadialMenuSupport.maxItemsPerWheel)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(String(format: text.actionCountFormat, items.count,
+                                           RadialMenuSupport.maxItemsPerWheel))
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 10)
     }
 
     // MARK: - Wedge
@@ -129,7 +167,7 @@ struct RadialMenuVisualCanvas: View {
                 .onKeyPress(phases: .down) { press in handleKey(press, on: index) }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(String(format: text.slotAccessibilityFormat,
-                                           item.displayName(text), kindLabel(for: item),
+                                           item.displayName(text, stableToggles: true), kindLabel(for: item),
                                            index + 1, items.count))
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { onEdit(item) }
@@ -212,24 +250,27 @@ struct RadialMenuVisualCanvas: View {
         case .delete, .deleteForward:
             let neighbour = items.count > 1 ? items[(index + 1) % items.count].id : nil
             onRemove(item)
-            focusedSlot = neighbour.map { .item($0) } ?? (items.count > 1 ? .add : nil)
+            focusedSlot = neighbour.map { .item($0) }
             return .handled
         default:
             return .ignored
         }
     }
 
+    /// Walks the actions and then Add action, round and round.
     private func focus(_ position: Int) {
-        guard slotCount > 0 else { return }
-        let wrapped = ((position % slotCount) + slotCount) % slotCount
+        let stops = items.count + (canAdd && !items.isEmpty ? 1 : 0)
+        guard stops > 0 else { return }
+        let wrapped = ((position % stops) + stops) % stops
         focusedSlot = items.indices.contains(wrapped) ? .item(items[wrapped].id) : .add
     }
 
     // MARK: - Add slot
 
+    /// The dashed slot that previews where a new action lands. Clicking it
+    /// adds there too; keyboard users reach the same through Add action.
     private var addSlot: some View {
-        let isFocused = focusedSlot == .add
-        return Button(action: onAdd) {
+        Button(action: onAdd) {
             ZStack {
                 Circle()
                     .strokeBorder(profileColor.color(for: colorScheme).opacity(0.7),
@@ -240,24 +281,14 @@ struct RadialMenuVisualCanvas: View {
                     .foregroundStyle(profileColor.color(for: colorScheme))
             }
             .frame(width: Self.chipSize, height: Self.chipSize)
-            .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: 2).padding(-3).opacity(isFocused ? 1 : 0))
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .offset(offset(for: items.count))
+        .onHover { ghostHovered = $0 }
+        .transition(.opacity.combined(with: .scale(scale: 0.6)))
         .help(text.addButton)
-        .focusable()
-        .focusEffectDisabled()
-        .focused($focusedSlot, equals: .add)
-        .onKeyPress(phases: .down) { press in
-            switch press.key {
-            case .rightArrow, .downArrow: focus(items.count + 1); return .handled
-            case .leftArrow, .upArrow: focus(items.count - 1); return .handled
-            case .return, .space: onAdd(); return .handled
-            default: return .ignored
-            }
-        }
-        .accessibilityLabel(text.addButton)
+        .accessibilityHidden(true)
     }
 
     // MARK: - Hub
@@ -291,7 +322,7 @@ struct RadialMenuVisualCanvas: View {
                 Image(systemName: "arrow.triangle.swap")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(profileColor.color(for: colorScheme))
-                Text(items[target].displayName(text))
+                Text(items[target].displayName(text, stableToggles: true))
                     .font(.system(size: 9, weight: .semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
@@ -300,7 +331,7 @@ struct RadialMenuVisualCanvas: View {
         } else if let index = hoveredIndex, items.indices.contains(index) {
             let item = items[index]
             VStack(spacing: 1) {
-                Text(item.displayName(text))
+                Text(item.displayName(text, stableToggles: true))
                     .font(.system(size: 10, weight: .semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)

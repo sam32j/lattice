@@ -86,14 +86,11 @@ struct RadialMenuSettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                header
-                VStack(spacing: 0) {
-                    permissionCard.padding(.bottom, 20)
-                }
-                .settingsCollapsible(isExpanded: showsPermissionCard)
-                .padding(.bottom, -20)
                 openCard
-                editorCard
+                if featureOn {
+                    if showsPermissionCard { permissionCard }
+                    editorCard
+                }
             }
             .frame(maxWidth: 760, alignment: .leading)
             .padding(22)
@@ -121,6 +118,7 @@ struct RadialMenuSettings: View {
                              item: item,
                              isNew: isNew,
                              allowsSubmenu: openSubmenuID == nil,
+                             profileColor: selectedProfile.color,
                              openChildren: item.kind == .submenu ? { openSubmenuID = item.id } : nil,
                              save: { saved in
                                  upsert(saved)
@@ -172,29 +170,6 @@ struct RadialMenuSettings: View {
         .permissionActivationLifetime($gestureCoordinator)
     }
 
-    // MARK: - Header
-
-    private var header: some View {
-        HStack(spacing: 10) {
-            LatticeSymbol(AppFeature.radialMenu.symbolName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 26, height: 26)
-                .background(Color.accentColor.opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .accessibilityHidden(true)
-            Text(text.pageTitle)
-                .font(.title3.weight(.semibold))
-                .lineLimit(1)
-                .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: 12)
-            FeatureActivationControl(feature: .radialMenu)
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .accessibilityLabel(text.pageTitle)
-        }
-    }
-
     // MARK: - Permission
 
     private var permissionCard: some View {
@@ -239,14 +214,6 @@ struct RadialMenuSettings: View {
         }
         .frame(height: 360)
         .frame(maxWidth: .infinity)
-        .overlay(alignment: .bottomTrailing) {
-            Text("\(level.count) / \(RadialMenuSupport.maxItemsPerWheel)")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .padding(12)
-                .accessibilityLabel(String(format: text.actionCountFormat, level.count,
-                                           RadialMenuSupport.maxItemsPerWheel))
-        }
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .contain)

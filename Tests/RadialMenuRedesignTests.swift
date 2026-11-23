@@ -7,7 +7,21 @@ import SwiftUI
 
 /// The redesigned radial menu: one release rule for every held trigger.
 enum RadialMenuReleaseTests {
+    static func runHold(_ suite: TestSuite) {
+        suite.expect(RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: false, keyHeld: true),
+                     "a chord whose modifiers come from a remapped key stays held while its key is down")
+        suite.expect(!RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: false, keyHeld: false),
+                     "letting go of everything ends the hold")
+        let quickToggleNames = FeatureStrings.radialMenu(.enUS)
+        suite.expect(RadialMenuQuickToggle.darkMode.stableTitle(quickToggleNames) == "Toggle System Appearance"
+                && RadialMenuQuickToggle.hiddenFiles.stableTitle(quickToggleNames) == "Toggle Hidden Files"
+                && RadialMenuQuickToggle.desktopIcons.stableTitle(quickToggleNames) == "Toggle Desktop Icons"
+                && RadialMenuQuickToggle.lockScreen.stableTitle(quickToggleNames) == nil,
+                     "state-dependent quick toggles have stable names in Settings")
+    }
+
     static func run(_ suite: TestSuite) {
+        runHold(suite)
         let quick = RadialMenuSupport.quickPressLimit - 0.01
         let held = RadialMenuSupport.quickPressLimit
         suite.expect(RadialMenuSupport.quickPressLimit == 0.30
@@ -271,6 +285,29 @@ enum RadialProfileTabsTests {
                 && scroll.step(deltaX: -45, deltaY: 10, isContinuous: true, isMomentum: false, now: 1) == 1,
                      "momentum is ignored and the larger axis decides")
 
+        let spans = RadialProfileTabs.arcSpans(widths: [80, 22, 22], radius: 175, capHeight: 22, maxSpan: 2 * .pi / 3)
+        let middle = spans.map { ($0.lowerBound + $0.upperBound) / 2 }
+        suite.expect(spans.count == 3 && zip(spans, spans.dropFirst()).allSatisfy { $0.upperBound < $1.lowerBound }
+                && abs((spans[0].lowerBound - 11.0 / 175) + (spans[2].upperBound + 11.0 / 175)) < 0.0001,
+                     "curved tabs run left to right without overlapping, centred over twelve o'clock")
+        let squeezed = RadialProfileTabs.arcSpans(widths: [150] + Array(repeating: 35, count: 6), radius: 175,
+                                                  capHeight: 22, maxSpan: 2 * .pi / 3)
+        suite.expect((squeezed.last!.upperBound + 11.0 / 175) - (squeezed.first!.lowerBound - 11.0 / 175)
+                <= 2 * .pi / 3 + 0.001,
+                     "a long run of tabs is squeezed to stay within the arc's span")
+        let keyed = Dictionary(uniqueKeysWithValues: spans.enumerated().map { ($0.offset, $0.element) })
+        func point(_ angle: Double, _ radius: CGFloat = 175) -> (CGFloat, CGFloat) {
+            (radius * CGFloat(sin(angle)), radius * CGFloat(cos(angle)))
+        }
+        let onFirst = point(middle[0]), onLast = point(middle[2])
+        suite.expect(RadialProfileTabs.tabIndex(dx: onFirst.0, dyUp: onFirst.1, spans: keyed, radius: 175, capHeight: 22) == 0
+                && RadialProfileTabs.tabIndex(dx: onLast.0, dyUp: onLast.1, spans: keyed, radius: 175, capHeight: 22) == 2,
+                     "the pointer on a curved tab finds that tab")
+        let inside = point(middle[0], 120), far = point(.pi)
+        suite.expect(RadialProfileTabs.tabIndex(dx: inside.0, dyUp: inside.1, spans: keyed, radius: 175, capHeight: 22) == nil
+                && RadialProfileTabs.tabIndex(dx: far.0, dyUp: far.1, spans: keyed, radius: 175, capHeight: 22) == nil,
+                     "the wheel itself and the far side of the rim are not tabs")
+
         let a = RadialMenuProfile(name: "A"), b = RadialMenuProfile(name: "B"), c = RadialMenuProfile(name: "C")
         let list = [a, b, c]
         suite.expect(RadialProfileTabs.makingPrimary(c.id, in: list).map(\.id) == [c.id, a.id, b.id]
@@ -325,7 +362,8 @@ enum RadialMenuStringsTests {
         let radialLabels = Set(english.keys)
         suite.expect(radialLabels.isDisjoint(with: ["positionLabel", "tryButton", "showListButton",
                                                     "activationModeLabel", "profileShortcutLabel",
-                                                    "mouseTriggerRequirement", "trackpadTapLabel", "canvasHint"]),
+                                                    "mouseTriggerRequirement", "trackpadTapLabel", "canvasHint",
+                                                    "fetchFaviconButton", "fetchFaviconSuccess"]),
                      "the retired radial strings are gone")
     }
 }

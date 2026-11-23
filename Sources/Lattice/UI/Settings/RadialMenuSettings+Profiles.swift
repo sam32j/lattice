@@ -40,6 +40,7 @@ extension RadialMenuSettings {
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(text.profilesHeader)
+            .help(text.profilesHelp)
 
             addProfileMenu
             profileActionsMenu
@@ -91,6 +92,7 @@ extension RadialMenuSettings {
             if targeted { tabDropTarget = profile.id } else if tabDropTarget == profile.id { tabDropTarget = nil }
         }
         .focusable()
+        .focusEffectDisabled()
         .onKeyPress(keys: [.space, .return, .leftArrow, .rightArrow], phases: .down) { press in
             switch press.key {
             case .space, .return:
@@ -139,9 +141,13 @@ extension RadialMenuSettings {
 
     private var addProfileMenu: some View {
         Menu {
-            ForEach(RadialMenuProfilePreset.allCases) { preset in
-                Button(preset.title(text)) {
-                    addProfile(preset: preset)
+            Button(text.newBlankProfileButton) { addProfile(preset: .blank) }
+            Divider()
+            Section(text.presetProfilesHeader) {
+                ForEach(RadialMenuProfilePreset.allCases.filter { $0 != .blank }) { preset in
+                    Button(preset.title(text)) {
+                        addProfile(preset: preset)
+                    }
                 }
             }
         } label: {

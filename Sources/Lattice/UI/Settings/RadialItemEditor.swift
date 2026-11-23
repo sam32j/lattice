@@ -7,6 +7,7 @@ struct RadialItemEditor: View {
     @State var item: RadialMenuItem
     let isNew: Bool
     let allowsSubmenu: Bool
+    var profileColor: RadialMenuColor = .accent
     var openChildren: (() -> Void)? = nil
     let save: (RadialMenuItem) -> Void
     let delete: (() -> Void)?
@@ -16,11 +17,17 @@ struct RadialItemEditor: View {
     @State var shortcutError: String?
     @State var isFetchingFavicon = false
     @State var faviconStatus: FaviconFetchStatus?
+    @State var faviconToken = 0
+    @State var showsIconChooser = false
 
     enum FaviconFetchStatus {
         case success
         case error
     }
+
+    /// How long typing in the link field must pause before the website's
+    /// icon is fetched.
+    static let faviconDebounce: TimeInterval = 0.8
 
     var availableTools: [RadialMenuTool] {
         RadialMenuTool.allCases.filter { $0.isRunnable() }
@@ -41,68 +48,57 @@ struct RadialItemEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(isNew ? text.addButton : item.displayName(text))
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 16) {
+            header
 
-            Form {
-                Picker(text.actionLabel, selection: kindBinding) {
-                    Text(text.kindApp).tag(RadialMenuItem.Kind.app)
-                    Text(text.kindFile).tag(RadialMenuItem.Kind.file)
-                    Text(text.kindURL).tag(RadialMenuItem.Kind.url)
-                    Text(text.kindShortcut).tag(RadialMenuItem.Kind.shortcut)
-                    if !availableTools.isEmpty {
-                        Text(text.kindTool).tag(RadialMenuItem.Kind.tool)
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    editorRow(text.actionLabel) {
+                        Picker(text.actionLabel, selection: kindBinding) {
+                            ForEach(availableKinds, id: \.self) { kind in
+                                Text(kindTitle(kind)).tag(kind)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .fixedSize()
                     }
-                    if !availableQuickToggles.isEmpty {
-                        Text(FeatureStrings.quickToggles(l10n.language).pageTitle)
-                            .tag(RadialMenuItem.Kind.quickToggle)
-                    }
-                    if AppFeature.windowLayout.isAvailable {
-                        Text(FeatureStrings.windowLayout(l10n.language).title)
-                            .tag(RadialMenuItem.Kind.windowLayout)
-                    }
-                    Text(text.kindMedia).tag(RadialMenuItem.Kind.media)
-                    if allowsSubmenu {
-                        Text(text.kindSubmenu).tag(RadialMenuItem.Kind.submenu)
-                    }
+                    payloadEditor
                 }
-
-                payloadEditor
-
-                TextField(text.nameLabel, text: $item.name, prompt: Text(text.automaticLabel))
-
-                RadialSymbolPicker(text: text, item: $item)
             }
-            .formStyle(.columns)
 
-            if urlIsInvalid, !item.payload.isEmpty {
-                Text(text.urlInvalid)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
-            if item.kind == .shortcut, let shortcutError {
-                Text(shortcutError)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
             if item.kind == .submenu {
-                Text(text.submenuCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let openChildren {
-                    Button {
-                        dismiss()
-                        openChildren()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(text.editActionsButton)
-                            Image(systemName: "chevron.forward")
+                SettingsCard {
+                    editorRow(text.kindSubmenu, help: text.submenuCaption) {
+                        if let openChildren {
+                            Button {
+                                dismiss()
+                                openChildren()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(text.editActionsButton)
+                                    Image(systemName: "chevron.forward")
+                                }
+                            }
                         }
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.accentColor)
+                }
+            }
+
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    editorRow(text.nameLabel) {
+                        TextField(text.nameLabel, text: $item.name, prompt: Text(text.automaticLabel))
+                            .textFieldStyle(.roundedBorder)
+                            .labelsHidden()
+                            .frame(width: 220)
+                    }
+                    editorRow(text.iconLabel, status: faviconMark) {
+                        if isFetchingFavicon {
+                            ProgressView().controlSize(.small)
+                        }
+                        iconChooserButton
+                    }
                 }
             }
 
@@ -117,6 +113,7 @@ struct RadialItemEditor: View {
                 }
                 Spacer()
                 Button(l10n.s.uninstallerCancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
                 Button(text.saveButton) {
                     var saved = item
                     saved.name = item.name.trimmingCharacters(in: .whitespaces)
@@ -124,12 +121,103 @@ struct RadialItemEditor: View {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
                 .disabled(saveDisabled)
             }
         }
-        .padding(18)
-        .frame(width: 440)
+        .padding(20)
+        .frame(width: 460)
         .settingsExpansionAnimation(value: item.kind)
+        .onChange(of: item.payload) { _, _ in scheduleFaviconFetch() }
+    }
+
+    /// The action as the wheel will show it, with its name and kind.
+    private var header: some View {
+        HStack(spacing: 12) {
+            RadialChipFace(item: item, nowPlayingState: .nothingPlaying, highlighted: true,
+                           profileColor: profileColor, size: 44)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isNew ? text.addButton : item.displayName(text, stableToggles: true))
+                    .font(.headline)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Text(kindTitle(item.kind))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+    }
+
+    /// One line of the editor: title on the leading side (its tooltip says
+    /// more where there is more to say), a status mark, the control.
+    func editorRow<Control: View>(_ title: String, help: String? = nil, status: RadialRowNote.Content? = nil,
+                                  @ViewBuilder control: () -> Control) -> some View {
+        RadialTriggerRow(title: title, help: help, status: status, control: control)
+    }
+
+    var availableKinds: [RadialMenuItem.Kind] {
+        var kinds: [RadialMenuItem.Kind] = [.app, .file, .url, .shortcut]
+        if !availableTools.isEmpty { kinds.append(.tool) }
+        if !availableQuickToggles.isEmpty { kinds.append(.quickToggle) }
+        if AppFeature.windowLayout.isAvailable { kinds.append(.windowLayout) }
+        kinds.append(.media)
+        if allowsSubmenu { kinds.append(.submenu) }
+        return kinds
+    }
+
+    func kindTitle(_ kind: RadialMenuItem.Kind) -> String {
+        switch kind {
+        case .app: return text.kindApp
+        case .file: return text.kindFile
+        case .url: return text.kindURL
+        case .shortcut: return text.kindShortcut
+        case .tool: return text.kindTool
+        case .quickToggle: return FeatureStrings.quickToggles(l10n.language).pageTitle
+        case .windowLayout: return FeatureStrings.windowLayout(l10n.language).title
+        case .media: return text.kindMedia
+        case .submenu: return text.kindSubmenu
+        }
+    }
+
+    private var faviconMark: RadialRowNote.Content? {
+        guard item.kind == .url, faviconStatus == .error else { return nil }
+        return .info(text.fetchFaviconError)
+    }
+
+    private var iconChooserButton: some View {
+        Button {
+            showsIconChooser = true
+        } label: {
+            RadialIconPreview(item: item)
+                .frame(width: 32, height: 32)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(showsIconChooser ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08)))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(showsIconChooser ? Color.accentColor.opacity(0.6) : Color.secondary.opacity(0.16),
+                                  lineWidth: 1))
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help(item.kind == .url ? text.fetchFaviconDisclaimer : text.iconLabel)
+        .accessibilityLabel(text.iconLabel)
+        .popover(isPresented: $showsIconChooser, arrowEdge: .bottom) {
+            RadialIconChooser(text: text, item: $item)
+        }
+    }
+
+    /// A link's own icon is fetched once typing pauses, unless a symbol was
+    /// picked for it. A newer edit makes an older answer moot.
+    func scheduleFaviconFetch() {
+        faviconToken &+= 1
+        faviconStatus = nil
+        guard item.kind == .url else { return }
+        let token = faviconToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.faviconDebounce) {
+            guard faviconToken == token else { return }
+            fetchWebsiteFavicon(token: token)
+        }
     }
 
     /// Changing the action type clears targets that no longer make sense but
@@ -140,6 +228,7 @@ struct RadialItemEditor: View {
             item.kind = kind
             shortcutError = nil
             faviconStatus = nil
+            faviconToken &+= 1
             if kind != .url { item.customIconData = nil }
             switch kind {
             case .tool: item.payload = availableTools.first?.rawValue ?? ""
@@ -187,27 +276,21 @@ struct RadialItemEditor: View {
         item.payload = url.path
     }
 
-    func fetchWebsiteFavicon() {
-        guard !item.payload.isEmpty, !urlIsInvalid else { return }
+    func fetchWebsiteFavicon(token: Int) {
+        guard item.kind == .url, !item.payload.isEmpty, !urlIsInvalid, item.symbolName.isEmpty else { return }
         isFetchingFavicon = true
-        faviconStatus = nil
-
         RadialMenuFaviconFetcher.fetchFavicon(for: item.payload) { result in
+            guard faviconToken == token else { return }
             isFetchingFavicon = false
             switch result {
             case .success(let data):
                 item.customIconData = data
-                item.symbolName = ""
                 RadialMenuIconStore.invalidate(item: item)
                 faviconStatus = .success
             case .failure:
+                item.customIconData = nil
                 faviconStatus = .error
             }
         }
     }
 }
-
-// MARK: - Icon picker
-
-/// "Automatic" plus a small curated grid; automatic means the real app or
-/// file icon when the target has one, or the action's own symbol.
