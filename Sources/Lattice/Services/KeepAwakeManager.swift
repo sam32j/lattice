@@ -24,6 +24,8 @@ final class KeepAwakeManager: ObservableObject {
     @Published var sessionTrigger: SessionTrigger?
     /// The preset a manual session started from; nil for an end time or automation.
     @Published var sessionMinutes: Int?
+    /// When the running session started, for its share of time used.
+    @Published var sessionStartDate: Date?
     @Published var runningAppBundleIDs: [String] = []
     @Published var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()
     @Published var clamshellActive = false {

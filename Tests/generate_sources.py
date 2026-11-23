@@ -2593,10 +2593,9 @@ def main():
     keep_awake_methods = [
         "    func prepareForFeatureDisable()",
         "    func refreshPasswordlessStatus(",
-        "    static func rememberPick(",
         "    func activate(minutes:",
         "    func activate(until date:",
-        "    func startLastPick(",
+        "    func startDefault(",
         "    func resumeAfterSystemTeardown(",
         "    private func activate(end:",
         "    func deactivate(reason:",
@@ -2635,7 +2634,7 @@ def main():
           + "var recoveryCompleted = false\nvar screenLocked = false\nvar assertionsHeld = false\n"
           + "var defaultsObserver: Int?\nvar preferenceSyncScheduled = false\nfunc startPreferenceObservation() { defaultsObserver = 1 }\nfunc stopPreferenceObservation() { defaultsObserver = nil; preferenceSyncScheduled = false }\n"
           + "var automationSuppressedUntilConditionsClear = false\n"
-          + "var endTimer: Timer?\nvar endDate: Date?\nvar sessionTrigger: SessionTrigger?\nvar sessionMinutes: Int?\n"
+          + "var endTimer: Timer?\nvar endDate: Date?\nvar sessionTrigger: SessionTrigger?\nvar sessionMinutes: Int?\nvar sessionStartDate: Date?\n"
           + "var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()\n"
           + "var onSessionEnded: ((EndReason) -> Void)?\n"
           + "var lidDimmingNotificationPort: IONotificationPortRef?\nvar lidDimmingNotification: io_object_t = 0\n"

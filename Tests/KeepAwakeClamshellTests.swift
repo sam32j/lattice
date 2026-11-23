@@ -16,8 +16,6 @@ extension KeepAwakeLidSleepContract {
         static let dimScreenOnLidClose = "dimScreen"
         static let dimmedDisplaySavedBrightness = "dimmedDisplaySavedBrightness"
         static let defaultDuration = "defaultDuration"
-        static let keepAwakeSwitchUsesUntil = "switchUsesUntil"
-        static let keepAwakeUntilTime = "untilTime"
     }
     enum UserDefaults {
         static let standard = Store()
@@ -145,32 +143,23 @@ enum KeepAwakeClamshellTests {
 
         typealias prefs = KeepAwakeLidSleepContract.UserDefaults
         typealias Key = KeepAwakeLidSleepContract.DefaultsKey
-        let lastPick = C.reset()
-        let end = Date().addingTimeInterval(3600)
-        lastPick.activate(until: end)
-        lastPick.deactivate(reason: .manual); C.drain()
-        lastPick.startLastPick()
-        expect(lastPick.endDate == end && lastPick.sessionMinutes == nil,
-               "the switch restarts a started end time unchanged")
-        lastPick.activate(minutes: 30)
-        lastPick.deactivate(reason: .manual); C.drain()
-        lastPick.startLastPick()
-        expect(lastPick.sessionMinutes == 30,
-               "a preset started from any entry point is what the switch restarts")
-        lastPick.deactivate(reason: .manual); C.drain()
-        prefs.standard.set(true, forKey: Key.keepAwakeSwitchUsesUntil)
-        prefs.standard.set(Date().addingTimeInterval(-60).timeIntervalSinceReferenceDate,
-                                  forKey: Key.keepAwakeUntilTime)
-        lastPick.startLastPick()
-        expect(lastPick.sessionMinutes == 30,
-               "an end time that already passed restarts the saved duration, not a session into tomorrow")
-        lastPick.resumeAfterSystemTeardown(); C.drain()
-        expect(lastPick.isActive && lastPick.sessionMinutes == 30,
+        let defaultPick = C.reset()
+        prefs.standard.set(30, forKey: Key.defaultDuration)
+        defaultPick.activate(until: Date().addingTimeInterval(3600))
+        expect(defaultPick.sessionStartDate != nil, "a session records when it started, for its ring")
+        defaultPick.deactivate(reason: .manual); C.drain()
+        expect(defaultPick.sessionStartDate == nil, "an ended session forgets its start")
+        defaultPick.startDefault()
+        expect(defaultPick.sessionMinutes == 30,
+               "the shortcut and the menu bar icon start the default duration, not the last end time")
+        defaultPick.activate(minutes: 15)
+        expect(prefs.standard.integer(forKey: Key.defaultDuration) == 30,
+               "starting a session elsewhere leaves the default duration as chosen")
+        defaultPick.resumeAfterSystemTeardown(); C.drain()
+        expect(defaultPick.isActive && defaultPick.sessionMinutes == 15,
                "clearing permissions keeps the running preset selected")
-        lastPick.deactivate(reason: .manual); C.drain()
+        defaultPick.deactivate(reason: .manual); C.drain()
         prefs.standard.integers = [:]
-        prefs.standard.set(false, forKey: Key.keepAwakeSwitchUsesUntil)
-        prefs.standard.removeObject(forKey: Key.keepAwakeUntilTime)
 
         let staleStatus = C.reset(); staleStatus.isActive = true
         staleStatus.refreshPasswordlessStatus()
