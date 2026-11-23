@@ -311,14 +311,14 @@ struct RadialMouseButtonRow: View {
     private var trigger: RadialMenuMouseTrigger { RadialMenuMouseTrigger.sanitized(previewRaw ?? raw) }
 
     var body: some View {
-        RadialTriggerRow(title: text.mouseButtonLabel, info: text.openInfoBody, status: status) {
+        RadialTriggerRow(title: text.mouseButtonLabel, status: status) {
             HStack(spacing: 8) {
                 if recording {
                     recordingButton
                 } else if let button = trigger.buttonNumber {
                     // Set: a green Active state (its tooltip names the button)
-                    // and Clear, together as wide as the other controls.
-                    HStack(spacing: 6) {
+                    // and Clear, at their natural width.
+                    HStack(spacing: 8) {
                         HStack(spacing: 5) {
                             Circle().fill(Color.green).frame(width: 7, height: 7)
                             Text(text.mouseButtonActive)
@@ -328,7 +328,6 @@ struct RadialMouseButtonRow: View {
                         .help(activeHelp(button))
                         .accessibilityElement(children: .combine)
                         .accessibilityValue(activeHelp(button))
-                        Spacer(minLength: 4)
                         Button(text.mouseButtonClearShort) {
                             if previewRaw != nil { previewRaw = RadialMenuMouseTrigger.off.rawValue; return }
                             raw = RadialMenuMouseTrigger.off.rawValue
@@ -336,7 +335,6 @@ struct RadialMouseButtonRow: View {
                         }
                         .help(text.mouseButtonClear)
                     }
-                    .frame(width: RadialTriggerRow<EmptyView>.controlWidth)
                 } else {
                     Button { start() } label: {
                         Text(text.mouseButtonSet)
