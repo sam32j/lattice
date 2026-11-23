@@ -157,20 +157,24 @@ struct MenuBarReadingsList: View {
     @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.menuBarMetricOrder) private var metricOrder = ""
     @State private var order: [MenuBarReadingGroup] = MenuBarReadingGroup.order(from: MenuBarMetric.order(in: .standard))
-    /// The row under the pointer while it is being dragged, the visible slot
-    /// it started from, and how far it sits from the slot it now holds.
+    /// The row being dragged, the visible slot it started from, and how far
+    /// the pointer has moved, measured in the list's own space. The order
+    /// itself stays put until the row is let go.
     @State private var dragging: MenuBarReadingGroup?
     @State private var dragStartIndex = 0
-    @State private var dragOffset: CGFloat = 0
+    @State private var dragTranslation: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Every row is one line, so a drag moves one slot per row height.
     static let rowHeight: CGFloat = 40
+    private static let space = "menuBarReadings"
 
     var body: some View {
         let groups = visibleGroups
+        let target = proposedIndex(count: groups.count)
         VStack(spacing: 0) {
             ForEach(Array(groups.enumerated()), id: \.element) { index, group in
+                let isDragged = dragging == group
                 MenuBarReadingRow(group: group, members: visibleMembers(of: group))
                     .frame(height: Self.rowHeight)
                     .overlay(alignment: .bottom) {
@@ -180,57 +184,77 @@ struct MenuBarReadingsList: View {
                     }
                     .background {
                         // The lifted row reads as picked up.
-                        if dragging == group {
+                        if isDragged {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .fill(Color(nsColor: .windowBackgroundColor))
                                 .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
                                 .padding(.horizontal, -8)
                         }
                     }
-                    .offset(y: dragging == group ? dragOffset : 0)
-                    .zIndex(dragging == group ? 1 : 0)
-                    .gesture(reorderGesture(for: group))
+                    // The dragged row tracks the pointer exactly; the rows it
+                    // passes slide aside by one slot.
+                    .offset(y: isDragged ? dragTranslation : shift(for: index, target: target))
+                    .animation(isDragged || reduceMotion ? nil : .easeInOut(duration: 0.15), value: target)
+                    .zIndex(isDragged ? 1 : 0)
+                    .gesture(reorderGesture(for: group, index: index, count: groups.count))
                     .transition(.settingsReveal)
             }
         }
+        .coordinateSpace(name: Self.space)
         .onAppear { reload() }
         .onChange(of: metricOrder) { _, _ in
-            // A save made by this list's own drag must not reload it mid-drag.
             if dragging == nil { reload() }
         }
     }
 
-    /// The row follows the pointer; the others slide out of its way as it
-    /// crosses them; letting go settles it into its slot and saves the order.
-    private func reorderGesture(for group: MenuBarReadingGroup) -> some Gesture {
-        DragGesture(minimumDistance: 3)
+    /// The visible slot the dragged row would land in now.
+    private func proposedIndex(count: Int) -> Int? {
+        guard dragging != nil, count > 0 else { return nil }
+        let steps = Int((dragTranslation / Self.rowHeight).rounded())
+        return min(max(dragStartIndex + steps, 0), count - 1)
+    }
+
+    /// How far a row that is not dragged moves aside for the dragged one.
+    private func shift(for index: Int, target: Int?) -> CGFloat {
+        guard let target, index != dragStartIndex else { return 0 }
+        if dragStartIndex < target, (dragStartIndex + 1...target).contains(index) { return -Self.rowHeight }
+        if target < dragStartIndex, (target...dragStartIndex - 1).contains(index) { return Self.rowHeight }
+        return 0
+    }
+
+    private func reorderGesture(for group: MenuBarReadingGroup, index: Int, count: Int) -> some Gesture {
+        DragGesture(minimumDistance: 3, coordinateSpace: .named(Self.space))
             .onChanged { value in
-                let visible = visibleGroups
                 if dragging != group {
                     dragging = group
-                    dragStartIndex = visible.firstIndex(of: group) ?? 0
+                    dragStartIndex = index
                 }
-                guard let current = visible.firstIndex(of: group) else { return }
-                let steps = Int((value.translation.height / Self.rowHeight).rounded())
-                let proposed = min(max(dragStartIndex + steps, 0), visible.count - 1)
-                if proposed != current {
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) {
-                        move(group, toVisibleIndex: proposed, in: visible)
-                    }
-                }
-                dragOffset = value.translation.height - CGFloat(proposed - dragStartIndex) * Self.rowHeight
+                dragTranslation = value.translation.height
             }
             .onEnded { _ in
-                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.16)) { dragOffset = 0 }
-                dragging = nil
-                save()
+                guard dragging == group, let target = proposedIndex(count: count) else { return }
+                let settle = CGFloat(target - dragStartIndex) * Self.rowHeight
+                // Settle into the slot first, then commit the order with no
+                // animation: every row is already where the new order puts it.
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) { dragTranslation = settle }
+                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : 0.12)) {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        move(group, toVisibleIndex: target)
+                        dragging = nil
+                        dragTranslation = 0
+                    }
+                    save()
+                }
             }
     }
 
     /// Moves within the full saved order, so components hidden by a module
     /// keep their slot for their return.
-    private func move(_ group: MenuBarReadingGroup, toVisibleIndex index: Int, in visible: [MenuBarReadingGroup]) {
-        guard let current = visible.firstIndex(of: group) else { return }
+    private func move(_ group: MenuBarReadingGroup, toVisibleIndex index: Int) {
+        let visible = visibleGroups
+        guard let current = visible.firstIndex(of: group), index != current, visible.indices.contains(index) else { return }
         let target = visible[index]
         var next = order.filter { $0 != group }
         guard let targetIndex = next.firstIndex(of: target) else { return }
