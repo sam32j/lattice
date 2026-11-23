@@ -59,8 +59,7 @@ struct MonitorSettings: View {
                     }
                 }
                 SettingsCard(title: FeatureStrings.monitorAlerts(l10n.language).section,
-                             caption: FeatureStrings.monitorAlerts(l10n.language).caption,
-                             headerAccessory: { MonitorAlertsRepeatMenu() }) {
+                             caption: FeatureStrings.monitorAlerts(l10n.language).caption) {
                     MonitorAlertsControls()
                 }
             }

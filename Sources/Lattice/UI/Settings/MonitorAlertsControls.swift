@@ -44,6 +44,8 @@ struct MonitorAlertsControls: View {
                 }
                 .transition(.settingsReveal)
             }
+            MonitorAlertsRepeatMenu()
+                .padding(.top, 10)
             // Alerts silently cannot fire when macOS notifications are denied
             // for the app; without this line that state is invisible.
             if notificationsDenied, anyAlertEnabled {
@@ -134,9 +136,9 @@ struct MonitorAlertsControls: View {
     }
 }
 
-/// One alert: its name and its switch. Once it is on, a stepped slider for
-/// the limit it fires at unrolls under it, with the limit written at its end;
-/// an alert that is off shows none.
+/// One alert: its name and its switch. Once it is on, the limit it fires at
+/// shows under the name ("Above 65%"), with a short slider under the switch
+/// to change it; an alert that is off shows neither.
 struct MonitorAlertRow: View {
     struct Limit {
         let format: String
@@ -157,7 +159,8 @@ struct MonitorAlertRow: View {
     let reduceMotion: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let limit = row.isOn.wrappedValue ? row.limit : nil
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 12) {
                 Text(row.title)
                     .lineLimit(1)
@@ -166,49 +169,44 @@ struct MonitorAlertRow: View {
                     .labelsHidden()
                     .toggleStyle(.switch)
             }
-            .padding(.vertical, 6)
-            if row.isOn.wrappedValue, let limit = row.limit {
-                limitSlider(limit)
-                    .padding(.bottom, 8)
-                    .transition(.settingsReveal)
+            if let limit {
+                HStack(spacing: 12) {
+                    Text(String(format: limit.format, limit.label(limit.value.wrappedValue)))
+                        .font(.callout)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    slider(limit)
+                }
+                .transition(.settingsReveal)
             }
         }
+        .padding(.vertical, 7)
     }
 
-    private func limitSlider(_ limit: Limit) -> some View {
+    /// Short and without tick marks; it still lands on the limit's steps.
+    private func slider(_ limit: Limit) -> some View {
         let lower = Double(limit.values.first ?? 0)
         let upper = Double(limit.values.last ?? 100)
         let step = limit.values.count > 1 ? Double(limit.values[1] - limit.values[0]) : 1
-        let text = String(format: limit.format, limit.label(limit.value.wrappedValue))
-        return HStack(spacing: 12) {
-            Slider(value: Binding(get: { Double(limit.value.wrappedValue) },
-                                  set: { limit.value.wrappedValue = Int($0.rounded()) }),
-                   in: lower...upper, step: step) {
-                Text(row.title)
-            }
-            .labelsHidden()
-            .controlSize(.small)
-            Text(text)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                // As wide as the widest limit, so the slider never shifts.
-                .frame(minWidth: widestLabelWidth(limit), alignment: .trailing)
+        return Slider(value: Binding(get: { Double(limit.value.wrappedValue) },
+                                     set: { raw in
+                                         let snapped = (raw / step).rounded() * step
+                                         limit.value.wrappedValue = Int(min(max(snapped, lower), upper))
+                                     }),
+                      in: lower...upper) {
+            Text(row.title)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(text)
-    }
-
-    private func widestLabelWidth(_ limit: Limit) -> CGFloat {
-        let font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
-        return limit.values.map {
-            (String(format: limit.format, limit.label($0)) as NSString).size(withAttributes: [.font: font]).width
-        }.max().map { ceil($0) + 2 } ?? 80
+        .labelsHidden()
+        .controlSize(.small)
+        .frame(width: 180)
+        .accessibilityValue(String(format: limit.format, limit.label(limit.value.wrappedValue)))
     }
 }
 
-/// How soon the same alert may come back, for every alert at once. It sits
-/// in the Alerts header, beside the title it governs, so it never reads as
-/// one more alert in the list.
+/// How soon the same alert may come back, for every alert at once. It is a
+/// small footnote under the list, in caption type, so it reads as a note on
+/// all of them rather than one more alert.
 struct MonitorAlertsRepeatMenu: View {
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.monitorAlertCooldownMinutes) private var alertCooldown = 15
@@ -223,7 +221,7 @@ struct MonitorAlertsRepeatMenu: View {
         let text = FeatureStrings.monitorAlerts(l10n.language)
         HStack(spacing: 6) {
             Text(text.cooldown)
-                .font(.callout)
+                .font(.caption)
                 .foregroundStyle(.secondary)
             Picker(text.cooldown, selection: $alertCooldown) {
                 Text(text.cooldown2).tag(2)
@@ -234,10 +232,9 @@ struct MonitorAlertsRepeatMenu: View {
             }
             .pickerStyle(.menu)
             .labelsHidden()
+            .controlSize(.small)
             .fixedSize()
         }
-        // One line always; the caption beside it wraps instead.
-        .fixedSize()
         .disabled(!(alertCPU || alertCPUTemperature || alertMemory || alertDisk
                     || (PowerSampler.hasInternalBattery && (alertBatteryTemperature || alertBattery))))
     }
