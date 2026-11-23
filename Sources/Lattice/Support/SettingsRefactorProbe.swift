@@ -52,6 +52,9 @@ enum SettingsRefactorProbe {
                 render(name, view: view, size: CGSize(width: 720, height: 900), output: output,
                        failures: &failures, colorScheme: .light)
             }
+            defaults.set("bars", forKey: DefaultsKey.menuBarMetricAppearance)
+            render("monitor-menu-bar-bars", view: AnyView(MonitorMenuBarSettings()),
+                   size: CGSize(width: 720, height: 900), output: output, failures: &failures, colorScheme: .light)
             defaults.removePersistentDomain(forName: identity)
             for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
             if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }

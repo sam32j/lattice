@@ -40,7 +40,7 @@ struct MonitorSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsCard {
-                    MonitorSubpageRow(title: l10n.s.menuBarSection, caption: strings.menuBarCaption) {
+                    MonitorSubpageRow(title: strings.menuBarTitle, caption: strings.menuBarCaption) {
                         SettingsRouter.shared.request(FeatureSettingsDestination(.monitorMenuBar))
                     }
                     Divider()

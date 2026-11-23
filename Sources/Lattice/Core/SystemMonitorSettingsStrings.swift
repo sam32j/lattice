@@ -15,6 +15,11 @@ struct SystemMonitorSettingsStrings {
     let refreshFastCaption: String
     let refreshBalancedCaption: String
     let refreshSaverCaption: String
+    let menuBarTitle: String
+    let readingsTitle: String
+    let readingsCaption: String
+    let styleTitle: String
+    let colorsTitle: String
 }
 
 extension FeatureStrings {
@@ -49,7 +54,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Energy saver",
         refreshFastCaption: "Smoothest readings. Uses more energy.",
         refreshBalancedCaption: "Recommended for most Macs.",
-        refreshSaverCaption: "Fewer updates for longer battery life."
+        refreshSaverCaption: "Fewer updates for longer battery life.",
+        menuBarTitle: "Menu Bar Readings",
+        readingsTitle: "Readings",
+        readingsCaption: "Drag to change their order in the menu bar.",
+        styleTitle: "Appearance",
+        colorsTitle: "Bar colors"
     )
 
     static let ptBR = SystemMonitorSettingsStrings(
@@ -61,7 +71,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Economia de energia",
         refreshFastCaption: "Leituras mais fluidas. Usa mais energia.",
         refreshBalancedCaption: "Recomendada para a maioria dos Macs.",
-        refreshSaverCaption: "Menos atualizações para a bateria durar mais."
+        refreshSaverCaption: "Menos atualizações para a bateria durar mais.",
+        menuBarTitle: "Leituras na barra de menus",
+        readingsTitle: "Leituras",
+        readingsCaption: "Arraste para mudar a ordem na barra de menus.",
+        styleTitle: "Aparência",
+        colorsTitle: "Cores das barras"
     )
 
     static let tr = SystemMonitorSettingsStrings(
@@ -73,7 +88,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Enerji tasarrufu",
         refreshFastCaption: "En akıcı değerler. Daha fazla enerji kullanır.",
         refreshBalancedCaption: "Çoğu Mac için önerilir.",
-        refreshSaverCaption: "Daha uzun pil ömrü için daha az güncelleme."
+        refreshSaverCaption: "Daha uzun pil ömrü için daha az güncelleme.",
+        menuBarTitle: "Menü çubuğu değerleri",
+        readingsTitle: "Değerler",
+        readingsCaption: "Menü çubuğundaki sırayı değiştirmek için sürükleyin.",
+        styleTitle: "Görünüm",
+        colorsTitle: "Çubuk renkleri"
     )
 
     static let ru = SystemMonitorSettingsStrings(
@@ -85,7 +105,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Экономия энергии",
         refreshFastCaption: "Самые плавные показатели. Расходует больше энергии.",
         refreshBalancedCaption: "Подходит большинству Mac.",
-        refreshSaverCaption: "Реже обновляет, чтобы аккумулятор работал дольше."
+        refreshSaverCaption: "Реже обновляет, чтобы аккумулятор работал дольше.",
+        menuBarTitle: "Показатели в строке меню",
+        readingsTitle: "Показатели",
+        readingsCaption: "Перетащите, чтобы изменить порядок в строке меню.",
+        styleTitle: "Оформление",
+        colorsTitle: "Цвета полос"
     )
 
     static let es = SystemMonitorSettingsStrings(
@@ -97,7 +122,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Ahorro de energía",
         refreshFastCaption: "Lecturas más fluidas. Usa más energía.",
         refreshBalancedCaption: "Recomendada para la mayoría de los Mac.",
-        refreshSaverCaption: "Menos actualizaciones para que la batería dure más."
+        refreshSaverCaption: "Menos actualizaciones para que la batería dure más.",
+        menuBarTitle: "Lecturas en la barra de menús",
+        readingsTitle: "Lecturas",
+        readingsCaption: "Arrastra para cambiar el orden en la barra de menús.",
+        styleTitle: "Apariencia",
+        colorsTitle: "Colores de las barras"
     )
 
     static let sk = SystemMonitorSettingsStrings(
@@ -109,7 +139,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Úspora energie",
         refreshFastCaption: "Najplynulejšie hodnoty. Spotrebuje viac energie.",
         refreshBalancedCaption: "Odporúčaná pre väčšinu Macov.",
-        refreshSaverCaption: "Menej aktualizácií pre dlhšiu výdrž batérie."
+        refreshSaverCaption: "Menej aktualizácií pre dlhšiu výdrž batérie.",
+        menuBarTitle: "Hodnoty na lište",
+        readingsTitle: "Hodnoty",
+        readingsCaption: "Potiahnutím zmeníte poradie na lište.",
+        styleTitle: "Vzhľad",
+        colorsTitle: "Farby pruhov"
     )
 
     static let de = SystemMonitorSettingsStrings(
@@ -121,7 +156,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Energiesparen",
         refreshFastCaption: "Flüssigste Werte. Braucht mehr Energie.",
         refreshBalancedCaption: "Für die meisten Macs empfohlen.",
-        refreshSaverCaption: "Weniger Aktualisierungen für längere Batterielaufzeit."
+        refreshSaverCaption: "Weniger Aktualisierungen für längere Batterielaufzeit.",
+        menuBarTitle: "Werte in der Menüleiste",
+        readingsTitle: "Werte",
+        readingsCaption: "Ziehen, um die Reihenfolge in der Menüleiste zu ändern.",
+        styleTitle: "Darstellung",
+        colorsTitle: "Balkenfarben"
     )
 
     static let fr = SystemMonitorSettingsStrings(
@@ -133,7 +173,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Économie d’énergie",
         refreshFastCaption: "Mesures les plus fluides. Consomme plus d’énergie.",
         refreshBalancedCaption: "Recommandée pour la plupart des Mac.",
-        refreshSaverCaption: "Moins de mises à jour pour une meilleure autonomie."
+        refreshSaverCaption: "Moins de mises à jour pour une meilleure autonomie.",
+        menuBarTitle: "Mesures dans la barre des menus",
+        readingsTitle: "Mesures",
+        readingsCaption: "Faites glisser pour changer l’ordre dans la barre des menus.",
+        styleTitle: "Apparence",
+        colorsTitle: "Couleurs des barres"
     )
 
     static let it = SystemMonitorSettingsStrings(
@@ -145,7 +190,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Risparmio energetico",
         refreshFastCaption: "Valori più fluidi. Usa più energia.",
         refreshBalancedCaption: "Consigliata per la maggior parte dei Mac.",
-        refreshSaverCaption: "Meno aggiornamenti per una batteria più duratura."
+        refreshSaverCaption: "Meno aggiornamenti per una batteria più duratura.",
+        menuBarTitle: "Valori nella barra dei menu",
+        readingsTitle: "Valori",
+        readingsCaption: "Trascina per cambiare l’ordine nella barra dei menu.",
+        styleTitle: "Aspetto",
+        colorsTitle: "Colori delle barre"
     )
 
     static let ja = SystemMonitorSettingsStrings(
@@ -157,7 +207,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "省エネルギー",
         refreshFastCaption: "最もなめらかに更新。電力を多く使います。",
         refreshBalancedCaption: "ほとんどのMacにおすすめです。",
-        refreshSaverCaption: "更新を減らしてバッテリーを長持ちさせます。"
+        refreshSaverCaption: "更新を減らしてバッテリーを長持ちさせます。",
+        menuBarTitle: "メニューバーの表示項目",
+        readingsTitle: "項目",
+        readingsCaption: "ドラッグしてメニューバーでの順序を変更します。",
+        styleTitle: "外観",
+        colorsTitle: "バーの色"
     )
 
     static let ko = SystemMonitorSettingsStrings(
@@ -169,7 +224,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "에너지 절약",
         refreshFastCaption: "가장 부드러운 표시. 에너지를 더 사용합니다.",
         refreshBalancedCaption: "대부분의 Mac에 권장됩니다.",
-        refreshSaverCaption: "업데이트를 줄여 배터리를 오래 사용합니다."
+        refreshSaverCaption: "업데이트를 줄여 배터리를 오래 사용합니다.",
+        menuBarTitle: "메뉴 막대 항목",
+        readingsTitle: "항목",
+        readingsCaption: "드래그하여 메뉴 막대의 순서를 바꿉니다.",
+        styleTitle: "모양",
+        colorsTitle: "막대 색상"
     )
 
     static let zhHans = SystemMonitorSettingsStrings(
@@ -181,7 +241,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "节能",
         refreshFastCaption: "读数最流畅，耗电更多。",
         refreshBalancedCaption: "推荐大多数 Mac 使用。",
-        refreshSaverCaption: "减少更新，延长电池续航。"
+        refreshSaverCaption: "减少更新，延长电池续航。",
+        menuBarTitle: "菜单栏读数",
+        readingsTitle: "读数",
+        readingsCaption: "拖移以更改在菜单栏中的顺序。",
+        styleTitle: "外观",
+        colorsTitle: "条形颜色"
     )
 
     static let zhTW = SystemMonitorSettingsStrings(
@@ -193,7 +258,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "節能",
         refreshFastCaption: "讀數最流暢，耗電較多。",
         refreshBalancedCaption: "建議大多數 Mac 使用。",
-        refreshSaverCaption: "減少更新，延長電池續航力。"
+        refreshSaverCaption: "減少更新，延長電池續航力。",
+        menuBarTitle: "選單列讀數",
+        readingsTitle: "讀數",
+        readingsCaption: "拖移以更改在選單列中的順序。",
+        styleTitle: "外觀",
+        colorsTitle: "長條顏色"
     )
 
     static let zhHK = SystemMonitorSettingsStrings(
@@ -205,7 +275,12 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "節能",
         refreshFastCaption: "讀數最流暢，耗電較多。",
         refreshBalancedCaption: "建議大部分 Mac 使用。",
-        refreshSaverCaption: "減少更新，延長電池續航力。"
+        refreshSaverCaption: "減少更新，延長電池續航力。",
+        menuBarTitle: "選單列讀數",
+        readingsTitle: "讀數",
+        readingsCaption: "拖移以更改在選單列中的順序。",
+        styleTitle: "外觀",
+        colorsTitle: "長條顏色"
     )
 
     static let uk = SystemMonitorSettingsStrings(
@@ -217,6 +292,11 @@ extension SystemMonitorSettingsStrings {
         refreshSaver: "Економія енергії",
         refreshFastCaption: "Найплавніші показники. Витрачає більше енергії.",
         refreshBalancedCaption: "Рекомендовано для більшості Mac.",
-        refreshSaverCaption: "Рідше оновлює, щоб акумулятор працював довше."
+        refreshSaverCaption: "Рідше оновлює, щоб акумулятор працював довше.",
+        menuBarTitle: "Показники в рядку меню",
+        readingsTitle: "Показники",
+        readingsCaption: "Перетягніть, щоб змінити порядок у рядку меню.",
+        styleTitle: "Вигляд",
+        colorsTitle: "Кольори смуг"
     )
 }

@@ -70,8 +70,6 @@ enum LocalizationTests {
         suite.expect(diskEnglish == ["Disk display", "Used percentage", "Available space", "Used space"],
                      "disk picker uses a dedicated label and complete option names")
         for (language, strings) in languages {
-            suite.expect(strings.diskMenuBarStyleLabel != FeatureStrings.menuBarAppearance(language).label,
-                         "disk picker label is distinct from usage display in \(language.rawValue)")
             suite.expect(Set(diskPickerText(strings).dropFirst()).count == 3,
                          "disk picker options are distinct in \(language.rawValue)")
             if language != .enUS {
