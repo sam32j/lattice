@@ -31,6 +31,12 @@ enum SettingsRefactorProbe {
                 render("stay-awake-\(name)", view: AnyView(StayAwakeSettings()),
                        size: CGSize(width: 720, height: 1180), output: output, failures: &failures, colorScheme: scheme)
             }
+            // The rows that unroll under a switch: the pointer interval and
+            // the apps summary.
+            defaults.set(true, forKey: DefaultsKey.keepAwakeMouseJiggleEnabled)
+            defaults.set(true, forKey: DefaultsKey.keepAwakeRunningApps)
+            render("stay-awake-expanded-light", view: AnyView(StayAwakeSettings()),
+                   size: CGSize(width: 720, height: 1300), output: output, failures: &failures, colorScheme: .light)
             defaults.removePersistentDomain(forName: identity)
             for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
             if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
