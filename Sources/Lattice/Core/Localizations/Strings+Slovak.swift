@@ -628,7 +628,7 @@ extension Strings {
 
         tabMonitor: "Monitor systému",
         monitorMenuBarCaption: "Vyberte, čo sa zobrazí vedľa ikony v lište s ponukami.",
-        monitorSeparateMenuBarMetrics: "Rozdeliť metriky do samostatných položiek",
+        monitorSeparateMenuBarMetrics: "Zobraziť hodnoty samostatne",
         monitorSeparateMenuBarMetricsCaption: "Rozdelí aktívne bloky v lište s ponukami a pri zapnutom spájaní ponechá využitie a teplotu spolu.",
         monitorNetworkUploadFirst: "Odosielanie nad sťahovaním",
         monitorShowCPU: "CPU",
@@ -707,7 +707,7 @@ extension Strings {
         menuBarSpacingLabel: "Rozostupy v lište s ponukami",
         menuBarSpacingStandard: "Štandardné",
         menuBarSpacingCompact: "Kompaktné",
-        menuBarHideIconToggle: "Skryť ikonu aplikácie, kým sú zobrazené metriky",
+        menuBarHideIconToggle: "Skryť ikonu Lattice",
         menuBarHideIconCaption: "Ikona sa vráti sama, keď metriky z lišty zmiznú a keď treba niečo signalizovať (pripravenú aktualizáciu, zapnutý „Bdelý režim“ alebo stlmený mikrofón).",
         monitorLabelStyleLabel: "Označenia",
         menuBarLabelStyleCompact: "Kompaktné",

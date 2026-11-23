@@ -628,7 +628,7 @@ extension Strings {
 
         tabMonitor: "Sistem Monitörü",
         monitorMenuBarCaption: "Menü çubuğunda simgenin yanında ne görüneceğini seç.",
-        monitorSeparateMenuBarMetrics: "Metrikleri kendi öğelerine ayır",
+        monitorSeparateMenuBarMetrics: "Değerleri ayrı göster",
         monitorSeparateMenuBarMetricsCaption: "Etkin blokları menü çubuğunda ayırır ve birleştirme açıkken kullanım ile sıcaklığı birlikte tutar.",
         monitorNetworkUploadFirst: "Yükleme indirme üstünde",
         monitorShowCPU: "CPU",
@@ -707,7 +707,7 @@ extension Strings {
         menuBarSpacingLabel: "Menü çubuğu aralığı",
         menuBarSpacingStandard: "Standart",
         menuBarSpacingCompact: "Sıkışık",
-        menuBarHideIconToggle: "Metrikler gösterilirken uygulama simgesini gizle",
+        menuBarHideIconToggle: "Lattice simgesini gizle",
         menuBarHideIconCaption: "Metrikler çubuktan kalktığında ve bildirilecek bir şey olduğunda (güncelleme hazır, “Uyanık tut” açık veya mikrofon sessizde) simge kendiliğinden geri döner.",
         monitorLabelStyleLabel: "Etiketler",
         menuBarLabelStyleCompact: "Kompakt",

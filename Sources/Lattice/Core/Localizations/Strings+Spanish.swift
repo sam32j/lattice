@@ -628,7 +628,7 @@ extension Strings {
 
         tabMonitor: "Monitor del Sistema",
         monitorMenuBarCaption: "Elige qué aparece junto al icono en la barra de menús.",
-        monitorSeparateMenuBarMetrics: "Separar métricas en elementos propios",
+        monitorSeparateMenuBarMetrics: "Mostrar lecturas por separado",
         monitorSeparateMenuBarMetricsCaption: "Separa los bloques activos en la barra de menús y mantiene uso y temperatura juntos cuando combinar está activo.",
         monitorNetworkUploadFirst: "Subida encima de descarga",
         monitorShowCPU: "CPU",
@@ -707,7 +707,7 @@ extension Strings {
         menuBarSpacingLabel: "Espaciado en la barra",
         menuBarSpacingStandard: "Estándar",
         menuBarSpacingCompact: "Compacto",
-        menuBarHideIconToggle: "Ocultar el icono de la app mientras se muestran métricas",
+        menuBarHideIconToggle: "Ocultar el icono de Lattice",
         menuBarHideIconCaption: "El icono vuelve solo cuando las métricas salen de la barra y cuando hay algo que avisar (una actualización lista, “Mantener activo” en marcha o el micrófono silenciado).",
         monitorLabelStyleLabel: "Etiquetas",
         menuBarLabelStyleCompact: "Compactas",

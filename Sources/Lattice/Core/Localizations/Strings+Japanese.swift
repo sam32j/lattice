@@ -628,7 +628,7 @@ extension Strings {
 
         tabMonitor: "システムモニタ",
         monitorMenuBarCaption: "メニューバーのアイコンの横に表示する項目を選びます。",
-        monitorSeparateMenuBarMetrics: "メトリクスを個別の項目に分ける",
+        monitorSeparateMenuBarMetrics: "項目を個別に表示",
         monitorSeparateMenuBarMetricsCaption: "有効なブロックをメニューバーで分け、結合がオンなら使用率と温度は一緒に表示します。",
         monitorNetworkUploadFirst: "アップロードをダウンロードの上に表示",
         monitorShowCPU: "CPU",
@@ -707,7 +707,7 @@ extension Strings {
         menuBarSpacingLabel: "メニューバーの間隔",
         menuBarSpacingStandard: "標準",
         menuBarSpacingCompact: "コンパクト",
-        menuBarHideIconToggle: "メトリクス表示中はアプリのアイコンを隠す",
+        menuBarHideIconToggle: "Latticeのアイコンを隠す",
         menuBarHideIconCaption: "メトリクスがバーから消えたときや、知らせることがあるとき（アップデートの準備完了、「スリープ防止」の作動中やマイクの消音）は、アイコンが自動的に戻ります。",
         monitorLabelStyleLabel: "ラベル",
         menuBarLabelStyleCompact: "短縮",
