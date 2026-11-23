@@ -1,6 +1,5 @@
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// Values or bars, each drawn the way the menu bar would draw a CPU reading.
 struct MenuBarStyleChoice: View {
@@ -158,37 +157,91 @@ struct MenuBarReadingsList: View {
     @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.menuBarMetricOrder) private var metricOrder = ""
     @State private var order: [MenuBarReadingGroup] = MenuBarReadingGroup.order(from: MenuBarMetric.order(in: .standard))
+    /// The row under the pointer while it is being dragged, the visible slot
+    /// it started from, and how far it sits from the slot it now holds.
     @State private var dragging: MenuBarReadingGroup?
+    @State private var dragStartIndex = 0
+    @State private var dragOffset: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Every row is one line, so a drag moves one slot per row height.
+    static let rowHeight: CGFloat = 40
 
     var body: some View {
         let groups = visibleGroups
         VStack(spacing: 0) {
             ForEach(Array(groups.enumerated()), id: \.element) { index, group in
-                // Dragging moves within the full saved order, so components
-                // hidden by a module keep their slot for their return.
-                // The divider is part of the row's drop area, so there is no
-                // gap between rows that refuses the drop.
-                PanelReorderableItem(item: group, cornerRadius: 8, order: $order, dragging: $dragging) {
-                    VStack(spacing: 0) {
-                        MenuBarReadingRow(group: group, members: visibleMembers(of: group))
-                        if index < groups.count - 1 {
+                MenuBarReadingRow(group: group, members: visibleMembers(of: group))
+                    .frame(height: Self.rowHeight)
+                    .overlay(alignment: .bottom) {
+                        if index < groups.count - 1, dragging == nil {
                             Divider().padding(.leading, 52)
                         }
                     }
-                    .background(Color.clear.contentShape(Rectangle()))
-                }
-                .transition(.settingsReveal)
+                    .background {
+                        // The lifted row reads as picked up.
+                        if dragging == group {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color(nsColor: .windowBackgroundColor))
+                                .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+                                .padding(.horizontal, -8)
+                        }
+                    }
+                    .offset(y: dragging == group ? dragOffset : 0)
+                    .zIndex(dragging == group ? 1 : 0)
+                    .gesture(reorderGesture(for: group))
+                    .transition(.settingsReveal)
             }
         }
-        .onDrop(of: [UTType.text], delegate: PanelReorderDropCatcher(dragging: $dragging))
         .onAppear { reload() }
-        .onChange(of: order) { _, order in
-            // Only a drag writes; reloading the saved order must not.
-            let saved = MenuBarMetric.order(in: .standard)
-            let next = MenuBarReadingGroup.metrics(for: order, current: saved)
-            if next != saved { MenuBarMetric.setOrder(next) }
+        .onChange(of: metricOrder) { _, _ in
+            // A save made by this list's own drag must not reload it mid-drag.
+            if dragging == nil { reload() }
         }
-        .onChange(of: metricOrder) { _, _ in reload() }
+    }
+
+    /// The row follows the pointer; the others slide out of its way as it
+    /// crosses them; letting go settles it into its slot and saves the order.
+    private func reorderGesture(for group: MenuBarReadingGroup) -> some Gesture {
+        DragGesture(minimumDistance: 3)
+            .onChanged { value in
+                let visible = visibleGroups
+                if dragging != group {
+                    dragging = group
+                    dragStartIndex = visible.firstIndex(of: group) ?? 0
+                }
+                guard let current = visible.firstIndex(of: group) else { return }
+                let steps = Int((value.translation.height / Self.rowHeight).rounded())
+                let proposed = min(max(dragStartIndex + steps, 0), visible.count - 1)
+                if proposed != current {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) {
+                        move(group, toVisibleIndex: proposed, in: visible)
+                    }
+                }
+                dragOffset = value.translation.height - CGFloat(proposed - dragStartIndex) * Self.rowHeight
+            }
+            .onEnded { _ in
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.16)) { dragOffset = 0 }
+                dragging = nil
+                save()
+            }
+    }
+
+    /// Moves within the full saved order, so components hidden by a module
+    /// keep their slot for their return.
+    private func move(_ group: MenuBarReadingGroup, toVisibleIndex index: Int, in visible: [MenuBarReadingGroup]) {
+        guard let current = visible.firstIndex(of: group) else { return }
+        let target = visible[index]
+        var next = order.filter { $0 != group }
+        guard let targetIndex = next.firstIndex(of: target) else { return }
+        next.insert(group, at: index > current ? targetIndex + 1 : targetIndex)
+        order = next
+    }
+
+    private func save() {
+        let saved = MenuBarMetric.order(in: .standard)
+        let next = MenuBarReadingGroup.metrics(for: order, current: saved)
+        if next != saved { MenuBarMetric.setOrder(next) }
     }
 
     private func reload() {
