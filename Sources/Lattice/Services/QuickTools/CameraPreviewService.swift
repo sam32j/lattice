@@ -99,7 +99,12 @@ final class CameraPreviewService: ObservableObject {
 
     func toggle(fromNotch: Bool = false) {
         if isPresented {
+            let wasEmbedded = isEmbeddedPresented
             hide()
+            // Stopping from the shortcut leaves the island's camera page too,
+            // as the floating window closes, so the page never sits on a
+            // stopped preview.
+            if wasEmbedded { NotchService.shared.collapse() }
         } else {
             show(fromNotch: fromNotch)
         }
