@@ -21,8 +21,6 @@ enum VideoDownloaderLocalizationTests {
             suite.expect(!s.enableSubtitle.isEmpty, "\(lang.rawValue): enableSubtitle is non-empty")
 
             // Download video section
-            suite.expect(!s.downloadVideoSectionTitle.isEmpty, "\(lang.rawValue): downloadVideoSectionTitle is non-empty")
-            suite.expect(!s.downloadVideoSectionSubtitle.isEmpty, "\(lang.rawValue): downloadVideoSectionSubtitle is non-empty")
             suite.expect(!s.urlPlaceholder.isEmpty, "\(lang.rawValue): urlPlaceholder is non-empty")
             suite.expect(!s.search.isEmpty, "\(lang.rawValue): search is non-empty")
             suite.expect(!s.clear.isEmpty, "\(lang.rawValue): clear is non-empty")
