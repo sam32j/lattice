@@ -20,6 +20,10 @@ struct VideoDownloaderSettings: View {
     @State var skeletonPulsing = false
     @State var isSearchHovered = false
     @State private var showsBrowserSessionPath = false
+    @State private var showingMenu = false
+    /// A click on the menu button while the menu is open first closes it as a
+    /// click outside; this keeps that same click from opening it again.
+    @State private var menuClosedAt = Date.distantPast
     let clipboardTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     init(model: VideoDownloader = .shared, toolchain: ToolchainManager = .shared) {
@@ -45,12 +49,16 @@ struct VideoDownloaderSettings: View {
         }
         .toolbar {
             SettingsTitleBarItem(id: "video-downloader-activation") {
-                SettingsTitleBarSwitch(title: VideoDownloaderStrings.enableTitle, isOn: enabled) { enabled = $0 }
-                    .padding(.horizontal, 8)
+                HStack(spacing: 6) {
+                    if enabled { menuButton }
+                    SettingsTitleBarSwitch(title: VideoDownloaderStrings.enableTitle, isOn: enabled) { enabled = $0 }
+                }
+                .padding(.horizontal, 8)
             }
         }
         .onChange(of: enabled) { oldValue, isNowEnabled in
             if !isNowEnabled {
+                showingMenu = false
                 model.teardown()
                 toolchain.removeTools()
             } else if !oldValue && isNowEnabled {
@@ -85,7 +93,6 @@ struct VideoDownloaderSettings: View {
         GeometryReader { geometry in
             let isCompact = geometry.size.width < 540
 
-            VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -267,8 +274,6 @@ struct VideoDownloaderSettings: View {
                     }
                 }
             }
-                browserSessionFooter(isCompact: isCompact)
-            }
         }
     }
         .onAppear {
@@ -295,15 +300,31 @@ struct VideoDownloaderSettings: View {
 
     // MARK: - Subviews
  
-    /// The browser session is pinned to the foot of the page, under a rule,
-    /// while the downloads scroll above it: it is set once and only matters
-    /// when a site asks for a sign-in.
-    private func browserSessionFooter(isCompact: Bool) -> some View {
-        VStack(spacing: 0) {
-            Divider()
+    /// The title bar menu holds the browser session: it is set once and only
+    /// matters when a site asks for a sign-in, and then the error card offers
+    /// the same sheet, so the page itself stays the link and the downloads.
+    private var menuButton: some View {
+        Button {
+            guard Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
+            showingMenu.toggle()
+        } label: {
+            Image(systemName: "slider.horizontal.3")
+                .foregroundStyle(showingMenu ? Color.accentColor : Color.primary)
+        }
+        .buttonStyle(FlatSettingsOptionsButtonStyle())
+        // The page hands this button first focus as it opens; no ring for that.
+        .focusEffectDisabled()
+        .help(FeatureStrings.recorder(l10n.language).moreOptions)
+        .accessibilityLabel(FeatureStrings.recorder(l10n.language).moreOptions)
+        .accessibilityAddTraits(showingMenu ? .isSelected : [])
+        .popover(isPresented: $showingMenu, arrowEdge: .bottom) {
             browserSignInRow
-                .padding(.horizontal, isCompact ? 14 : 20)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .frame(width: 360)
+        }
+        .onChange(of: showingMenu) { _, open in
+            if !open { menuClosedAt = Date() }
         }
     }
 
@@ -326,6 +347,8 @@ struct VideoDownloaderSettings: View {
             Spacer(minLength: 12)
 
             Button(VideoDownloaderStrings.manage) {
+                // The sheet takes over from the menu rather than stacking on it.
+                showingMenu = false
                 model.showWebsiteSessions = true
             }
             .buttonStyle(.bordered)
