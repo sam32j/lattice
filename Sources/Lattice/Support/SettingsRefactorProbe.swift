@@ -47,6 +47,7 @@ enum SettingsRefactorProbe {
             FeatureRuntime.shared.setAvailable([.monitorCPU, .monitorMemory, .monitorNetwork], true)
             defaults.set(true, forKey: DefaultsKey.menuBarCPU)
             defaults.set(true, forKey: DefaultsKey.menuBarMemory)
+            defaults.set(true, forKey: DefaultsKey.monitorAlertCPU)
             for (name, view) in [("monitor", AnyView(MonitorSettings())),
                                  ("monitor-menu-bar", AnyView(MonitorMenuBarSettings()))] {
                 render(name, view: view, size: CGSize(width: 720, height: 900), output: output,
