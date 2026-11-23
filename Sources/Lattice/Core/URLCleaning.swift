@@ -46,8 +46,10 @@ enum URLCleaning {
     /// The one cleaning function: the clipboard rewrite, the Settings test
     /// card, the menu panel and the Command Bar all call it.
     ///
-    /// Each parameter goes when the link's site is on and blocks it, or else
-    /// when All sites is on and blocks it, and stays otherwise. The query is
+    /// A parameter the link's site lists, while that site is on, is settled
+    /// by the site: blocked goes, allowed stays even when All sites blocks
+    /// it. A parameter the site does not list goes when All sites is on and
+    /// blocks it, and stays otherwise. The query is
     /// spliced out of the original text rather than rebuilt, so the encoding
     /// of everything kept, the order of what stays and the fragment come back
     /// exactly as they went in.
@@ -82,10 +84,13 @@ enum URLCleaning {
             .filter { pair in
                 let name = Self.decodedName(ofRawPair: pair)
                 let parameter = name.lowercased()
-                let removal = site.flatMap { site in
-                    site.blockingToken(for: parameter).map { Removal(name: name, siteID: site.id, token: $0.name) }
-                } ?? global.flatMap { global in
-                    global.blockingToken(for: parameter).map { Removal(name: name, siteID: global.id, token: $0.name) }
+                let removal: Removal?
+                if let site, let token = site.decidingToken(for: parameter) {
+                    removal = token.isBlocked ? Removal(name: name, siteID: site.id, token: token.name) : nil
+                } else {
+                    removal = global.flatMap { global in
+                        global.blockingToken(for: parameter).map { Removal(name: name, siteID: global.id, token: $0.name) }
+                    }
                 }
                 guard let removal else {
                     if !name.isEmpty, !kept.contains(where: { $0.lowercased() == parameter }) { kept.append(name) }

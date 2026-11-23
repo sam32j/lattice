@@ -89,8 +89,24 @@ enum URLSanitizerTests {
         let fbclidAllowedOnX = rules { sites in
             sites[index("x", sites)].tokens.append(URLCleaning.Token(name: "fbclid", isBlocked: false, isCustom: true))
         }
-        expectEqual(URLCleaning.clean("https://x.com/a?fbclid=1", rules: fbclidAllowedOnX)?.removals.first?.siteID ?? "",
-                    global, "a token the site allows still goes when All sites blocks it")
+        expectEqual(cleaned("https://x.com/a?fbclid=1&utm_medium=x", fbclidAllowedOnX), "https://x.com/a?fbclid=1",
+                    "a token the site allows stays though All sites blocks it, and what the site does not list still goes")
+        expectEqual(cleaned("https://example.com/a?fbclid=1", fbclidAllowedOnX), "https://example.com/a",
+                    "a site's allowed token only keeps it on that site's links")
+        let utmSourceAllowedOnYouTube = rules { sites in
+            sites[index("youtube", sites)].tokens += [URLCleaning.Token(name: "utm_*", isCustom: true),
+                                                     URLCleaning.Token(name: "utm_source", isBlocked: false, isCustom: true)]
+        }
+        expectEqual(cleaned("https://www.youtube.com/watch?v=1&si=abc&utm_source=n&utm_medium=e", utmSourceAllowedOnYouTube),
+                    "https://www.youtube.com/watch?v=1&utm_source=n",
+                    "an exact allowed name beats the site's blocked wildcard")
+        let siteOffAllowed = rules { sites in
+            let x = index("x", sites)
+            sites[x].tokens.append(URLCleaning.Token(name: "fbclid", isBlocked: false, isCustom: true))
+            sites[x].isOn = false
+        }
+        expectEqual(cleaned("https://x.com/a?fbclid=1", siteOffAllowed), "https://x.com/a",
+                    "a switched-off site's allowed token no longer shields it from All sites")
         let pausedSiteToken = rules { sites in
             let youtube = index("youtube", sites)
             sites[youtube].tokens = sites[youtube].tokens.map { var token = $0; token.isBlocked = $0.name != "si"; return token }
