@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "Wach bleiben",
         keepAwakeEndsIn: "Endet in",
         keepAwakeUntilDisabled: "Aktiv, bis du es ausschaltest",
-        keepAwakeNormalRules: "Der Mac folgt seinen normalen Energieregeln",
         keepAwakeUntilLabel: "Bis",
         keepAwakeUntilStart: "Starten",
         durationLabel: "Dauer",
-        clamshellOnCaption: "Ruhezustand komplett deaktiviert. Auf den Akku achten",
-        clamshellNeedsSession: "Gilt immer, wenn „Wachhalten“ aktiv ist",
-        clamshellReady: "Bereit. Schaltet ohne Passwort um",
-        clamshellNeedsPassword: "Fragt einmalig nach dem Administratorpasswort",
 
         systemSection: "System",
         temperatures: "Temperaturen",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "Kurzbefehl für „Wachhalten“ aktivieren",
 
         sessionSection: "Sitzung",
-        defaultDurationLabel: "Standarddauer",
         batteryProtectionSection: "Batterieschutz",
         batteryNever: "Nie",
         clamshellSection: "Zugeklappt",
         configuring: "Wird konfiguriert…",
         sudoersFailed: "Modus bei geschlossenem Display konnte nicht aktiviert werden. Erneut versuchen.",
-        clamshellExplanation: "„Bei zugeklapptem Mac weiterlaufen“ deaktiviert den Ruhezustand vollständig, solange „Wachhalten“ aktiv ist, und wird automatisch zurückgesetzt, sobald die Sitzung endet oder die App beendet wird. Nutze es am besten am Netzteil.",
 
         scrollSection: "Scrollen",
         invertMouseScroll: "Mausscrollen umkehren",

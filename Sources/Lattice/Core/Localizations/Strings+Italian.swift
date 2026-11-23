@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "Rimani attivo",
         keepAwakeEndsIn: "Termina tra",
         keepAwakeUntilDisabled: "Attivo finché non lo disattivi",
-        keepAwakeNormalRules: "Il Mac segue le normali regole di risparmio energia",
         keepAwakeUntilLabel: "Fino a",
         keepAwakeUntilStart: "Avvia",
         durationLabel: "Durata",
-        clamshellOnCaption: "Stop completamente disattivato. Attenzione alla carica",
-        clamshellNeedsSession: "Si applica ogni volta che “Mantieni attivo” è attivo",
-        clamshellReady: "Pronto. Si attiva e disattiva senza password",
-        clamshellNeedsPassword: "Richiede la password di amministratore una volta",
 
         systemSection: "Sistema",
         temperatures: "Temperature",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "Abilita scorciatoia per “Mantieni attivo”",
 
         sessionSection: "Sessione",
-        defaultDurationLabel: "Durata predefinita",
         batteryProtectionSection: "Protezione della batteria",
         batteryNever: "Mai",
         clamshellSection: "Coperchio chiuso",
         configuring: "Configurazione…",
         sudoersFailed: "Impossibile attivare il coperchio chiuso. Riprova.",
-        clamshellExplanation: "“Continua con il coperchio chiuso” disattiva completamente lo stop mentre “Mantieni attivo” è attivo e viene ripristinato automaticamente al termine della sessione o alla chiusura dell’app. È preferibile usarlo collegato all’alimentazione.",
 
         scrollSection: "Scorrimento",
         invertMouseScroll: "Inverti lo scorrimento del mouse",

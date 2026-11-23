@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "Uyanık kal",
         keepAwakeEndsIn: "Kalan süre",
         keepAwakeUntilDisabled: "Sen kapatana kadar etkin",
-        keepAwakeNormalRules: "Mac normal enerji kurallarını izler",
         keepAwakeUntilLabel: "Şu saate kadar",
         keepAwakeUntilStart: "Başlat",
         durationLabel: "Süre",
-        clamshellOnCaption: "Uyku tamamen kapalı. Gücü göz önünde bulundur",
-        clamshellNeedsSession: "“Uyanık tut” etkinken uygulanır",
-        clamshellReady: "Hazır. Parola istemeden açılıp kapanır",
-        clamshellNeedsPassword: "Yönetici parolasını bir kez isteyecek",
 
         systemSection: "Sistem",
         temperatures: "Sıcaklıklar",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "“Uyanık tut” kısayolunu etkinleştir",
 
         sessionSection: "Oturum",
-        defaultDurationLabel: "Varsayılan süre",
         batteryProtectionSection: "Pil koruması",
         batteryNever: "Asla",
         clamshellSection: "Kapak kapalı",
         configuring: "Yapılandırılıyor…",
         sudoersFailed: "Kapak kapalı modu açılamadı. Tekrar dene.",
-        clamshellExplanation: "“Kapak kapalıyken devam et”, “Uyanık tut” etkinken uykuyu tamamen kapatır ve oturum bittiğinde veya uygulama kapandığında otomatik geri alınır. Güce bağlıyken kullanman önerilir.",
 
         scrollSection: "Kaydırma",
         invertMouseScroll: "Fare kaydırmasını ters çevir",

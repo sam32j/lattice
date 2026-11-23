@@ -23,7 +23,6 @@ struct StayAwakeSettings: View {
     @AppStorage(DefaultsKey.keepAwakeMouseJiggleInterval) private var mouseJiggleInterval = 5
     @AppStorage(DefaultsKey.hotkeyEnabled) private var hotkeyEnabled = true
     @State private var pickingTime = false
-    @State private var editingApps = false
     /// Lid setup usually finishes within milliseconds; its caption and the
     /// disabled switch wait until it has run long enough to be worth showing.
     @State private var showsSetupProgress = false
@@ -64,7 +63,6 @@ struct StayAwakeSettings: View {
         .settingsExpansionAnimation(value: [pickingTime, runningApps, selectedConditionCount > 1, mouseJiggle,
                                             permissions.accessibility, awake.clamshellPreferred,
                                             awake.clamshellSetupFailed, hotkeyEnabled && hotkeys.registrationFailed])
-        .sheet(isPresented: $editingApps) { StayAwakeAppsSheet() }
     }
 
     private func scheduleSetupProgress() {
@@ -91,7 +89,7 @@ struct StayAwakeSettings: View {
         }) {
             KeepAwakeConditionTiles()
             if runningApps {
-                StayAwakeAppsSummary(bundleIDs: awake.runningAppBundleIDs) { editingApps = true }
+                StayAwakeAppsList()
                     .transition(.settingsReveal)
             }
         }
@@ -117,17 +115,16 @@ struct StayAwakeSettings: View {
             }
             if mouseJiggle {
                 VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 10) {
-                        Text(strings.every)
-                        Picker(strings.every, selection: $mouseJiggleInterval) {
-                            ForEach(Array(Defaults.allowedKeepAwakeMouseJiggleIntervals.enumerated()), id: \.element) { index, minutes in
-                                Text(index == 0 ? "\(minutes) min" : "\(minutes)").tag(minutes)
+                    SettingsControlRow(title: strings.pointerInterval) {
+                        Picker(strings.pointerInterval, selection: $mouseJiggleInterval) {
+                            ForEach(Defaults.allowedKeepAwakeMouseJiggleIntervals, id: \.self) { minutes in
+                                Text(Self.intervalTitle(minutes: minutes, locale: l10n.language.formattingLocale()))
+                                    .tag(minutes)
                             }
                         }
-                        .pickerStyle(.segmented)
+                        .pickerStyle(.menu)
                         .labelsHidden()
                         .fixedSize()
-                        Spacer(minLength: 0)
                     }
                     if !permissions.accessibility {
                         PermissionRow(kind: .accessibility)
@@ -152,7 +149,7 @@ struct StayAwakeSettings: View {
                     .labelsHidden()
                     .disabled(showsSetupProgress)
             }
-            .help(l10n.s.clamshellExplanation)
+            .help(strings.lidHelp)
             if awake.clamshellSetupFailed {
                 Text(l10n.s.sudoersFailed)
                     .font(.caption)
@@ -161,7 +158,7 @@ struct StayAwakeSettings: View {
                     .transition(.settingsReveal)
             }
             if awake.clamshellPreferred {
-                SettingsRow(symbol: "sun.min", title: strings.dimTitle, caption: strings.dimCaption) {
+                SettingsControlRow(title: strings.dimTitle, caption: strings.dimCaption) {
                     Toggle(strings.dimTitle, isOn: $awake.dimScreenOnLidClose).labelsHidden()
                 }
                 .padding(.leading, settingsRowTextInset)
@@ -181,14 +178,25 @@ struct StayAwakeSettings: View {
         }
     }
 
+    /// "1 minute", "5 minutes", in the app's language.
+    static func intervalTitle(minutes: Int, locale: Locale) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute]
+        formatter.unitsStyle = .full
+        var calendar = Calendar.current
+        calendar.locale = locale
+        formatter.calendar = calendar
+        return formatter.string(from: TimeInterval(minutes * 60)) ?? "\(minutes)"
+    }
+
     private var lidCaption: String {
         switch StayAwakeLidCaption.make(inProgress: showsSetupProgress, preferred: awake.clamshellPreferred,
                                         isActive: awake.isActive, passwordless: awake.passwordlessClamshell) {
         case .configuring: return l10n.s.configuring
-        case .onDuringSession: return l10n.s.clamshellOnCaption
-        case .appliesToSessions: return l10n.s.clamshellNeedsSession
-        case .ready: return l10n.s.clamshellReady
-        case .needsPassword: return l10n.s.clamshellNeedsPassword
+        case .onDuringSession: return strings.lidOnNow
+        case .appliesToSessions: return strings.lidEverySession
+        case .ready: return strings.lidNoPassword
+        case .needsPassword: return strings.lidNeedsPassword
         }
     }
 }

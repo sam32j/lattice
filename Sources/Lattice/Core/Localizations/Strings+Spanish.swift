@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "Permanecer activo",
         keepAwakeEndsIn: "Termina en",
         keepAwakeUntilDisabled: "Activo hasta que lo desactives",
-        keepAwakeNormalRules: "El Mac sigue sus reglas de energía normales",
         keepAwakeUntilLabel: "Hasta",
         keepAwakeUntilStart: "Iniciar",
         durationLabel: "Duración",
-        clamshellOnCaption: "Reposo totalmente desactivado. Cuida la energía",
-        clamshellNeedsSession: "Se aplica siempre que “Mantener activo” esté activo",
-        clamshellReady: "Listo. Se alterna sin contraseña",
-        clamshellNeedsPassword: "Pedirá la contraseña de administrador una vez",
 
         systemSection: "Sistema",
         temperatures: "Temperaturas",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "Activar atajo para “Mantener activo”",
 
         sessionSection: "Sesión",
-        defaultDurationLabel: "Duración predeterminada",
         batteryProtectionSection: "Protección de la batería",
         batteryNever: "Nunca",
         clamshellSection: "Tapa cerrada",
         configuring: "Configurando…",
         sudoersFailed: "No se pudo activar el modo de tapa cerrada. Inténtalo de nuevo.",
-        clamshellExplanation: "“Seguir con la tapa cerrada” desactiva por completo el reposo mientras “Mantener activo” está activo y se revierte automáticamente cuando la sesión termina o la app se cierra. Es preferible usarlo conectado a la corriente.",
 
         scrollSection: "Desplazamiento",
         invertMouseScroll: "Invertir el desplazamiento del ratón",

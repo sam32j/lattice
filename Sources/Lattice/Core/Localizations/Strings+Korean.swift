@@ -54,14 +54,9 @@ extension Strings {
         keepAwakeTitle: "깨어 있기",
         keepAwakeEndsIn: "남은 시간",
         keepAwakeUntilDisabled: "끌 때까지 유지",
-        keepAwakeNormalRules: "Mac이 일반적인 에너지 절약 설정을 따릅니다",
         keepAwakeUntilLabel: "다음 시간까지",
         keepAwakeUntilStart: "시작",
         durationLabel: "지속 시간",
-        clamshellOnCaption: "절전이 완전히 비활성화됩니다. 전원 사용량에 유의하세요.",
-        clamshellNeedsSession: "절전 방지가 켜져 있는 동안 항상 적용됩니다",
-        clamshellReady: "준비되었습니다. 암호 없이 전환할 수 있습니다",
-        clamshellNeedsPassword: "관리자 암호는 한 번만 요청됩니다",
 
         systemSection: "시스템",
         temperatures: "온도",
@@ -127,13 +122,11 @@ extension Strings {
         hotkeyToggle: "절전 방지 단축키 사용",
 
         sessionSection: "세션",
-        defaultDurationLabel: "기본 지속 시간",
         batteryProtectionSection: "배터리 보호",
         batteryNever: "안 함",
         clamshellSection: "덮개 닫힘 모드",
         configuring: "설정하는 중…",
         sudoersFailed: "덮개 닫힘 모드를 활성화할 수 없습니다. 다시 시도하세요.",
-        clamshellExplanation: "덮개를 닫아도 계속 유지는 절전 방지가 켜져 있는 동안 절전을 완전히 비활성화하며, 세션이나 앱이 끝나면 자동으로 원래 상태로 되돌립니다. 전원에 연결한 상태에서 사용하는 것을 권장합니다.",
 
         scrollSection: "스크롤",
         invertMouseScroll: "마우스 스크롤 반전",
