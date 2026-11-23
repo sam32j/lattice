@@ -23,12 +23,38 @@ extension RadialMenuSettings {
                         .padding(.leading, settingsRowTextInset)
                     trackpadRow
                         .padding(.leading, settingsRowTextInset)
-                    RadialMouseButtonRow(raw: $mouseButtonRaw, text: text, isEnabled: featureOn)
+                    RadialMouseButtonRow(raw: $mouseButtonRaw, previewRaw: $mouseButtonPreview,
+                                         text: text, isEnabled: featureOn)
                         .padding(.leading, settingsRowTextInset)
                 }
             }
         }
     }
+
+#if LATTICE_DEVELOPMENT
+    /// Developer builds only, outside the card: cycles the mouse button row
+    /// through set, unset and the real setting without saving anything.
+    var mouseButtonDebugToggle: some View {
+        HStack {
+            Spacer()
+            Button {
+                switch mouseButtonPreview {
+                case nil: mouseButtonPreview = RadialMenuMouseTrigger.back.rawValue
+                case RadialMenuMouseTrigger.back.rawValue: mouseButtonPreview = RadialMenuMouseTrigger.off.rawValue
+                default: mouseButtonPreview = nil
+                }
+            } label: {
+                Label(mouseButtonPreview == nil ? "Preview mouse button: real"
+                      : (mouseButtonPreview == RadialMenuMouseTrigger.off.rawValue
+                         ? "Preview mouse button: unset" : "Preview mouse button: set"),
+                      systemImage: mouseButtonPreview == nil ? "ladybug" : "ladybug.fill")
+                    .font(.caption)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(mouseButtonPreview == nil ? Color.secondary : Color.purple)
+        }
+    }
+#endif
 
     // MARK: - Keyboard shortcut
 
@@ -260,6 +286,8 @@ struct RadialRowNote: View {
 /// capture at once and the menu's own tap lets the press through.
 struct RadialMouseButtonRow: View {
     @Binding var raw: String
+    /// Developer builds only: shows the row as set or unset without saving.
+    @Binding var previewRaw: String?
     let text: RadialMenuFeatureStrings
     let isEnabled: Bool
 
@@ -276,7 +304,6 @@ struct RadialMouseButtonRow: View {
     @State private var monitors: [Any] = []
     @State private var recordingToken = 0
     /// Developer builds only: shows the row as set or unset without saving.
-    @State private var previewRaw: String?
 
     /// How long a recording waits before saying nothing has arrived.
     static let nothingSeenDelay: TimeInterval = 5
@@ -298,9 +325,9 @@ struct RadialMouseButtonRow: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
-                        .help(name(of: button))
+                        .help(activeHelp(button))
                         .accessibilityElement(children: .combine)
-                        .accessibilityValue(name(of: button))
+                        .accessibilityValue(activeHelp(button))
                         Spacer(minLength: 4)
                         Button(text.mouseButtonClearShort) {
                             if previewRaw != nil { previewRaw = RadialMenuMouseTrigger.off.rawValue; return }
@@ -326,9 +353,6 @@ struct RadialMouseButtonRow: View {
                     .onHover { hovering = $0 }
                     .help(text.mouseButtonRecording)
                 }
-#if LATTICE_DEVELOPMENT
-                debugToggle
-#endif
             }
         }
         .onChange(of: capture.lastInputSeen) { _, seen in handle(seen) }
@@ -341,9 +365,18 @@ struct RadialMouseButtonRow: View {
         if previewRaw == nil, isEnabled, permissions.accessibility, !service.isWatchingMouseButton {
             return .problem(text.mouseButtonBlind)
         }
-        if button == MouseButtonShortcutSupport.backButtonNumber { return .info(text.mouseButtonBackNote) }
-        if button == MouseButtonShortcutSupport.forwardButtonNumber { return .info(text.mouseButtonForwardNote) }
+        _ = button
         return nil
+    }
+
+    /// The Active tooltip: the button's name, and for the back and forward
+    /// buttons what they stop doing in apps.
+    private func activeHelp(_ button: Int64) -> String {
+        switch button {
+        case MouseButtonShortcutSupport.backButtonNumber: return "\(name(of: button))\n\(text.mouseButtonBackNote)"
+        case MouseButtonShortcutSupport.forwardButtonNumber: return "\(name(of: button))\n\(text.mouseButtonForwardNote)"
+        default: return name(of: button)
+        }
     }
 
     private func name(of button: Int64) -> String {
@@ -386,24 +419,6 @@ struct RadialMouseButtonRow: View {
         .accessibilityValue(label)
     }
 
-#if LATTICE_DEVELOPMENT
-    /// Cycles the row through set, unset and the real setting, so both
-    /// looks can be checked without a mouse that has extra buttons.
-    private var debugToggle: some View {
-        Button {
-            switch previewRaw {
-            case nil: previewRaw = RadialMenuMouseTrigger.back.rawValue
-            case RadialMenuMouseTrigger.back.rawValue: previewRaw = RadialMenuMouseTrigger.off.rawValue
-            default: previewRaw = nil
-            }
-        } label: {
-            Image(systemName: previewRaw == nil ? "ladybug" : "ladybug.fill")
-                .foregroundStyle(previewRaw == nil ? Color.secondary : Color.purple)
-        }
-        .buttonStyle(.plain)
-        .help("Debug: preview the mouse button row as set, unset, then real")
-    }
-#endif
 
     private func refuse() {
         NSSound.beep()

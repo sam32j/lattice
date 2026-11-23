@@ -43,6 +43,7 @@ struct RadialMenuSettings: View {
     @State var tabDropTarget: UUID?
     @State var tabDropAtEnd = false
     @State var tabScrollID: UUID?
+    @State var mouseButtonPreview: String?
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.settingsPermissionAccess) var permissionAccess
 
@@ -92,6 +93,9 @@ struct RadialMenuSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 openCard
+#if LATTICE_DEVELOPMENT
+                if featureOn { mouseButtonDebugToggle.padding(.top, -12) }
+#endif
                 if featureOn {
                     if showsPermissionCard { permissionCard }
                     editorCard

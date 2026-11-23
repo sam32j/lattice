@@ -42,62 +42,50 @@ extension RadialItemEditor {
             }
         case .tool where item.tool?.isControl != true:
             editorRow(text.toolLabel) {
-                menuPicker(text.toolLabel) {
-                    ForEach(availableUtilities) { tool in
-                        Label(toolTitle(tool), systemImage: tool.symbolName)
-                            .tag(tool.rawValue)
-                    }
-                }
+                payloadPicker(text.toolLabel, availableUtilities.map {
+                    .init(value: $0.rawValue, title: toolTitle($0), symbol: $0.symbolName)
+                })
             }
         case .tool, .quickToggle:
             // Quick toggles and the utilities that are really switches, in
             // one menu; each keeps the kind it is stored as.
             let title = FeatureStrings.quickToggles(l10n.language).pageTitle
             editorRow(title) {
-                Picker(title, selection: controlBinding) {
-                    ForEach(availableQuickToggles) { action in
-                        Label(action.settingsTitle(text), systemImage: action.symbolName)
-                            .tag("toggle:" + action.rawValue)
-                    }
-                    if !availableQuickToggles.isEmpty, !availableControlTools.isEmpty { Divider() }
-                    ForEach(availableControlTools) { tool in
-                        Label(toolTitle(tool), systemImage: tool.symbolName)
-                            .tag("tool:" + tool.rawValue)
-                    }
+                let toggles: [SettingsPopUpPicker<String>.Option] = availableQuickToggles.map {
+                    .init(value: "toggle:" + $0.rawValue, title: $0.settingsTitle(text), symbol: $0.symbolName)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(width: Self.fieldWidth)
+                let tools: [SettingsPopUpPicker<String>.Option] = availableControlTools.enumerated().map { index, tool in
+                    .init(value: "tool:" + tool.rawValue, title: toolTitle(tool), symbol: tool.symbolName,
+                          separatorBefore: index == 0 && !toggles.isEmpty)
+                }
+                SettingsPopUpPicker(title: title, options: toggles + tools,
+                                    selection: controlBinding, exactWidth: Self.fieldWidth)
             }
         case .windowLayout:
             let windowText = FeatureStrings.windowLayout(l10n.language)
             editorRow(windowText.title) {
-                menuPicker(windowText.title) {
-                    ForEach(WindowLayoutAction.allCases) { action in
-                        Label(action.radialTitle(text), systemImage: action.symbolName)
-                            .tag(action.rawValue)
-                    }
-                }
+                payloadPicker(windowText.title, WindowLayoutAction.allCases.map {
+                    .init(value: $0.rawValue, title: $0.radialTitle(text), symbol: $0.symbolName)
+                })
             }
         case .media:
             editorRow(text.mediaLabel) {
-                menuPicker(text.mediaLabel) {
-                    Text(text.mediaPlayPause).tag(RadialMenuMediaKey.playPause.rawValue)
-                    Text(text.mediaPrevious).tag(RadialMenuMediaKey.previousTrack.rawValue)
-                    Text(text.mediaNext).tag(RadialMenuMediaKey.nextTrack.rawValue)
-                    Text(text.mediaNowPlaying).tag(RadialMenuMediaKey.nowPlaying.rawValue)
-                }
+                payloadPicker(text.mediaLabel, [
+                    .init(value: RadialMenuMediaKey.playPause.rawValue, title: text.mediaPlayPause),
+                    .init(value: RadialMenuMediaKey.previousTrack.rawValue, title: text.mediaPrevious),
+                    .init(value: RadialMenuMediaKey.nextTrack.rawValue, title: text.mediaNext),
+                    .init(value: RadialMenuMediaKey.nowPlaying.rawValue, title: text.mediaNowPlaying),
+                ])
             }
         case .submenu:
             EmptyView()
         }
     }
 
-    func menuPicker<Options: View>(_ title: String, @ViewBuilder options: () -> Options) -> some View {
-        Picker(title, selection: $item.payload) { options() }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: Self.fieldWidth)
+    /// Every menu of the editor: the same pop-up at exactly the field width,
+    /// so the controls line up whatever their titles.
+    func payloadPicker(_ title: String, _ options: [SettingsPopUpPicker<String>.Option]) -> some View {
+        SettingsPopUpPicker(title: title, options: options, selection: $item.payload, exactWidth: Self.fieldWidth)
     }
 
     func toolTitle(_ tool: RadialMenuTool) -> String {

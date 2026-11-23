@@ -13,6 +13,10 @@ struct SettingsPopUpPicker<Value: Hashable>: NSViewRepresentable {
         let value: Value
         let title: String
         var isEnabled = true
+        /// An SF Symbol drawn before the title.
+        var symbol: String? = nil
+        /// Draws a separator before this item.
+        var separatorBefore = false
     }
 
     let title: String
@@ -41,13 +45,19 @@ struct SettingsPopUpPicker<Value: Hashable>: NSViewRepresentable {
             context.coordinator.shownOptions = options
             button.removeAllItems()
             for option in options {
+                if option.separatorBefore { button.menu?.addItem(.separator()) }
                 button.addItem(withTitle: option.title)
                 button.lastItem?.isEnabled = option.isEnabled
+                button.lastItem?.representedObject = options.firstIndex(of: option)
+                if let symbol = option.symbol {
+                    button.lastItem?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+                }
             }
         }
         if let index = options.firstIndex(where: { $0.value == selection }),
-           button.indexOfSelectedItem != index {
-            button.selectItem(at: index)
+           let item = button.itemArray.first(where: { $0.representedObject as? Int == index }),
+           button.selectedItem !== item {
+            button.select(item)
         }
     }
 
@@ -68,8 +78,8 @@ struct SettingsPopUpPicker<Value: Hashable>: NSViewRepresentable {
         init(_ parent: SettingsPopUpPicker) { self.parent = parent }
 
         @objc func choose(_ sender: NSPopUpButton) {
-            let index = sender.indexOfSelectedItem
-            guard parent.options.indices.contains(index), parent.options[index].isEnabled else { return }
+            guard let index = sender.selectedItem?.representedObject as? Int,
+                  parent.options.indices.contains(index), parent.options[index].isEnabled else { return }
             parent.selection = parent.options[index].value
         }
     }

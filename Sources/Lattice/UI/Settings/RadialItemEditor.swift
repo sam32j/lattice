@@ -78,6 +78,9 @@ struct RadialItemEditor: View {
         if AppFeature.windowLayout.isAvailable { categories.append(.windowLayout) }
         categories.append(.media)
         if allowsSubmenu { categories.append(.submenu) }
+        // The action's own category stays listed even when its feature is
+        // off right now, so the menu never shows a blank choice.
+        if !categories.contains(category) { categories.append(category) }
         return categories
     }
 
@@ -146,14 +149,11 @@ struct RadialItemEditor: View {
             SettingsCard {
                 VStack(alignment: .leading, spacing: 12) {
                     editorRow(text.actionLabel) {
-                        Picker(text.actionLabel, selection: categoryBinding) {
-                            ForEach(availableCategories, id: \.self) { category in
-                                Text(categoryTitle(category)).tag(category)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                        .frame(width: Self.fieldWidth)
+                        SettingsPopUpPicker(title: text.actionLabel,
+                                            options: availableCategories.map {
+                                                .init(value: $0, title: categoryTitle($0))
+                                            },
+                                            selection: categoryBinding, exactWidth: Self.fieldWidth)
                     }
                     payloadEditor
                     if item.kind == .submenu {
