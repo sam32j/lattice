@@ -165,12 +165,15 @@ struct MenuBarReadingsList: View {
             ForEach(Array(groups.enumerated()), id: \.element) { index, group in
                 // Dragging moves within the full saved order, so components
                 // hidden by a module keep their slot for their return.
-                PanelReorderableItem(item: group, cornerRadius: 8, order: $order, dragging: $dragging) {
-                    MenuBarReadingRow(group: group, members: visibleMembers(of: group))
+                VStack(spacing: 0) {
+                    PanelReorderableItem(item: group, cornerRadius: 8, order: $order, dragging: $dragging) {
+                        MenuBarReadingRow(group: group, members: visibleMembers(of: group))
+                    }
+                    if index < groups.count - 1 {
+                        Divider().padding(.leading, 52)
+                    }
                 }
-                if index < groups.count - 1 {
-                    Divider().padding(.leading, 52)
-                }
+                .transition(.settingsReveal)
             }
         }
         .onAppear { reload() }

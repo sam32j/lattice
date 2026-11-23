@@ -32,6 +32,9 @@ struct MonitorSettings: View {
             SettingsTitleBarItem(id: "system-monitor-activation") { MonitorTitleBarControls() }
         }
         .settingsExpansionAnimation(value: MonitorModules.anyOn)
+        // A module switched in the title bar menu brings its alert rows in or
+        // takes them away in the same motion as the rest of the page.
+        .settingsExpansionAnimation(value: FeatureVisibilitySupport.monitorFeatures.map(\.isAvailable))
     }
 
     private var page: some View {
