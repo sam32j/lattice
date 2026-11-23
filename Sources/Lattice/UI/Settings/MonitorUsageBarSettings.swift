@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MenuBarUsageBarSettings: View {
     let strings: MenuBarAppearanceStrings
+    let colorsTitle: String
 
     @AppStorage(DefaultsKey.menuBarUsageBarNormalColor) private var normalColor = MenuBarUsageBarSupport.defaultNormalColor
     @AppStorage(DefaultsKey.menuBarUsageBarElevatedColor) private var elevatedColor = MenuBarUsageBarSupport.defaultElevatedColor
@@ -11,43 +12,37 @@ struct MenuBarUsageBarSettings: View {
     @AppStorage(DefaultsKey.menuBarUsageBarHighThreshold) private var highThreshold = MenuBarUsageBarSupport.defaultHighThreshold
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text(strings.customize)
-                .font(.subheadline.weight(.semibold))
-
-            ColorPicker(strings.normalColor,
-                        selection: colorBinding($normalColor,
-                                                fallback: MenuBarUsageBarSupport.defaultNormalColor),
-                        supportsOpacity: false)
-            ColorPicker(strings.mediumColor,
-                        selection: colorBinding($elevatedColor,
-                                                fallback: MenuBarUsageBarSupport.defaultElevatedColor),
-                        supportsOpacity: false)
-            ColorPicker(strings.highColor,
-                        selection: colorBinding($criticalColor,
-                                                fallback: MenuBarUsageBarSupport.defaultCriticalColor),
-                        supportsOpacity: false)
-
-            Divider()
-
-            Stepper(value: mediumBinding, in: 1...99) {
-                HStack {
-                    Text(strings.mediumFrom)
-                    Spacer()
-                    Text("\(mediumThreshold)%")
-                        .monospacedDigit()
+        VStack(alignment: .leading, spacing: 13) {
+            // The three colors side by side, named in their tooltips, in the
+            // order the bar fills.
+            SettingsControlRow(title: colorsTitle) {
+                HStack(spacing: 10) {
+                    colorWell(strings.normalColor, $normalColor, fallback: MenuBarUsageBarSupport.defaultNormalColor)
+                    colorWell(strings.mediumColor, $elevatedColor, fallback: MenuBarUsageBarSupport.defaultElevatedColor)
+                    colorWell(strings.highColor, $criticalColor, fallback: MenuBarUsageBarSupport.defaultCriticalColor)
                 }
             }
-            Stepper(value: highBinding, in: 2...100) {
-                HStack {
-                    Text(strings.highFrom)
-                    Spacer()
-                    Text("\(highThreshold)%")
-                        .monospacedDigit()
-                }
-            }
+            SettingsControlRow(title: strings.mediumFrom) { percentStepper(mediumBinding, range: 1...99) }
+            SettingsControlRow(title: strings.highFrom) { percentStepper(highBinding, range: 2...100) }
         }
         .onAppear(perform: sanitize)
+    }
+
+    private func colorWell(_ name: String, _ storage: Binding<String>, fallback: String) -> some View {
+        ColorPicker(name, selection: colorBinding(storage, fallback: fallback), supportsOpacity: false)
+            .labelsHidden()
+            .help(name)
+    }
+
+    private func percentStepper(_ value: Binding<Int>, range: ClosedRange<Int>) -> some View {
+        HStack(spacing: 6) {
+            Text("\(value.wrappedValue)%")
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+            Stepper("", value: value, in: range)
+                .labelsHidden()
+        }
+        .fixedSize()
     }
 
     private var mediumBinding: Binding<Int> {

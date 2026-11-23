@@ -84,10 +84,10 @@ struct MenuBarStyleChoice: View {
     }
 }
 
-/// The menu bar readings as tiles: drag to put them in order, click the
-/// checkmark to show or hide one. The order stays independent from which
-/// metrics are visible, so toggles do not reshuffle it.
-struct MenuBarMetricTiles: View {
+/// The menu bar readings as a list: drag a row to put it in order, switch
+/// it on or off at the end of the row. The order stays independent from
+/// which readings are visible, so switches do not reshuffle it.
+struct MenuBarReadingsList: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.menuBarMetricOrder) private var metricOrder = ""
@@ -95,17 +95,18 @@ struct MenuBarMetricTiles: View {
     @State private var dragging: MenuBarMetric?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: monitorTokenColumns, spacing: 8) {
-                ForEach(visibleOrder) { metric in
-                    // Dragging moves within the full saved order, so metrics
-                    // hidden by the hub keep their slot for their return.
-                    PanelReorderableItem(item: metric, order: $order, dragging: $dragging) {
-                        MenuBarMetricTile(metric: metric)
-                    }
+        let rows = visibleOrder
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.element) { index, metric in
+                // Dragging moves within the full saved order, so readings
+                // hidden by a module keep their slot for their return.
+                PanelReorderableItem(item: metric, cornerRadius: 8, order: $order, dragging: $dragging) {
+                    MenuBarReadingRow(metric: metric)
+                }
+                if index < rows.count - 1 {
+                    Divider().padding(.leading, 58)
                 }
             }
-            .monitorTokenGroup()
         }
         .onAppear { order = MenuBarMetric.order(in: .standard) }
         .onChange(of: order) { _, order in
@@ -115,8 +116,8 @@ struct MenuBarMetricTiles: View {
         .onChange(of: metricOrder) { _, _ in order = MenuBarMetric.order(in: .standard) }
     }
 
-    /// Metrics whose family left the hub keep their saved slot but stay out
-    /// of the editor until they return.
+    /// Readings whose module is off keep their saved slot but stay out of
+    /// the list until it returns.
     private var visibleOrder: [MenuBarMetric] {
         order.filter { $0.feature.isAvailable && $0.isAvailableOnCurrentHardware }
     }
@@ -124,11 +125,10 @@ struct MenuBarMetricTiles: View {
 
 extension MenuBarMetric: PanelOrderItem {}
 
-/// One reading, backed by its own key so the preview above updates the
-/// moment it is ticked. A reading with its own option carries it in its card.
-struct MenuBarMetricTile: View {
+/// One reading: a grip, its icon and name, its own options when it has
+/// any, and the switch that shows it in the menu bar.
+struct MenuBarReadingRow: View {
     @ObservedObject private var l10n = L10n.shared
-    @Environment(\.colorScheme) private var colorScheme
     let metric: MenuBarMetric
     @AppStorage private var shown: Bool
     @AppStorage(DefaultsKey.menuBarMemoryStyle) private var memoryStyle = "percent"
@@ -141,47 +141,59 @@ struct MenuBarMetricTile: View {
     }
 
     var body: some View {
-        MonitorToken(symbol: metric.symbolName, title: metric.title(l10n.s), included: $shown,
-                     options: options, optionsSummary: optionsSummary)
-    }
-
-    /// What the reading's option makes the menu bar show, in its own terms.
-    private var optionsSummary: String {
-        switch metric {
-        case .memory:
-            return Defaults.sanitizedMenuBarMemoryStyle(memoryStyle) != "percent"
-                ? l10n.s.monitorMemoryPressureDot : FeatureStrings.mouseClickDebounce(l10n.language).moreOptions
-        case .network: return uploadFirst ? "↑ ↓" : "↓ ↑"
-        case .diskUsage:
-            switch diskStyle {
-            case DiskMenuBarStyle.free: return l10n.s.diskMenuBarAvailableSpace
-            case DiskMenuBarStyle.used: return l10n.s.diskMenuBarUsedSpace
-            default: return l10n.s.diskMenuBarUsedPercentage
+        let title = metric.title(l10n.s)
+        HStack(spacing: 10) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .frame(width: 12)
+                .accessibilityHidden(true)
+            LatticeSymbol(metric.symbolName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(shown ? Color.accentColor : Color.secondary)
+                .frame(width: 26, height: 26)
+                .background((shown ? Color.accentColor : Color.secondary).opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            Text(title)
+                .foregroundStyle(shown ? .primary : .secondary)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            if let options {
+                Menu {
+                    options
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help(FeatureStrings.mouseClickDebounce(l10n.language).moreOptions)
+                .accessibilityLabel(FeatureStrings.mouseClickDebounce(l10n.language).moreOptions)
             }
-        default: return ""
+            Toggle(title, isOn: $shown)
+                .labelsHidden()
+                .toggleStyle(.switch)
         }
+        .padding(.vertical, 7)
+        .contentShape(Rectangle())
     }
 
+    /// The reading's own choices, as menu items.
     private var options: AnyView? {
         switch metric {
         case .memory:
-            return AnyView(MonitorTokenOption(
-                symbol: "circle.fill",
-                title: l10n.s.monitorMemoryPressureDot,
-                tint: PanelMetricColor.green(for: colorScheme),
-                isOn: Binding(get: { Defaults.sanitizedMenuBarMemoryStyle(memoryStyle) != "percent" },
-                              set: { memoryStyle = $0 ? "both" : "percent" })))
+            return AnyView(Toggle(l10n.s.monitorMemoryPressureDot, isOn: Binding(
+                get: { Defaults.sanitizedMenuBarMemoryStyle(memoryStyle) != "percent" },
+                set: { memoryStyle = $0 ? "both" : "percent" })))
         case .network:
-            return AnyView(MonitorTokenOption(symbol: "arrow.up.arrow.down",
-                                                 title: l10n.s.monitorNetworkUploadFirst,
-                                                 isOn: $uploadFirst))
+            return AnyView(Toggle(l10n.s.monitorNetworkUploadFirst, isOn: $uploadFirst))
         case .diskUsage:
             return AnyView(Picker(l10n.s.diskMenuBarStyleLabel, selection: $diskStyle) {
                 Text(l10n.s.diskMenuBarUsedPercentage).tag(DiskMenuBarStyle.percent)
                 Text(l10n.s.diskMenuBarAvailableSpace).tag(DiskMenuBarStyle.free)
                 Text(l10n.s.diskMenuBarUsedSpace).tag(DiskMenuBarStyle.used)
             }
-            .pickerStyle(.menu))
+            .pickerStyle(.inline))
         default:
             return nil
         }

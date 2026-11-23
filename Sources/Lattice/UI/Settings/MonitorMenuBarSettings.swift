@@ -42,19 +42,19 @@ struct MonitorMenuBarSettings: View {
         .settingsExpansionAnimation(value: FeatureVisibilitySupport.monitorFeatures.map(\.isAvailable))
     }
 
-    /// The readings that can sit in the menu bar, as tiles in the order they
-    /// appear there.
+    private var strings: SystemMonitorSettingsStrings { FeatureStrings.systemMonitorSettings(l10n.language) }
+
+    /// The readings that can sit in the menu bar, in the order they appear.
     private var readingsCard: some View {
-        SettingsCard {
-            MenuBarMetricTiles()
-            Text(FeatureStrings.notchEditor(l10n.language).reorderHint)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        SettingsCard(title: strings.readingsTitle, caption: strings.readingsCaption) {
+            MenuBarReadingsList()
         }
     }
 
+    /// How the readings are drawn. Each row is one line; what a switch does
+    /// beyond its title sits in its tooltip.
     private var styleCard: some View {
-        SettingsCard(title: appearanceStrings.label) {
+        SettingsCard(title: strings.styleTitle) {
             HStack(spacing: 10) {
                 MenuBarStyleChoice(appearance: .values, title: appearanceStrings.values,
                                    selected: appearance == .values) { metricAppearance = "values" }
@@ -62,14 +62,19 @@ struct MonitorMenuBarSettings: View {
                                    selected: appearance == .bars) { metricAppearance = "bars" }
             }
             if appearance == .bars {
-                MenuBarUsageBarSettings(strings: appearanceStrings)
+                MenuBarUsageBarSettings(strings: appearanceStrings, colorsTitle: strings.colorsTitle)
+                    .transition(.settingsReveal)
             } else {
-                SettingsControlRow(title: l10n.s.monitorCombineTemperatures,
-                                   caption: l10n.s.monitorCombineTemperaturesCaption) {
+                SettingsControlRow(title: l10n.s.monitorCombineTemperatures) {
                     Toggle(l10n.s.monitorCombineTemperatures, isOn: $combineTemperatures).labelsHidden()
                 }
+                .help(l10n.s.monitorCombineTemperaturesCaption)
+                .transition(.settingsReveal)
             }
-            Divider()
+            SettingsControlRow(title: l10n.s.monitorSeparateMenuBarMetrics) {
+                Toggle(l10n.s.monitorSeparateMenuBarMetrics, isOn: $separateMetrics).labelsHidden()
+            }
+            .help(appearance.allowsCombinedTemperatures ? l10n.s.monitorSeparateMenuBarMetricsCaption : "")
             SettingsControlRow(title: l10n.s.menuBarSpacingLabel) {
                 Picker(l10n.s.menuBarSpacingLabel, selection: $metricSpacing) {
                     Text(l10n.s.menuBarSpacingStandard).tag("standard")
@@ -79,14 +84,10 @@ struct MonitorMenuBarSettings: View {
                 .labelsHidden()
                 .fixedSize()
             }
-            SettingsControlRow(title: l10n.s.menuBarHideIconToggle, caption: l10n.s.menuBarHideIconCaption) {
+            SettingsControlRow(title: l10n.s.menuBarHideIconToggle) {
                 Toggle(l10n.s.menuBarHideIconToggle, isOn: $hideIconWithMetrics).labelsHidden()
             }
-            SettingsControlRow(title: l10n.s.monitorSeparateMenuBarMetrics,
-                               caption: appearance.allowsCombinedTemperatures
-                                   ? l10n.s.monitorSeparateMenuBarMetricsCaption : nil) {
-                Toggle(l10n.s.monitorSeparateMenuBarMetrics, isOn: $separateMetrics).labelsHidden()
-            }
+            .help(l10n.s.menuBarHideIconCaption)
         }
     }
 }

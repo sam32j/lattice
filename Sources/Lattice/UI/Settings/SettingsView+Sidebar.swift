@@ -84,7 +84,7 @@ extension SettingsView {
         case .windowLayoutShortcuts:
             return WindowLayoutFeatureStrings.shortcutsPageTitle(l10n.language)
         case .monitorMenuBar:
-            return l10n.s.menuBarSection
+            return FeatureStrings.systemMonitorSettings(l10n.language).menuBarTitle
         default:
             return sidebarItems.first { $0.id == selectedSidebarItem }?.title ?? l10n.s.settingsTitle
         }
