@@ -248,7 +248,7 @@ enum NotchTests {
         var reported = NotchGeometry(screen: screen, safeAreaTop: 37.5, cameraWidth: 208)
         reported.pageTop = NotchModule.camera.pageTop
         suite.expect(reported.headerCameraGap == 208 && reported.headerTopInset == 0,
-                     "Camera mirror keeps its row beside a 208-point camera in the compact preset, as Controls does")
+                     "Camera Preview keeps its row beside a 208-point camera in the compact preset, as Controls does")
         for silhouette in NotchSilhouette.allCases {
             let plain = NotchGeometry(screen: screen, safeAreaTop: 0, cameraWidth: 0, silhouette: silhouette)
             for module in NotchModule.allCases {
