@@ -475,10 +475,10 @@ private struct RadialTabArc: View {
     }
 
     private func width(of tab: RadialProfileTabs.VisibleTab) -> CGFloat {
-        let star: CGFloat = tab.index == 0 ? 13 : 0
+        let star: CGFloat = tab.index == 0 ? 14 : 0
         guard tab.index == service.activeProfileIndex else { return star + 10 + 12 }
-        let name = service.sessionProfiles[tab.index].displayName(text) as NSString
-        let textWidth = min(ceil(name.size(withAttributes: [.font: Self.nameFont]).width), 120)
+        let name = fittedName(service.sessionProfiles[tab.index].displayName(text))
+        let textWidth = name.reduce(CGFloat(0)) { $0 + ($1 as NSString).size(withAttributes: [.font: Self.nameFont]).width }
         return star + 7 + 5 + textWidth + 18
     }
 
@@ -528,33 +528,82 @@ private struct RadialTabArc: View {
         .allowsHitTesting(false)
     }
 
+    /// One piece of a tab's content set along the arc: the star, the dot or
+    /// a single character of the name.
+    private enum Glyph {
+        case star, dot, character(String)
+    }
+
+    /// The name cut to fit the tab, with an ellipsis when it had to be.
+    private func fittedName(_ name: String) -> [String] {
+        let characters = name.map(String.init)
+        func width(_ parts: [String]) -> CGFloat {
+            (parts.joined() as NSString).size(withAttributes: [.font: Self.nameFont]).width
+        }
+        guard width(characters) > 120 else { return characters }
+        var kept = characters
+        while !kept.isEmpty, width(kept + ["…"]) > 120 { kept.removeLast() }
+        return kept + ["…"]
+    }
+
+    private func glyphWidth(_ glyph: Glyph, dotSize: CGFloat) -> CGFloat {
+        switch glyph {
+        case .star: return 9
+        case .dot: return dotSize
+        case .character(let character):
+            return (character as NSString).size(withAttributes: [.font: Self.nameFont]).width
+        }
+    }
+
+    /// Lays the content out along the band's centre line, each piece turned
+    /// to the arc where it sits, so the text bends with the pill.
     private func label(_ item: Placed) -> some View {
         let profile = service.sessionProfiles[item.tab.index]
         let current = item.tab.index == service.activeProfileIndex
         let middle = (item.span.lowerBound + item.span.upperBound) / 2
         let radius = RadialMenuLayout.tabArcRadius
         let name = profile.displayName(text)
-        return HStack(spacing: 5) {
-            if item.tab.index == 0 {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(current ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
-                                             : AnyShapeStyle(.secondary))
-            }
-            RadialProfileDot(color: profile.color, size: current ? 7 : 10, onOwnFill: current)
-            if current {
-                Text(name)
-                    .font(Font(Self.nameFont))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: 120)
-                    .foregroundStyle(profile.color.foreground(for: colorScheme))
+        let dotSize: CGFloat = current ? 7 : 10
+        var glyphs: [Glyph] = []
+        if item.tab.index == 0 { glyphs.append(.star) }
+        glyphs.append(.dot)
+        if current { glyphs += fittedName(name).map(Glyph.character) }
+        let gaps: [CGFloat] = glyphs.indices.map { index in
+            guard index + 1 < glyphs.count else { return 0 }
+            if case .character = glyphs[index], case .character = glyphs[index + 1] { return 0 }
+            return 5
+        }
+        let widths = glyphs.map { glyphWidth($0, dotSize: dotSize) }
+        let total = widths.reduce(0, +) + gaps.reduce(0, +)
+        var run = -total / 2
+        var placements: [(Glyph, Double)] = []
+        for (index, glyph) in glyphs.enumerated() {
+            placements.append((glyph, middle + Double((run + widths[index] / 2) / radius)))
+            run += widths[index] + gaps[index]
+        }
+        let foreground = current ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
+                                 : AnyShapeStyle(.secondary)
+        return ZStack {
+            ForEach(Array(placements.enumerated()), id: \.offset) { _, placement in
+                Group {
+                    switch placement.0 {
+                    case .star:
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(foreground)
+                    case .dot:
+                        RadialProfileDot(color: profile.color, size: dotSize, onOwnFill: current)
+                    case .character(let character):
+                        Text(character)
+                            .font(Font(Self.nameFont))
+                            .foregroundStyle(profile.color.foreground(for: colorScheme))
+                    }
+                }
+                .fixedSize()
+                .rotationEffect(.radians(placement.1))
+                .offset(x: radius * CGFloat(sin(placement.1)), y: -radius * CGFloat(cos(placement.1)))
             }
         }
-        .fixedSize()
-        // Turned to the arc's tangent, so the content runs along the band.
-        .rotationEffect(.radians(middle))
-        .offset(x: radius * CGFloat(sin(middle)), y: -radius * CGFloat(cos(middle)))
         .opacity(item.tab.faded ? 0.4 : 1)
         .allowsHitTesting(false)
         .accessibilityElement(children: .ignore)

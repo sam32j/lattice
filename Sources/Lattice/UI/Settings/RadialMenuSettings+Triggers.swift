@@ -13,13 +13,10 @@ extension RadialMenuSettings {
         SettingsCard {
             VStack(alignment: .leading, spacing: 12) {
                 SettingsRow(symbol: AppFeature.radialMenu.symbolName, title: text.enableLabel) {
-                    HStack(spacing: 6) {
-                        infoButton
-                        FeatureActivationControl(feature: .radialMenu)
-                            .toggleStyle(.switch)
-                            .labelsHidden()
-                            .accessibilityLabel(text.enableLabel)
-                    }
+                    FeatureActivationControl(feature: .radialMenu)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .accessibilityLabel(text.enableLabel)
                 }
                 if featureOn {
                     shortcutRow
@@ -30,27 +27,6 @@ extension RadialMenuSettings {
                         .padding(.leading, settingsRowTextInset)
                 }
             }
-        }
-    }
-
-    private var infoButton: some View {
-        Button {
-            showsOpenInfo.toggle()
-        } label: {
-            Image(systemName: "info.circle")
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
-        .help(text.openInfoButton)
-        .accessibilityLabel(text.openInfoButton)
-        .popover(isPresented: $showsOpenInfo, arrowEdge: .bottom) {
-            Text(text.openInfoBody)
-                .font(.callout)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 260, alignment: .leading)
-                .padding(14)
         }
     }
 
@@ -65,10 +41,11 @@ extension RadialMenuSettings {
         // Reading the stored value keeps the row in step with the central
         // Shortcuts page, which writes the same key.
         let _ = shortcutRaw
-        // A refused capture shows in the recorder itself, like every other
-        // shortcut field; only a lasting refusal by macOS keeps a mark.
+        // A refused combination is explained in the conflict dialog the
+        // other shortcut rows use, never in red inside the field; only a
+        // lasting refusal by macOS keeps a mark.
         let status: RadialRowNote.Content? = service.registrationFailed ? .problem(text.shortcutRefused) : nil
-        return RadialTriggerRow(title: text.shortcutLabel, help: text.openInfoBody, status: status) {
+        return RadialTriggerRow(title: text.shortcutLabel, info: text.openInfoBody, status: status) {
             CompactShortcutBindingRecorder(
                 recordingID: "radial-menu-shortcut",
                 shortcut: savedShortcut,
@@ -76,30 +53,37 @@ extension RadialMenuSettings {
                 width: 140,
                 emptyTitle: l10n.s.shortcutNone,
                 canClear: savedShortcut != nil,
-                errorText: $shortcutError,
-                onClear: {
-                    shortcutError = nil
-                    saveShortcut("")
-                },
+                errorText: Binding(get: { nil }, set: { message in
+                    if let message { invalidShortcutMessage = message }
+                }),
+                onClear: { saveShortcut("") },
                 onReset: {},
                 onCapture: { newShortcut in
                     if let owner = shortcutConflictTitle(newShortcut) {
-                        shortcutError = String(format: l10n.s.shortcutConflictFormat, owner)
+                        conflictAlert = ShortcutConflictAlert(shortcut: newShortcut, assignedBehavior: owner)
                         return
                     }
-                    shortcutError = nil
                     saveShortcut(newShortcut.storageValue)
                 })
+        }
+        .shortcutConflictAlert($conflictAlert)
+        .alert(invalidShortcutMessage ?? "",
+               isPresented: Binding(get: { invalidShortcutMessage != nil },
+                                    set: { if !$0 { invalidShortcutMessage = nil } })) {
+            Button("OK", role: .cancel) { invalidShortcutMessage = nil }
         }
     }
 
     /// Who already answers to a combination: another Lattice shortcut, a
-    /// window layout or a Command Bar row. There are no other wheels to ask.
+    /// window layout, a Command Bar row, or macOS itself.
     func shortcutConflictTitle(_ shortcut: GlobalShortcut) -> String? {
         if let role = GlobalShortcutRole.conflict(for: shortcut, excluding: .radialMenu) {
             return role.title(l10n.s)
         }
-        return SettingsShortcutConflicts.title(for: shortcut, language: l10n.language)
+        if let title = SettingsShortcutConflicts.title(for: shortcut, language: l10n.language) {
+            return title
+        }
+        return shortcut.conflictsWithSystemShortcut(for: .radialMenu) ? "macOS" : nil
     }
 
     func saveShortcut(_ storageValue: String) {
@@ -112,13 +96,13 @@ extension RadialMenuSettings {
     private var trackpadRow: some View {
         let status: RadialRowNote.Content? = trackpadGesture != .off && middleClick.touchDeviceMissing
             ? .problem(l10n.s.middleClickNoTrackpad) : nil
-        return RadialTriggerRow(title: text.trackpadLabel, help: text.trackpadHelp, status: status) {
+        return RadialTriggerRow(title: text.trackpadLabel, info: text.trackpadHelp, status: status) {
             SettingsPopUpPicker(title: text.trackpadLabel, options: [
                 .init(value: RadialMenuTrackpadGesture.off, title: text.trackpadOff),
                 .init(value: RadialMenuTrackpadGesture.tap, title: text.trackpadTap),
                 .init(value: RadialMenuTrackpadGesture.click, title: text.trackpadClick),
-            ], selection: Binding(get: { trackpadGesture }, set: requestTrackpadGesture))
-            .fixedSize()
+            ], selection: Binding(get: { trackpadGesture }, set: requestTrackpadGesture),
+               exactWidth: RadialTriggerRow<EmptyView>.controlWidth)
             .help(trackpadTitle(trackpadGesture))
         }
     }
@@ -187,8 +171,14 @@ extension RadialMenuSettings {
 struct RadialTriggerRow<Control: View>: View {
     let title: String
     var help: String? = nil
+    /// A short explanation behind an ⓘ beside the title.
+    var info: String? = nil
     let status: RadialRowNote.Content?
     @ViewBuilder let control: Control
+    @State private var showsInfo = false
+
+    /// The one width every trigger control shares.
+    static var controlWidth: CGFloat { 140 }
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -197,6 +187,23 @@ struct RadialTriggerRow<Control: View>: View {
                 .truncationMode(.tail)
                 .help(help ?? title)
                 .layoutPriority(1)
+            if let info {
+                Button { showsInfo.toggle() } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(info)
+                .accessibilityLabel(info)
+                .popover(isPresented: $showsInfo, arrowEdge: .bottom) {
+                    Text(info)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: 240, alignment: .leading)
+                        .padding(14)
+                }
+            }
             Spacer(minLength: 12)
             if let status {
                 RadialStatusMark(content: status)
@@ -269,7 +276,6 @@ struct RadialMouseButtonRow: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var recording = false
-    @State private var errorText: String?
     @State private var nothingSeen = false
     @State private var hovering = false
     @State private var pulse = false
@@ -285,7 +291,7 @@ struct RadialMouseButtonRow: View {
     private var trigger: RadialMenuMouseTrigger { RadialMenuMouseTrigger.sanitized(previewRaw ?? raw) }
 
     var body: some View {
-        RadialTriggerRow(title: text.mouseButtonLabel, help: text.openInfoBody, status: status) {
+        RadialTriggerRow(title: text.mouseButtonLabel, info: text.openInfoBody, status: status) {
             HStack(spacing: 8) {
                 if recording {
                     recordingButton
@@ -301,8 +307,20 @@ struct RadialMouseButtonRow: View {
                     }
                     .help(text.mouseButtonClear)
                 } else {
-                    Button(text.mouseButtonSet) { start() }
-                        .help(text.mouseButtonRecording)
+                    Button { start() } label: {
+                        Text(text.mouseButtonSet)
+                            .font(.system(size: 12, weight: .medium))
+                            .lineLimit(1)
+                            .frame(width: RadialTriggerRow<EmptyView>.controlWidth, height: 26)
+                            .background(Color.primary.opacity(hovering ? 0.06 : 0.03),
+                                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(Color.primary.opacity(hovering ? 0.25 : 0.12), lineWidth: hovering ? 0.8 : 0.5))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering = $0 }
+                    .help(text.mouseButtonRecording)
                 }
 #if LATTICE_DEVELOPMENT
                 debugToggle
@@ -333,39 +351,33 @@ struct RadialMouseButtonRow: View {
         }
     }
 
-    /// While listening: the prompt, a short error in place when the left or
-    /// right button is pressed, or a hint once nothing has arrived.
+    /// While listening: the prompt, or a hint once nothing has arrived. A
+    /// left or right click is refused with a beep and a shake, never with
+    /// red text; the tooltip says why.
     private var recordingButton: some View {
-        let label = errorText ?? (nothingSeen ? text.mouseButtonNothingSeenShort : text.mouseButtonRecording)
-        let tint: Color = errorText != nil ? .red : .accentColor
+        let label = nothingSeen ? text.mouseButtonNothingSeenShort : text.mouseButtonRecording
         return Button {
-            showError(text.mouseButtonPrimaryRefusedShort)
+            refuse()
         } label: {
             HStack(spacing: 6) {
-                if errorText != nil {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 9, weight: .bold))
-                } else {
-                    Circle().fill(Color.accentColor).frame(width: 6, height: 6)
-                        .opacity(pulse ? 0.25 : 1)
-                }
+                Circle().fill(Color.accentColor).frame(width: 6, height: 6)
+                    .opacity(pulse ? 0.25 : 1)
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(errorText != nil ? Color.red : (nothingSeen ? Color.secondary : Color.accentColor))
-            .padding(.horizontal, 10)
-            .frame(width: 170, height: 26)
-            .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(tint, lineWidth: 1.5))
+            .foregroundStyle(nothingSeen ? Color.secondary : Color.accentColor)
+            .padding(.horizontal, 8)
+            .frame(width: RadialTriggerRow<EmptyView>.controlWidth, height: 26)
+            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.accentColor, lineWidth: 1.5))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .modifier(CompactRecorderShakeEffect(animatableData: shakes))
         .onHover { hovering = $0 }
-        .help(errorText != nil ? text.mouseButtonPrimaryRefused
-                               : (nothingSeen ? text.mouseButtonNothingSeen : text.mouseButtonRecording))
+        .help(nothingSeen ? text.mouseButtonNothingSeen : text.mouseButtonPrimaryRefused)
         .accessibilityLabel(text.mouseButtonLabel)
         .accessibilityValue(label)
     }
@@ -389,19 +401,13 @@ struct RadialMouseButtonRow: View {
     }
 #endif
 
-    private func showError(_ message: String) {
+    private func refuse() {
         NSSound.beep()
-        errorText = message
         withAnimation(.default) { shakes += 1 }
-        let shown = message
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            if errorText == shown { errorText = nil }
-        }
     }
 
     private func start() {
         guard isEnabled, !recording else { return }
-        errorText = nil
         nothingSeen = false
         recording = true
         recordingToken &+= 1
@@ -420,7 +426,6 @@ struct RadialMouseButtonRow: View {
     private func stop() {
         guard recording else { return }
         recording = false
-        errorText = nil
         nothingSeen = false
         recordingToken &+= 1
         var transaction = Transaction()
@@ -442,7 +447,7 @@ struct RadialMouseButtonRow: View {
         if let monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: { event in
             guard recording else { return event }
             if event.type == .rightMouseDown || hovering {
-                showError(text.mouseButtonPrimaryRefusedShort)
+                refuse()
                 return nil
             }
             stop()

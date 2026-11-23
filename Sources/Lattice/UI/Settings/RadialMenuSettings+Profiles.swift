@@ -12,31 +12,33 @@ extension RadialMenuSettings {
     /// Only the tabs scroll; the two buttons stay put.
     var profileTopBar: some View {
         HStack(spacing: 6) {
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
-                            profileTab(profile, index: index)
-                                .id(profile.id)
-                        }
-                        endDropZone
+            // Scrolled through its own position, so bringing the selected
+            // tab into view never scrolls the page around it.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
+                        profileTab(profile, index: index)
+                            .id(profile.id)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
+                    endDropZone
                 }
-                .mask(
-                    HStack(spacing: 0) {
-                        LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: 16)
-                        Rectangle()
-                        LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: 16)
-                    }
-                )
-                .onChange(of: selectedProfileID) { _, id in
-                    guard let id else { return }
-                    withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(id, anchor: .center) }
+                .scrollTargetLayout()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+            }
+            .scrollPosition(id: $tabScrollID, anchor: .center)
+            .mask(
+                HStack(spacing: 0) {
+                    LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 16)
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 16)
                 }
+            )
+            .onChange(of: selectedProfileID) { _, id in
+                guard let id else { return }
+                withAnimation(.easeOut(duration: 0.2)) { tabScrollID = id }
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(text.profilesHeader)

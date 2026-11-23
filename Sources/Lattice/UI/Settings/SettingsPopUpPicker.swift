@@ -18,6 +18,9 @@ struct SettingsPopUpPicker<Value: Hashable>: NSViewRepresentable {
     let title: String
     let options: [Option]
     @Binding var selection: Value
+    /// An exact width for rows that line their controls up; titles longer
+    /// than it truncate. Nil keeps the longest title's width.
+    var exactWidth: CGFloat? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -52,6 +55,7 @@ struct SettingsPopUpPicker<Value: Hashable>: NSViewRepresentable {
         // Fills a width the caller fixes with `.frame(width:)`, never less
         // than its own longest title.
         let natural = nsView.intrinsicContentSize
+        if let exactWidth { return CGSize(width: exactWidth, height: natural.height) }
         guard let width = proposal.width, width.isFinite else { return natural }
         return CGSize(width: max(width, natural.width), height: natural.height)
     }

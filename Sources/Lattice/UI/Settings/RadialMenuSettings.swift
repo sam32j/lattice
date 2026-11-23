@@ -32,12 +32,13 @@ struct RadialMenuSettings: View {
     @State var editingProfile: RadialMenuProfile?
     @State var confirmingDeletion: RadialMenuProfile?
     @State var confirmingReset = false
-    @State var showsOpenInfo = false
-    @State var shortcutError: String?
+    @State var conflictAlert: ShortcutConflictAlert?
+    @State var invalidShortcutMessage: String?
     @State var pendingTakeover: RadialMenuTrackpadGesture?
     @State var gestureCoordinator: PermissionActivationCoordinator?
     @State var tabDropTarget: UUID?
     @State var tabDropAtEnd = false
+    @State var tabScrollID: UUID?
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.settingsPermissionAccess) var permissionAccess
 
