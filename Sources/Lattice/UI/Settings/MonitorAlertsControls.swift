@@ -21,18 +21,13 @@ struct MonitorAlertsControls: View {
     @AppStorage(DefaultsKey.monitorAlertDiskFreePercent) private var alertDiskFreePercent = 10
     @AppStorage(DefaultsKey.monitorAlertBatteryPercent) private var alertBatteryPercent = 15
     @AppStorage(DefaultsKey.monitorAlertCooldownMinutes) private var alertCooldown = 15
-    @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit = TemperatureUnit.celsius.rawValue
 
     private var text: MonitorAlertFeatureStrings {
         FeatureStrings.monitorAlerts(l10n.language)
     }
 
-    private var selectedTemperatureUnit: TemperatureUnit {
-        TemperatureUnit(rawValue: temperatureUnit) ?? .celsius
-    }
-
     private func formattedTemperature(_ celsius: Int) -> String {
-        MetricFormat.temperature(Double(celsius), unit: selectedTemperatureUnit)
+        MetricFormat.temperature(Double(celsius))
     }
 
     var body: some View {

@@ -478,7 +478,6 @@ if (( TEST )); then
         Sources/Lattice/Core/SettingsPageStrings.swift
         Sources/Lattice/Core/BatteryTimeStrings.swift
         Sources/Lattice/Core/CPUCoreStrings.swift
-        Sources/Lattice/Core/MonitorLayoutStrings.swift
         Sources/Lattice/Core/KeepAwakeStrings.swift
         Sources/Lattice/Core/StayAwakeSettingsStrings.swift
         Sources/Lattice/Core/SystemMonitorSettingsStrings.swift
@@ -770,7 +769,6 @@ if (( TEST )); then
         Sources/Lattice/Services/WindowLayout/WindowGestureSupport.swift
         Sources/Lattice/Core/WindowDirectionalStrings.swift
         Sources/Lattice/Core/PointerDisplayStrings.swift
-        Sources/Lattice/Core/GraphScaleStrings.swift
         Sources/Lattice/Core/NotchLowBatteryStrings.swift
         Sources/Lattice/Services/CleaningMode/CleaningUnlockCounter.swift
         Sources/Lattice/Services/CleaningMode/CleaningMouseReleaseGate.swift

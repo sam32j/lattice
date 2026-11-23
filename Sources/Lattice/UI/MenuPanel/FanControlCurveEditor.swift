@@ -7,7 +7,6 @@ struct FanControlCurveEditor: View {
     let strings: FanControlFeatureStrings
     @Binding var curves: [FanControlCurve]
     let temperatures: [FanControlTemperatureReading]
-    let temperatureUnit: TemperatureUnit
     let disabled: Bool
 
     var body: some View {
@@ -217,7 +216,7 @@ struct FanControlCurveEditor: View {
     }
 
     private func formattedTemperature(_ celsius: Double) -> String {
-        MetricFormat.temperature(celsius, unit: temperatureUnit)
+        MetricFormat.temperature(celsius)
     }
 
     private func sourceName(_ source: FanControlTemperatureSource) -> String {

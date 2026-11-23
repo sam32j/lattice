@@ -276,11 +276,6 @@ enum DefaultsKey {
     // Findings already announced once, so a pending update nobody installs
     // does not speak up again after every relaunch.
     static let appUpdatesNotifiedIDs = "appUpdatesNotifiedIDs"
-    // Show/hide whole panel sections that have no monitorShow* key of their own.
-    static let panelShowKeepAwake = "panelShowKeepAwake"
-    static let panelShowBrightness = "panelShowBrightness"
-    static let panelShowToggles = "panelShowToggles"
-    static let panelShowWallpaper = "panelShowWallpaper"
 
     // System monitor — live metrics shown next to the menu bar icon (opt-in).
     static let menuBarCPU = "menuBarCPU"
@@ -316,18 +311,10 @@ enum DefaultsKey {
     static let menuBarLabelStyle = "menuBarLabelStyle"     // compact | classic
     static let menuBarMemoryStyle = "menuBarMemoryStyle"   // dot | percent | both
     static let menuBarDiskStyle = "menuBarDiskStyle"       // percent | free | used
-    static let monitorMemoryMetric = "monitorMemoryMetric" // used | app
     static let monitorInterval = "monitorIntervalSeconds"  // sampling cadence: 1/2/5
     // The modules that were on when the System Monitor switch turned them all
     // off, so turning it back on restores the same set.
     static let monitorModulesBeforeOff = "monitorModulesBeforeOff"
-    static let temperatureUnit = "temperatureUnit"          // celsius | fahrenheit
-    // System monitor — which blocks appear in the panel.
-    static let monitorShowSystem = "monitorShowSystem"
-    static let monitorShowNetwork = "monitorShowNetwork"
-    static let monitorShowDisk = "monitorShowDisk"
-    static let monitorShowPower = "monitorShowPower"
-    static let monitorShowMixer = "monitorShowMixer"
     static let panelShowFanControl = "panelShowFanControl"
     static let fanControlMode = "fanControlMode"
     static let fanControlCoolingLevel = "fanControlCoolingLevel"
@@ -343,42 +330,7 @@ enum DefaultsKey {
     // automatic fan control before this marker can be cleared.
     static let fanControlRecoveryNeeded = "fanControlRecoveryNeeded"
     static let fanControlHelperVersion = "fanControlHelperVersion"
-    // System monitor — per-metric history graphs (each independently toggleable).
-    static let monitorGraphCPU = "monitorGraphCPU"
-    static let monitorGraphGPU = "monitorGraphGPU"
-    static let monitorGraphMemory = "monitorGraphMemory"
-    static let monitorGraphNetwork = "monitorGraphNetwork"
-    static let monitorGraphDisk = "monitorGraphDisk"
-    static let monitorGraphPower = "monitorGraphPower"
-    static let monitorGraphBattery = "monitorGraphBattery"
-    static let monitorGraphScale = "monitorGraphScale"
-    // System monitor — per-item visibility inside each panel section.
-    static let monitorSysTemps = "monitorSysTemps"
-    static let monitorSysCPU = "monitorSysCPU"
-    static let monitorSysCPUCores = "monitorSysCPUCores"
-    static let monitorSysGPU = "monitorSysGPU"
-    static let monitorSysBattery = "monitorSysBattery"
-    static let monitorSysMemory = "monitorSysMemory"
-    static let monitorSysAlerts = "monitorSysAlerts"
-    static let monitorSysUptime = "monitorSysUptime"
-    static let monitorSysConnectedDevices = "monitorSysConnectedDevices"
-    static let monitorNetSpeed = "monitorNetSpeed"
-    static let monitorNetApps = "monitorNetApps"
-    static let monitorNetTotals = "monitorNetTotals"
-    static let monitorNetAddresses = "monitorNetAddresses"
-    static let monitorNetTest = "monitorNetTest"
-    static let networkSpeedUnit = "networkSpeedUnit" // bytes | bits, for every live network speed readout
-    static let monitorDiskUsage = "monitorDiskUsage"
-    static let monitorDiskActivity = "monitorDiskActivity"
-    static let monitorDiskSMART = "monitorDiskSMART"
-    static let monitorDiskProtection = "monitorDiskProtection"
-    static let monitorDiskTools = "monitorDiskTools"
-    static let monitorPwrTemperature = "monitorPwrTemperature"
-    static let monitorPwrSystem = "monitorPwrSystem"
-    static let monitorPwrAdapter = "monitorPwrAdapter"
-    static let monitorPwrBattery = "monitorPwrBattery"
-    static let monitorPwrTimeRemaining = "monitorPwrTimeRemaining"
-    static let monitorPwrHealth = "monitorPwrHealth"
+    // Peripheral batteries in the Power views; also gates Bluetooth use.
     static let monitorPwrPeripherals = "monitorPwrPeripherals"
     // System monitor — optional notifications for sustained or actionable conditions.
     static let monitorAlertCPU = "monitorAlertCPU"
@@ -393,15 +345,6 @@ enum DefaultsKey {
     static let monitorAlertDiskFreePercent = "monitorAlertDiskFreePercent"
     static let monitorAlertBatteryPercent = "monitorAlertBatteryPercent"
     static let monitorAlertCooldownMinutes = "monitorAlertCooldownMinutes"
-    // Menu panel layout — the order the major sections appear in and which are
-    // collapsed, both comma-joined section ids (see PanelSectionID). Absent keys
-    // mean the canonical order and nothing collapsed, so no defaults registration.
-    static let panelSectionOrder = "panelSectionOrder"
-    static let panelSystemOrder = "panelSystemOrder"
-    static let panelNetworkOrder = "panelNetworkOrder"
-    static let panelDiskOrder = "panelDiskOrder"
-    static let panelPowerOrder = "panelPowerOrder"
-    static let panelNavigationEnabled = "panelNavigationEnabled" // legacy: the panel always navigates by sections since 3.1.8
     static let updateLastInstallFailure = "updateLastInstallFailure" // last installer step that failed (fail-copy etc.)
     static let windowLayoutHiddenActions = "windowLayoutHiddenActions" // comma-separated action ids hidden from the grid
     static let windowLayoutWindowGap = "windowLayoutWindowGap" // px between adjacent snapped windows
@@ -948,7 +891,6 @@ enum Defaults {
     ]
     static let allowedMenuBarLabelStyles = ["compact", "classic"]
     static let allowedMenuBarMemoryStyles = ["dot", "percent", "both"]
-    static let allowedMonitorMemoryMetrics = ["used", "app"]
     static let allowedPreviewSizes = ["small", "normal", "large", "xlarge"]
     static let allowedClipboardHistoryLimits = [20, 50, 100, 250, 500, 1_000, 10_000, 0]
     static let allowedClipboardHistoryRetentionDays = [1, 7, 30, 90, 365, 0]
@@ -1299,15 +1241,10 @@ enum Defaults {
         DefaultsKey.appUpdatesLastCheck: 0.0,
         DefaultsKey.appUpdatesLastCount: 0,
         DefaultsKey.appUpdatesNotifiedIDs: [String](),
-        DefaultsKey.panelShowKeepAwake: true,
-        DefaultsKey.panelShowBrightness: true,
-        DefaultsKey.panelShowToggles: true,
-        DefaultsKey.panelShowWallpaper: true,
         // Menu bar metrics start off (the icon stays clean) and are opt-in.
         // The panel shows every monitoring block by default; users hide what
         // they don't want.
         DefaultsKey.monitorInterval: 2,
-        DefaultsKey.temperatureUnit: TemperatureUnit.celsius.rawValue,
         DefaultsKey.menuBarCPUTemperature: false,
         DefaultsKey.menuBarGPUTemperature: false,
         DefaultsKey.menuBarBatteryTemperature: false,
@@ -1339,12 +1276,6 @@ enum Defaults {
         DefaultsKey.menuBarLabelStyle: "compact",
         DefaultsKey.menuBarMemoryStyle: "percent",
         DefaultsKey.menuBarDiskStyle: "percent",
-        DefaultsKey.monitorMemoryMetric: "used",
-        DefaultsKey.monitorShowSystem: true,
-        DefaultsKey.monitorShowNetwork: true,
-        DefaultsKey.monitorShowDisk: true,
-        DefaultsKey.monitorShowPower: true,
-        DefaultsKey.monitorShowMixer: true,
         DefaultsKey.panelShowFanControl: true,
         DefaultsKey.fanControlMode: FanControlMode.system.rawValue,
         DefaultsKey.fanControlCoolingLevel: FanControlPolicy.defaultCoolingLevel,
@@ -1353,42 +1284,7 @@ enum Defaults {
         DefaultsKey.fanControlResumeConfiguration: "",
         DefaultsKey.fanControlRecoveryNeeded: false,
         DefaultsKey.fanControlHelperVersion: "",
-        DefaultsKey.panelNavigationEnabled: true,
-        DefaultsKey.monitorGraphCPU: true,
-        DefaultsKey.monitorGraphGPU: true,
-        DefaultsKey.monitorGraphMemory: true,
-        DefaultsKey.monitorGraphNetwork: true,
-        DefaultsKey.monitorGraphDisk: true,
-        DefaultsKey.monitorGraphPower: true,
-        DefaultsKey.monitorGraphBattery: true,
-        DefaultsKey.monitorGraphScale: true,
         // Every per-item block shows by default; users hide what they don't want.
-        DefaultsKey.monitorSysTemps: true,
-        DefaultsKey.monitorSysCPU: true,
-        DefaultsKey.monitorSysCPUCores: true,
-        DefaultsKey.monitorSysGPU: true,
-        DefaultsKey.monitorSysBattery: true,
-        DefaultsKey.monitorSysMemory: true,
-        DefaultsKey.monitorSysAlerts: true,
-        DefaultsKey.monitorSysUptime: true,
-        DefaultsKey.monitorSysConnectedDevices: true,
-        DefaultsKey.monitorNetSpeed: true,
-        DefaultsKey.monitorNetApps: true,
-        DefaultsKey.monitorNetTotals: true,
-        DefaultsKey.monitorNetAddresses: true,
-        DefaultsKey.monitorNetTest: true,
-        DefaultsKey.networkSpeedUnit: NetworkSpeedUnit.bytes.rawValue,
-        DefaultsKey.monitorDiskUsage: true,
-        DefaultsKey.monitorDiskActivity: true,
-        DefaultsKey.monitorDiskSMART: true,
-        DefaultsKey.monitorDiskProtection: true,
-        DefaultsKey.monitorDiskTools: true,
-        DefaultsKey.monitorPwrTemperature: true,
-        DefaultsKey.monitorPwrSystem: true,
-        DefaultsKey.monitorPwrAdapter: true,
-        DefaultsKey.monitorPwrBattery: true,
-        DefaultsKey.monitorPwrTimeRemaining: true,
-        DefaultsKey.monitorPwrHealth: true,
         DefaultsKey.monitorPwrPeripherals: false,
         DefaultsKey.monitorAlertCPU: false,
         DefaultsKey.monitorAlertCPUTemperature: false,
@@ -1664,7 +1560,6 @@ enum Defaults {
         migrateScrollInverterAxes(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
         migrateRemovedScrollExceptions(in: defaults)
-        migrateBatteryTemperatureVisibility(in: defaults)
         migratePowerPeripheralsVisibility(in: defaults)
         migrateSwitcherPreviewSize(in: defaults)
         migrateNotchWatchAvailability(in: defaults)
@@ -1855,12 +1750,6 @@ enum Defaults {
         guard defaults.object(forKey: DefaultsKey.switcherPreviewSize) == nil else { return }
         defaults.set(defaults.string(forKey: DefaultsKey.previewSize) ?? "normal",
                      forKey: DefaultsKey.switcherPreviewSize)
-    }
-
-    static func migrateBatteryTemperatureVisibility(in defaults: UserDefaults) {
-        guard defaults.object(forKey: DefaultsKey.monitorPwrTemperature) == nil else { return }
-        defaults.set(defaults.object(forKey: DefaultsKey.monitorSysTemps) as? Bool ?? true,
-                     forKey: DefaultsKey.monitorPwrTemperature)
     }
 
     /// The Power card listed peripheral batteries only while the menu bar
@@ -2282,9 +2171,6 @@ enum Defaults {
         allowedMenuBarMemoryStyles.contains(style) ? style : "percent"
     }
 
-    static func sanitizedMonitorMemoryMetric(_ metric: String) -> String {
-        allowedMonitorMemoryMetrics.contains(metric) ? metric : "used"
-    }
 
     static func sanitizedClipboardHistoryLimit(_ value: Int) -> Int {
         allowedClipboardHistoryLimits.contains(value) ? value : 50

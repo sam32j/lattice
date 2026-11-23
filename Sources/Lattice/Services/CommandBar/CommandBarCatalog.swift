@@ -1195,17 +1195,12 @@ enum CommandBarCatalog {
 
         if AppFeature.monitorMemory.isAvailable,
            let memory = cachedMemory, memory.total > 0 {
-            let metric = Defaults.sanitizedMonitorMemoryMetric(
-                UserDefaults.standard.string(forKey: DefaultsKey.monitorMemoryMetric) ?? "")
-            let selected = MetricFormat.selectedMemory(used: memory.used,
-                                                       app: memory.appUsed,
-                                                       metric: metric)
-            let used = MetricFormat.bytes(min(selected, memory.total))
+            let used = MetricFormat.bytes(min(memory.used, memory.total))
             let total = MetricFormat.bytes(memory.total)
-            let percent = Int((Double(selected) / Double(memory.total) * 100).rounded())
+            let percent = Int((Double(min(memory.used, memory.total)) / Double(memory.total) * 100).rounded())
             entries.append(CommandBarEntry(
                 id: "answer.memory",
-                title: metric == "app" ? s.memoryMetricApp : bar.answerMemoryLabel,
+                title: bar.answerMemoryLabel,
                 subtitle: String(format: bar.answerMemoryFormat, used, total),
                 icon: .symbol("memorychip"),
                 answerValue: "\(percent)%",

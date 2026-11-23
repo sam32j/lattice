@@ -156,7 +156,6 @@ final class SystemMonitor: ObservableObject {
     private var timer: Timer?
     private var intervalSeconds = 2
     private var panelClients = 0
-    private var menuPanelNeeds: SystemMonitorPanelNeeds = .none
     private var notchVisible = false
     private var notchDetailNeeds: SystemMonitorPanelNeeds = .none
     private var metricViewConsumers: [UUID: SystemMonitorPanelNeeds] = [:]
@@ -482,7 +481,7 @@ final class SystemMonitor: ObservableObject {
     /// independent surfaces cannot desync.
     private var fullMonitorVisible: Bool { panelClients > 0 }
 
-    private var shouldRun: Bool { fullMonitorVisible || menuPanelNeeds.any || notchDetailNeeds.any || notchVisible || notchAccessoryMonitoring || menuBarActive || alertsActive || PowerSampler.hasInternalBattery }
+    private var shouldRun: Bool { fullMonitorVisible || notchDetailNeeds.any || notchVisible || notchAccessoryMonitoring || menuBarActive || alertsActive || PowerSampler.hasInternalBattery }
 
     private func shouldSample(defaults: UserDefaults = .standard) -> Bool {
         shouldRun && currentPlan(defaults: defaults).any
@@ -547,7 +546,7 @@ final class SystemMonitor: ObservableObject {
     }
 
     private func currentPlan(defaults: UserDefaults) -> SamplingPlan {
-        let menuPanelNeeds = self.menuPanelNeeds.merging(notchDetailNeeds).merging(metricViewNeeds)
+        let menuPanelNeeds = notchDetailNeeds.merging(metricViewNeeds)
         var plan = SamplingPlan()
         let hasInternalBattery = PowerSampler.hasInternalBattery
         let panelNeedsSystem = fullMonitorVisible || menuPanelNeeds.system
@@ -555,12 +554,12 @@ final class SystemMonitor: ObservableObject {
         let panelNeedsDisk = fullMonitorVisible || menuPanelNeeds.disk
         let panelNeedsPower = fullMonitorVisible || menuPanelNeeds.power || notchVisible
 
-        let panelCPU = (panelNeedsSystem && defaults.bool(forKey: DefaultsKey.monitorSysCPU)) || menuPanelNeeds.cpu || notchVisible
-        let panelGPU = (panelNeedsSystem && defaults.bool(forKey: DefaultsKey.monitorSysGPU)) || menuPanelNeeds.gpu || notchVisible
-        let panelMemory = (panelNeedsSystem && defaults.bool(forKey: DefaultsKey.monitorSysMemory)) || menuPanelNeeds.memory || notchVisible
+        let panelCPU = panelNeedsSystem || menuPanelNeeds.cpu || notchVisible
+        let panelGPU = panelNeedsSystem || menuPanelNeeds.gpu || notchVisible
+        let panelMemory = panelNeedsSystem || menuPanelNeeds.memory || notchVisible
         let panelBattery = hasInternalBattery
-            && ((panelNeedsPower && defaults.bool(forKey: DefaultsKey.monitorSysBattery)) || menuPanelNeeds.battery)
-        let panelTemps = panelNeedsSystem && defaults.bool(forKey: DefaultsKey.monitorSysTemps)
+            && (panelNeedsPower || menuPanelNeeds.battery)
+        let panelTemps = panelNeedsSystem
         let alertCPU = defaults.bool(forKey: DefaultsKey.monitorAlertCPU)
         let alertCPUTemperature = defaults.bool(forKey: DefaultsKey.monitorAlertCPUTemperature)
         let alertBatteryTemperature = hasInternalBattery
@@ -571,9 +570,7 @@ final class SystemMonitor: ObservableObject {
 
         plan.needCPU = panelCPU || defaults.bool(forKey: DefaultsKey.menuBarCPU) || alertCPU
         // Read per-core ticks only for the CPU detail or visible core bars.
-        plan.needCPUCores = menuPanelNeeds.cpuCores
-            || (menuPanelNeeds.system && defaults.bool(forKey: DefaultsKey.monitorSysCPU)
-                && defaults.bool(forKey: DefaultsKey.monitorSysCPUCores))
+        plan.needCPUCores = menuPanelNeeds.cpuCores || menuPanelNeeds.system
         plan.needMemory = panelMemory || defaults.bool(forKey: DefaultsKey.menuBarMemory) || alertMemory
         plan.needNetwork = panelNeedsNetwork || defaults.bool(forKey: DefaultsKey.menuBarNetwork)
         plan.needDisk = panelNeedsDisk
@@ -598,7 +595,7 @@ final class SystemMonitor: ObservableObject {
         plan.needGPUTemperature = panelTemps || menuPanelNeeds.gpuTemperature ||
             defaults.bool(forKey: DefaultsKey.menuBarGPUTemperature)
         plan.needBatteryTemperature = hasInternalBattery && (
-            (panelNeedsPower && defaults.bool(forKey: DefaultsKey.monitorPwrTemperature))
+            panelNeedsPower
                 || menuPanelNeeds.batteryTemperature
                 || defaults.bool(forKey: DefaultsKey.menuBarBatteryTemperature) || alertBatteryTemperature)
         if AppFeature.fanControl.isAvailable(in: defaults),
@@ -610,7 +607,7 @@ final class SystemMonitor: ObservableObject {
         // The island preview in Settings shows the device card too; the
         // panel's System card reads USB only for its device row's count.
         plan.needConnectedDevices = fullMonitorVisible
-            || (menuPanelNeeds.system && defaults.bool(forKey: DefaultsKey.monitorSysConnectedDevices))
+            || menuPanelNeeds.system
             || menuPanelNeeds.connectedDevices
             || defaults.bool(forKey: DefaultsKey.menuBarConnectedDevices)
 
@@ -680,7 +677,7 @@ final class SystemMonitor: ObservableObject {
     /// onto the new grid or `tick % stride` could become unreachable.
     private func syncTimerCadence(plan: SamplingPlan) {
         lastSyncedPlan = plan
-        let foreground = fullMonitorVisible || menuPanelNeeds.any || notchDetailNeeds.any || notchVisible
+        let foreground = fullMonitorVisible || notchDetailNeeds.any || notchVisible
         let desired = MonitorSamplingPolicy.wakeTicks(for: Self.neededKinds(of: plan),
                                                       intervalSeconds: intervalSeconds,
                                                       foreground: foreground)
@@ -750,7 +747,7 @@ final class SystemMonitor: ObservableObject {
         syncTimerCadence(plan: plan)
         refreshInFlight = true
         let suppressGPUReadsUntil = self.suppressGPUReadsUntil
-        let foregroundSampling = fullMonitorVisible || menuPanelNeeds.any || notchDetailNeeds.any || notchVisible || metricViewNeeds.any
+        let foregroundSampling = fullMonitorVisible || notchDetailNeeds.any || notchVisible || metricViewNeeds.any
         let intervalSeconds = self.intervalSeconds
         // Ticks advance by the timer's cadence so `tick % stride` keeps
         // measuring base intervals; mutated on main only, read by the queue

@@ -330,8 +330,6 @@ enum SettingsFeatureTests {
         suite.expect(backupKeys.contains(DefaultsKey.windowMaximizeExcludedApps)
                 && (Defaults.registeredDefaults[DefaultsKey.windowMaximizeExcludedApps] as? [String]) == [],
                "the green button exception list starts empty and travels with the settings backup")
-        suite.expect(backupKeys.contains(DefaultsKey.panelShowToggles),
-               "the Hub menu visibility travels with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.panelShowFanControl)
                 && backupKeys.contains(DefaultsKey.fanControlMode)
                 && backupKeys.contains(DefaultsKey.fanControlCoolingLevel)

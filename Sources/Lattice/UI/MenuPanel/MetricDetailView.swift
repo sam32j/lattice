@@ -115,9 +115,7 @@ struct MetricDetailView: View {
     @ObservedObject private var speed = SpeedTest.shared
     @ObservedObject private var addressService = NetworkAddressService.shared
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit = TemperatureUnit.celsius.rawValue
     @AppStorage(DefaultsKey.monitorInterval) private var monitorInterval = 2
-    @AppStorage(DefaultsKey.networkSpeedUnit) private var speedUnit = NetworkSpeedUnit.bytes
     let kind: MetricDetailKind
 
     private let presentation: Presentation
@@ -560,7 +558,7 @@ struct MetricDetailView: View {
         case .gpu:
             usageHistoryGraph(monitor.snapshot.gpuUsageSamples)
         case .memory:
-            historyGraph(MonitorMemoryMetric.current.history(in: monitor.snapshot),
+            historyGraph(monitor.snapshot.memoryHistory,
                          color: graphColor)
         case .network:
             networkGraph
@@ -620,9 +618,7 @@ struct MetricDetailView: View {
     private var networkGraph: some View {
         let down = monitor.snapshot.netDownHistory
         let up = monitor.snapshot.netUpHistory
-        let inBits = speedUnit == .bits
-        let peak = MetricFormat.networkGraphCeiling(max(down.max() ?? 0, up.max() ?? 0, 1),
-                                                    inBits: inBits)
+        let peak = MetricFormat.networkGraphCeiling(max(down.max() ?? 0, up.max() ?? 0, 1))
         ZStack {
             Sparkline(values: down.count >= 2 ? down : [0, 0], color: graphColor, maxValue: peak, fillOpacity: 0.35, lineWidth: 2, showsZeroBaseline: !usesWidgetDesign)
             Sparkline(values: up.count >= 2 ? up : [0, 0],
@@ -632,7 +628,7 @@ struct MetricDetailView: View {
                       lineWidth: 1.5)
         }
         .frame(height: SystemWidgetLayout.graphHeight)
-        .graphCeilingLabel(MetricFormat.networkRate(peak, inBits: inBits))
+        .graphCeilingLabel(MetricFormat.networkRate(peak))
     }
 
     @ViewBuilder
@@ -1188,8 +1184,7 @@ private struct ProcessRowSkeleton: View {
             return memoryRatio.map(MetricFormat.percent) ?? "-"
         case .network:
             let down = snapshot.netDownBytesPerSec ?? 0
-            let inBits = speedUnit == .bits
-            return "↓ " + MetricFormat.networkRateCompact(down, inBits: inBits)
+            return "↓ " + MetricFormat.networkRateCompact(down)
         case .disk:
             return currentDisk.map { MetricFormat.percent($0.usedFraction) } ?? "-"
         case .battery:
@@ -1232,8 +1227,7 @@ private struct ProcessRowSkeleton: View {
             return "\(formatMemory(used)) of \(formatMemory(total))"
         case .network:
             let up = snapshot.netUpBytesPerSec ?? 0
-            let inBits = speedUnit == .bits
-            return "KB/s · ↑ \(MetricFormat.networkRateCompact(up, inBits: inBits)) · Active"
+            return "KB/s · ↑ \(MetricFormat.networkRateCompact(up)) · Active"
         case .disk:
             guard let disk = currentDisk else { return l10n.s.diskNoDisks }
             let capacity = "\(MetricFormat.diskBytes(disk.freeBytes)) free of \(MetricFormat.diskBytes(disk.totalBytes))"
@@ -1290,7 +1284,7 @@ private struct ProcessRowSkeleton: View {
             let down = monitor.snapshot.netDownHistory
             let up = monitor.snapshot.netUpHistory
             let peak = max(down.max() ?? 0, up.max() ?? 0, 1024)
-            return "\(MetricFormat.networkRateCompact(peak, inBits: speedUnit == .bits)) scale"
+            return "\(MetricFormat.networkRateCompact(peak)) scale"
         case .disk:
             return "Read / write"
         case .power:
@@ -1432,12 +1426,9 @@ private struct ProcessRowSkeleton: View {
     }
 
     private func formatTemperature(_ celsius: Double) -> String {
-        MetricFormat.temperature(celsius, unit: displayTemperatureUnit)
+        MetricFormat.temperature(celsius)
     }
 
-    private var displayTemperatureUnit: TemperatureUnit {
-        TemperatureUnit(rawValue: temperatureUnit) ?? .celsius
-    }
 
     private func formatMemory(_ bytes: UInt64) -> String {
         Self.memoryFormatter.string(fromByteCount: Int64(bytes))

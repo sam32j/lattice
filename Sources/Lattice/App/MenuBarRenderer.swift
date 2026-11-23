@@ -156,31 +156,6 @@ enum MemoryMenuBarStyle: String, CaseIterable {
     var showsPercent: Bool { self == .percent || self == .both }
 }
 
-/// Which memory figure the monitor displays across the menu bar and panel.
-enum MonitorMemoryMetric: String, CaseIterable {
-    case used, app
-
-    static var current: MonitorMemoryMetric {
-        let raw = UserDefaults.standard.string(forKey: DefaultsKey.monitorMemoryMetric) ?? ""
-        let metric = Defaults.sanitizedMonitorMemoryMetric(raw)
-        return MonitorMemoryMetric(rawValue: metric) ?? .used
-    }
-
-    func value(in snapshot: SystemSnapshot) -> UInt64? {
-        MetricFormat.selectedMemory(used: snapshot.memoryUsed,
-                                    app: snapshot.memoryAppUsed,
-                                    metric: rawValue)
-    }
-
-    func history(in snapshot: SystemSnapshot) -> [Double] {
-        self == .app ? snapshot.memoryAppHistory : snapshot.memoryHistory
-    }
-
-    func title(in strings: Strings) -> String {
-        self == .app ? strings.memoryMetricApp : strings.memoryMetricUsed
-    }
-}
-
 enum MenuBarLabelStyle: String, CaseIterable {
     case compact, classic
 
@@ -415,7 +390,7 @@ enum MenuBarRenderer {
                 }
             case .memory:
                 let memoryStyle = MemoryMenuBarStyle.current
-                let memoryValue = MonitorMemoryMetric.current.value(in: snapshot)
+                let memoryValue = snapshot.memoryUsed
                 if usesBars {
                     groups.append([.usageBarBlock(label: "RAM",
                                                   fraction: MenuBarUsageBarSupport.memoryFraction(used: memoryValue,
@@ -1091,15 +1066,11 @@ enum MenuBarRenderer {
     }
 
     private static func temperatureCompact(_ celsius: Double) -> String {
-        let unit = TemperatureUnit(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.temperatureUnit) ?? "")
-            ?? .celsius
-        return MetricFormat.temperatureCompact(celsius, unit: unit)
+        MetricFormat.temperatureCompact(celsius)
     }
 
     private static func temperatureLabel(_ component: String) -> String {
-        let unit = TemperatureUnit(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.temperatureUnit) ?? "")
-            ?? .celsius
-        return component + MetricFormat.temperatureUnitSuffix(unit)
+        component + MetricFormat.temperatureUnitSuffix
     }
 
     private static func combinedComponentLabel(_ component: String,

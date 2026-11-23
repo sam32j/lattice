@@ -9,7 +9,6 @@ struct NotchSystemView: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.notchSettingsPreview) private var isSettingsPreview
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(DefaultsKey.networkSpeedUnit) private var networkSpeedUnit = NetworkSpeedUnit.bytes
     @AppStorage(DefaultsKey.monitorInterval) private var monitorInterval = 2
     @State private var topApps: [MetricDetailKind: String] = [:]
     @State private var lastAppRefresh: Date = .distantPast
