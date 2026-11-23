@@ -4,10 +4,12 @@
 import SwiftUI
 import UserNotifications
 
+/// The System Monitor alerts as rows: each reading with the limit it fires
+/// at and its switch, then how soon the same alert may repeat. The card
+/// around them carries the explanation under its title.
 struct MonitorAlertsControls: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
-    let compact: Bool
     @State private var notificationsDenied = false
     @AppStorage(DefaultsKey.monitorAlertCPU) private var alertCPU = false
     @AppStorage(DefaultsKey.monitorAlertCPUTemperature) private var alertCPUTemperature = false
@@ -26,18 +28,43 @@ struct MonitorAlertsControls: View {
         FeatureStrings.monitorAlerts(l10n.language)
     }
 
-    private func formattedTemperature(_ celsius: Int) -> String {
+    private func temperature(_ celsius: Int) -> String {
         MetricFormat.temperature(Double(celsius))
     }
 
+    private func percent(_ value: Int) -> String { "\(value)%" }
+
     var body: some View {
-        // The panel keeps its compact checkbox list; Settings draws one label
-        // per alert, with its limit on the label's options half.
-        Group {
-            if compact {
-                checklist
-            } else {
-                tiles
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                if index > 0 { Divider().padding(.leading, settingsRowTextInset) }
+                MonitorAlertRow(row: row, reduceMotion: reduceMotion)
+            }
+            Divider()
+                .padding(.vertical, 4)
+            SettingsControlRow(title: text.cooldown) {
+                Picker(text.cooldown, selection: $alertCooldown) {
+                    Text(text.cooldown2).tag(2)
+                    Text(text.cooldown5).tag(5)
+                    Text(text.cooldown15).tag(15)
+                    Text(text.cooldown30).tag(30)
+                    Text(text.cooldown60).tag(60)
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+            }
+            .padding(.vertical, 5)
+            .disabled(!anyAlertEnabled)
+            // Alerts silently cannot fire when macOS notifications are denied
+            // for the app; without this line that state is invisible.
+            if notificationsDenied, anyAlertEnabled {
+                Text(text.notificationsDenied)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
+                    .transition(.settingsReveal)
             }
         }
         .onAppear {
@@ -58,161 +85,36 @@ struct MonitorAlertsControls: View {
         .onChange(of: alertCooldown) { _, _ in sanitizeAlertValues() }
     }
 
-    private var tiles: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            LazyVGrid(columns: monitorTokenColumns, spacing: 8) {
-                if AppFeature.monitorCPU.isAvailable {
-                    alertToken(text.cpu, symbol: "cpu", isOn: $alertCPU.animation(reduceMotion ? nil : .settingsExpansion),
-                               limit: .init(label: text.cpuThreshold, value: $alertCPUThreshold,
-                                            range: 50...100, step: 5, formatValue: { "\($0)%" }))
-                    alertToken(text.cpuTemperature, symbol: "thermometer.medium", isOn: $alertCPUTemperature.animation(reduceMotion ? nil : .settingsExpansion),
-                               limit: .init(label: text.cpuTemperatureThreshold, value: $alertCPUTemperatureThreshold,
-                                            range: 70...105, step: 5, formatValue: formattedTemperature))
-                }
-                if AppFeature.monitorMemory.isAvailable {
-                    alertToken(text.memory, symbol: "memorychip", isOn: $alertMemory.animation(reduceMotion ? nil : .settingsExpansion), limit: nil)
-                }
-                if AppFeature.monitorDisk.isAvailable {
-                    alertToken(text.disk, symbol: "internaldrive", isOn: $alertDisk.animation(reduceMotion ? nil : .settingsExpansion),
-                               limit: .init(label: text.diskThreshold, value: $alertDiskFreePercent,
-                                            range: 5...30, step: 5, formatValue: { "\($0)%" }))
-                }
-                if AppFeature.monitorPower.isAvailable, PowerSampler.hasInternalBattery {
-                    alertToken(text.batteryTemperature, symbol: "thermometer.high", isOn: $alertBatteryTemperature.animation(reduceMotion ? nil : .settingsExpansion),
-                               limit: .init(label: text.batteryTemperatureThreshold,
-                                            value: $alertBatteryTemperatureThreshold,
-                                            range: 30...50, step: 5, formatValue: formattedTemperature))
-                    alertToken(text.battery, symbol: "battery.25percent", isOn: $alertBattery.animation(reduceMotion ? nil : .settingsExpansion),
-                               limit: .init(label: text.batteryThreshold, value: $alertBatteryPercent,
-                                            range: 5...50, step: 5, formatValue: { "\($0)%" }))
-                }
-            }
-            .monitorTokenGroup()
-            // One interval for every alert, each timed on its own, so it sits
-            // outside the alerts box rather than under the last of them.
-            SettingsRow(symbol: "bell.badge", title: text.cooldown) {
-                cooldownPicker
-                    .labelsHidden()
-                    .fixedSize()
-            }
-            .disabled(!anyAlertEnabled)
-            if notificationsDenied, anyAlertEnabled {
-                Text(text.notificationsDenied)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.settingsReveal)
-            }
-            Text(text.caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+    /// The alerts this Mac's modules can raise, in reading order.
+    private var rows: [MonitorAlertRow.Model] {
+        var rows: [MonitorAlertRow.Model] = []
+        if AppFeature.monitorCPU.isAvailable {
+            rows.append(.init(id: "cpu", symbol: "cpu", title: text.cpu, isOn: $alertCPU,
+                              limit: .init(format: text.aboveFormat, value: $alertCPUThreshold,
+                                           values: Array(stride(from: 50, through: 100, by: 5)), label: percent)))
+            rows.append(.init(id: "cpuTemperature", symbol: "thermometer.medium", title: text.cpuTemperature,
+                              isOn: $alertCPUTemperature,
+                              limit: .init(format: text.aboveFormat, value: $alertCPUTemperatureThreshold,
+                                           values: Array(stride(from: 70, through: 105, by: 5)), label: temperature)))
         }
-    }
-
-    private struct Limit {
-        let label: String
-        let value: Binding<Int>
-        let range: ClosedRange<Int>
-        let step: Int
-        let formatValue: (Int) -> String
-    }
-
-    /// One alert as a label, with the limit it fires at on its options half.
-    private func alertToken(_ title: String, symbol: String, isOn: Binding<Bool>, limit: Limit?) -> some View {
-        MonitorToken(symbol: symbol, title: title, included: isOn,
-                     options: limit.map { limit in
-                         AnyView(Stepper(value: limit.value, in: limit.range, step: limit.step) {
-                             Text("\(limit.label) \(limit.formatValue(limit.value.wrappedValue))").monospacedDigit()
-                         })
-                     },
-                     optionsSummary: limit.map { $0.formatValue($0.value.wrappedValue) } ?? "")
-    }
-
-    private var cooldownPicker: some View {
-        Picker(text.cooldown, selection: $alertCooldown) {
-            Text(text.cooldown2).tag(2)
-            Text(text.cooldown5).tag(5)
-            Text(text.cooldown15).tag(15)
-            Text(text.cooldown30).tag(30)
-            Text(text.cooldown60).tag(60)
+        if AppFeature.monitorMemory.isAvailable {
+            rows.append(.init(id: "memory", symbol: "memorychip", title: text.memory, isOn: $alertMemory, limit: nil))
         }
-        .pickerStyle(.menu)
-    }
-
-    private var checklist: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(text.caption)
-                .font(.system(size: 9.5))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if AppFeature.monitorCPU.isAvailable {
-                Toggle(text.cpu, isOn: $alertCPU.animation(reduceMotion ? nil : .settingsExpansion))
-                if alertCPU {
-                    Stepper("\(text.cpuThreshold) \(alertCPUThreshold)%",
-                            value: $alertCPUThreshold,
-                            in: 50...100,
-                            step: 5)
-                                .transition(.settingsReveal)
-                }
-                Toggle(text.cpuTemperature, isOn: $alertCPUTemperature.animation(reduceMotion ? nil : .settingsExpansion))
-                if alertCPUTemperature {
-                    Stepper("\(text.cpuTemperatureThreshold) \(formattedTemperature(alertCPUTemperatureThreshold))",
-                            value: $alertCPUTemperatureThreshold,
-                            in: 70...105,
-                            step: 5)
-                                .transition(.settingsReveal)
-                }
-            }
-            if AppFeature.monitorMemory.isAvailable {
-                Toggle(text.memory, isOn: $alertMemory.animation(reduceMotion ? nil : .settingsExpansion))
-            }
-            if AppFeature.monitorDisk.isAvailable {
-                Toggle(text.disk, isOn: $alertDisk.animation(reduceMotion ? nil : .settingsExpansion))
-                if alertDisk {
-                    Stepper("\(text.diskThreshold) \(alertDiskFreePercent)%",
-                            value: $alertDiskFreePercent,
-                            in: 5...30,
-                            step: 5)
-                                .transition(.settingsReveal)
-                }
-            }
-            if AppFeature.monitorPower.isAvailable, PowerSampler.hasInternalBattery {
-                Toggle(text.batteryTemperature, isOn: $alertBatteryTemperature.animation(reduceMotion ? nil : .settingsExpansion))
-                if alertBatteryTemperature {
-                    Stepper("\(text.batteryTemperatureThreshold) \(formattedTemperature(alertBatteryTemperatureThreshold))",
-                            value: $alertBatteryTemperatureThreshold,
-                            in: 30...50,
-                            step: 5)
-                                .transition(.settingsReveal)
-                }
-                Toggle(text.battery, isOn: $alertBattery.animation(reduceMotion ? nil : .settingsExpansion))
-                if alertBattery {
-                    Stepper("\(text.batteryThreshold) \(alertBatteryPercent)%",
-                            value: $alertBatteryPercent,
-                            in: 5...50,
-                            step: 5)
-                                .transition(.settingsReveal)
-                }
-            }
-            if anyAlertEnabled {
-                cooldownPicker
-                    .transition(.settingsReveal)
-            }
-            // Alerts silently cannot fire when macOS notifications are denied
-            // for the app; without this line that state is invisible (the
-            // user just never hears anything).
-            if notificationsDenied, anyAlertEnabled {
-                Text(text.notificationsDenied)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.settingsReveal)
-            }
+        if AppFeature.monitorDisk.isAvailable {
+            rows.append(.init(id: "disk", symbol: "internaldrive", title: text.disk, isOn: $alertDisk,
+                              limit: .init(format: text.belowFormat, value: $alertDiskFreePercent,
+                                           values: Array(stride(from: 5, through: 30, by: 5)), label: percent)))
         }
-        .toggleStyle(.checkbox)
-        .controlSize(.small)
-        .font(.system(size: 10.5))
+        if AppFeature.monitorPower.isAvailable, PowerSampler.hasInternalBattery {
+            rows.append(.init(id: "battery", symbol: "battery.25percent", title: text.battery, isOn: $alertBattery,
+                              limit: .init(format: text.belowFormat, value: $alertBatteryPercent,
+                                           values: Array(stride(from: 5, through: 50, by: 5)), label: percent)))
+            rows.append(.init(id: "batteryTemperature", symbol: "thermometer.high", title: text.batteryTemperature,
+                              isOn: $alertBatteryTemperature,
+                              limit: .init(format: text.aboveFormat, value: $alertBatteryTemperatureThreshold,
+                                           values: Array(stride(from: 30, through: 50, by: 5)), label: temperature)))
+        }
+        return rows
     }
 
     private var anyAlertEnabled: Bool {
@@ -241,5 +143,57 @@ struct MonitorAlertsControls: View {
         alertDiskFreePercent = Defaults.sanitizedPercent(alertDiskFreePercent, fallback: 10, range: 5...30)
         alertBatteryPercent = Defaults.sanitizedPercent(alertBatteryPercent, fallback: 15, range: 5...50)
         alertCooldown = Defaults.sanitizedMonitorAlertCooldown(alertCooldown)
+    }
+}
+
+/// One alert: its icon and name, the limit it fires at as a menu, and its
+/// switch. The limit stays in place while the alert is off, dimmed.
+struct MonitorAlertRow: View {
+    struct Limit {
+        let format: String
+        let value: Binding<Int>
+        let values: [Int]
+        let label: (Int) -> String
+    }
+
+    struct Model {
+        let id: String
+        let symbol: String
+        let title: String
+        let isOn: Binding<Bool>
+        let limit: Limit?
+    }
+
+    let row: Model
+    let reduceMotion: Bool
+
+    var body: some View {
+        let on = row.isOn.wrappedValue
+        HStack(spacing: 12) {
+            LatticeSymbol(row.symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(on ? Color.accentColor : Color.secondary)
+                .frame(width: 26, height: 26)
+                .background((on ? Color.accentColor : Color.secondary).opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            Text(row.title)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            if let limit = row.limit {
+                Picker(row.title, selection: limit.value) {
+                    ForEach(limit.values, id: \.self) { value in
+                        Text(String(format: limit.format, limit.label(value))).tag(value)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+                .disabled(!on)
+            }
+            Toggle(row.title, isOn: row.isOn.animation(reduceMotion ? nil : .settingsExpansion))
+                .labelsHidden()
+                .toggleStyle(.switch)
+        }
+        .padding(.vertical, 7)
     }
 }
