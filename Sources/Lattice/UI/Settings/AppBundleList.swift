@@ -28,6 +28,9 @@ struct AppBundleList<Accessory: View>: View {
     let usesSheet: Bool
     let canRemove: (String) -> Bool
     let sheetTitle: String?
+    /// In sheet mode, what the row shows beside Edit… in place of the title,
+    /// such as the chosen apps' icons and names.
+    let summary: AnyView?
 
     init(title: String,
          caption: String,
@@ -38,12 +41,14 @@ struct AppBundleList<Accessory: View>: View {
          acceptsExecutables: Bool = false,
          usesSheet: Bool = false,
          sheetTitle: String? = nil,
+         summary: AnyView? = nil,
          canRemove: @escaping (String) -> Bool = { _ in true },
          onAdd: @escaping (String) -> Void,
          onRemove: @escaping (String) -> Void,
          @ViewBuilder accessory: @escaping (String) -> Accessory) {
         self.usesSheet = usesSheet
         self.sheetTitle = sheetTitle
+        self.summary = summary
         self.canRemove = canRemove
         self.title = title
         self.caption = caption
@@ -61,8 +66,16 @@ struct AppBundleList<Accessory: View>: View {
     var body: some View {
         Group {
             if usesSheet {
-                SettingsControlRow(title: title) {
-                    Button(SettingsAppListStrings.text(L10n.shared.language).edit) { showingEditor = true }
+                Group {
+                    if let summary {
+                        HStack(alignment: .center, spacing: 12) {
+                            summary
+                            Spacer(minLength: 12)
+                            editButton
+                        }
+                    } else {
+                        SettingsControlRow(title: title) { editButton }
+                    }
                 }
                 .sheet(isPresented: $showingEditor) { editorSheet }
             } else {
@@ -93,6 +106,11 @@ struct AppBundleList<Accessory: View>: View {
             addButton
         }
         .sheet(isPresented: $showingAppPicker) { appPickerSheet }
+    }
+
+    private var editButton: some View {
+        Button(SettingsAppListStrings.text(L10n.shared.language).edit) { showingEditor = true }
+            .fixedSize()
     }
 
     private var addButton: some View {
@@ -199,6 +217,7 @@ extension AppBundleList where Accessory == EmptyView {
          acceptsExecutables: Bool = false,
          usesSheet: Bool = false,
          sheetTitle: String? = nil,
+         summary: AnyView? = nil,
          canRemove: @escaping (String) -> Bool = { _ in true },
          onAdd: @escaping (String) -> Void,
          onRemove: @escaping (String) -> Void) {
@@ -209,7 +228,7 @@ extension AppBundleList where Accessory == EmptyView {
                   bundleIDs: bundleIDs,
                   reachesEveryApp: reachesEveryApp,
                   acceptsExecutables: acceptsExecutables,
-                  usesSheet: usesSheet, sheetTitle: sheetTitle, canRemove: canRemove,
+                  usesSheet: usesSheet, sheetTitle: sheetTitle, summary: summary, canRemove: canRemove,
                   onAdd: onAdd,
                   onRemove: onRemove,
                   accessory: { _ in EmptyView() })
