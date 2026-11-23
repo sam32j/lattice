@@ -249,7 +249,14 @@ enum URLSanitizerTests {
         add.commitTokenInput()
         expectEqual(add.site.tokens.map(\.name), ["ref", "source"], "tokens add once each without regard to case")
         expectEqual(add.tokenInput, "bad=one", "text that is not a token stays in the field")
+        expectEqual(add.rejectedToken ?? "", "bad=one", "the rejected token is named")
+        var rejectedSave = add
+        suite.expect(rejectedSave.finalized(rules: builtIn, globalName: "All sites") == nil
+                     && rejectedSave.site.tokens.map(\.name) == ["ref", "source"],
+                     "Save stays open over a rejected token and keeps the accepted ones")
         add.tokenInput = ""
+        add.commitTokenInput()
+        suite.expect(add.rejectedToken == nil, "an emptied token field clears the problem")
         expectEqual(add.previewMonogram, "N", "the tile previews the first domain until there is a name")
         add.toggleToken("ref")
         suite.expect(add.site.tokens.first?.isBlocked == false && add.site.allowedCount == 1,

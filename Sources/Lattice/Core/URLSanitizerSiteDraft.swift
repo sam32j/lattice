@@ -21,6 +21,8 @@ struct URLSanitizerSiteDraft: Equatable {
     var domainInput = ""
     var tokenInput = ""
     var domainProblem: DomainProblem?
+    /// The first text in the token field that is not a token, left there to fix.
+    var rejectedToken: String?
 
     /// A new site with nothing in it yet.
     init(adding id: String = "custom-" + UUID().uuidString) {
@@ -107,6 +109,7 @@ struct URLSanitizerSiteDraft: Equatable {
             addToken(name)
         }
         tokenInput = rejected.joined(separator: " ")
+        rejectedToken = rejected.first
     }
 
     mutating func addToken(_ name: String) {
@@ -132,9 +135,11 @@ struct URLSanitizerSiteDraft: Equatable {
     // MARK: Save
 
     /// Commits anything still typed and answers the site to store, or nil
-    /// with `domainProblem` saying why not.
+    /// with `rejectedToken` or `domainProblem` saying why not. Tokens that
+    /// were valid stay added, so only the rejected text needs fixing.
     mutating func finalized(rules: URLCleaning.Rules, globalName: String) -> URLCleaning.Site? {
         commitTokenInput()
+        guard rejectedToken == nil else { return nil }
         guard mode != .global else { return site }
         guard commitDomainInput(rules: rules, globalName: globalName) else { return nil }
         guard !site.domains.isEmpty else {

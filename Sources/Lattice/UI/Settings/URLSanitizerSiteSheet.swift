@@ -231,7 +231,13 @@ struct URLSanitizerSiteSheet: View {
             .background(Color.primary.opacity(0.03), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.1))
+                    .strokeBorder(draft.rejectedToken != nil ? Color.red.opacity(0.8) : Color.primary.opacity(0.1))
+            }
+            if let rejected = draft.rejectedToken {
+                Text(String(format: strings.notAToken, rejected))
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -264,7 +270,11 @@ struct URLSanitizerSiteSheet: View {
             }
             .accessibilityLabel(strings.addToken)
             .onChange(of: draft.tokenInput) { _, text in
-                if text.contains(where: { $0 == "," || $0.isWhitespace }) { draft.commitTokenInput() }
+                if text.contains(where: { $0 == "," || $0.isWhitespace }) {
+                    draft.commitTokenInput()
+                } else if text.isEmpty {
+                    draft.rejectedToken = nil
+                }
             }
             .onSubmit { draft.commitTokenInput() }
     }
@@ -297,7 +307,11 @@ struct URLSanitizerSiteSheet: View {
 
     private func save() {
         guard draft.canSave, let site = draft.finalized(rules: rules, globalName: strings.allSites) else {
-            if draft.domainProblem != nil { focus = .domains }
+            if draft.rejectedToken != nil {
+                focus = .tokens
+            } else if draft.domainProblem != nil {
+                focus = .domains
+            }
             return
         }
         onSave(site)
