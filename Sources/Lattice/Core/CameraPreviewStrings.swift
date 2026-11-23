@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// Localized strings for the camera preview mirror.
+/// Localized strings for Camera Preview.
 struct CameraPreviewFeatureStrings {
     let pageTitle: String
     let hubDescription: String
@@ -41,7 +41,7 @@ extension FeatureStrings {
 extension CameraPreviewFeatureStrings {
     static let enUS = CameraPreviewFeatureStrings(
         pageTitle: "Camera Preview",
-        hubDescription: "Opens a floating mirror with your camera",
+        hubDescription: "Opens a floating preview of your camera",
         panelCaption: "Check how you look before a call",
         cameraMenuLabel: "Camera",
         deniedMessage: "Camera access for Lattice is turned off in System Settings.",
@@ -53,7 +53,7 @@ extension CameraPreviewFeatureStrings {
 
     static let ptBR = CameraPreviewFeatureStrings(
         pageTitle: "Prévia da câmera",
-        hubDescription: "Abre um espelho flutuante com a sua câmera",
+        hubDescription: "Abre uma prévia flutuante da sua câmera",
         panelCaption: "Veja como você está antes de uma chamada",
         cameraMenuLabel: "Câmera",
         deniedMessage: "O acesso à câmera para o Lattice está desativado nos Ajustes do Sistema.",
@@ -65,7 +65,7 @@ extension CameraPreviewFeatureStrings {
 
     static let tr = CameraPreviewFeatureStrings(
         pageTitle: "Kamera önizlemesi",
-        hubDescription: "Kameranızı gösteren yüzen bir ayna açar",
+        hubDescription: "Kameranızın yüzen bir önizlemesini açar",
         panelCaption: "Aramadan önce nasıl göründüğünüzü kontrol edin",
         cameraMenuLabel: "Kamera",
         deniedMessage: "Lattice için kamera erişimi Sistem Ayarları’nda kapalı.",
@@ -77,7 +77,7 @@ extension CameraPreviewFeatureStrings {
 
     static let ru = CameraPreviewFeatureStrings(
         pageTitle: "Предпросмотр камеры",
-        hubDescription: "Открывает парящее зеркало с изображением с камеры",
+        hubDescription: "Открывает плавающий предпросмотр камеры",
         panelCaption: "Проверьте, как вы выглядите, перед звонком",
         cameraMenuLabel: "Камера",
         deniedMessage: "Доступ к камере для Lattice отключен в Системных настройках.",
@@ -89,7 +89,7 @@ extension CameraPreviewFeatureStrings {
 
     static let es = CameraPreviewFeatureStrings(
         pageTitle: "Vista previa de la cámara",
-        hubDescription: "Abre un espejo flotante con tu cámara",
+        hubDescription: "Abre una vista previa flotante de tu cámara",
         panelCaption: "Mira cómo te ves antes de una llamada",
         cameraMenuLabel: "Cámara",
         deniedMessage: "El acceso a la cámara para Lattice está desactivado en Ajustes del Sistema.",
@@ -101,7 +101,7 @@ extension CameraPreviewFeatureStrings {
 
     static let sk = CameraPreviewFeatureStrings(
         pageTitle: "Náhľad kamery",
-        hubDescription: "Otvorí plávajúce zrkadlo s vašou kamerou",
+        hubDescription: "Otvorí plávajúci náhľad vašej kamery",
         panelCaption: "Pred hovorom si skontrolujte, ako vyzeráte",
         cameraMenuLabel: "Kamera",
         deniedMessage: "Prístup ku kamere pre Lattice je v Systémových nastaveniach vypnutý.",
@@ -113,7 +113,7 @@ extension CameraPreviewFeatureStrings {
 
     static let de = CameraPreviewFeatureStrings(
         pageTitle: "Kameravorschau",
-        hubDescription: "Öffnet einen schwebenden Spiegel mit deiner Kamera",
+        hubDescription: "Öffnet eine schwebende Vorschau deiner Kamera",
         panelCaption: "Prüfe vor einem Anruf, wie du aussiehst",
         cameraMenuLabel: "Kamera",
         deniedMessage: "Der Kamerazugriff für Lattice ist in den Systemeinstellungen deaktiviert.",
@@ -125,7 +125,7 @@ extension CameraPreviewFeatureStrings {
 
     static let fr = CameraPreviewFeatureStrings(
         pageTitle: "Aperçu de la caméra",
-        hubDescription: "Ouvre un miroir flottant avec votre caméra",
+        hubDescription: "Ouvre un aperçu flottant de votre caméra",
         panelCaption: "Vérifiez votre apparence avant un appel",
         cameraMenuLabel: "Caméra",
         deniedMessage: "L’accès à la caméra pour Lattice est désactivé dans Réglages Système.",
@@ -137,7 +137,7 @@ extension CameraPreviewFeatureStrings {
 
     static let it = CameraPreviewFeatureStrings(
         pageTitle: "Anteprima della fotocamera",
-        hubDescription: "Apre uno specchio fluttuante con la tua fotocamera",
+        hubDescription: "Apre un’anteprima fluttuante della tua fotocamera",
         panelCaption: "Controlla il tuo aspetto prima di una chiamata",
         cameraMenuLabel: "Fotocamera",
         deniedMessage: "L’accesso alla fotocamera per Lattice è disattivato in Impostazioni di Sistema.",
@@ -149,7 +149,7 @@ extension CameraPreviewFeatureStrings {
 
     static let ja = CameraPreviewFeatureStrings(
         pageTitle: "カメラプレビュー",
-        hubDescription: "カメラを映すフローティングミラーを開きます",
+        hubDescription: "カメラのフローティングプレビューを開きます",
         panelCaption: "通話の前に写り方を確認できます",
         cameraMenuLabel: "カメラ",
         deniedMessage: "システム設定でLatticeのカメラへのアクセスがオフになっています。",
@@ -161,7 +161,7 @@ extension CameraPreviewFeatureStrings {
 
     static let ko = CameraPreviewFeatureStrings(
         pageTitle: "카메라 미리보기",
-        hubDescription: "카메라를 비추는 떠 있는 거울을 엽니다",
+        hubDescription: "카메라 미리보기를 떠 있는 창으로 엽니다",
         panelCaption: "통화 전에 내 모습을 확인하세요",
         cameraMenuLabel: "카메라",
         deniedMessage: "시스템 설정에서 Lattice의 카메라 접근이 꺼져 있습니다.",
@@ -173,7 +173,7 @@ extension CameraPreviewFeatureStrings {
 
     static let zhHans = CameraPreviewFeatureStrings(
         pageTitle: "相机预览",
-        hubDescription: "打开一面显示相机画面的浮动镜子",
+        hubDescription: "打开浮动的相机预览",
         panelCaption: "通话前看看自己的状态",
         cameraMenuLabel: "相机",
         deniedMessage: "Lattice 的相机访问权限已在系统设置中关闭。",
@@ -185,7 +185,7 @@ extension CameraPreviewFeatureStrings {
 
     static let zhTW = CameraPreviewFeatureStrings(
         pageTitle: "相機預覽",
-        hubDescription: "打開一面顯示相機畫面的浮動鏡子",
+        hubDescription: "打開浮動的相機預覽",
         panelCaption: "通話前看看自己的狀態",
         cameraMenuLabel: "相機",
         deniedMessage: "Lattice 的相機取用權限已在系統設定中關閉。",
@@ -197,7 +197,7 @@ extension CameraPreviewFeatureStrings {
 
     static let zhHK = CameraPreviewFeatureStrings(
         pageTitle: "相機預覽",
-        hubDescription: "打開一面顯示相機畫面的浮動鏡子",
+        hubDescription: "開啟浮動的相機預覽",
         panelCaption: "通話前看看自己的狀態",
         cameraMenuLabel: "相機",
         deniedMessage: "Lattice 的相機取用權限已在系統設定中關閉。",
@@ -209,7 +209,7 @@ extension CameraPreviewFeatureStrings {
 
     static let uk = CameraPreviewFeatureStrings(
         pageTitle: "Попередній перегляд камери",
-        hubDescription: "Відкриває плаваюче дзеркало з вашою камерою",
+        hubDescription: "Відкриває плаваючий попередній перегляд камери",
         panelCaption: "Перевірте, як ви виглядаєте перед дзвінком",
         cameraMenuLabel: "Камера",
         deniedMessage: "Доступ до камери для Lattice вимкнено в Системних параметрах.",

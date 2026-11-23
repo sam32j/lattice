@@ -81,7 +81,7 @@ final class CameraPreviewService: ObservableObject {
     }
 
     /// The notch's camera page calls this as it appears. Ownership transfers
-    /// from the floating mirror; the two never capture together.
+    /// from the floating preview; the two never capture together.
     func showEmbedded() {
         let notch = NotchService.shared
         guard SessionActivity.shared.isActive,

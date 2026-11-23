@@ -985,7 +985,7 @@ extension NotchModule: PanelOrderItem {
     func title(_ language: AppLanguage) -> String {
         switch self {
         case .timer: return FeatureStrings.notchActivities(language).timer
-        case .camera: return FeatureStrings.notchActivities(language).camera
+        case .camera: return FeatureStrings.cameraPreview(language).pageTitle
         case .notifications: return FeatureStrings.notchNotifications(language).title
         case .downloads: return FeatureStrings.notchFiles(language).downloadsTitle
         case .calendar: return FeatureStrings.notchCalendar(language).title

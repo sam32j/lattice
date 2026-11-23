@@ -4,7 +4,7 @@
 import AVFoundation
 import SwiftUI
 
-/// The floating mirror: the live camera image with a camera picker that
+/// The floating preview: the live camera image with a camera picker that
 /// appears on hover when more than one camera is around. Esc, a click
 /// anywhere else or switching to the meeting app closes it.
 struct CameraPreviewView: View {
