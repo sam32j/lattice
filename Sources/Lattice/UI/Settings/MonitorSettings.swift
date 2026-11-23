@@ -55,8 +55,9 @@ struct MonitorSettings: View {
                         .fixedSize()
                     }
                 }
-                SettingsCard(title: FeatureStrings.monitorAlerts(l10n.language).section) {
-                    MonitorAlertsControls(compact: false)
+                SettingsCard(title: FeatureStrings.monitorAlerts(l10n.language).section,
+                             caption: FeatureStrings.monitorAlerts(l10n.language).caption) {
+                    MonitorAlertsControls()
                 }
             }
             .frame(maxWidth: 760)

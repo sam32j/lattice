@@ -694,7 +694,6 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/ScreenshotPinFilePromise.swift
         Sources/Lattice/Services/QuickTools/ScreenshotPinDragView.swift
         Sources/Lattice/Core/ScreenshotPinStrings.swift
-        Sources/Lattice/UI/Settings/MonitorToken.swift
         Sources/Lattice/Services/QuickTools/ScreenshotRenderer.swift
         Sources/Lattice/UI/Screenshot/ScreenshotEditorResizeCursor.swift
         Sources/Lattice/Services/QuickTools/RecentCaptureRetention.swift
