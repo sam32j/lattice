@@ -318,6 +318,9 @@ enum DefaultsKey {
     static let menuBarDiskStyle = "menuBarDiskStyle"       // percent | free | used
     static let monitorMemoryMetric = "monitorMemoryMetric" // used | app
     static let monitorInterval = "monitorIntervalSeconds"  // sampling cadence: 1/2/5
+    // The modules that were on when the System Monitor switch turned them all
+    // off, so turning it back on restores the same set.
+    static let monitorModulesBeforeOff = "monitorModulesBeforeOff"
     static let temperatureUnit = "temperatureUnit"          // celsius | fahrenheit
     // System monitor — which blocks appear in the panel.
     static let monitorShowSystem = "monitorShowSystem"

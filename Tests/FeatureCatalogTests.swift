@@ -738,24 +738,15 @@ enum FeatureCatalogTests {
         let compactHubContent = compactMember("private var content: some View {", in: featureHubSource)
         suite.expect(compactHubContent.isEmpty && !FeatureVisibilitySupport.isPageVisible(.features, isAvailable: { _ in true }),
                "the retired hub has no rendered content or visible destination")
-        // A lazy stack on the Monitor page re-measures and re-anchors its rows
+        // A lazy stack on the Monitor pages re-measures and re-anchors its rows
         // without settling once the Bars options make the menu bar card taller,
         // which hangs Settings on the first scroll. The same kind of source
-        // check: it keeps the eager stack and the preview above the scroll
-        // view, not the scrolling itself.
-        let monitorSettingsSource = (try? String(
-            contentsOfFile: "Sources/Lattice/UI/Settings/MonitorSettings.swift",
-            encoding: .utf8)) ?? ""
-        let compactMonitorBody = compactMember("var body: some View {", in: monitorSettingsSource)
-        let monitorPreviewAboveScroll: Bool = {
-            guard let preview = compactMonitorBody.range(of: "MenuBarMetricsPreview()"),
-                  let scroll = compactMonitorBody.range(of: "ScrollView{VStack(") else { return false }
-            return preview.upperBound <= scroll.lowerBound
-        }()
-        suite.expect(compactMonitorBody.hasPrefix("VStack(spacing:0){")
-                && monitorPreviewAboveScroll
-                && !compactMonitorBody.contains("LazyVStack("),
-               "the Monitor page lays its rows out eagerly, with the live preview above its scroll view")
+        // check: it keeps the eager stacks, not the scrolling itself.
+        let monitorSources = ["MonitorSettings.swift", "MonitorMenuBarSettings.swift"].map {
+            (try? String(contentsOfFile: "Sources/Lattice/UI/Settings/" + $0, encoding: .utf8)) ?? ""
+        }
+        suite.expect(monitorSources.allSatisfy { $0.contains("ScrollView {") && !$0.contains("LazyVStack(") },
+               "the Monitor pages lay their rows out eagerly")
         suite.expect(AppFeature.diskImageInstaller.group == .clipboardFiles
                 && AppFeature.diskImageInstaller.enabledKeys.isEmpty
                 && AppFeature.diskImageInstaller.permissions == [.appManagement]
@@ -2118,10 +2109,10 @@ enum FeatureCatalogTests {
                "Music Blocking and DMG Installer use their owning settings pages")
         suite.expect(AppFeature.allCases.allSatisfy(\.hasNavigableSettingsDestination),
                "all features have a reachable settings destination")
-        suite.expect(AppFeature.monitorCPU.settingsDestination == FeatureSettingsDestination(.monitor)
-                && AppFeature.fanControl.settingsDestination
-                == FeatureSettingsDestination(.monitor, sectionAnchor: .fanControl),
-               "shared monitor destinations distinguish the dedicated fan controls")
+        suite.expect(FeatureVisibilitySupport.monitorFeatures.allSatisfy {
+                    $0.settingsDestination == FeatureSettingsDestination(.monitor)
+                },
+               "every monitor module opens the System Monitor page, where its switch sits in the title bar menu")
         let settingsRouter = SettingsRouter.shared
         let companionRouter = SettingsRouter()
         companionRouter.request(AppFeature.notchMascot.settingsDestination)

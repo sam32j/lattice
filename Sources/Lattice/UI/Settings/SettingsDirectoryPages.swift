@@ -245,10 +245,11 @@ extension SettingsDirectory {
                                                  s.monitorShowCPU, s.monitorShowGPU, s.monitorShowMemory,
                                                  s.monitorShowNetwork, s.diskStorageSettings, s.diskSection, s.powerSection,
                                                  FeatureStrings.connectedDevices(language).title,
-                                                 FeatureStrings.fanControl(language).title],
+                                                 FeatureStrings.fanControl(language).title,
+                                                 s.menuBarSection,
+                                                 FeatureStrings.systemMonitorSettings(language).refreshTitle],
                                       featureKeywords: [
                                         (.monitorMemory, [s.monitorMemoryPressureDot]),
-                                        (.monitorNetwork, [FeatureStrings.monitorLayout(language).networkSpeedUnit]),
                                         (.fanControl, [FeatureStrings.fanControl(language).menuBarTitle]),
                                       ]),
                 SettingsDirectoryItem(page: .appUpdates,

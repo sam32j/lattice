@@ -481,6 +481,7 @@ if (( TEST )); then
         Sources/Lattice/Core/MonitorLayoutStrings.swift
         Sources/Lattice/Core/KeepAwakeStrings.swift
         Sources/Lattice/Core/StayAwakeSettingsStrings.swift
+        Sources/Lattice/Core/SystemMonitorSettingsStrings.swift
         Sources/Lattice/Core/BluetoothSleepStrings.swift
         Sources/Lattice/Core/FanControlStrings.swift
         Sources/Lattice/Core/ConnectedDevicesStrings.swift

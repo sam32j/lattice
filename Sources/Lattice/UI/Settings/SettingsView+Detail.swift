@@ -25,6 +25,7 @@ extension SettingsView {
                 DisplaySettings(focus: router.destination.sectionAnchor)
             }
         case .monitor: MonitorSettings()
+        case .monitorMenuBar: MonitorMenuBarSettings()
         case .mouse: MouseSettings()
         case .dock: DockSettings()
         case .keyboard: KeyboardSettings()

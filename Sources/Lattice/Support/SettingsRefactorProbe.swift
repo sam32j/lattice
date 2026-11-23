@@ -42,6 +42,21 @@ enum SettingsRefactorProbe {
             if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
             exit(failures.isEmpty ? 0 : 1)
         }
+        if CommandLine.arguments.contains("--monitor-only") {
+            var failures = [String]()
+            FeatureRuntime.shared.setAvailable([.monitorCPU, .monitorMemory, .monitorNetwork], true)
+            defaults.set(true, forKey: DefaultsKey.menuBarCPU)
+            defaults.set(true, forKey: DefaultsKey.menuBarMemory)
+            for (name, view) in [("monitor", AnyView(MonitorSettings())),
+                                 ("monitor-menu-bar", AnyView(MonitorMenuBarSettings()))] {
+                render(name, view: view, size: CGSize(width: 720, height: 900), output: output,
+                       failures: &failures, colorScheme: .light)
+            }
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--island-settings-only") {
             var failures = [String]()
             NotchSettingsRenderingProbe.run(output: output, failures: &failures)

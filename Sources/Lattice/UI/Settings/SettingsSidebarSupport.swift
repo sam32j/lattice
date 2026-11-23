@@ -93,6 +93,10 @@ enum SettingsSidebarSupport {
            items.contains(where: { $0.id == .page(.windowLayout) }) {
             return .page(.windowLayout)
         }
+        if destination.page == .monitorMenuBar,
+           items.contains(where: { $0.id == .page(.monitor) }) {
+            return .page(.monitor)
+        }
         if destination.page == .energy,
            destination.sectionAnchor == .extraBrightness || destination.sectionAnchor == .bluetoothSleep,
            items.contains(where: { $0.id == .feature(.brightness) }) { return .feature(.brightness) }
