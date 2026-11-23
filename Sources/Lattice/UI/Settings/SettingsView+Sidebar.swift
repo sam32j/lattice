@@ -83,6 +83,8 @@ extension SettingsView {
             return CaptureInterfaceStrings.localized(l10n.language).recordingOptions
         case .windowLayoutShortcuts:
             return WindowLayoutFeatureStrings.shortcutsPageTitle(l10n.language)
+        case .monitorMenuBar:
+            return l10n.s.menuBarSection
         default:
             return sidebarItems.first { $0.id == selectedSidebarItem }?.title ?? l10n.s.settingsTitle
         }
