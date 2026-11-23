@@ -279,6 +279,7 @@ struct RadialMouseButtonRow: View {
     @State private var recording = false
     @State private var nothingSeen = false
     @State private var hovering = false
+    @State private var clearHovering = false
     @State private var pulse = false
     @State private var shakes: CGFloat = 0
     @State private var monitors: [Any] = []
@@ -308,11 +309,25 @@ struct RadialMouseButtonRow: View {
                         .help(activeHelp(button))
                         .accessibilityElement(children: .combine)
                         .accessibilityValue(activeHelp(button))
-                        Button(text.mouseButtonClearShort) {
+                        Button {
                             if previewRaw != nil { previewRaw = RadialMenuMouseTrigger.off.rawValue; return }
                             raw = RadialMenuMouseTrigger.off.rawValue
                             RadialMenuService.shared.syncWithPreferences()
+                        } label: {
+                            Text(text.mouseButtonClearShort)
+                                .font(.system(size: 12, weight: .medium))
+                                .lineLimit(1)
+                                .padding(.horizontal, 12)
+                                .frame(height: 26)
+                                .background(Color.primary.opacity(clearHovering ? 0.06 : 0.03),
+                                            in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(Color.primary.opacity(clearHovering ? 0.25 : 0.12),
+                                            lineWidth: clearHovering ? 0.8 : 0.5))
+                                .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .onHover { clearHovering = $0 }
                         .help(text.mouseButtonClear)
                     }
                 } else {
@@ -332,6 +347,9 @@ struct RadialMouseButtonRow: View {
                     .help(text.mouseButtonRecording)
                 }
             }
+            // Every state (Set button…, listening, Active with Clear) sits in the
+            // same height as the shortcut field, so the row never shifts.
+            .frame(height: 26)
         }
         .onChange(of: capture.lastInputSeen) { _, seen in handle(seen) }
         .onChange(of: isEnabled) { _, on in if !on { stop() } }
