@@ -111,7 +111,10 @@ enum URLSanitizerTests {
         }
         expectEqual(URLCleaning.matchingHost("open.com"), "open.com",
                     "a prefix that is the whole remaining name is not stripped")
-        expectEqual(URLCleaning.matchingHost("www.m.example.com"), "m.example.com", "only one prefix is stripped")
+        expectEqual(URLCleaning.matchingHost("www.m.example.com"), "example.com", "stacked prefixes are all stripped")
+        expectEqual(URLCleaning.matchingHost("www.open.com"), "open.com", "stripping stops at the site itself")
+        expectEqual(URLCleaning.domain(from: "www.m.youtube.com") ?? "", "youtube.com",
+                    "a domain normalizes to what the rules store")
         let nested = rules { sites in
             sites.append(URLCleaning.Site(id: "custom-music", name: "Music", domains: ["music.youtube.com"],
                                           tokens: [URLCleaning.Token(name: "ref", isCustom: true)]))
@@ -232,6 +235,10 @@ enum URLSanitizerTests {
         expectEqual(add.domainProblem, .claimed(domain: "youtu.be", siteName: "YouTube"),
                     "a domain another site lists is refused with that site's name")
         expectEqual(add.domainInput, "youtu.be", "a refused domain stays in the field")
+        add.domainInput = "www.m.youtube.com"
+        add.commitDomainInput(rules: builtIn, globalName: "All sites")
+        expectEqual(add.domainProblem, .claimed(domain: "youtube.com", siteName: "YouTube"),
+                    "stacked prefixes are checked against the domain the rules would store")
         add.domainInput = "not a domain"
         add.commitDomainInput(rules: builtIn, globalName: "All sites")
         expectEqual(add.domainProblem, .notADomain("not"), "text that is not a domain is refused")
