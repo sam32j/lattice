@@ -6,6 +6,8 @@ import SwiftUI
 
 /// Test a link: an Original row to type into, a Cleaned row with the result
 /// under the saved rules, and one line naming what went and what stayed.
+/// The Cleaned row unrolls once there is a link to clean and folds away when
+/// the field empties; the page keys the motion on `isEmpty(_:)`.
 struct URLSanitizerTestCard: View {
     @ObservedObject private var l10n = L10n.shared
     @Binding var input: String
@@ -18,7 +20,11 @@ struct URLSanitizerTestCard: View {
     @State private var copyGeneration = 0
 
     private var strings: URLSanitizerStrings { FeatureStrings.urlSanitizer(l10n.language) }
-    private var isEmpty: Bool { input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    private var isEmpty: Bool { Self.isEmpty(input) }
+
+    static func isEmpty(_ input: String) -> Bool {
+        input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         SettingsCard(title: strings.testTitle) {
@@ -46,11 +52,16 @@ struct URLSanitizerTestCard: View {
                     .disableAutocorrection(true)
                     .accessibilityLabel(strings.original)
             }
-            Divider()
-            row(label: cleanedLabel, actions: cleanedActions) {
-                cleanedText
+            if !isEmpty {
+                VStack(spacing: 0) {
+                    Divider()
+                    row(label: cleanedLabel, actions: cleanedActions) {
+                        cleanedText
+                    }
+                    .background(Color.accentColor.opacity(0.06))
+                }
+                .transition(.settingsReveal)
             }
-            .background(Color.accentColor.opacity(0.06))
         }
         .background(Color(nsColor: .textBackgroundColor).opacity(0.55))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -98,9 +109,7 @@ struct URLSanitizerTestCard: View {
 
     @ViewBuilder
     private var cleanedText: some View {
-        if isEmpty {
-            placeholder(strings.cleanedPlaceholder)
-        } else if let result {
+        if let result {
             SwiftUI.Text(result.url)
                 .font(.system(.callout, design: .monospaced))
                 .lineLimit(1)
