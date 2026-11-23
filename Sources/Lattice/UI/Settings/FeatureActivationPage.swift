@@ -266,6 +266,9 @@ struct SettingsMenuToggleRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // A popover hands its first row keyboard focus as it opens; the hover
+        // fill already marks the row, so no ring for that.
+        .focusEffectDisabled()
         .onHover { hovered = $0 }
         .accessibilityRepresentation {
             Toggle(title, isOn: $isOn)
