@@ -70,6 +70,7 @@ struct URLSanitizerSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
+        .settingsExpansionAnimation(value: URLSanitizerTestCard.isEmpty(input))
         .sheet(item: $sheet) { request in
             URLSanitizerSiteSheet(draft: request.draft, rules: rules,
                                   highlightedTokens: highlightedTokens(for: request.draft.site.id, in: result),
