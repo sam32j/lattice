@@ -8,6 +8,8 @@ struct PanelURLCleanerView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var cleaner = URLCleanerService.shared
     @AppStorage(DefaultsKey.urlSanitizerAutoRemove) private var autoClean = true
+    /// The main switch: the checkbox only means something while it is on.
+    @AppStorage(DefaultsKey.urlCleanerEnabled) private var sanitizerEnabled = false
     // The service reads the rules itself. `result` reads them too, so a rule
     // changed in Settings while the panel sits beside it redraws the result.
     @AppStorage(DefaultsKey.urlSanitizerSites) private var storedSites = ""
@@ -51,8 +53,12 @@ struct PanelURLCleanerView: View {
 
     private var autoCleanToggle: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Toggle(FeatureStrings.urlSanitizer(l10n.language).autoRemoveTitle, isOn: $autoClean)
+            // With URL Sanitizer off nothing is removed, so the box reads
+            // unchecked and greyed rather than promising a cleanup.
+            Toggle(FeatureStrings.urlSanitizer(l10n.language).autoRemoveTitle,
+                   isOn: sanitizerEnabled ? $autoClean : .constant(false))
                 .toggleStyle(.checkbox)
+                .disabled(!sanitizerEnabled)
                 .font(.system(size: 11.5, weight: .medium))
                 .onChange(of: autoClean) { _, _ in
                     URLCleanerService.shared.syncWithPreferences()
@@ -153,9 +159,10 @@ struct PanelURLCleanerView: View {
     }
 
     private func copy() {
-        guard let url = result?.url else { return }
-        cleaner.copy(url)
-        copied = url
+        guard let result else { return }
+        cleaner.copy(result.url)
+        cleaner.record(original: input.trimmingCharacters(in: .whitespacesAndNewlines), result: result)
+        copied = result.url
     }
 
     private func clearInput() {
