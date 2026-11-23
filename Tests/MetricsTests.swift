@@ -257,6 +257,7 @@ struct MetricsTests {
                 KeepAwakeCatalogContract.run(suite)
                 KeepAwakeLidSleepTests.run { suite.expect($0, $1) }
                 KeepAwakeTimerHandoffTests.run { suite.expect($0, $1) }
+                StayAwakeSettingsTests.run(suite)
             }),
             ("wallpaper", {
                 WallpaperContract.run(suite)

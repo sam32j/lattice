@@ -480,6 +480,7 @@ if (( TEST )); then
         Sources/Lattice/Core/CPUCoreStrings.swift
         Sources/Lattice/Core/MonitorLayoutStrings.swift
         Sources/Lattice/Core/KeepAwakeStrings.swift
+        Sources/Lattice/Core/StayAwakeSettingsStrings.swift
         Sources/Lattice/Core/BluetoothSleepStrings.swift
         Sources/Lattice/Core/FanControlStrings.swift
         Sources/Lattice/Core/ConnectedDevicesStrings.swift
@@ -732,6 +733,7 @@ if (( TEST )); then
         Sources/Lattice/Core/KeepAwakeHubStrings.swift
         Sources/Lattice/Core/HubCustomizationStrings.swift
         Sources/Lattice/Services/LatticeHub/KeepAwakeHubStatus.swift
+        Sources/Lattice/Services/StayAwakeSettingsSupport.swift
         Sources/Lattice/Core/KeepAwakeAppearance.swift
         Sources/Lattice/Services/KeepAwakeTimeFormat.swift
         Sources/Lattice/Services/KeepAwakeAssertions.swift
