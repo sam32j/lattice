@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import QuartzCore
 import Combine
 
 /// Owns the menu bar presence: the black hole glyph, the optional countdown
@@ -441,7 +442,22 @@ final class StatusItemController {
                 DispatchQueue.main.async { [weak self] in self?.refresh() }
             }
         }
-        performRefresh()
+        Self.withoutStatusBarAnimation { performRefresh() }
+    }
+
+    /// A reading that changes, appears or goes away replaces what was there
+    /// in place: the title, width and visibility changes of one refresh land
+    /// in a transaction with no duration and no implicit animation, so the
+    /// item does not slide.
+    static func withoutStatusBarAnimation(_ body: () -> Void) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            context.allowsImplicitAnimation = false
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            body()
+            CATransaction.commit()
+        }
     }
 
     private func performRefresh() {
