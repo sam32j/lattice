@@ -281,14 +281,17 @@ final class RadialMenuService: ObservableObject {
     }
 
     /// The shortcut's key coming up. A modifier-free shortcut ends its hold
-    /// here; a chord ends it here only when its modifiers are already gone,
-    /// and otherwise when they lift, through the flags monitor.
+    /// here. A chord ends it here when its key was only tapped, or when its
+    /// modifiers are already gone; otherwise the modifiers end it as they
+    /// lift, through the flags monitor.
     private func hotkeyReleased() {
         guard sessionActive, holdPhase, holdButton == nil else { return }
         if sessionAwaitsKeyUp {
             endHoldPhase()
         } else if let shortcut = sessionShortcut,
-                  !RadialMenuSupport.shortcutIsStillHeld(
+                  RadialMenuSupport.chordKeyUpEndsHold(
+                      heldFor: ProcessInfo.processInfo.systemUptime - holdStartedAt,
+                      usesSuperKey: sessionUsesSuperKey,
                       modifiersHeld: shortcut.requiredModifiersHeld(in: NSEvent.modifierFlags),
                       superKeyHeld: superKeyStillHeld) {
             endHoldPhase()

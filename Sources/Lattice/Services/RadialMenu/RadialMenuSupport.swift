@@ -553,6 +553,17 @@ extension RadialMenuSupport {
         modifiersHeld || superKeyHeld || keyHeld
     }
 
+    /// Whether a chord's key coming up ends its hold. A key let go within
+    /// the quick-press window was a tap, so the wheel stays open even if a
+    /// modifier lingers past that window; a key held longer leaves the hold
+    /// to the modifiers, so they can keep aiming. Super Key chords keep
+    /// their own release path.
+    static func chordKeyUpEndsHold(heldFor: TimeInterval, usesSuperKey: Bool,
+                                   modifiersHeld: Bool, superKeyHeld: Bool) -> Bool {
+        if !usesSuperKey, heldFor < quickPressLimit { return true }
+        return !shortcutIsStillHeld(modifiersHeld: modifiersHeld, superKeyHeld: superKeyHeld)
+    }
+
     /// Whether the radial menu currently owns this extra button as its
     /// summoner. Mouse navigation and the mouse button shortcuts both ask
     /// this from inside their own tap callbacks, on every event of a

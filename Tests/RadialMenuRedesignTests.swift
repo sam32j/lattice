@@ -12,6 +12,18 @@ enum RadialMenuReleaseTests {
                      "a chord whose modifiers come from a remapped key stays held while its key is down")
         suite.expect(!RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: false, keyHeld: false),
                      "letting go of everything ends the hold")
+        suite.expect(RadialMenuSupport.chordKeyUpEndsHold(heldFor: 0.1, usesSuperKey: false,
+                                                          modifiersHeld: true, superKeyHeld: false),
+                     "a chord whose key is only tapped ends its hold on key-up, even with a modifier lingering")
+        suite.expect(!RadialMenuSupport.chordKeyUpEndsHold(heldFor: 0.8, usesSuperKey: false,
+                                                           modifiersHeld: true, superKeyHeld: false),
+                     "a chord key held past a tap leaves the hold to the modifiers, so they can keep aiming")
+        suite.expect(RadialMenuSupport.chordKeyUpEndsHold(heldFor: 0.8, usesSuperKey: false,
+                                                          modifiersHeld: false, superKeyHeld: false),
+                     "a chord key let go after its modifiers ends the hold")
+        suite.expect(!RadialMenuSupport.chordKeyUpEndsHold(heldFor: 0.1, usesSuperKey: true,
+                                                           modifiersHeld: false, superKeyHeld: true),
+                     "a Super Key chord keeps its own release path, even on a quick key-up")
         let quickToggleNames = FeatureStrings.radialMenu(.enUS)
         suite.expect(RadialMenuQuickToggle.darkMode.stableTitle(quickToggleNames) == "Toggle System Appearance"
                 && RadialMenuQuickToggle.hiddenFiles.stableTitle(quickToggleNames) == "Toggle Hidden Files"
