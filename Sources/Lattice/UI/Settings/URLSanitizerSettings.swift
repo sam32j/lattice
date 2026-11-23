@@ -252,7 +252,7 @@ private struct URLSanitizerSettingsMenu: View {
     var body: some View {
         let strings = FeatureStrings.urlSanitizer(l10n.language)
         VStack(alignment: .leading, spacing: 0) {
-            URLSanitizerMenuToggleRow(title: strings.autoRemoveTitle, help: strings.autoRemoveHelp,
+            SettingsMenuToggleRow(title: strings.autoRemoveTitle, help: strings.autoRemoveHelp,
                                       isOn: $autoRemove)
                 .onChange(of: autoRemove) { _, _ in
                     URLCleanerService.shared.syncWithPreferences()
@@ -260,46 +260,6 @@ private struct URLSanitizerSettingsMenu: View {
         }
         .padding(6)
         .frame(width: 300)
-    }
-}
-
-private struct URLSanitizerMenuToggleRow: View {
-    let title: String
-    let help: String
-    @Binding var isOn: Bool
-    @State private var hovered = false
-
-    var body: some View {
-        Button {
-            isOn.toggle()
-        } label: {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                    Text(help)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 8)
-                Toggle(title, isOn: .constant(isOn))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                    .allowsHitTesting(false)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(hovered ? Color.primary.opacity(0.06) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovered = $0 }
-        .accessibilityRepresentation {
-            Toggle(title, isOn: $isOn)
-                .accessibilityHint(help)
-        }
     }
 }
 
