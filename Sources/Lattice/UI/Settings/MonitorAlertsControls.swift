@@ -44,22 +44,6 @@ struct MonitorAlertsControls: View {
                 }
                 .transition(.settingsReveal)
             }
-            Divider()
-                .padding(.vertical, 4)
-            SettingsControlRow(title: text.cooldown) {
-                Picker(text.cooldown, selection: $alertCooldown) {
-                    Text(text.cooldown2).tag(2)
-                    Text(text.cooldown5).tag(5)
-                    Text(text.cooldown15).tag(15)
-                    Text(text.cooldown30).tag(30)
-                    Text(text.cooldown60).tag(60)
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .fixedSize()
-            }
-            .padding(.vertical, 5)
-            .disabled(!anyAlertEnabled)
             // Alerts silently cannot fire when macOS notifications are denied
             // for the app; without this line that state is invisible.
             if notificationsDenied, anyAlertEnabled {
@@ -219,5 +203,40 @@ struct MonitorAlertRow: View {
         return limit.values.map {
             (String(format: limit.format, limit.label($0)) as NSString).size(withAttributes: [.font: font]).width
         }.max().map { ceil($0) + 2 } ?? 80
+    }
+}
+
+/// How soon the same alert may come back, for every alert at once. It sits
+/// in the Alerts header, beside the title it governs, so it never reads as
+/// one more alert in the list.
+struct MonitorAlertsRepeatMenu: View {
+    @ObservedObject private var l10n = L10n.shared
+    @AppStorage(DefaultsKey.monitorAlertCooldownMinutes) private var alertCooldown = 15
+    @AppStorage(DefaultsKey.monitorAlertCPU) private var alertCPU = false
+    @AppStorage(DefaultsKey.monitorAlertCPUTemperature) private var alertCPUTemperature = false
+    @AppStorage(DefaultsKey.monitorAlertBatteryTemperature) private var alertBatteryTemperature = false
+    @AppStorage(DefaultsKey.monitorAlertMemory) private var alertMemory = false
+    @AppStorage(DefaultsKey.monitorAlertDisk) private var alertDisk = false
+    @AppStorage(DefaultsKey.monitorAlertBattery) private var alertBattery = false
+
+    var body: some View {
+        let text = FeatureStrings.monitorAlerts(l10n.language)
+        HStack(spacing: 6) {
+            Text(text.cooldown)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Picker(text.cooldown, selection: $alertCooldown) {
+                Text(text.cooldown2).tag(2)
+                Text(text.cooldown5).tag(5)
+                Text(text.cooldown15).tag(15)
+                Text(text.cooldown30).tag(30)
+                Text(text.cooldown60).tag(60)
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
+        }
+        .disabled(!(alertCPU || alertCPUTemperature || alertMemory || alertDisk
+                    || (PowerSampler.hasInternalBattery && (alertBatteryTemperature || alertBattery))))
     }
 }

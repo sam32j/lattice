@@ -1003,9 +1003,9 @@ enum ClipboardFeatureTests {
             expectFormat(alertStrings.batteryTemperatureBodyFormat, ["@"],
                          "\(language.rawValue) battery temperature alert format")
         }
-        suite.expect(FeatureStrings.monitorAlerts(.enUS).cooldown == "Repeat after",
+        suite.expect(FeatureStrings.monitorAlerts(.enUS).cooldown == "Remind again after",
                "English monitor repeat control is explicit")
-        suite.expect(FeatureStrings.monitorAlerts(.ptBR).cooldown == "Repetir após",
+        suite.expect(FeatureStrings.monitorAlerts(.ptBR).cooldown == "Lembrar de novo após",
                "Portuguese monitor repeat control is explicit")
 
         // MARK: Settings search navigation
