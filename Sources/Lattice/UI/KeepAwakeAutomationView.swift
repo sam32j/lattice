@@ -33,9 +33,20 @@ struct KeepAwakeConditionTiles: View {
         FeatureStrings.stayAwakeSettings(l10n.language)
     }
 
+    /// What a chosen tile says about its condition right now, in that
+    /// condition's own words.
+    private func stateText(_ condition: KeepAwakeAutomationCondition, holds: Bool) -> String {
+        switch condition {
+        case .externalDisplay: return holds ? settings.displayConnected : settings.displayNotConnected
+        case .power: return holds ? settings.powerConnected : settings.powerOnBattery
+        case .runningApps: return holds ? settings.appsOpen : settings.appsNotOpen
+        }
+    }
+
     private func conditionTile(_ condition: KeepAwakeAutomationCondition, title: String, icon: String,
                                selected: Bool, toggle: @escaping () -> Void) -> some View {
         let holds = awake.liveAutomationConditions.contains(condition)
+        let state = stateText(condition, holds: holds)
         return Button {
             withAnimation(reduceMotion ? nil : .settingsExpansion, toggle)
             awake.automationPreferencesDidChange()
@@ -58,7 +69,7 @@ struct KeepAwakeConditionTiles: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 // Only a chosen condition is watched, so only it can say.
-                Text(holds ? settings.conditionNow : settings.conditionNotNow)
+                Text(state)
                     .font(.system(size: 10.5, weight: .medium))
                     .foregroundStyle(holds ? AnyShapeStyle(Color.green) : AnyShapeStyle(.tertiary))
                     .opacity(selected ? 1 : 0)
@@ -77,7 +88,7 @@ struct KeepAwakeConditionTiles: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
-        .accessibilityValue(selected ? (holds ? settings.conditionNow : settings.conditionNotNow) : "")
+        .accessibilityValue(selected ? state : "")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
