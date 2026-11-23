@@ -9,15 +9,16 @@ import Foundation
 /// the main thread mid-motion freezes it and then lands it in one jump. Main
 /// thread only.
 enum InterfaceMotionHold {
-    private static var heldUntil = Date.distantPast
+    /// System uptime, so a wall clock set back never revives an ended hold.
+    private static var heldUntil: TimeInterval = 0
 
     /// Holds deferred syncs for the next `duration` seconds.
     static func hold(for duration: TimeInterval) {
-        heldUntil = max(heldUntil, Date().addingTimeInterval(duration))
+        heldUntil = max(heldUntil, ProcessInfo.processInfo.systemUptime + duration)
     }
 
     /// Seconds left before held syncs may run; 0 once no motion holds them.
     static var remaining: TimeInterval {
-        max(0, heldUntil.timeIntervalSinceNow)
+        max(0, heldUntil - ProcessInfo.processInfo.systemUptime)
     }
 }
