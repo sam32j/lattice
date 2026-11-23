@@ -236,6 +236,8 @@ struct MonitorAlertsRepeatMenu: View {
             .labelsHidden()
             .fixedSize()
         }
+        // One line always; the caption beside it wraps instead.
+        .fixedSize()
         .disabled(!(alertCPU || alertCPUTemperature || alertMemory || alertDisk
                     || (PowerSampler.hasInternalBattery && (alertBatteryTemperature || alertBattery))))
     }
