@@ -122,12 +122,16 @@ struct StayAwakeSessionCard: View {
             .accessibilityElement(children: .combine)
             Spacer(minLength: 12)
             if awake.isActive {
-                Button(hub.stop) {
+                Button {
                     pickingTime = false
                     awake.toggle()
+                } label: {
+                    Label(strings.stopSession, systemImage: "stop.fill")
                 }
+                .buttonStyle(.bordered)
+                .tint(.red)
                 .controlSize(.regular)
-                .accessibilityLabel(hub.stop)
+                .accessibilityLabel(strings.stopSession)
                 .accessibilityValue(caption(for: status.caption))
             }
         }
