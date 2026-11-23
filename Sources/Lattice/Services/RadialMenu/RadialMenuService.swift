@@ -74,9 +74,9 @@ final class RadialMenuService: ObservableObject {
     private var holdSafety: DispatchWorkItem?
     private var tabDwell: DispatchWorkItem?
     private var flashToken = 0
-    /// Where the view drew each profile tab, by profile index, in the
-    /// panel's own top-left coordinates.
-    private var tabFrames: [Int: CGRect] = [:]
+    /// Where the view drew each profile tab on its arc, by profile index:
+    /// the angle range of the band's centre line.
+    private var tabSpans: [Int: ClosedRange<Double>] = [:]
     private var scrollSteps = RadialProfileScrollAccumulator()
     private var mouseTap: CFMachPort?
     private var mouseTapSource: CFRunLoopSource?
@@ -108,8 +108,13 @@ final class RadialMenuService: ObservableObject {
     // MARK: - Lifecycle
 
     func syncWithPreferences() {
-        // The trackpad gesture is recognized by the middle click's contact reader.
-        defer { MiddleClickService.shared.syncWithPreferences() }
+        // The trackpad gesture is recognized by the middle click's contact
+        // reader, and the Mouse Buttons drag to switch Spaces steps off a
+        // button this menu claims; both follow the menu's settings.
+        defer {
+            MiddleClickService.shared.syncWithPreferences()
+            MouseButtonShortcutService.shared.syncWithPreferences()
+        }
         let defaults = UserDefaults.standard
         let enabled = AppFeature.radialMenu.isAvailable
             && defaults.bool(forKey: DefaultsKey.radialMenuEnabled)
@@ -275,11 +280,23 @@ final class RadialMenuService: ObservableObject {
         beginSession(hold: true)
     }
 
-    /// The key of a modifier-free shortcut coming up. Chords end their hold
-    /// when the modifiers lift instead, through the flags monitor.
+    /// The shortcut's key coming up. A modifier-free shortcut ends its hold
+    /// here; a chord ends it here only when its modifiers are already gone,
+    /// and otherwise when they lift, through the flags monitor.
     private func hotkeyReleased() {
-        guard sessionActive, holdPhase, sessionAwaitsKeyUp else { return }
-        endHoldPhase()
+        guard sessionActive, holdPhase, holdButton == nil else { return }
+        if sessionAwaitsKeyUp {
+            endHoldPhase()
+        } else if let shortcut = sessionShortcut,
+                  !RadialMenuSupport.shortcutIsStillHeld(
+                      modifiersHeld: shortcut.requiredModifiersHeld(in: NSEvent.modifierFlags),
+                      superKeyHeld: superKeyStillHeld) {
+            endHoldPhase()
+        }
+    }
+
+    private var superKeyStillHeld: Bool {
+        sessionUsesSuperKey && SuperKeyService.isEngaged && SuperKeyService.shared.isHeld
     }
 
     /// The four-finger tap or click: opens a sticky menu on the primary
@@ -312,7 +329,7 @@ final class RadialMenuService: ObservableObject {
         activeProfileIndex = 0
         hoveredTabIndex = nil
         flashedProfileName = nil
-        tabFrames = [:]
+        tabSpans = [:]
         scrollSteps.reset()
         let items = availableItems(primary.items)
         refreshNowPlaying(for: items)
@@ -413,7 +430,7 @@ final class RadialMenuService: ObservableObject {
         highlightedIndex = nil
         hoveredTabIndex = nil
         flashedProfileName = nil
-        tabFrames = [:]
+        tabSpans = [:]
         holdPhase = false
         holdButton = nil
         sessionShortcut = nil
@@ -505,14 +522,15 @@ final class RadialMenuService: ObservableObject {
 
     /// The view reports where it drew the tabs, so the pointer can rest on
     /// one at release or long enough to switch.
-    func updateTabFrames(_ frames: [Int: CGRect]) {
-        tabFrames = frames
+    func updateTabSpans(_ spans: [Int: ClosedRange<Double>]) {
+        tabSpans = spans
     }
 
     private func tabIndex(at pointer: CGPoint) -> Int? {
-        guard let panel, !tabFrames.isEmpty else { return nil }
-        let local = CGPoint(x: pointer.x - panel.frame.minX, y: panel.frame.maxY - pointer.y)
-        return tabFrames.first { $0.value.insetBy(dx: -3, dy: -4).contains(local) }?.key
+        guard !tabSpans.isEmpty else { return nil }
+        return RadialProfileTabs.tabIndex(dx: pointer.x - wheelCenter.x, dyUp: pointer.y - wheelCenter.y,
+                                          spans: tabSpans, radius: RadialMenuLayout.tabArcRadius,
+                                          capHeight: RadialMenuLayout.tabPillHeight)
     }
 
     // MARK: - Selection
@@ -752,8 +770,8 @@ final class RadialMenuService: ObservableObject {
         guard sessionActive, holdPhase, !sessionAwaitsKeyUp, let shortcut = sessionShortcut else { return }
         guard !RadialMenuSupport.shortcutIsStillHeld(
             modifiersHeld: shortcut.requiredModifiersHeld(in: flags),
-            superKeyHeld: sessionUsesSuperKey && SuperKeyService.isEngaged
-                && SuperKeyService.shared.isHeld
+            superKeyHeld: superKeyStillHeld,
+            keyHeld: CGEventSource.keyState(.combinedSessionState, key: CGKeyCode(shortcut.keyCode))
         ) else { return }
         endHoldPhase()
     }

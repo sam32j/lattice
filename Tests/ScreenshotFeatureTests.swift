@@ -3737,6 +3737,7 @@ enum ScreenshotFeatureTests {
                "the radial trackpad gesture is off by default and decodes safely")
         suite.expect(RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: true, superKeyHeld: false)
                 && RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: true)
+                && RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: false, keyHeld: true)
                 && !RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: false),
                "the radial hold follows physical modifiers or the virtual super key")
         suite.expect(RadialMenuMouseTrigger.sanitized("back") == .back

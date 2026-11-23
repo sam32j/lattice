@@ -367,6 +367,18 @@ enum RadialMenuQuickToggle: String, Codable, CaseIterable, Identifiable {
         true
     }
 
+    /// The name of a toggle whose live title follows the system's state
+    /// ("Switch to Dark Mode"), as Settings shows it: what it does, not what
+    /// it would do this moment. Nil for toggles whose title never changes.
+    func stableTitle(_ text: RadialMenuFeatureStrings) -> String? {
+        switch self {
+        case .darkMode: return text.toggleSystemAppearance
+        case .hiddenFiles: return text.toggleHiddenFiles
+        case .desktopIcons: return text.toggleDesktopIcons
+        default: return nil
+        }
+    }
+
     var symbolName: String {
         switch self {
         case .darkMode: return "moon.fill"
@@ -522,9 +534,12 @@ enum RadialMenuRelease: Equatable {
 
 extension RadialMenuSupport {
     /// The Super Key is a virtual modifier: it decorates the summoning key but
-    /// never appears in the system's current physical-modifier state.
-    static func shortcutIsStillHeld(modifiersHeld: Bool, superKeyHeld: Bool) -> Bool {
-        modifiersHeld || superKeyHeld
+    /// never appears in the system's current physical-modifier state. A chord
+    /// whose modifiers come from a remapped key (a Hyper key, a mouse button
+    /// its driver turns into a chord) is the same, so the chord's own key
+    /// being down also counts: only letting go of everything ends the hold.
+    static func shortcutIsStillHeld(modifiersHeld: Bool, superKeyHeld: Bool, keyHeld: Bool = false) -> Bool {
+        modifiersHeld || superKeyHeld || keyHeld
     }
 
     /// Whether the radial menu currently owns this extra button as its
