@@ -166,10 +166,10 @@ struct MenuBarReadingsList: View {
                 // Dragging moves within the full saved order, so components
                 // hidden by a module keep their slot for their return.
                 PanelReorderableItem(item: group, cornerRadius: 8, order: $order, dragging: $dragging) {
-                    MenuBarReadingGroupView(group: group, members: visibleMembers(of: group))
+                    MenuBarReadingRow(group: group, members: visibleMembers(of: group))
                 }
                 if index < groups.count - 1 {
-                    Divider().padding(.leading, 58)
+                    Divider().padding(.leading, 52)
                 }
             }
         }
@@ -200,58 +200,77 @@ struct MenuBarReadingsList: View {
 
 extension MenuBarMetric: PanelOrderItem {}
 
-/// One component: a grip, its icon and name, then its readings. A component
-/// with one reading is a single row with its switch.
-struct MenuBarReadingGroupView: View {
+/// One component in one row: a grip, its icon and name, and a menu that
+/// both shows what it puts in the menu bar and changes it. The menu lists
+/// the component's readings as checkmarks, then its own options.
+struct MenuBarReadingRow: View {
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.menuBarMetricAppearance) private var metricAppearance = "values"
+    /// Bumped whenever a preference changes, so the summary follows a
+    /// checkmark picked in the menu.
+    @State private var revision = 0
     let group: MenuBarReadingGroup
     let members: [MenuBarMetric]
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if members.count == 1, let only = members.first {
-                MenuBarReadingRow(metric: only, title: group.title(l10n.s), header: header(showsIcon: true))
-            } else {
-                HStack(spacing: 10) { header(showsIcon: true); Spacer(minLength: 0) }
-                    .padding(.vertical, 7)
-                ForEach(members) { metric in
-                    MenuBarReadingRow<EmptyView>(metric: metric, title: memberTitle(metric), header: nil)
-                        .padding(.leading, 58)
-                }
-                if let key = group.combineKey, metricAppearance == "values" {
-                    MenuBarCombineRow(title: FeatureStrings.systemMonitorSettings(l10n.language).combineTitle,
-                                      key: key)
-                        .padding(.leading, 58)
-                        .transition(.settingsReveal)
-                }
-            }
-        }
-        .contentShape(Rectangle())
-    }
+    private var strings: SystemMonitorSettingsStrings { FeatureStrings.systemMonitorSettings(l10n.language) }
 
-    private func header(showsIcon: Bool) -> some View {
+    var body: some View {
+        let title = group.title(l10n.s)
         HStack(spacing: 10) {
             Image(systemName: "line.3.horizontal")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.quaternary)
                 .frame(width: 12)
                 .accessibilityHidden(true)
             LatticeSymbol(group.symbolName)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 26, height: 26)
-                .background(Color.accentColor.opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            if members.count > 1 {
-                Text(group.title(l10n.s))
-                    .lineLimit(1)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            Text(title)
+                .lineLimit(1)
+            Spacer(minLength: 12)
+            Menu {
+                Group {
+                    if members.count == 1, let only = members.first {
+                        MenuBarReadingToggle(metric: only, title: strings.showInMenuBar)
+                    } else {
+                        ForEach(members) { MenuBarReadingToggle(metric: $0, title: memberTitle($0)) }
+                    }
+                    if let key = group.combineKey, metricAppearance == "values", members.count > 1 {
+                        Divider()
+                        MenuBarDefaultsToggle(title: strings.combineTitle, key: key)
+                    }
+                    ForEach(members) { metric in
+                        MenuBarReadingOptions(metric: metric)
+                    }
+                }
+                // The page draws its toggles as switches, which a menu cannot
+                // show; without this every item reads disabled.
+                .toggleStyle(.automatic)
+            } label: {
+                Text(summary)
             }
+            .fixedSize()
+            .accessibilityLabel(title)
+            .accessibilityValue(summary)
+        }
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            revision &+= 1
         }
     }
 
+    /// "Usage, Temperature", "On" for a single reading, or "Off".
+    private var summary: String {
+        _ = revision
+        let shown = members.filter { UserDefaults.standard.bool(forKey: $0.defaultsKey) }
+        if shown.isEmpty { return strings.offOption }
+        if members.count == 1 { return strings.onOption }
+        return shown.map(memberTitle).joined(separator: ", ")
+    }
+
     private func memberTitle(_ metric: MenuBarMetric) -> String {
-        let strings = FeatureStrings.systemMonitorSettings(l10n.language)
         switch metric {
         case .cpu, .gpu, .diskUsage: return strings.memberUsage
         case .cpuTemperature, .gpuTemperature, .batteryTemperature: return strings.memberTemperature
@@ -263,95 +282,59 @@ struct MenuBarReadingGroupView: View {
     }
 }
 
-/// A component's "show as one item" switch, under its readings.
-private struct MenuBarCombineRow: View {
+/// A reading's checkmark in its component's menu.
+private struct MenuBarReadingToggle: View {
     let title: String
-    @AppStorage private var combined: Bool
+    @AppStorage private var shown: Bool
+
+    init(metric: MenuBarMetric, title: String) {
+        self.title = title
+        _shown = AppStorage(wrappedValue: false, metric.defaultsKey)
+    }
+
+    var body: some View { Toggle(title, isOn: $shown) }
+}
+
+/// A checkmark backed by any Bool preference.
+private struct MenuBarDefaultsToggle: View {
+    let title: String
+    @AppStorage private var isOn: Bool
 
     init(title: String, key: String) {
         self.title = title
-        _combined = AppStorage(wrappedValue: true, key)
+        _isOn = AppStorage(wrappedValue: true, key)
     }
 
-    var body: some View {
-        HStack(spacing: 10) {
-            Text(title)
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            Toggle(title, isOn: $combined)
-                .labelsHidden()
-                .toggleStyle(.switch)
-        }
-        .padding(.vertical, 7)
-    }
+    var body: some View { Toggle(title, isOn: $isOn) }
 }
 
-/// One reading: its name, its own options when it has any, and the switch
-/// that shows it in the menu bar. A single-reading component passes its
-/// grip and icon as the header.
-struct MenuBarReadingRow<Header: View>: View {
+/// A reading's own choices, after a divider in its component's menu.
+private struct MenuBarReadingOptions: View {
     @ObservedObject private var l10n = L10n.shared
     let metric: MenuBarMetric
-    let title: String
-    let header: Header?
-    @AppStorage private var shown: Bool
     @AppStorage(DefaultsKey.menuBarMemoryStyle) private var memoryStyle = "percent"
     @AppStorage(DefaultsKey.menuBarNetworkUploadFirst) private var uploadFirst = false
     @AppStorage(DiskMenuBarStyle.defaultsKey) private var diskStyle = DiskMenuBarStyle.percent
 
-    init(metric: MenuBarMetric, title: String, header: Header?) {
-        self.metric = metric
-        self.title = title
-        self.header = header
-        _shown = AppStorage(wrappedValue: false, metric.defaultsKey)
-    }
-
     var body: some View {
-        HStack(spacing: 10) {
-            if let header { header }
-            Text(title)
-                .foregroundStyle(shown ? .primary : .secondary)
-                .lineLimit(1)
-            Spacer(minLength: 8)
-            if let options {
-                Menu {
-                    // The page draws its toggles as switches, which a menu
-                    // cannot show; without this every item reads disabled.
-                    options.toggleStyle(.automatic)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .help(FeatureStrings.mouseClickDebounce(l10n.language).moreOptions)
-                .accessibilityLabel(FeatureStrings.mouseClickDebounce(l10n.language).moreOptions)
-            }
-            Toggle(title, isOn: $shown)
-                .labelsHidden()
-                .toggleStyle(.switch)
-        }
-        .padding(.vertical, 7)
-    }
-
-    /// The reading's own choices, as menu items.
-    private var options: AnyView? {
         switch metric {
         case .memory:
-            return AnyView(Toggle(l10n.s.monitorMemoryPressureDot, isOn: Binding(
+            Divider()
+            Toggle(l10n.s.monitorMemoryPressureDot, isOn: Binding(
                 get: { Defaults.sanitizedMenuBarMemoryStyle(memoryStyle) != "percent" },
-                set: { memoryStyle = $0 ? "both" : "percent" })))
+                set: { memoryStyle = $0 ? "both" : "percent" }))
         case .network:
-            return AnyView(Toggle(l10n.s.monitorNetworkUploadFirst, isOn: $uploadFirst))
+            Divider()
+            Toggle(l10n.s.monitorNetworkUploadFirst, isOn: $uploadFirst)
         case .diskUsage:
-            return AnyView(Picker(l10n.s.diskMenuBarStyleLabel, selection: $diskStyle) {
+            Divider()
+            Picker(l10n.s.diskMenuBarStyleLabel, selection: $diskStyle) {
                 Text(l10n.s.diskMenuBarUsedPercentage).tag(DiskMenuBarStyle.percent)
                 Text(l10n.s.diskMenuBarAvailableSpace).tag(DiskMenuBarStyle.free)
                 Text(l10n.s.diskMenuBarUsedSpace).tag(DiskMenuBarStyle.used)
             }
-            .pickerStyle(.inline))
         default:
-            return nil
+            EmptyView()
         }
     }
 }

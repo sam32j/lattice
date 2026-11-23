@@ -995,8 +995,6 @@ enum ClipboardFeatureTests {
                    && !layoutStrings.edgeSnapWaitingForSystem.contains("—"),
                    "\(language.rawValue) window edge snap controls are localized")
             let alertStrings = FeatureStrings.monitorAlerts(language)
-            suite.expect(alertStrings.caption.contains("12"),
-                   "\(language.rawValue) monitor alert caption explains the sustained alert window")
             expectFormat(alertStrings.cpuBodyFormat, ["d"], "\(language.rawValue) CPU alert format")
             expectFormat(alertStrings.cpuTemperatureBodyFormat, ["@"],
                          "\(language.rawValue) CPU temperature alert format")

@@ -28,6 +28,10 @@ struct MonitorAlertsControls: View {
         FeatureStrings.monitorAlerts(l10n.language)
     }
 
+    private var settings: SystemMonitorSettingsStrings {
+        FeatureStrings.systemMonitorSettings(l10n.language)
+    }
+
     private func temperature(_ celsius: Int) -> String {
         MetricFormat.temperature(Double(celsius))
     }
@@ -37,8 +41,8 @@ struct MonitorAlertsControls: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                if index > 0 { Divider().padding(.leading, settingsRowTextInset) }
-                MonitorAlertRow(row: row, reduceMotion: reduceMotion)
+                if index > 0 { Divider() }
+                MonitorAlertRow(row: row, off: settings.offOption, reduceMotion: reduceMotion)
             }
             Divider()
                 .padding(.vertical, 4)
@@ -98,7 +102,8 @@ struct MonitorAlertsControls: View {
                                            values: Array(stride(from: 70, through: 105, by: 5)), label: temperature)))
         }
         if AppFeature.monitorMemory.isAvailable {
-            rows.append(.init(id: "memory", symbol: "memorychip", title: text.memory, isOn: $alertMemory, limit: nil))
+            rows.append(.init(id: "memory", symbol: "memorychip", title: text.memory, isOn: $alertMemory,
+                              limit: nil, onTitle: settings.whenCritical))
         }
         if AppFeature.monitorDisk.isAvailable {
             rows.append(.init(id: "disk", symbol: "internaldrive", title: text.disk, isOn: $alertDisk,
@@ -146,8 +151,8 @@ struct MonitorAlertsControls: View {
     }
 }
 
-/// One alert: its icon and name, the limit it fires at as a menu, and its
-/// switch. The limit stays in place while the alert is off, dimmed.
+/// One alert in one row: its name, and a menu that is both its switch and
+/// its limit: Off, or the level it fires at ("Above 90%").
 struct MonitorAlertRow: View {
     struct Limit {
         let format: String
@@ -162,38 +167,50 @@ struct MonitorAlertRow: View {
         let title: String
         let isOn: Binding<Bool>
         let limit: Limit?
+        /// The menu's on choice for an alert without a limit.
+        var onTitle: String = ""
     }
 
     let row: Model
+    let off: String
     let reduceMotion: Bool
 
+    /// Zero is Off; any other tag is the limit itself, or 1 for "on" when
+    /// the alert has no limit.
+    private var selection: Binding<Int> {
+        Binding(get: {
+            guard row.isOn.wrappedValue else { return 0 }
+            return row.limit?.value.wrappedValue ?? 1
+        }, set: { choice in
+            if choice == 0 {
+                row.isOn.wrappedValue = false
+            } else {
+                if let limit = row.limit { limit.value.wrappedValue = choice }
+                row.isOn.wrappedValue = true
+            }
+        })
+    }
+
     var body: some View {
-        let on = row.isOn.wrappedValue
         HStack(spacing: 12) {
-            LatticeSymbol(row.symbol)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(on ? Color.accentColor : Color.secondary)
-                .frame(width: 26, height: 26)
-                .background((on ? Color.accentColor : Color.secondary).opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             Text(row.title)
                 .lineLimit(1)
             Spacer(minLength: 8)
-            if let limit = row.limit {
-                Picker(row.title, selection: limit.value) {
+            Picker(row.title, selection: selection.animation(reduceMotion ? nil : .settingsExpansion)) {
+                Text(off).tag(0)
+                Divider()
+                if let limit = row.limit {
                     ForEach(limit.values, id: \.self) { value in
                         Text(String(format: limit.format, limit.label(value))).tag(value)
                     }
+                } else {
+                    Text(row.onTitle).tag(1)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .fixedSize()
-                .disabled(!on)
             }
-            Toggle(row.title, isOn: row.isOn.animation(reduceMotion ? nil : .settingsExpansion))
-                .labelsHidden()
-                .toggleStyle(.switch)
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
     }
 }
