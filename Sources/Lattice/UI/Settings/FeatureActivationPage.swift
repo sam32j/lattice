@@ -125,13 +125,15 @@ struct SettingsTitleBarSwitch: View {
 final class SettlingSwitchState: ObservableObject {
     @Published private(set) var pending: Bool?
     private var generation = 0
+    /// Its own burst, so another switch's change never replaces this one's.
+    private let burstKey = UUID().uuidString
 
     func binding(isOn: Bool, apply: @escaping (Bool) -> Void) -> Binding<Bool> {
         Binding(get: { self.pending ?? isOn }, set: { value in
             self.pending = value
             self.generation &+= 1
             let current = self.generation
-            settingsApplyAfterSwitch {
+            settingsApplyAfterSwitch(key: self.burstKey) {
                 guard self.generation == current else { return }
                 apply(value)
                 self.pending = nil
