@@ -48,17 +48,19 @@ extension RadialItemEditor {
             }
         case .tool, .quickToggle:
             // Quick toggles and the utilities that are really switches, in
-            // one menu; each keeps the kind it is stored as.
+            // one alphabetical menu; each keeps the kind it is stored as.
             let title = FeatureStrings.quickToggles(l10n.language).pageTitle
             editorRow(title) {
                 let toggles: [SettingsPopUpPicker<String>.Option] = availableQuickToggles.map {
                     .init(value: "toggle:" + $0.rawValue, title: $0.settingsTitle(text), symbol: $0.symbolName)
                 }
-                let tools: [SettingsPopUpPicker<String>.Option] = availableControlTools.enumerated().map { index, tool in
-                    .init(value: "tool:" + tool.rawValue, title: toolTitle(tool), symbol: tool.symbolName,
-                          separatorBefore: index == 0 && !toggles.isEmpty)
+                let tools: [SettingsPopUpPicker<String>.Option] = availableControlTools.map {
+                    .init(value: "tool:" + $0.rawValue, title: toolTitle($0), symbol: $0.symbolName)
                 }
-                SettingsPopUpPicker(title: title, options: toggles + tools,
+                let sorted = (toggles + tools).sorted {
+                    $0.title.localizedStandardCompare($1.title) == .orderedAscending
+                }
+                SettingsPopUpPicker(title: title, options: sorted,
                                     selection: controlBinding, exactWidth: Self.fieldWidth)
             }
         case .windowLayout:
