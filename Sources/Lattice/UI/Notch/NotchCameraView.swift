@@ -7,32 +7,15 @@ import SwiftUI
 struct NotchCameraView: View {
     let size: CGSize
     @ObservedObject private var service = CameraPreviewService.shared
-    @ObservedObject private var l10n = L10n.shared
-    private var text: NotchActivityStrings { FeatureStrings.notchActivities(l10n.language) }
 
+    /// Showing the page is what starts the camera, and leaving it stops it:
+    /// there is no closed state asking to open it.
     var body: some View {
-        Group {
-            if service.isEmbeddedPresented {
-                // The preview takes the whole page; its camera picker overlays
-                // the preview viewport just as the floating window does.
-                CameraPreviewView(size: NotchLayout.cameraPreviewSize(in: size), showsCameraMenu: true, showsCloseButton: false)
-            } else {
-                HStack(spacing: 16) {
-                    Image(systemName: "person.crop.square.badge.camera").font(.system(size: 30, weight: .light))
-                        .foregroundStyle(.secondary).accessibilityHidden(true)
-                        .frame(width: 56, height: 56)
-                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(text.cameraHint).font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button(text.startCamera, action: service.showEmbedded)
-                            .buttonStyle(.borderedProminent)
-                    }
-                }
-                .padding(.horizontal, 12)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onDisappear { service.hideEmbedded() }
+        // The preview takes the whole page; its camera picker overlays the
+        // preview viewport just as the floating window does.
+        CameraPreviewView(size: NotchLayout.cameraPreviewSize(in: size), showsCameraMenu: true, showsCloseButton: false)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { service.showEmbedded() }
+            .onDisappear { service.hideEmbedded() }
     }
 }
