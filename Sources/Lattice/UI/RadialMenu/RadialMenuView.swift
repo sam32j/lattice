@@ -5,13 +5,13 @@ import AppKit
 import SwiftUI
 
 /// The wheel itself: a glass disc with one chip per action, a highlight wedge
-/// under the pointed slice and a hub that names the selection or leads back.
+/// under the pointed slice, a hub that names the selection or leads back, and
+/// the profile tabs on an arc above the wheel.
 struct RadialMenuView: View {
     @ObservedObject private var service = RadialMenuService.shared
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     /// Where the highlight sits right now. Kept unwrapped past a full turn, so
     /// the step from the last slice to the first is one step onward and not a
@@ -24,24 +24,32 @@ struct RadialMenuView: View {
     /// are: a wheel of twelve must not take twice as long to draw itself as a
     /// wheel of six.
     private static let sweepDuration = 0.17
+    static let coordinateSpace = "RadialMenuPanel"
 
     private var text: RadialMenuFeatureStrings { FeatureStrings.radialMenu(l10n.language) }
     private var items: [RadialMenuItem] { service.stack.last ?? [] }
     /// Reduce Motion is the only switch over this wheel: opening this way is
     /// what the menu is now, not a preference.
     private var animates: Bool { !reduceMotion }
-    private var profileColor: Color {
-        service.activeProfile?.color.color(for: colorScheme) ?? .accentColor
-    }
+    private var profileColor: RadialMenuColor { service.activeProfile?.color ?? .accent }
 
     var body: some View {
         ZStack {
             backplate
             wedge
-            ring.id(service.stack.count)
+            ring
+                .id("\(service.profileSwitchCount).\(service.stack.count)")
+                // A profile switch folds the old chips into the hub; Reduce
+                // Motion crossfades instead.
+                .transition(animates ? .scale(scale: 0.3).combined(with: .opacity) : .opacity)
             hub
+            if service.sessionProfiles.count > 1 {
+                RadialTabArc(service: service, text: text, colorScheme: colorScheme)
+            }
         }
-        .frame(width: RadialMenuLayout.panelSize, height: RadialMenuLayout.panelSize)
+        .frame(width: service.panelSide, height: service.panelSide)
+        .coordinateSpace(name: Self.coordinateSpace)
+        .animation(animates ? .easeOut(duration: 0.16) : .linear(duration: 0.12), value: service.profileSwitchCount)
         // The whole panel is tappable; the service decides by distance, so a
         // click on the transparent corners dismisses instead of dying.
         .contentShape(Rectangle())
@@ -58,6 +66,8 @@ struct RadialMenuView: View {
                    value: service.visible)
         .onChange(of: service.highlightedIndex) { _, _ in syncWedge() }
         .onChange(of: items.count) { _, _ in syncWedge() }
+        .onChange(of: service.profileSwitchCount) { _, _ in syncWedge() }
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(text.pageTitle)
     }
 
@@ -69,13 +79,13 @@ struct RadialMenuView: View {
                          sliceAngle: wedgeSlice,
                          innerRadius: RadialMenuLayout.deadZoneRadius,
                          outerRadius: RadialMenuLayout.wheelDiameter / 2 - 4)
+            .fill(profileColor.gradient(for: colorScheme))
             // Strongest out at the chip, almost gone by the hub: the wedge
             // points outward, the way the gesture does.
-            .fill(RadialGradient(colors: [profileColor.opacity(colorScheme == .light ? 0.05 : 0.08),
-                                          profileColor.opacity(colorScheme == .light ? 0.20 : 0.30)],
-                                 center: .center,
-                                 startRadius: RadialMenuLayout.deadZoneRadius,
-                                 endRadius: RadialMenuLayout.wheelDiameter / 2))
+            .mask(RadialWedgeRamp(scheme: colorScheme,
+                                  innerRadius: RadialMenuLayout.deadZoneRadius,
+                                  outerRadius: RadialMenuLayout.wheelDiameter / 2))
+            .frame(width: RadialMenuLayout.wheelDiameter, height: RadialMenuLayout.wheelDiameter)
             .opacity(wedgeShown ? 1 : 0)
     }
 
@@ -111,74 +121,31 @@ struct RadialMenuView: View {
     }
 
     private var backplate: some View {
-        discMaterial
-            // Glass is glass because of its edge: lit at the top, gone by the
-            // bottom. A flat stroke all the way round reads as cut paper.
-            .overlay(Circle().strokeBorder(PanelSurface.rimHighlight(for: colorScheme), lineWidth: 1.2))
-            .overlay(Circle().strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.8))
-            .overlay(sliceGuides)
-            .frame(width: RadialMenuLayout.wheelDiameter, height: RadialMenuLayout.wheelDiameter)
+        RadialWheelDisc(diameter: RadialMenuLayout.wheelDiameter,
+                        sliceCount: items.count,
+                        deadZoneRadius: RadialMenuLayout.deadZoneRadius)
             .shadow(color: .black.opacity(colorScheme == .light ? 0.22 : 0.55), radius: 24, y: 8)
-    }
-
-    @ViewBuilder
-    private var discMaterial: some View {
-#if compiler(>=6.2)
-        if #available(macOS 26.0, *), !reduceTransparency {
-            Circle()
-                .fill(Color.clear)
-                .glassEffect(.regular, in: Circle())
-                .overlay(Circle().fill(PanelSurface.baseFill(for: colorScheme).opacity(colorScheme == .light ? 0.35 : 0.45)))
-        } else {
-            Circle()
-                .fill(.regularMaterial)
-                .overlay(Circle().fill(PanelSurface.baseFill(for: colorScheme)))
-        }
-#else
-        Circle()
-            .fill(.regularMaterial)
-            .overlay(Circle().fill(PanelSurface.baseFill(for: colorScheme)))
-#endif
-    }
-
-    /// A hairline between one slice and the next. Almost invisible on its own,
-    /// but it is what turns a ring of buttons into a wheel with directions:
-    /// the eye reads the whole wedge as the target, not just the icon.
-    private var sliceGuides: some View {
-        let count = items.count
-        return ZStack {
-            if count > 1 {
-                ForEach(0..<count, id: \.self) { index in
-                    Capsule()
-                        .fill(Color.primary.opacity(colorScheme == .light ? 0.07 : 0.09))
-                        .frame(width: 1, height: RadialMenuLayout.wheelDiameter / 2
-                               - RadialMenuLayout.deadZoneRadius - 14)
-                        .offset(y: -(RadialMenuLayout.deadZoneRadius
-                                     + (RadialMenuLayout.wheelDiameter / 2
-                                        - RadialMenuLayout.deadZoneRadius - 14) / 2 + 7))
-                        .rotationEffect(.radians(2 * Double.pi * (Double(index) + 0.5) / Double(count)))
-                }
-            }
-        }
     }
 
     /// The chips are thrown out of the hub one after another, clockwise from
     /// twelve o'clock, so the wheel draws itself around the pointer instead of
-    /// landing on it whole. A submenu is a new set of chips and draws itself
-    /// the same way.
+    /// landing on it whole. A submenu or another profile is a new set of
+    /// chips and draws itself the same way.
     private var ring: some View {
         let count = items.count
-        return ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-            RadialChipView(item: item,
-                           name: item.displayName(text, nowPlayingState: service.nowPlayingState),
-                           nowPlayingState: service.nowPlayingState,
-                           highlighted: service.highlightedIndex == index,
-                           animates: animates,
-                           profileColor: profileColor,
-                           direction: RadialMenuGeometry.unitPosition(index: index, itemCount: count),
-                           openDelay: Self.openDelay(index: index, count: count),
-                           open: service.visible)
-                .accessibilityLabel(item.displayName(text, nowPlayingState: service.nowPlayingState))
+        return ZStack {
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                RadialChipView(item: item,
+                               nowPlayingState: service.nowPlayingState,
+                               highlighted: service.highlightedIndex == index,
+                               animates: animates,
+                               profileColor: profileColor,
+                               direction: RadialMenuGeometry.unitPosition(index: index, itemCount: count),
+                               openDelay: Self.openDelay(index: index, count: count),
+                               open: service.visible)
+                    .accessibilityLabel(item.displayName(text, nowPlayingState: service.nowPlayingState))
+                    .accessibilityAddTraits(.isButton)
+            }
         }
     }
 
@@ -213,7 +180,9 @@ struct RadialMenuView: View {
         if let index = service.highlightedIndex, items.indices.contains(index) {
             return "item.\(items[index].id)"
         }
+        if let name = service.flashedProfileName { return "profile.\(service.profileSwitchCount).\(name)" }
         if let parent = service.trail.last { return "back.\(parent)" }
+        if items.isEmpty { return "empty" }
         return "brand"
     }
 
@@ -224,6 +193,14 @@ struct RadialMenuView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 8)
+        } else if let name = service.flashedProfileName {
+            Text(name)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(profileColor.color(for: colorScheme))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
                 .minimumScaleFactor(0.8)
                 .padding(.horizontal, 8)
         } else if let parent = service.trail.last {
@@ -239,6 +216,13 @@ struct RadialMenuView: View {
                     .padding(.horizontal, 8)
             }
             .accessibilityLabel(text.backButton)
+        } else if items.isEmpty {
+            Text(text.inMenuNoActions)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.horizontal, 8)
         } else {
             // Black on the light theme, white on the dark one: the owner
             // wants the mark clearly readable at the center.
@@ -247,28 +231,97 @@ struct RadialMenuView: View {
     }
 }
 
-private struct RadialChipView: View {
+/// The radial opacity ramp the highlight wedge is drawn through: almost
+/// clear at the hub, strongest at the rim.
+struct RadialWedgeRamp: View {
+    let scheme: ColorScheme
+    let innerRadius: CGFloat
+    let outerRadius: CGFloat
+    var strength: Double = 1
+
+    var body: some View {
+        RadialGradient(colors: [.black.opacity((scheme == .light ? 0.12 : 0.16) * strength),
+                                .black.opacity((scheme == .light ? 0.42 : 0.55) * strength)],
+                       center: .center, startRadius: innerRadius, endRadius: outerRadius)
+    }
+}
+
+/// The wheel's glass disc with its rim and the hairlines between slices.
+/// Shared by the live menu and the Settings editor, so the editor is a
+/// faithful preview in either appearance.
+struct RadialWheelDisc: View {
+    let diameter: CGFloat
+    let sliceCount: Int
+    let deadZoneRadius: CGFloat
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        discMaterial
+            // Glass is glass because of its edge: lit at the top, gone by the
+            // bottom. A flat stroke all the way round reads as cut paper.
+            .overlay(Circle().strokeBorder(PanelSurface.rimHighlight(for: colorScheme), lineWidth: 1.2))
+            .overlay(Circle().strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.8))
+            .overlay(sliceGuides)
+            .frame(width: diameter, height: diameter)
+    }
+
+    @ViewBuilder
+    private var discMaterial: some View {
+#if compiler(>=6.2)
+        if #available(macOS 26.0, *), !reduceTransparency {
+            Circle()
+                .fill(Color.clear)
+                .glassEffect(.regular, in: Circle())
+                .overlay(Circle().fill(PanelSurface.baseFill(for: colorScheme).opacity(colorScheme == .light ? 0.35 : 0.45)))
+        } else {
+            Circle()
+                .fill(.regularMaterial)
+                .overlay(Circle().fill(PanelSurface.baseFill(for: colorScheme)))
+        }
+#else
+        Circle()
+            .fill(.regularMaterial)
+            .overlay(Circle().fill(PanelSurface.baseFill(for: colorScheme)))
+#endif
+    }
+
+    /// A hairline between one slice and the next. Almost invisible on its own,
+    /// but it is what turns a ring of buttons into a wheel with directions:
+    /// the eye reads the whole wedge as the target, not just the icon.
+    private var sliceGuides: some View {
+        let length = diameter / 2 - deadZoneRadius - 14
+        return ZStack {
+            if sliceCount > 1 {
+                ForEach(0..<sliceCount, id: \.self) { index in
+                    Capsule()
+                        .fill(Color.primary.opacity(colorScheme == .light ? 0.07 : 0.09))
+                        .frame(width: 1, height: length)
+                        .offset(y: -(deadZoneRadius + length / 2 + 7))
+                        .rotationEffect(.radians(2 * Double.pi * (Double(index) + 0.5) / Double(sliceCount)))
+                }
+            }
+        }
+    }
+}
+
+/// One action's round chip: raised on the glass, filled with the profile's
+/// gradient while it is the one pointed at.
+struct RadialChipFace: View {
     let item: RadialMenuItem
-    let name: String
     let nowPlayingState: RadialNowPlayingState
     let highlighted: Bool
-    let animates: Bool
-    let profileColor: Color
-    /// Where on the ring this chip belongs, and when its turn comes in the
-    /// opening sweep.
-    let direction: (dx: CGFloat, dyUp: CGFloat)
-    let openDelay: Double
-    /// The wheel's own state. Chips fly out of the hub when it opens and fold
-    /// back into it when it closes, so the wheel gathers itself up on the way
-    /// out instead of simply going dark.
-    let open: Bool
+    let profileColor: RadialMenuColor
+    var size: CGFloat = RadialMenuLayout.chipSize
     @Environment(\.colorScheme) private var colorScheme
-    @State private var settled = false
+
+    private var iconSize: CGFloat { size * 34 / 52 }
+    private var symbolSize: CGFloat { size * 20 / 52 }
 
     var body: some View {
         ZStack {
             Circle()
-                .fill(highlighted ? AnyShapeStyle(profileColor)
+                .fill(highlighted ? AnyShapeStyle(profileColor.gradient(for: colorScheme))
                                   : AnyShapeStyle(PanelSurface.raisedFill(for: colorScheme)))
                 .overlay(Circle().strokeBorder(highlighted
                                                ? Color.clear
@@ -278,26 +331,101 @@ private struct RadialChipView: View {
                 // in it, the way the system's own round toggles sit on theirs.
                 // Pointed at, that shadow takes the wheel's colour, so which
                 // one is armed is never only a change of tint.
-                .shadow(color: highlighted ? profileColor.opacity(0.45)
+                .shadow(color: highlighted ? profileColor.color(for: colorScheme).opacity(0.45)
                                            : PanelSurface.raisedShadow(for: colorScheme),
                         radius: highlighted ? 13 : 5,
                         y: highlighted ? 4 : 2)
             icon
         }
-        .frame(width: RadialMenuLayout.chipSize, height: RadialMenuLayout.chipSize)
-        .scaleEffect(highlighted && animates ? 1.14 : 1)
-        .animation(animates ? .spring(response: 0.24, dampingFraction: 0.72) : nil, value: highlighted)
-        // The opening sweep rides outside the highlight's own animation, so
-        // pointing at a chip mid-flight does not fight with its arrival.
-        .scaleEffect(settled || !animates ? 1 : 0.35)
-        .opacity(settled || !animates ? 1 : 0)
-        .offset(x: direction.dx * reach, y: -direction.dyUp * reach)
-        // A chip born into an open wheel is a submenu arriving, and draws
-        // itself in the same sweep the wheel itself did.
-        .onAppear { if open { bloom() } else { settled = false } }
-        .onChange(of: open) { _, isOpen in
-            if isOpen { bloom() } else { fold() }
+        .frame(width: size, height: size)
+    }
+
+    private var symbolStyle: AnyShapeStyle {
+        highlighted ? AnyShapeStyle(profileColor.foreground(for: colorScheme)) : AnyShapeStyle(.primary)
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        if item.mediaKey == .nowPlaying {
+            if case let .playing(snapshot) = nowPlayingState,
+               let icon = RadialNowPlayingApplication.icon(for: snapshot) {
+                Image(nsImage: icon)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: iconSize, height: iconSize)
+            } else {
+                Image(systemName: "music.note")
+                    .font(.system(size: symbolSize, weight: .semibold))
+                    .foregroundStyle(symbolStyle)
+            }
+        } else if item.symbolName.isEmpty, let customImage = RadialMenuIconStore.customIcon(for: item) {
+            Image(nsImage: customImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: iconSize, height: iconSize)
+        } else if item.usesFileIcon {
+            Image(nsImage: RadialMenuIconStore.fileIcon(for: item.payload))
+                .resizable()
+                .interpolation(.high)
+                .frame(width: iconSize, height: iconSize)
+        } else {
+            Image(systemName: item.effectiveSymbolName)
+                .font(.system(size: symbolSize, weight: .semibold))
+                .foregroundStyle(symbolStyle)
         }
+    }
+}
+
+/// A profile's color as a small gradient dot, the mark every tab carries.
+/// On a tab already filled with that gradient it turns to the tab's text
+/// color, so it never disappears into its own fill.
+struct RadialProfileDot: View {
+    let color: RadialMenuColor
+    var size: CGFloat = 10
+    var onOwnFill = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Circle()
+            .fill(onOwnFill ? AnyShapeStyle(color.foreground(for: colorScheme))
+                            : AnyShapeStyle(color.gradient(for: colorScheme)))
+            .overlay(Circle().strokeBorder(Color.primary.opacity(onOwnFill ? 0 : 0.12), lineWidth: 0.5))
+            .frame(width: size, height: size)
+    }
+}
+
+private struct RadialChipView: View {
+    let item: RadialMenuItem
+    let nowPlayingState: RadialNowPlayingState
+    let highlighted: Bool
+    let animates: Bool
+    let profileColor: RadialMenuColor
+    /// Where on the ring this chip belongs, and when its turn comes in the
+    /// opening sweep.
+    let direction: (dx: CGFloat, dyUp: CGFloat)
+    let openDelay: Double
+    /// The wheel's own state. Chips fly out of the hub when it opens and fold
+    /// back into it when it closes, so the wheel gathers itself up on the way
+    /// out instead of simply going dark.
+    let open: Bool
+    @State private var settled = false
+
+    var body: some View {
+        RadialChipFace(item: item, nowPlayingState: nowPlayingState,
+                       highlighted: highlighted, profileColor: profileColor)
+            .scaleEffect(highlighted && animates ? 1.14 : 1)
+            .animation(animates ? .spring(response: 0.24, dampingFraction: 0.72) : nil, value: highlighted)
+            // The opening sweep rides outside the highlight's own animation, so
+            // pointing at a chip mid-flight does not fight with its arrival.
+            .scaleEffect(settled || !animates ? 1 : 0.35)
+            .opacity(settled || !animates ? 1 : 0)
+            .offset(x: direction.dx * reach, y: -direction.dyUp * reach)
+            // A chip born into an open wheel is a submenu arriving, and draws
+            // itself in the same sweep the wheel itself did.
+            .onAppear { if open { bloom() } else { settled = false } }
+            .onChange(of: open) { _, isOpen in
+                if isOpen { bloom() } else { fold() }
+            }
     }
 
     /// How far out the chip sits: folded into the hub to begin with, then out
@@ -327,35 +455,122 @@ private struct RadialChipView: View {
             settled = false
         }
     }
+}
 
-    @ViewBuilder
-    private var icon: some View {
-        if item.mediaKey == .nowPlaying {
-            if case let .playing(snapshot) = nowPlayingState,
-               let icon = RadialNowPlayingApplication.icon(for: snapshot) {
-                Image(nsImage: icon)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 34, height: 34)
-            } else {
-                Image(systemName: "music.note")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(highlighted ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+/// The profile tabs on an arc above the wheel: a gradient dot per profile,
+/// the current one opened up to show its name, the primary marked with a
+/// star. Clicking one switches to it; the frames go back to the service so
+/// resting the pointer on one works while the summoner is held.
+private struct RadialTabArc: View {
+    @ObservedObject var service: RadialMenuService
+    let text: RadialMenuFeatureStrings
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        let tabs = RadialProfileTabs.visibleTabs(count: service.sessionProfiles.count,
+                                                 current: service.activeProfileIndex)
+        RadialTabArcLayout(radius: RadialMenuLayout.tabArcRadius,
+                           maxSpan: RadialMenuLayout.tabArcMaxSpan) {
+            ForEach(tabs, id: \.index) { tab in
+                pill(tab)
             }
-        } else if item.symbolName.isEmpty, let customImage = RadialMenuIconStore.customIcon(for: item) {
-            Image(nsImage: customImage)
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 34, height: 34)
-        } else if item.usesFileIcon {
-            Image(nsImage: RadialMenuIconStore.fileIcon(for: item.payload))
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 34, height: 34)
-        } else {
-            Image(systemName: item.effectiveSymbolName)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(highlighted ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+        }
+        .frame(width: service.panelSide, height: service.panelSide)
+        .onPreferenceChange(RadialTabFramesKey.self) { frames in
+            service.updateTabFrames(frames)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(text.profilesHeader)
+    }
+
+    private func pill(_ tab: RadialProfileTabs.VisibleTab) -> some View {
+        let profile = service.sessionProfiles[tab.index]
+        let current = tab.index == service.activeProfileIndex
+        let hovered = tab.index == service.hoveredTabIndex
+        let name = profile.displayName(text)
+        return Button {
+            service.switchProfile(to: tab.index)
+        } label: {
+            HStack(spacing: 5) {
+                if tab.index == 0 {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(current ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
+                                                 : AnyShapeStyle(.secondary))
+                }
+                RadialProfileDot(color: profile.color, size: current ? 7 : 10, onOwnFill: current)
+                if current {
+                    Text(name)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: 120)
+                        .foregroundStyle(profile.color.foreground(for: colorScheme))
+                }
+            }
+            .padding(.horizontal, current ? 9 : 6)
+            .frame(height: RadialMenuLayout.tabPillHeight)
+            .background(
+                Capsule().fill(current ? AnyShapeStyle(profile.color.gradient(for: colorScheme))
+                                       : AnyShapeStyle(PanelSurface.raisedFill(for: colorScheme)))
+            )
+            .overlay(Capsule().strokeBorder(hovered && !current
+                                            ? profile.color.color(for: colorScheme)
+                                            : PanelSurface.raisedBorder(for: colorScheme),
+                                            lineWidth: hovered && !current ? 1.5 : 0.8))
+            .shadow(color: PanelSurface.raisedShadow(for: colorScheme), radius: 4, y: 1)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .opacity(tab.faded ? 0.4 : 1)
+        .background(GeometryReader { proxy in
+            Color.clear.preference(key: RadialTabFramesKey.self,
+                                   value: [tab.index: proxy.frame(in: .named(RadialMenuView.coordinateSpace))])
+        })
+        .accessibilityLabel(name)
+        .accessibilityAddTraits(current ? [.isButton, .isSelected] : .isButton)
+        .accessibilityValue(tab.index == 0 ? text.primaryHelp : "")
+    }
+}
+
+private struct RadialTabFramesKey: PreferenceKey {
+    static var defaultValue: [Int: CGRect] = [:]
+    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+/// Lays its subviews out left to right along an arc centered over twelve
+/// o'clock, each kept upright, spaced by its own width so an opened-up tab
+/// pushes its neighbours aside.
+private struct RadialTabArcLayout: Layout {
+    let radius: CGFloat
+    let maxSpan: Double
+    var gap: CGFloat = 5
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let widths = sizes.map(\.width)
+        var spacing = gap
+        let natural = widths.reduce(0, +) + gap * CGFloat(max(widths.count - 1, 0))
+        let limit = CGFloat(maxSpan) * radius
+        if natural > limit, widths.count > 1 {
+            spacing = max(0, gap - (natural - limit) / CGFloat(widths.count - 1))
+        }
+        let total = widths.reduce(0, +) + spacing * CGFloat(max(widths.count - 1, 0))
+        var run = -total / 2
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        for (index, subview) in subviews.enumerated() {
+            let middle = run + widths[index] / 2
+            let angle = Double(middle / radius)
+            let point = CGPoint(x: center.x + radius * CGFloat(sin(angle)),
+                                y: center.y - radius * CGFloat(cos(angle)))
+            subview.place(at: point, anchor: .center, proposal: ProposedViewSize(sizes[index]))
+            run += widths[index] + spacing
         }
     }
 }
