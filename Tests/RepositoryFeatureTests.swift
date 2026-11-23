@@ -19,7 +19,11 @@ enum RepositoryFeatureTests {
         var rules = URLCleaning.Rules.builtIn
         var copied: [String] = []
         func clean(_ text: String) -> URLCleaning.Result? { URLCleaning.clean(text, rules: rules) }
+        var recorded: [String] = []
         func copy(_ urlString: String) { copied.append(urlString) }
+        func record(original: String, result: URLCleaning.Result) {
+            if !result.removals.isEmpty { recorded.append(original) }
+        }
     }
     protocol URLCleanerManualSurface: AnyObject {
         var cleaner: URLCleanerManualCleaner { get }
@@ -274,6 +278,9 @@ enum RepositoryFeatureTests {
         suite.expect(panelHost.cleaner.copied == ["https://youtu.be/abc", "https://example.com/?keep=1",
                                                   "https://example.com/"],
                      "menu panel Copy takes the field's link under the current rules: \(panelHost.cleaner.copied)")
+        suite.expect(panelHost.cleaner.recorded == ["https://youtu.be/abc?si=x", "https://example.com/?utm_source=a&keep=1",
+                                                    "https://example.com/?utm_source=a&keep=1"],
+                     "menu panel Copy adds what it cleaned to Recently cleaned: \(panelHost.cleaner.recorded)")
         // The result reads the stored rules through the service, so each
         // surface has to observe every key they come from and read it where
         // the body works the result out. SwiftUI only redraws for a stored
