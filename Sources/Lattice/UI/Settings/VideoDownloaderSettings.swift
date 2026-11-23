@@ -14,8 +14,6 @@ struct VideoDownloaderSettings: View {
     @ObservedObject var l10n = L10n.shared
 
     @AppStorage(DefaultsKey.videoDownloaderEnabled) var enabled = true
-    @AppStorage(DefaultsKey.notchVideoDownloader) private var notchVideoDownloader = true
-    @AppStorage(DefaultsKey.notchHiddenModules) private var notchHiddenModules = ""
     @State var showDownloadConfirmation = false
     @State var detectedClipboardURL: String? = nil
     @State var pasteboardChangeCount = -1
@@ -31,43 +29,65 @@ struct VideoDownloaderSettings: View {
     }
 
     var body: some View {
+        Group {
+            if enabled {
+                page
+            } else {
+                SettingsFeatureEmptyState(title: VideoDownloaderStrings.enableTitle,
+                                          symbol: "square.and.arrow.down.on.square",
+                                          description: VideoDownloaderStrings.enableSubtitle) {
+                    Button(SettingsOwnershipStrings.enable(VideoDownloaderStrings.enableTitle, l10n.language)) {
+                        enabled = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .toolbar {
+            SettingsTitleBarItem(id: "video-downloader-activation") {
+                SettingsTitleBarSwitch(title: VideoDownloaderStrings.enableTitle, isOn: enabled) { enabled = $0 }
+                    .padding(.horizontal, 8)
+            }
+        }
+        .onChange(of: enabled) { oldValue, isNowEnabled in
+            if !isNowEnabled {
+                model.teardown()
+                toolchain.removeTools()
+            } else if !oldValue && isNowEnabled {
+                model.refreshDependencies()
+                toolchain.checkHealth()
+                if !toolchain.dependencies.ready {
+                    showDownloadConfirmation = true
+                }
+            }
+        }
+        .alert(VideoDownloaderStrings.downloadRequiredTitle, isPresented: $showDownloadConfirmation) {
+            Button(VideoDownloaderStrings.cancel, role: .cancel) {
+                enabled = false
+            }
+            Button(VideoDownloaderStrings.continueAction) {
+                toolchain.install()
+            }
+        } message: {
+            Text(VideoDownloaderStrings.downloadRequiredBody)
+        }
+        .onChange(of: showDownloadConfirmation) { wasShowing, isNowShowing in
+            if wasShowing && !isNowShowing && !toolchain.dependencies.ready && !toolchain.isInstalling {
+                enabled = false
+            }
+        }
+        .sheet(isPresented: $model.showWebsiteSessions) {
+            VideoWebsiteSessionsSheet(downloader: model)
+        }
+    }
+
+    private var page: some View {
         GeometryReader { geometry in
             let isCompact = geometry.size.width < 540
 
             ScrollViewReader { proxy in
                 ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    // Enablement Card
-                    SettingsCard {
-                        SettingsRow(symbol: "square.and.arrow.down.on.square",
-                                    title: VideoDownloaderStrings.enableTitle,
-                                    caption: VideoDownloaderStrings.enableSubtitle) {
-                            Toggle("", isOn: $enabled)
-                                .labelsHidden()
-                                .toggleStyle(.switch)
-                                .onChange(of: enabled) { oldValue, isNowEnabled in
-                                    if !isNowEnabled {
-                                        model.teardown()
-                                        toolchain.removeTools()
-                                    } else if !oldValue && isNowEnabled {
-                                        model.refreshDependencies()
-                                        toolchain.checkHealth()
-                                        if !toolchain.dependencies.ready {
-                                            showDownloadConfirmation = true
-                                        }
-                                    }
-                                }
-                        }
-
-                        if enabled {
-                            VStack(alignment: .leading, spacing: 13) {
-                                showOnDynamicIslandRow
-                                browserSignInRow
-                            }
-                            .transition(.settingsReveal)
-                        }
-                    }
-
                     if enabled {
                         VStack(alignment: .leading, spacing: 18) {
                             // Toolchain Installing State
@@ -231,6 +251,8 @@ struct VideoDownloaderSettings: View {
                         }
                         .transition(.settingsReveal)
                     }
+
+                    browserSessionFooter
                 }
                 .padding(.horizontal, isCompact ? 14 : 20)
                 .padding(.vertical, 16)
@@ -258,21 +280,6 @@ struct VideoDownloaderSettings: View {
             }
         }
     }
-        .alert(VideoDownloaderStrings.downloadRequiredTitle, isPresented: $showDownloadConfirmation) {
-            Button(VideoDownloaderStrings.cancel, role: .cancel) {
-                enabled = false
-            }
-            Button(VideoDownloaderStrings.continueAction) {
-                toolchain.install()
-            }
-        } message: {
-            Text(VideoDownloaderStrings.downloadRequiredBody)
-        }
-        .onChange(of: showDownloadConfirmation) { wasShowing, isNowShowing in
-            if wasShowing && !isNowShowing && !toolchain.dependencies.ready && !toolchain.isInstalling {
-                enabled = false
-            }
-        }
         .onAppear {
             updateClipboardURL()
             skeletonPulsing = true
@@ -293,40 +300,18 @@ struct VideoDownloaderSettings: View {
                 updateClipboardURL()
             }
         }
-        .settingsExpansionAnimation(value: enabled)
-        .sheet(isPresented: $model.showWebsiteSessions) {
-            VideoWebsiteSessionsSheet(downloader: model)
-        }
     }
 
     // MARK: - Subviews
  
-    private var showOnDynamicIslandBinding: Binding<Bool> {
-        _ = notchHiddenModules
-        _ = notchVideoDownloader
-        return Binding(
-            get: {
-                IslandDestination.videoDownloader.isShown(in: .standard)
-            },
-            set: { shown in
-                IslandDestination.videoDownloader.setShown(shown, in: .standard)
-                notchVideoDownloader = shown
-                NotchService.shared.syncWithPreferences()
-            }
-        )
-    }
-
-    private var showOnDynamicIslandRow: some View {
-        let alwaysFloating = Binding<Bool>(
-            get: { !showOnDynamicIslandBinding.wrappedValue },
-            set: { showOnDynamicIslandBinding.wrappedValue = !$0 }
-        )
-        return SettingsToggleRow(
-            title: SettingsOwnershipStrings.text(.alwaysFloating, l10n.language),
-            caption: SettingsOwnershipStrings.text(.alwaysFloatingCaption, l10n.language),
-            isOn: alwaysFloating
-        )
-        .padding(.leading, settingsRowTextInset)
+    /// The browser session sits at the foot of the page, under a rule: it
+    /// is set once and only matters when a site asks for a sign-in.
+    private var browserSessionFooter: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Divider()
+            browserSignInRow
+        }
+        .padding(.top, 4)
     }
 
     private var browserSignInRow: some View {
@@ -354,7 +339,6 @@ struct VideoDownloaderSettings: View {
             .controlSize(.small)
             .fixedSize()
         }
-        .padding(.leading, settingsRowTextInset)
     }
 
     private var browserSessionStatusSpan: some View {
