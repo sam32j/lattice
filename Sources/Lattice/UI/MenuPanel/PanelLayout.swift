@@ -57,21 +57,6 @@ struct PanelReorderableItem<Item: PanelOrderItem, Content: View>: View {
     }
 }
 
-/// Accepts a reorder dropped anywhere in a list, between rows included, so
-/// the drag always lands where it is instead of sliding back to its start.
-struct PanelReorderDropCatcher<Item: PanelOrderItem>: DropDelegate {
-    @Binding var dragging: Item?
-
-    func performDrop(info: DropInfo) -> Bool {
-        dragging = nil
-        return true
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-}
-
 private struct PanelItemDropDelegate<Item: PanelOrderItem>: DropDelegate {
     let item: Item
     @Binding var order: [Item]
