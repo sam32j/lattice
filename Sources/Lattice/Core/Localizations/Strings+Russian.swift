@@ -603,7 +603,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Стандартный",
         mixerVolumeKeyStepSmaller: "Меньше",
         mixerAppVolumesTitle: "Громкость приложений",
-        mixerNoAppPlaying: "Ничего не воспроизводится",
         mixerShowInactiveAppsFormat: "Показать неактивные приложения (%d)",
         mixerHideInactiveApps: "Скрыть неактивные приложения",
         mixerOutputFollowSystem: "По умолчанию (как в системе)",

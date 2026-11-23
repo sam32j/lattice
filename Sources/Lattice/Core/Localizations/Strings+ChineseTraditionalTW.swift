@@ -603,7 +603,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "標準",
         mixerVolumeKeyStepSmaller: "較小",
         mixerAppVolumesTitle: "App 音量",
-        mixerNoAppPlaying: "沒有 App 正在播放",
         mixerShowInactiveAppsFormat: "顯示不活躍的 App（%d）",
         mixerHideInactiveApps: "隱藏不活躍的 App",
         mixerOutputFollowSystem: "預設（跟隨系統）",

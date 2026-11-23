@@ -584,7 +584,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Стандартний",
         mixerVolumeKeyStepSmaller: "Менший",
         mixerAppVolumesTitle: "Гучність програм",
-        mixerNoAppPlaying: "Нічого не відтворюється",
         mixerShowInactiveAppsFormat: "Показати неактивні програми (%d)",
         mixerHideInactiveApps: "Сховати неактивні програми",
         mixerOutputFollowSystem: "Типово (як у системі)",
