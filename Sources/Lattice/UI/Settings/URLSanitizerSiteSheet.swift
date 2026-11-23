@@ -10,7 +10,7 @@ struct URLSanitizerSiteSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: URLSanitizerSiteDraft
     let rules: URLCleaning.Rules
-    /// Tokens of this site that removed something from the test link.
+    /// Tokens of this site that removed something from the link being cleaned.
     let highlightedTokens: Set<String>
     let onSave: (URLCleaning.Site) -> Void
     let onDelete: (String) -> Void

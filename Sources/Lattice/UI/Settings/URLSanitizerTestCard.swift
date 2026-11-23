@@ -4,7 +4,7 @@
 import AppKit
 import SwiftUI
 
-/// Test a link: an Original row to type into, a Cleaned row with the result
+/// Clean a URL: an Original row to type into, a Cleaned row with the result
 /// under the saved rules, and one line naming what went and what stayed.
 /// The Cleaned row unrolls once there is a link to clean and folds away when
 /// the field empties; the page keys the motion on `isEmpty(_:)`.
@@ -27,7 +27,7 @@ struct URLSanitizerTestCard: View {
     }
 
     var body: some View {
-        SettingsCard(title: strings.testTitle) {
+        SettingsCard(title: strings.cleanTitle) {
             VStack(alignment: .leading, spacing: 10) {
                 linkField
                 URLSanitizerResultLine(result: isEmpty ? nil : result, rules: rules,
