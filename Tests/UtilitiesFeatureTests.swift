@@ -970,8 +970,6 @@ enum UtilitiesFeatureTests {
             id: UUID(),
             name: " Media Wheel ",
             color: .purple,
-            shortcut: "control+command:49",
-            mouseButton: RadialMenuMouseTrigger.back.rawValue,
             items: RadialMenuProfilePreset.media.makeItems()
         )
         suite.expect(customProfile.displayName(enStrings) == " Media Wheel ",
@@ -981,13 +979,15 @@ enum UtilitiesFeatureTests {
                "blank profile name falls back to General preset title")
 
         let encodedProfilesData = RadialMenuSupport.encodeProfiles([customProfile])
+        let encodedKeys = encodedProfilesData
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [[String: Any]] }?.first?.keys
+        suite.expect(encodedKeys.map { Set($0).isDisjoint(with: ["shortcut", "mouseButton", "trackpadTap"]) } == true,
+               "profiles are saved without triggers: those belong to the whole menu now")
         let decodedProfiles = RadialMenuSupport.decodeProfiles(encodedProfilesData)
         suite.expect(decodedProfiles.count == 1
                 && decodedProfiles[0].id == customProfile.id
                 && decodedProfiles[0].name == "Media Wheel"
                 && decodedProfiles[0].color == .purple
-                && decodedProfiles[0].shortcut == "control+command:49"
-                && decodedProfiles[0].mouseButton == RadialMenuMouseTrigger.back.rawValue
                 && decodedProfiles[0].items.count == 4,
                "profile encodes and decodes accurately with trimmed name")
 
@@ -1008,140 +1008,84 @@ enum UtilitiesFeatureTests {
         let dups = [
             RadialMenuProfile(id: dupID, name: "First"),
             RadialMenuProfile(id: dupID, name: "Duplicate"),
-            RadialMenuProfile(id: UUID(), name: "  Trim Me  ", shortcut: "invalidShortcutFormat"),
+            RadialMenuProfile(id: UUID(), name: "  Trim Me  "),
         ]
         let sanitizedDups = RadialMenuSupport.sanitizedProfiles(dups)
         suite.expect(sanitizedDups.count == 2
                 && sanitizedDups[0].name == "First"
-                && sanitizedDups[1].name == "Trim Me"
-                && sanitizedDups[1].shortcut.isEmpty,
-               "sanitized profiles deduplicate IDs, trim names, and drop invalid shortcuts")
+                && sanitizedDups[1].name == "Trim Me",
+               "sanitized profiles deduplicate IDs and trim names")
 
         let emptySanitized = RadialMenuSupport.sanitizedProfiles([])
         suite.expect(emptySanitized.count == 1
                 && emptySanitized[0].color == .accent
-                && !emptySanitized[0].shortcut.isEmpty
                 && emptySanitized[0].items.count == 5,
                "sanitizing empty profile list provides one default starter profile")
 
         let appOnlyProfile = RadialMenuProfile(
-            mouseButton: RadialMenuMouseTrigger.off.rawValue,
             items: [RadialMenuItem(kind: .app, payload: "/Applications/Safari.app")]
         )
-        suite.expect(!RadialMenuSupport.needsAccessibility([appOnlyProfile]),
-               "app-only profile without mouse button does not need Accessibility")
-        let mouseProfile = RadialMenuProfile(
-            mouseButton: RadialMenuMouseTrigger.forward.rawValue,
-            items: [RadialMenuItem(kind: .app, payload: "/Applications/Safari.app")]
-        )
-        suite.expect(RadialMenuSupport.needsAccessibility([mouseProfile]),
-               "profile with mouse trigger needs Accessibility")
+        suite.expect(!RadialMenuSupport.needsAccessibility([appOnlyProfile], mouseButton: .off, trackpadGesture: .off),
+               "app-only profiles without a mouse button or gesture do not need Accessibility")
+        suite.expect(RadialMenuSupport.needsAccessibility([appOnlyProfile], mouseButton: .forward, trackpadGesture: .off)
+                && RadialMenuSupport.needsAccessibility([appOnlyProfile], mouseButton: .off, trackpadGesture: .click),
+               "the menu's mouse button or trackpad gesture needs Accessibility")
         let shortcutProfile = RadialMenuProfile(
-            mouseButton: RadialMenuMouseTrigger.off.rawValue,
             items: [RadialMenuItem(kind: .shortcut, payload: "command:8")]
         )
-        suite.expect(RadialMenuSupport.needsAccessibility([shortcutProfile]),
-               "profile with keyboard shortcut slice needs Accessibility")
+        suite.expect(RadialMenuSupport.needsAccessibility([appOnlyProfile, shortcutProfile],
+                                                          mouseButton: .off, trackpadGesture: .off),
+               "a profile with a keyboard shortcut slice needs Accessibility")
 
         let profileTestDefaults = UserDefaults(suiteName: "io.github.sam32j.lattice.tests.radialProfiles")!
         profileTestDefaults.removePersistentDomain(forName: "io.github.sam32j.lattice.tests.radialProfiles")
         profileTestDefaults.set(true, forKey: AppFeature.radialMenu.availabilityKey)
         profileTestDefaults.set(true, forKey: DefaultsKey.radialMenuEnabled)
+        profileTestDefaults.set(RadialMenuMouseTrigger.back.rawValue, forKey: DefaultsKey.radialMenuMouseButton)
 
-        let profileA = RadialMenuProfile(
-            name: "Work",
-            mouseButton: RadialMenuMouseTrigger.back.rawValue
-        )
-        let profileB = RadialMenuProfile(
-            name: "Fun",
-            mouseButton: RadialMenuMouseTrigger.button(4).rawValue
-        )
-        profileTestDefaults.set(RadialMenuSupport.encodeProfiles([profileA, profileB]), forKey: DefaultsKey.radialMenuProfiles)
-
-        suite.expect(RadialMenuSupport.claimsMouseButton(MouseButtonShortcutSupport.backButtonNumber, defaults: profileTestDefaults),
-               "claims button 3 from profile A")
-        suite.expect(RadialMenuSupport.claimsMouseButton(4, defaults: profileTestDefaults),
-               "claims button 4 from profile B")
-        suite.expect(!RadialMenuSupport.claimsMouseButton(5, defaults: profileTestDefaults),
-               "does not claim unclaimed button 5")
-
+        suite.expect(RadialMenuSupport.claimsMouseButton(MouseButtonShortcutSupport.backButtonNumber, defaults: profileTestDefaults)
+                && RadialMenuSupport.claimedMouseButton(defaults: profileTestDefaults) == MouseButtonShortcutSupport.backButtonNumber,
+               "the menu claims its one mouse button")
+        suite.expect(!RadialMenuSupport.claimsMouseButton(4, defaults: profileTestDefaults),
+               "does not claim another button")
+        suite.expect(RadialMenuSupport.opensFromMouseOrTrackpad(defaults: profileTestDefaults),
+               "a mouse button keeps an input tap running")
         profileTestDefaults.set(false, forKey: DefaultsKey.radialMenuEnabled)
         suite.expect(!RadialMenuSupport.claimsMouseButton(MouseButtonShortcutSupport.backButtonNumber, defaults: profileTestDefaults),
                "disabled radial menu never claims mouse buttons")
+        profileTestDefaults.set("tap", forKey: DefaultsKey.radialMenuTrackpadGesture)
+        suite.expect(RadialMenuSupport.effectiveTrackpadGesture(defaults: profileTestDefaults, isAvailable: true) == .off,
+               "a switched-off menu holds no trackpad gesture")
+        profileTestDefaults.set(true, forKey: DefaultsKey.radialMenuEnabled)
+        suite.expect(RadialMenuSupport.effectiveTrackpadGesture(defaults: profileTestDefaults, isAvailable: true) == .tap
+                && RadialMenuSupport.effectiveTrackpadGesture(defaults: profileTestDefaults, isAvailable: false) == .off,
+               "the menu holds its gesture only while installed and on")
 
-        // A wheel answers to the combination saved in its own profile, and the
-        // role key it migrated from only seeds the first one. Both sides of a
-        // collision check have to read the profiles.
-        profileTestDefaults.removeObject(forKey: DefaultsKey.radialMenuProfiles)
-        suite.expect(RadialMenuSupport.profileShortcuts(defaults: profileTestDefaults) == [.radialMenuDefault],
-               "before a profile is saved the wheel answers to the shortcut it migrates from")
+        // The menu answers to one combination, stored under its role key, so
+        // other shortcut rows check it like any other role.
         let wheelShortcut = GlobalShortcut(keyCode: Int64(kVK_ANSI_W), modifiers: [.control, .option])
-        let workWheel = RadialMenuProfile(name: "Work", shortcut: wheelShortcut.storageValue)
-        let spareWheel = RadialMenuProfile(name: "Spare")
-        profileTestDefaults.set(RadialMenuSupport.encodeProfiles([workWheel, spareWheel]),
-                                forKey: DefaultsKey.radialMenuProfiles)
-        let wheelShortcuts = { RadialMenuSupport.profileShortcuts(defaults: profileTestDefaults) }
-        suite.expect(wheelShortcuts() == [wheelShortcut],
-               "saved wheels answer to their own shortcuts and a wheel without one claims nothing")
         func roleConflict(_ shortcut: GlobalShortcut, radialMenuOn: Bool = true) -> GlobalShortcutRole? {
             GlobalShortcutRole.conflict(for: shortcut, excluding: .keepAwake,
                                         isOn: { radialMenuOn || $0 != DefaultsKey.radialMenuEnabled },
                                         isAvailable: { _ in true },
-                                        radialMenuShortcuts: wheelShortcuts)
+                                        shortcutForRole: { role in
+                                            role == .radialMenu ? wheelShortcut : role.defaultShortcut
+                                        })
         }
         suite.expect(roleConflict(wheelShortcut) == .radialMenu,
-               "another shortcut row refuses a combination a wheel opens on")
-        suite.expect(roleConflict(.radialMenuDefault) == nil,
-               "the migration seed stops reserving a combination no wheel uses")
+               "another shortcut row refuses the combination the menu opens on")
         suite.expect(roleConflict(wheelShortcut, radialMenuOn: false) == nil,
-               "a switched-off radial menu reserves none of its wheels")
-        suite.expect(RadialMenuSupport.profile(using: wheelShortcut, in: [workWheel, spareWheel],
-                                               excluding: spareWheel.id) == workWheel
-                && RadialMenuSupport.profile(using: wheelShortcut, in: [workWheel, spareWheel],
-                                             excluding: workWheel.id) == nil,
-               "a wheel's shortcut is refused on the other wheels and kept on its own")
-
-        // The Keyboard Shortcuts page lists these same combinations for the
-        // radial menu. Its old recorder wrote the role key, which only counts
-        // until a wheel is saved.
-        let seedShortcut = GlobalShortcut(keyCode: Int64(kVK_ANSI_R), modifiers: [.control, .command])
-        profileTestDefaults.set(seedShortcut.storageValue, forKey: DefaultsKey.radialMenuShortcut)
-        suite.expect(wheelShortcuts() == [wheelShortcut],
-               "a role key changed after the wheels were saved leaves their shortcuts as they are")
-        profileTestDefaults.removeObject(forKey: DefaultsKey.radialMenuProfiles)
-        suite.expect(wheelShortcuts() == [seedShortcut],
-               "until a wheel is saved the role key is the shortcut the page lists")
+               "a switched-off radial menu reserves no combination")
         let shortcutsPageCode = ((try? String(
             contentsOfFile: "Sources/Lattice/UI/Settings/ShortcutsSettings.swift",
             encoding: .utf8)) ?? "")
             .components(separatedBy: "\n")
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
             .joined(separator: "\n")
-        let featureRowsCode = shortcutsPageCode
-            .components(separatedBy: "private func featureRows(").dropFirst().first?
-            .components(separatedBy: "\n    }\n").first ?? ""
-        let radialRowCode = shortcutsPageCode
-            .components(separatedBy: "private struct CentralRadialMenuShortcutRow").dropFirst().first?
-            .components(separatedBy: "\n}\n").first ?? ""
-        let radialRowComesFirst = featureRowsCode.range(of: "if feature == .radialMenu {").flatMap { radial in
-            featureRowsCode.range(of: "roleRow(").map { radial.lowerBound < $0.lowerBound }
-        } ?? false
-        suite.expect(radialRowComesFirst
-                && shortcutsPageCode.contains("radialMenuGroupRows")
-                && radialRowCode.contains("RadialMenuSupport.updateShortcut")
+        suite.expect(!shortcutsPageCode.contains("CentralRadialMenuShortcutRow")
+                && !shortcutsPageCode.contains("radialMenuGroupRows")
                 && !shortcutsPageCode.contains(".manageButton"),
-               "the Keyboard Shortcuts page uses a nested profile list with two-way synced shortcut setters")
-
-        // Two-way sync test for radial menu profile shortcuts
-        let syncProfileID = UUID()
-        let initialProfile = RadialMenuProfile(id: syncProfileID, name: "Sync Test Profile", shortcut: "")
-        profileTestDefaults.set(RadialMenuSupport.encodeProfiles([initialProfile]), forKey: DefaultsKey.radialMenuProfiles)
-        let newWheelShortcut = GlobalShortcut(keyCode: Int64(kVK_ANSI_M), modifiers: [.option, .command])
-        RadialMenuSupport.updateShortcut(newWheelShortcut.storageValue, for: syncProfileID, defaults: profileTestDefaults)
-        let updatedProfiles = RadialMenuSupport.decodeProfiles(profileTestDefaults.data(forKey: DefaultsKey.radialMenuProfiles), defaults: profileTestDefaults)
-        suite.expect(updatedProfiles.first?.shortcut == newWheelShortcut.storageValue
-                && profileTestDefaults.string(forKey: DefaultsKey.radialMenuShortcut) == newWheelShortcut.storageValue,
-               "updating a radial profile shortcut synchronizes the profiles list and primary shortcut")
+               "the Keyboard Shortcuts page lists the radial menu's one shortcut as an ordinary role row")
         profileTestDefaults.removePersistentDomain(forName: "io.github.sam32j.lattice.tests.radialProfiles")
 
         let testImage = NSImage(size: NSSize(width: 16, height: 16))
@@ -1154,34 +1098,6 @@ enum UtilitiesFeatureTests {
         suite.expect(samplePNG.map { RadialMenuFaviconFetcher.sourceDimensionsAreSafe($0) } == true
                && !RadialMenuFaviconFetcher.sourceDimensionsAreSafe(Data("not an image".utf8)),
                "favicon decoding accepts bounded images and rejects invalid payloads")
-
-        // The event taps read the cheap answer on every side-button event, so
-        // it has to agree with the full decode, custom icons and all.
-        let iconProfile = RadialMenuProfile(
-            name: "Icons",
-            mouseButton: RadialMenuMouseTrigger.button(6).rawValue,
-            items: [RadialMenuItem(kind: .app,
-                                   payload: "/Applications/Safari.app",
-                                   customIconData: samplePNG)]
-        )
-        let iconProfilesData = RadialMenuSupport.encodeProfiles([iconProfile, profileA])
-        let fullyDecodedButtons = RadialMenuSupport.decodeProfiles(iconProfilesData)
-            .compactMap { RadialMenuMouseTrigger.sanitized($0.mouseButton).buttonNumber }
-        suite.expect(fullyDecodedButtons == [6, MouseButtonShortcutSupport.backButtonNumber]
-                && RadialMenuSupport.claimedMouseButtons(iconProfilesData) == fullyDecodedButtons,
-               "claimed mouse buttons read without the items match the full profile decode")
-
-        let legacyButtonDefaults = UserDefaults(suiteName: "io.github.sam32j.lattice.tests.radialLegacyButton")!
-        legacyButtonDefaults.removePersistentDomain(forName: "io.github.sam32j.lattice.tests.radialLegacyButton")
-        legacyButtonDefaults.set(RadialMenuMouseTrigger.forward.rawValue,
-                                 forKey: DefaultsKey.radialMenuMouseButton)
-        suite.expect(RadialMenuSupport.claimedMouseButtons(nil, defaults: legacyButtonDefaults)
-                == [MouseButtonShortcutSupport.forwardButtonNumber]
-                && RadialMenuSupport.claimedMouseButtons(Data("not profiles".utf8),
-                                                         defaults: legacyButtonDefaults)
-                == [MouseButtonShortcutSupport.forwardButtonNumber],
-               "claimed mouse buttons fall back to the legacy button key like the full decode")
-        legacyButtonDefaults.removePersistentDomain(forName: "io.github.sam32j.lattice.tests.radialLegacyButton")
 
         var reorderItems = [
             RadialMenuItem(kind: .app, name: "A"),

@@ -18,8 +18,7 @@ enum WindowLayoutShortcutEditor {
         if let role = GlobalShortcutRole.conflict(for: shortcut, excluding: nil,
             isOn: { defaults.bool(forKey: $0) },
             isAvailable: { $0.isPresentInControls(in: defaults) },
-            shortcutForRole: { GlobalShortcut.saved(for: $0.storageKey, fallback: $0.defaultShortcut, in: defaults) },
-            radialMenuShortcuts: { RadialMenuSupport.profileShortcuts(defaults: defaults) }) {
+            shortcutForRole: { GlobalShortcut.saved(for: $0.storageKey, fallback: $0.defaultShortcut, in: defaults) }) {
             let roleTitle = role.title(strings)
             return .conflict(String(format: strings.shortcutConflictFormat, roleTitle), assignedBehavior: roleTitle)
         }

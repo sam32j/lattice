@@ -83,6 +83,9 @@ enum SettingsBackupSupport {
         DefaultsKey.textSnippets,
         DefaultsKey.radialMenuItems,
         DefaultsKey.radialMenuProfiles,
+        // Travels so a new backup restores as migrated, while an older one,
+        // which lacks it, migrates its per-profile triggers on relaunch.
+        DefaultsKey.radialMenuSettingsVersion,
         DefaultsKey.commandBarLinks,
         DefaultsKey.commandBarRowShortcuts,
         DefaultsKey.language,

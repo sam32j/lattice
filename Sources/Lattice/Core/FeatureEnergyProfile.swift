@@ -48,11 +48,9 @@ extension AppFeature {
             if modifierTapRuns { return .inputs }
             return pointerTapRuns ? .pointer : .idle
         case .radialMenu:
-            // A side button or the trackpad tap on any wheel keeps an input
-            // tap running; shortcut-only costs nothing at rest.
-            return RadialMenuSupport.opensFromMouseOrTrackpad(
-                UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles))
-                ? .mouse : .idle
+            // A mouse button or a trackpad gesture keeps an input tap
+            // running; shortcut-only costs nothing at rest.
+            return RadialMenuSupport.opensFromMouseOrTrackpad() ? .mouse : .idle
         case .notchNotifications, .notchGestures, .notchTimer, .notchQueue, .notchDownloads: return .idle
         // It reads only while something is being watched, and stops on its own.
         case .notchWatch: return .idle

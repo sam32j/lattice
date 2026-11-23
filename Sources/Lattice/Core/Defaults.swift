@@ -864,10 +864,16 @@ enum DefaultsKey {
 
     // Radial menu: a wheel of actions on a shortcut.
     static let radialMenuEnabled = "radialMenuEnabled"
-    static let radialMenuShortcut = "radialMenuShortcut"
-    static let radialMenuAtPointer = "radialMenuAtPointer" // false: screen center
+    static let radialMenuShortcut = "radialMenuShortcut" // the one shortcut; "" means none
     static let radialMenuMouseButton = "radialMenuMouseButton" // RadialMenuMouseTrigger.rawValue
-    static let radialMenuActivationMode = "radialMenuActivationMode" // RadialMenuActivationMode.rawValue
+    static let radialMenuTrackpadGesture = "radialMenuTrackpadGesture" // RadialMenuTrackpadGesture.rawValue
+    /// Absent means 1 (per-profile triggers); 2 moved them menu-wide.
+    static let radialMenuSettingsVersion = "radialMenuSettingsVersion"
+    // Retired by settings version 2 (the menu always opens at the pointer and
+    // a release decides by hold length); kept only so the migration can
+    // remove them.
+    static let legacyRadialMenuAtPointer = "radialMenuAtPointer"
+    static let legacyRadialMenuActivationMode = "radialMenuActivationMode"
     static let radialMenuItems = "radialMenuItems"        // Data: [RadialMenuItem] JSON
     static let radialMenuProfiles = "radialMenuProfiles"  // Data: [RadialMenuProfile] JSON
 
@@ -1271,9 +1277,8 @@ enum Defaults {
         DefaultsKey.notchHideInCaptures: false,
         DefaultsKey.radialMenuEnabled: false,
         DefaultsKey.radialMenuShortcut: GlobalShortcut.radialMenuDefault.storageValue,
-        DefaultsKey.radialMenuAtPointer: true,
         DefaultsKey.radialMenuMouseButton: RadialMenuMouseTrigger.off.rawValue,
-        DefaultsKey.radialMenuActivationMode: RadialMenuActivationMode.pressOrHold.rawValue,
+        DefaultsKey.radialMenuTrackpadGesture: RadialMenuTrackpadGesture.off.rawValue,
         DefaultsKey.windowMaximizeEnabled: false,
         DefaultsKey.windowMaximizeExcludedApps: [String](),
         DefaultsKey.keyboardDebounceEnabled: false,
@@ -1681,6 +1686,7 @@ enum Defaults {
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         defaults.register(defaults: ["NSInitialToolTipDelay": 300])
+        migrateRadialMenuTriggers(defaults: defaults)
         activateBetaChannelIfRunningBeta(in: defaults)
         installCompanionForBetaCommandBar(in: defaults)
         migrateLegacyMenuBarTemperatureMetric(in: defaults)
@@ -1700,6 +1706,13 @@ enum Defaults {
         // The "all apps" output choice now lasts one session; a saved one
         // would move apps that chose their own output after every launch.
         defaults.removeObject(forKey: DefaultsKey.mixerUniversalOutputDevice)
+    }
+
+    /// Moves the radial menu's per-profile triggers to the menu-wide keys
+    /// (settings version 2). Also runs after an older backup is restored:
+    /// the restore relaunches, and an old file carries no version.
+    static func migrateRadialMenuTriggers(defaults: UserDefaults) {
+        RadialMenuTriggerMigration.run(in: defaults)
     }
 
     /// Start text filtering off for existing installations as well. A distinct

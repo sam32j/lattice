@@ -33,11 +33,11 @@ enum RadialProfileSyncTests {
                      "unrelated defaults writes preserve an unfinished profile edit")
         var external = profile
         external.name = "External name"
-        external.shortcut = GlobalShortcut.radialMenuDefault.storageValue
+        external.color = .orange
         defaults.set(RadialMenuSupport.encodeProfiles([external]), forKey: DefaultsKey.radialMenuProfiles)
         editor.refreshProfilesFromDefaults()
         suite.expect(editor.profiles.first?.name == "External name"
-                     && editor.profiles.first?.shortcut == external.shortcut
+                     && editor.profiles.first?.color == .orange
                      && editor.selectedProfileID == profile.id,
                      "an external profile edit updates the editor without changing selection")
     }

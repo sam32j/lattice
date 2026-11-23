@@ -36,7 +36,6 @@ enum SettingsReviewRegressionTests {
         InputSettingsControlTests.run(suite)
         KeyboardOverrideOrderTests.run(suite)
         KeepAwakePointerPermissionTests.run(suite)
-        RadialProfileActivationTests.run(suite)
         KeyboardLightShortcutAvailabilityTests.run(suite)
         MouseShortcutBackupTests.run(suite)
         CleaningModeManualAvailabilityTests.run(suite)

@@ -18,6 +18,10 @@ final class QuickToolHotkey {
     /// hears about this hotkey coming and going.
     private var claimedKey: String?
     var onPress: (() -> Void)?
+    /// The key of the combination coming back up. Carbon reports it for every
+    /// registered hotkey; owners that care about holds (the radial menu)
+    /// listen, the rest leave it nil.
+    var onRelease: (() -> Void)?
 
     init(id: UInt32) {
         hotKeyID = id
@@ -75,8 +79,10 @@ final class QuickToolHotkey {
 
     private static func installSharedHandlerIfNeeded() {
         guard sharedHandler == nil else { return }
-        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
-                                 eventKind: UInt32(kEventHotKeyPressed))
+        var specs = [EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                                   eventKind: UInt32(kEventHotKeyPressed)),
+                     EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                                   eventKind: UInt32(kEventHotKeyReleased))]
         InstallEventHandler(GetEventDispatcherTarget(), { _, event, _ -> OSStatus in
             var id = EventHotKeyID()
             if let event {
@@ -84,11 +90,14 @@ final class QuickToolHotkey {
                                   EventParamType(typeEventHotKeyID), nil,
                                   MemoryLayout<EventHotKeyID>.size, nil, &id)
             }
-            guard id.signature == 0x5655_5154,
+            guard let event, id.signature == 0x5655_5154,
                   let instance = QuickToolHotkey.instances[id.id]
             else { return OSStatus(eventNotHandledErr) }
-            DispatchQueue.main.async { if !InputEventTap.isBlocked { instance.onPress?() } }
+            let released = GetEventKind(event) == UInt32(kEventHotKeyReleased)
+            // Both halves go through the main queue in arrival order, so a
+            // quick press never sees its release before its press.
+            DispatchQueue.main.async { if !InputEventTap.isBlocked { if released { instance.onRelease?() } else { instance.onPress?() } } }
             return noErr
-        }, 1, &spec, nil, &sharedHandler)
+        }, specs.count, &specs, nil, &sharedHandler)
     }
 }

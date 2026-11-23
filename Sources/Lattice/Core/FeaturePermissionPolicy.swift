@@ -108,13 +108,15 @@ extension AppFeature {
                     || (boolFor(DefaultsKey.notchClipboardWindow) && isAvailable(.clipboardHistory))
                     || (boolFor(DefaultsKey.notchSnippetsWindow) && isAvailable(.textSnippets))
             case (.radialMenu, .accessibility):
+                let mouseButton = RadialMenuMouseTrigger.sanitized(stringFor(DefaultsKey.radialMenuMouseButton))
+                let gesture = RadialMenuTrackpadGesture.sanitized(stringFor(DefaultsKey.radialMenuTrackpadGesture))
                 if let profiles = dataFor(DefaultsKey.radialMenuProfiles) {
-                    return RadialMenuSupport.needsAccessibility(RadialMenuSupport.decodeProfiles(profiles))
+                    return RadialMenuSupport.needsAccessibility(RadialMenuSupport.decodeProfiles(profiles),
+                                                                mouseButton: mouseButton, trackpadGesture: gesture)
                 }
                 return RadialMenuSupport.needsAccessibility(
                     RadialMenuSupport.decode(dataFor(DefaultsKey.radialMenuItems)))
-                    || RadialMenuMouseTrigger.sanitized(
-                        stringFor(DefaultsKey.radialMenuMouseButton)) != .off
+                    || mouseButton != .off || gesture != .off
             case (.keepAwake, .accessibility):
                 return boolFor(DefaultsKey.keepAwakeMouseJiggleEnabled)
             case (.mixer, .accessibility):

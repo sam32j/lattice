@@ -48,44 +48,121 @@ enum RadialMenuColor: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// A complete configuration of the radial menu wheel: its items, color theme,
-/// keyboard shortcut, mouse button and trackpad tap triggers.
+/// An sRGB color the profile gradients are mixed from. Kept as numbers so
+/// the gradient stops and the text contrast can be computed and tested.
+struct RadialRGB: Equatable {
+    var red: Double
+    var green: Double
+    var blue: Double
+
+    static let white = RadialRGB(red: 1, green: 1, blue: 1)
+    static let black = RadialRGB(red: 0, green: 0, blue: 0)
+
+    func mixed(toward other: RadialRGB, by amount: Double) -> RadialRGB {
+        RadialRGB(red: red + (other.red - red) * amount,
+                  green: green + (other.green - green) * amount,
+                  blue: blue + (other.blue - blue) * amount)
+    }
+
+    /// WCAG relative luminance.
+    var luminance: Double {
+        func linear(_ channel: Double) -> Double {
+            channel <= 0.03928 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+    }
+
+    func contrast(with other: RadialRGB) -> Double {
+        let lighter = max(luminance, other.luminance)
+        let darker = min(luminance, other.luminance)
+        return (lighter + 0.05) / (darker + 0.05)
+    }
+
+    var color: Color { Color(.sRGB, red: red, green: green, blue: blue, opacity: 1) }
+}
+
+extension RadialMenuColor {
+    /// The base each gradient is mixed from, per appearance. Light matches
+    /// `color(for:)`; dark follows the system's dark palette.
+    func baseRGB(for scheme: ColorScheme) -> RadialRGB {
+        let light = scheme == .light
+        switch self {
+        case .accent:
+            let accent = NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? .systemBlue
+            return RadialRGB(red: Double(accent.redComponent), green: Double(accent.greenComponent),
+                             blue: Double(accent.blueComponent))
+        case .blue: return light ? RadialRGB(red: 0.00, green: 0.48, blue: 1.00) : RadialRGB(red: 0.04, green: 0.52, blue: 1.00)
+        case .purple: return light ? RadialRGB(red: 0.58, green: 0.20, blue: 0.85) : RadialRGB(red: 0.75, green: 0.35, blue: 0.95)
+        case .pink: return light ? RadialRGB(red: 0.88, green: 0.16, blue: 0.45) : RadialRGB(red: 1.00, green: 0.22, blue: 0.37)
+        case .red: return light ? RadialRGB(red: 0.85, green: 0.18, blue: 0.18) : RadialRGB(red: 1.00, green: 0.27, blue: 0.23)
+        case .orange: return light ? RadialRGB(red: 0.95, green: 0.45, blue: 0.00) : RadialRGB(red: 1.00, green: 0.62, blue: 0.04)
+        case .yellow: return light ? RadialRGB(red: 0.85, green: 0.65, blue: 0.00) : RadialRGB(red: 1.00, green: 0.84, blue: 0.04)
+        case .green: return light ? RadialRGB(red: 0.18, green: 0.65, blue: 0.25) : RadialRGB(red: 0.19, green: 0.82, blue: 0.35)
+        case .mint: return light ? RadialRGB(red: 0.00, green: 0.68, blue: 0.60) : RadialRGB(red: 0.40, green: 0.83, blue: 0.81)
+        case .cyan: return light ? RadialRGB(red: 0.15, green: 0.65, blue: 0.85) : RadialRGB(red: 0.39, green: 0.82, blue: 1.00)
+        case .indigo: return light ? RadialRGB(red: 0.35, green: 0.35, blue: 0.85) : RadialRGB(red: 0.37, green: 0.36, blue: 0.90)
+        case .graphite: return light ? RadialRGB(red: 0.40, green: 0.40, blue: 0.40) : RadialRGB(red: 0.65, green: 0.65, blue: 0.65)
+        }
+    }
+
+    /// Top-leading and bottom-trailing stops: lifted toward white, sunk
+    /// toward black, a little more of each in the light appearance at the
+    /// top and in the dark one at the bottom. Graphite stays neutral because
+    /// its base is.
+    func gradientStops(for scheme: ColorScheme) -> (top: RadialRGB, bottom: RadialRGB) {
+        let base = baseRGB(for: scheme)
+        let light = scheme == .light
+        return (base.mixed(toward: .white, by: light ? 0.18 : 0.10),
+                base.mixed(toward: .black, by: light ? 0.22 : 0.30))
+    }
+
+    func gradient(for scheme: ColorScheme) -> LinearGradient {
+        let stops = gradientStops(for: scheme)
+        return LinearGradient(colors: [stops.top.color, stops.bottom.color],
+                              startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    /// White text unless white misses 4.5:1 on the darker stop; then dark
+    /// text, which that same stop then always clears.
+    func usesDarkText(for scheme: ColorScheme) -> Bool {
+        gradientStops(for: scheme).bottom.contrast(with: .white) < 4.5
+    }
+
+    func foreground(for scheme: ColorScheme) -> Color {
+        usesDarkText(for: scheme) ? Color.black.opacity(0.88) : .white
+    }
+}
+
+/// One wheel of actions with its name and color. The menu opens on the
+/// first profile (the primary); the others are tabs inside the menu. What
+/// opens the menu (shortcut, mouse button, trackpad gesture) is menu-wide and
+/// lives in its own preferences, never in a profile.
 struct RadialMenuProfile: Codable, Identifiable, Equatable {
     var id: UUID = UUID()
     var name: String = ""
     var color: RadialMenuColor = .accent
-    var shortcut: String = ""
-    var mouseButton: String = RadialMenuMouseTrigger.off.rawValue
     var items: [RadialMenuItem] = []
     /// The starter set this wheel was created from, so restoring its actions
     /// brings back that one. Kept as the raw value because it is persisted;
     /// nil for a wheel whose origin is not known.
     var preset: String?
-    /// A four-finger tap on the trackpad opens this wheel. Settings keeps it
-    /// on one profile at most; the first one wins otherwise.
-    var trackpadTap = false
 
     func displayName(_ text: RadialMenuFeatureStrings) -> String {
         name.isEmpty ? text.presetGeneral : name
     }
 
-    /// The copy Duplicate adds. The shortcut, the mouse button and the
-    /// trackpad tap each open one wheel, so the copy starts without them and
-    /// leaves the original's.
+    /// The copy Duplicate adds: same actions and color, a new identity.
     func duplicate(named name: String) -> RadialMenuProfile {
         var copy = self
         copy.id = UUID()
         copy.name = name
-        copy.shortcut = ""
-        copy.mouseButton = RadialMenuMouseTrigger.off.rawValue
-        copy.trackpadTap = false
         return copy
     }
 }
 
 extension RadialMenuProfile {
     private enum CodingKeys: String, CodingKey {
-        case id, name, color, shortcut, mouseButton, items, preset, trackpadTap
+        case id, name, color, items, preset
     }
 
     init(from decoder: Decoder) throws {
@@ -93,12 +170,9 @@ extension RadialMenuProfile {
         self.init(id: try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
                   name: try container.decodeIfPresent(String.self, forKey: .name) ?? "",
                   color: try container.decodeIfPresent(RadialMenuColor.self, forKey: .color) ?? .accent,
-                  shortcut: try container.decodeIfPresent(String.self, forKey: .shortcut) ?? "",
-                  mouseButton: try container.decodeIfPresent(String.self, forKey: .mouseButton) ?? RadialMenuMouseTrigger.off.rawValue,
                   items: try container.decodeIfPresent([FailableRadialMenuItem].self, forKey: .items)?
                       .compactMap(\.value) ?? [],
-                  preset: try container.decodeIfPresent(String.self, forKey: .preset),
-                  trackpadTap: try container.decodeIfPresent(Bool.self, forKey: .trackpadTap) ?? false)
+                  preset: try container.decodeIfPresent(String.self, forKey: .preset))
     }
 }
 
@@ -110,20 +184,40 @@ private struct FailableRadialMenuProfile: Decodable {
     }
 }
 
-/// A profile read for its mouse button and trackpad tap alone: the questions
-/// the event taps and the Features hub ask, answered without walking the
-/// items or decoding the icons they carry.
-private struct RadialMenuProfileTriggers: Decodable {
-    let mouseButton: String?
-    let trackpadTap: Bool
+/// The triggers profiles carried before they became menu-wide (settings
+/// version 1). Read only by the migration, from the same blob, so the
+/// profile itself never has to know about them again.
+struct RadialMenuLegacyTriggers: Decodable, Equatable {
+    var id: UUID?
+    var shortcut = ""
+    var mouseButton = RadialMenuMouseTrigger.off.rawValue
+    var trackpadTap = false
 
-    private enum CodingKeys: String, CodingKey { case mouseButton, trackpadTap }
+    private enum CodingKeys: String, CodingKey { case id, shortcut, mouseButton, trackpadTap }
+
+    init(id: UUID?, shortcut: String = "", mouseButton: String = RadialMenuMouseTrigger.off.rawValue,
+         trackpadTap: Bool = false) {
+        self.id = id
+        self.shortcut = shortcut
+        self.mouseButton = mouseButton
+        self.trackpadTap = trackpadTap
+    }
 
     init(from decoder: Decoder) throws {
         let container = try? decoder.container(keyedBy: CodingKeys.self)
-        mouseButton = (try? container?.decodeIfPresent(String.self, forKey: .mouseButton)) ?? nil
+        id = (try? container?.decodeIfPresent(UUID.self, forKey: .id)) ?? nil
+        shortcut = (try? container?.decodeIfPresent(String.self, forKey: .shortcut)) ?? ""
+        mouseButton = (try? container?.decodeIfPresent(String.self, forKey: .mouseButton))
+            ?? RadialMenuMouseTrigger.off.rawValue
         trackpadTap = (try? container?.decodeIfPresent(Bool.self, forKey: .trackpadTap)) ?? false
     }
+
+    var validShortcut: GlobalShortcut? {
+        let trimmed = shortcut.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : GlobalShortcut(storageValue: trimmed)
+    }
+
+    var button: RadialMenuMouseTrigger { RadialMenuMouseTrigger.sanitized(mouseButton) }
 }
 
 /// Curated starter presets when creating new profiles.
@@ -193,15 +287,10 @@ enum RadialMenuProfilePreset: String, CaseIterable, Identifiable {
         }
     }
 
-    func createProfile(name: String? = nil,
-                       color: RadialMenuColor? = nil,
-                       shortcut: String = "",
-                       mouseButton: String = RadialMenuMouseTrigger.off.rawValue) -> RadialMenuProfile {
+    func createProfile(name: String? = nil, color: RadialMenuColor? = nil) -> RadialMenuProfile {
         RadialMenuProfile(id: UUID(),
                            name: name ?? "",
                            color: color ?? defaultColor,
-                           shortcut: shortcut,
-                           mouseButton: mouseButton,
                            items: makeItems(),
                            preset: rawValue)
     }
@@ -405,38 +494,30 @@ enum RadialMenuMouseTrigger: Equatable, Identifiable {
     }
 }
 
-/// How the summoning shortcut or side button owns a radial-menu session.
-/// Raw values are persisted; never rename them.
-enum RadialMenuActivationMode: String, CaseIterable, Identifiable {
-    /// The existing adaptive gesture: release over a slice to run it, or
-    /// release near the center to leave the wheel open for clicking.
-    case pressOrHold
-    /// A press opens a sticky wheel. Releasing the summoner has no effect.
-    case press
-    /// The wheel exists only while the summoner is down. Release runs the
-    /// highlighted slice, or simply dismisses when nothing is highlighted.
-    case hold
+/// The trackpad gesture that opens the menu. Raw values are persisted.
+/// Four fingers only: three belong to macOS (Look Up, three-finger drag).
+enum RadialMenuTrackpadGesture: String, CaseIterable, Identifiable {
+    case off, tap, click
 
     var id: String { rawValue }
 
-    static func sanitized(_ raw: String?) -> RadialMenuActivationMode {
-        RadialMenuActivationMode(rawValue: raw ?? "") ?? .pressOrHold
-    }
-
-    func startsHeld(requestedHold: Bool, hasHeldButton: Bool,
-                    shortcutHasModifiers: Bool) -> Bool {
-        guard self != .press else { return false }
-        return hasHeldButton || (requestedHold && shortcutHasModifiers)
-    }
-
-    func releaseAction(hasSelection: Bool) -> RadialMenuReleaseAction {
-        if hasSelection { return .select }
-        return self == .hold ? .dismiss : .stayOpen
+    static func sanitized(_ raw: String?) -> RadialMenuTrackpadGesture {
+        RadialMenuTrackpadGesture(rawValue: raw ?? "") ?? .off
     }
 }
 
-enum RadialMenuReleaseAction: Equatable {
-    case stayOpen, dismiss, select
+/// What the pointer (or the arrow keys) has picked when the summoner is
+/// released.
+enum RadialMenuPreselection: Equatable {
+    case none
+    case slot
+    case submenu
+    case profileTab
+}
+
+/// What releasing a held shortcut or mouse button does.
+enum RadialMenuRelease: Equatable {
+    case run, openSubmenu, switchProfile, stayOpen, close
 }
 
 extension RadialMenuSupport {
@@ -459,8 +540,29 @@ extension RadialMenuSupport {
     static func claimsMouseButton(_ button: Int64, defaults: UserDefaults) -> Bool {
         guard defaults.bool(forKey: AppFeature.radialMenu.availabilityKey),
               defaults.bool(forKey: DefaultsKey.radialMenuEnabled) else { return false }
-        return claimedMouseButtons(defaults.data(forKey: DefaultsKey.radialMenuProfiles),
-                                   defaults: defaults).contains(button)
+        return claimedMouseButton(defaults: defaults) == button
+    }
+
+    /// A quick press stays open; a longer hold released over nothing closes.
+    static let quickPressLimit: TimeInterval = 0.30
+    /// Resting on a profile tab this long while holding switches to it.
+    static let tabDwell: TimeInterval = 0.35
+    /// How long the hub names the profile just switched to.
+    static let profileNameFlash: TimeInterval = 0.8
+    /// A hold whose release never arrived (focus changed mid-hold) ends as
+    /// sticky after this long, never as a run.
+    static let holdSafetyTimeout: TimeInterval = 10
+
+    /// The one decision a release makes, for the shortcut and the mouse
+    /// button alike. Anything picked wins over how long the hold lasted.
+    static func releaseAction(heldFor: TimeInterval,
+                              preselection: RadialMenuPreselection) -> RadialMenuRelease {
+        switch preselection {
+        case .slot: return .run
+        case .submenu: return .openSubmenu
+        case .profileTab: return .switchProfile
+        case .none: return heldFor < quickPressLimit ? .stayOpen : .close
+        }
     }
 }
 
@@ -771,73 +873,48 @@ enum RadialMenuSupport {
         }
     }
 
-    /// True when any profile, at any level, controls keyboard input or windows,
-    /// or claims a mouse button or the trackpad tap, and therefore needs the
-    /// Accessibility permission.
-    static func needsAccessibility(_ profiles: [RadialMenuProfile]) -> Bool {
-        profiles.contains { profile in
-            RadialMenuMouseTrigger.sanitized(profile.mouseButton) != .off
-                || profile.trackpadTap
-                || needsAccessibility(profile.items)
-        }
+    /// True when any profile, at any level, controls keyboard input or
+    /// windows, or the menu opens from a mouse button or a trackpad gesture,
+    /// and therefore needs the Accessibility permission.
+    static func needsAccessibility(_ profiles: [RadialMenuProfile],
+                                   mouseButton: RadialMenuMouseTrigger,
+                                   trackpadGesture: RadialMenuTrackpadGesture) -> Bool {
+        mouseButton != .off || trackpadGesture != .off
+            || profiles.contains { needsAccessibility($0.items) }
     }
 
-    /// Whether anything opens this wheel. The profile picked in Settings is
-    /// only the one being edited, so a wheel without a shortcut, a mouse
-    /// button or the trackpad tap never opens outside of Try it.
-    static func hasTrigger(_ profile: RadialMenuProfile) -> Bool {
-        GlobalShortcut(storageValue: profile.shortcut) != nil
-            || RadialMenuMouseTrigger.sanitized(profile.mouseButton) != .off
-            || profile.trackpadTap
+    /// The same question read from preferences.
+    static func needsAccessibility(_ profiles: [RadialMenuProfile],
+                                   defaults: UserDefaults = .standard) -> Bool {
+        needsAccessibility(profiles,
+                           mouseButton: RadialMenuMouseTrigger.sanitized(
+                               defaults.string(forKey: DefaultsKey.radialMenuMouseButton)),
+                           trackpadGesture: RadialMenuTrackpadGesture.sanitized(
+                               defaults.string(forKey: DefaultsKey.radialMenuTrackpadGesture)))
     }
 
-    /// Gives one wheel a mouse button. A button only ever opens the first
-    /// wheel that has it, so claiming it here releases it from the others,
-    /// the way the trackpad tap moves.
-    static func assigning(mouseButton raw: String, to profileID: UUID,
-                          in profiles: [RadialMenuProfile]) -> [RadialMenuProfile] {
-        let button = RadialMenuMouseTrigger.sanitized(raw).buttonNumber
-        return profiles.map { profile in
-            var profile = profile
-            if profile.id == profileID {
-                profile.mouseButton = raw
-            } else if let button,
-                      RadialMenuMouseTrigger.sanitized(profile.mouseButton).buttonNumber == button {
-                profile.mouseButton = RadialMenuMouseTrigger.off.rawValue
-            }
-            return profile
-        }
+    /// The mouse button that opens the menu, if any. This is the question the
+    /// event taps ask on every extra-button event, so it reads one string and
+    /// never the profiles.
+    static func claimedMouseButton(defaults: UserDefaults = .standard) -> Int64? {
+        RadialMenuMouseTrigger.sanitized(defaults.string(forKey: DefaultsKey.radialMenuMouseButton)).buttonNumber
     }
 
-    /// The mouse buttons the wheel is bound to right now, decoded from the
-    /// stored buttons alone.
-    ///
-    /// This is the question the event taps ask, so it must stay cheap:
-    /// `decodeProfiles` answers it too, but only by paying for every item on
-    /// every wheel. The legacy fallback is the same one it migrates from, so
-    /// the two answers cannot drift apart for a user who has not saved a
-    /// profile yet.
-    static func claimedMouseButtons(_ data: Data?, defaults: UserDefaults = .standard) -> [Int64] {
-        if let data, let decoded = try? JSONDecoder().decode([RadialMenuProfileTriggers].self, from: data) {
-            return decoded.compactMap { RadialMenuMouseTrigger.sanitized($0.mouseButton).buttonNumber }
-        }
-        let legacy = RadialMenuMouseTrigger.sanitized(
-            defaults.string(forKey: DefaultsKey.radialMenuMouseButton))
-        return legacy.buttonNumber.map { [$0] } ?? []
+    /// The trackpad gesture the menu holds right now: off unless the feature
+    /// is installed and switched on. Middle Click and the contact reader read
+    /// this, so its saved gesture is released the moment the menu is off.
+    static func effectiveTrackpadGesture(defaults: UserDefaults = .standard,
+                                         isAvailable: Bool = AppFeature.radialMenu.isAvailable)
+        -> RadialMenuTrackpadGesture {
+        guard isAvailable, defaults.bool(forKey: DefaultsKey.radialMenuEnabled) else { return .off }
+        return RadialMenuTrackpadGesture.sanitized(defaults.string(forKey: DefaultsKey.radialMenuTrackpadGesture))
     }
 
-    /// Whether any wheel opens from a mouse button or the trackpad tap, the
-    /// triggers that keep an input tap running while the menu is on. Read
-    /// like `claimedMouseButtons`, from the stored triggers alone and with
-    /// the same legacy fallback, so the Features hub never decodes icons.
-    static func opensFromMouseOrTrackpad(_ data: Data?, defaults: UserDefaults = .standard) -> Bool {
-        if let data, let decoded = try? JSONDecoder().decode([RadialMenuProfileTriggers].self, from: data) {
-            return decoded.contains {
-                RadialMenuMouseTrigger.sanitized($0.mouseButton) != .off || $0.trackpadTap
-            }
-        }
-        return RadialMenuMouseTrigger.sanitized(
-            defaults.string(forKey: DefaultsKey.radialMenuMouseButton)) != .off
+    /// Whether the menu opens from a mouse button or a trackpad gesture, the
+    /// triggers that keep an input tap running while the menu is on.
+    static func opensFromMouseOrTrackpad(defaults: UserDefaults = .standard) -> Bool {
+        claimedMouseButton(defaults: defaults) != nil
+            || RadialMenuTrackpadGesture.sanitized(defaults.string(forKey: DefaultsKey.radialMenuTrackpadGesture)) != .off
     }
 
     /// Decodes profiles from JSON blob. If missing, checks for legacy
@@ -853,20 +930,13 @@ enum RadialMenuSupport {
             let sanitized = sanitizedProfiles(decoded.compactMap(\.value))
             if !sanitized.isEmpty { return sanitized }
         }
-        // Legacy items migration
-        let legacyItemsData = defaults.data(forKey: DefaultsKey.radialMenuItems)
-        let legacyShortcut = defaults.string(forKey: DefaultsKey.radialMenuShortcut)
-            ?? GlobalShortcut.radialMenuDefault.storageValue
-        let legacyMouseButton = defaults.string(forKey: DefaultsKey.radialMenuMouseButton)
-            ?? RadialMenuMouseTrigger.off.rawValue
-
-        let items = decode(legacyItemsData)
+        // The single wheel that came before profiles. Its shortcut and mouse
+        // button already live in the menu-wide keys.
+        let items = decode(defaults.data(forKey: DefaultsKey.radialMenuItems))
         let initialProfile = RadialMenuProfile(
-            id: UUID(uuidString: "E0A8948E-5056-4BD3-82D5-5020F99F0001") ?? UUID(),
+            id: legacyProfileID,
             name: "",
             color: .accent,
-            shortcut: legacyShortcut,
-            mouseButton: legacyMouseButton,
             items: items,
             // The single wheel that came before profiles started from the
             // general starter set, whatever it was edited into since.
@@ -875,52 +945,8 @@ enum RadialMenuSupport {
         return [initialProfile]
     }
 
-    /// The combinations the wheels answer to, read the way `RadialMenuService`
-    /// registers them. Before any profile is saved that is the shortcut the
-    /// first wheel migrates from, and a wheel without one claims nothing.
-    static func profileShortcuts(defaults: UserDefaults = .standard) -> [GlobalShortcut] {
-        decodeProfiles(defaults.data(forKey: DefaultsKey.radialMenuProfiles), defaults: defaults)
-            .compactMap { GlobalShortcut(storageValue: $0.shortcut) }
-    }
+    static let legacyProfileID = UUID(uuidString: "E0A8948E-5056-4BD3-82D5-5020F99F0001") ?? UUID()
 
-    /// The other wheel that already opens on a combination. Two wheels on one
-    /// combination would leave one of them dead, so Settings refuses the second.
-    static func profile(using shortcut: GlobalShortcut, in profiles: [RadialMenuProfile],
-                        excluding profileID: UUID) -> RadialMenuProfile? {
-        profiles.first { $0.id != profileID && GlobalShortcut(storageValue: $0.shortcut) == shortcut }
-    }
-
-    /// Names whoever already answers to a shortcut, excluding a given profile ID.
-    static func conflictTitle(for shortcut: GlobalShortcut,
-                              excluding profileID: UUID,
-                              in profiles: [RadialMenuProfile],
-                              radialText: RadialMenuFeatureStrings,
-                              strings: Strings,
-                              additionalConflict: (GlobalShortcut) -> String? = { _ in nil }) -> String? {
-        if let other = profile(using: shortcut, in: profiles, excluding: profileID) {
-            return other.displayName(radialText)
-        }
-        if let role = GlobalShortcutRole.conflict(for: shortcut, excluding: .radialMenu) {
-            return role.title(strings)
-        }
-        return additionalConflict(shortcut)
-    }
-
-    static var onPreferencesChanged: (() -> Void)?
-
-    /// Update the shortcut for a specific profile by ID and synchronize settings.
-    static func updateShortcut(_ newShortcut: String,
-                               for profileID: UUID,
-                               defaults: UserDefaults = .standard) {
-        var profiles = decodeProfiles(defaults.data(forKey: DefaultsKey.radialMenuProfiles), defaults: defaults)
-        guard let index = profiles.firstIndex(where: { $0.id == profileID }) ?? (profiles.isEmpty ? nil : 0) else { return }
-        profiles[index].shortcut = newShortcut
-        if index == 0 {
-            defaults.set(newShortcut, forKey: DefaultsKey.radialMenuShortcut)
-        }
-        defaults.set(encodeProfiles(profiles), forKey: DefaultsKey.radialMenuProfiles)
-        onPreferencesChanged?()
-    }
 
     static func encodeProfiles(_ profiles: [RadialMenuProfile]) -> Data? {
         try? JSONEncoder().encode(sanitizedProfiles(profiles))
@@ -928,28 +954,15 @@ enum RadialMenuSupport {
 
     static func sanitizedProfiles(_ profiles: [RadialMenuProfile]) -> [RadialMenuProfile] {
         var seenIDs = Set<UUID>()
-        var seenButtons = Set<Int64>()
         var result: [RadialMenuProfile] = []
         for var profile in profiles {
             guard seenIDs.insert(profile.id).inserted else { continue }
             profile.name = String(profile.name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
             profile.items = sanitized(profile.items)
-            profile.shortcut = profile.shortcut.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !profile.shortcut.isEmpty && GlobalShortcut(storageValue: profile.shortcut) == nil {
-                profile.shortcut = ""
-            }
-            profile.mouseButton = RadialMenuMouseTrigger.sanitized(profile.mouseButton).rawValue
-            // A button opens only the first wheel that has it, so a later
-            // wheel saved with the same one (Duplicate used to keep it) reads
-            // as off, which is what it always was.
-            if let button = RadialMenuMouseTrigger.sanitized(profile.mouseButton).buttonNumber,
-               !seenButtons.insert(button).inserted {
-                profile.mouseButton = RadialMenuMouseTrigger.off.rawValue
-            }
             result.append(profile)
         }
         if result.isEmpty {
-            result.append(RadialMenuProfilePreset.general.createProfile(shortcut: GlobalShortcut.radialMenuDefault.storageValue))
+            result.append(RadialMenuProfilePreset.general.createProfile())
         }
         return result
     }
@@ -975,6 +988,18 @@ enum RadialMenuSupport {
 /// instead of being clipped into a visible square.
 enum RadialMenuLayout {
     static let panelSize: CGFloat = 400
+    /// The panel with the profile tabs' arc above the wheel: the arc sits
+    /// `tabArcGap` outside the rim and the panel grows so it never clips.
+    static let panelSizeWithTabs: CGFloat = 460
+    static let tabArcGap: CGFloat = 14
+    static let tabPillHeight: CGFloat = 22
+    /// The widest the arc of tabs may spread, centered over twelve o'clock.
+    static let tabArcMaxSpan: Double = 2 * .pi / 3
+    static var tabArcRadius: CGFloat { wheelDiameter / 2 + tabArcGap + tabPillHeight / 2 }
+
+    static func panelSize(showsTabs: Bool) -> CGFloat {
+        showsTabs ? panelSizeWithTabs : panelSize
+    }
     static let wheelDiameter: CGFloat = 300
     static let ringRadius: CGFloat = 112
     static let chipSize: CGFloat = 52

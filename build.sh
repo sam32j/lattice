@@ -471,6 +471,7 @@ if (( TEST )); then
         Sources/Lattice/Core/PermissionResetState.swift
         Sources/Lattice/UI/Settings/ShortcutSettingsObserver.swift
         Sources/Lattice/Core/RadialMenuStrings.swift
+        Sources/Lattice/Core/InputSettingsStrings.swift
         Sources/Lattice/Core/MenuBarAppearanceStrings.swift
         Sources/Lattice/Core/AppAppearance.swift
         Sources/Lattice/Core/AppearanceStrings.swift
@@ -487,7 +488,8 @@ if (( TEST )); then
         Sources/Lattice/Services/FanControl/FanControlResumeSupport.swift
         Sources/Lattice/Services/Snippets/TextSnippetSupport.swift
         Sources/Lattice/Services/RadialMenu/RadialMenuSupport.swift
-        Sources/Lattice/Services/RadialMenu/RadialProfileActivation.swift
+        Sources/Lattice/Services/RadialMenu/RadialProfileTabs.swift
+        Sources/Lattice/Services/RadialMenu/RadialMenuTriggerMigration.swift
         Sources/Lattice/Services/QuickTools/ScratchpadSupport.swift
         Sources/Lattice/Services/QuickTools/ScratchpadStore.swift
         Sources/Lattice/Services/KillProcess/KillProcessSupport.swift

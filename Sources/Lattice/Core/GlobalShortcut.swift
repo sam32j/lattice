@@ -879,17 +879,13 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
                          isOn: (String) -> Bool = { UserDefaults.standard.bool(forKey: $0) },
                          isAvailable: (AppFeature) -> Bool = { $0.isAvailable },
                          includeInactive: Bool = false,
-                         shortcutForRole: (GlobalShortcutRole) -> GlobalShortcut = { $0.savedShortcut },
-                         radialMenuShortcuts: () -> [GlobalShortcut] = { RadialMenuSupport.profileShortcuts() })
+                         shortcutForRole: (GlobalShortcutRole) -> GlobalShortcut = { $0.savedShortcut })
         -> GlobalShortcutRole? {
         let candidates = includeInactive
             ? availableRoles(isAvailable: isAvailable)
             : activeRoles(isOn: isOn, isAvailable: isAvailable)
         return candidates.first { candidate in
             guard candidate != role else { return false }
-            // The radial menu's role key only seeds the first wheel. Every
-            // wheel registers its own combination, so those are the ones taken.
-            if candidate == .radialMenu { return radialMenuShortcuts().contains(shortcut) }
             return shortcutForRole(candidate) == shortcut
         }
     }
@@ -981,9 +977,9 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     /// Whether a claim ever reaches `SystemShortcutTakeover` for this key, and
     /// so whether the recorder may offer to take a macOS shortcut over. The
     /// switcher suppresses its keys through its own take-over toggle rather
-    /// than a claim, and the radial menu's role key is only a migration seed —
-    /// the live shortcuts are the per-profile ones. A row that cannot keep the
-    /// promise refuses the combination instead of making it.
+    /// than a claim, and the radial menu's own page offers no take-over for
+    /// its one shortcut. A row that cannot keep the promise refuses the
+    /// combination instead of making it.
     var supportsTakeOver: Bool {
         switch self {
         case .switcher, .switcherWindow, .radialMenu: return false
