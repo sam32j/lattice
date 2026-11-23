@@ -179,8 +179,8 @@ enum VideoDownloaderTests {
 
         for lang in AppLanguage.allCases {
             let localized = FeatureStrings.videoDownloader(lang)
-            suite.expect(!localized.pageTitle.isEmpty && !localized.downloadVideoSectionTitle.isEmpty,
-                         "\(lang.rawValue) provides non-empty page title and section title")
+            suite.expect(!localized.pageTitle.isEmpty,
+                         "\(lang.rawValue) provides a non-empty page title")
             suite.expect(!localized.browserSessionTitle.isEmpty && !localized.noneAnonymous.isEmpty,
                          "\(lang.rawValue) provides non-empty browser session strings")
             suite.expect(!localized.search.isEmpty && !localized.searchClipboardURL.isEmpty,

@@ -85,6 +85,7 @@ struct VideoDownloaderSettings: View {
         GeometryReader { geometry in
             let isCompact = geometry.size.width < 540
 
+            VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -180,17 +181,7 @@ struct VideoDownloaderSettings: View {
                                 )
                             } else {
                                 // Active Video Downloader Surfaces
-                                VStack(alignment: .leading, spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(VideoDownloaderStrings.downloadVideoSectionTitle)
-                                            .font(.headline)
-                                        Text(VideoDownloaderStrings.downloadVideoSectionSubtitle)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    searchInput(isCompact: isCompact)
-                                }
+                                searchInput(isCompact: isCompact)
 
                                 // Fetching Video Details Skeleton Screen
                                 if model.isFetching {
@@ -251,8 +242,6 @@ struct VideoDownloaderSettings: View {
                         }
                         .transition(.settingsReveal)
                     }
-
-                    browserSessionFooter
                 }
                 .padding(.horizontal, isCompact ? 14 : 20)
                 .padding(.vertical, 16)
@@ -277,6 +266,8 @@ struct VideoDownloaderSettings: View {
                         router.videoDownloaderSection = nil
                     }
                 }
+            }
+                browserSessionFooter(isCompact: isCompact)
             }
         }
     }
@@ -304,14 +295,16 @@ struct VideoDownloaderSettings: View {
 
     // MARK: - Subviews
  
-    /// The browser session sits at the foot of the page, under a rule: it
-    /// is set once and only matters when a site asks for a sign-in.
-    private var browserSessionFooter: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    /// The browser session is pinned to the foot of the page, under a rule,
+    /// while the downloads scroll above it: it is set once and only matters
+    /// when a site asks for a sign-in.
+    private func browserSessionFooter(isCompact: Bool) -> some View {
+        VStack(spacing: 0) {
             Divider()
             browserSignInRow
+                .padding(.horizontal, isCompact ? 14 : 20)
+                .padding(.vertical, 12)
         }
-        .padding(.top, 4)
     }
 
     private var browserSignInRow: some View {

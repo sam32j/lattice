@@ -11,8 +11,6 @@ struct VideoDownloaderFeatureStrings {
     let enableSubtitle: String
 
     // Download a video section
-    let downloadVideoSectionTitle: String
-    let downloadVideoSectionSubtitle: String
     let urlPlaceholder: String
     let search: String
     let clear: String
@@ -169,8 +167,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Video Downloader",
         enableTitle: "Enable Video Downloader",
         enableSubtitle: "Download videos and audio via the URL.",
-        downloadVideoSectionTitle: "Download a video",
-        downloadVideoSectionSubtitle: "Paste a video link to get started.",
         urlPlaceholder: "Video URL",
         search: "Get video",
         clear: "Clear",
@@ -264,8 +260,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "视频下载器",
         enableTitle: "启用视频下载器",
         enableSubtitle: "通过链接下载视频与音频。",
-        downloadVideoSectionTitle: "下载视频",
-        downloadVideoSectionSubtitle: "粘贴视频链接以开始下载。",
         urlPlaceholder: "视频链接",
         search: "获取视频",
         clear: "清除",
@@ -359,8 +353,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "影片下載器",
         enableTitle: "啟用影片下載器",
         enableSubtitle: "透過網址下載影片與音訊。",
-        downloadVideoSectionTitle: "下載影片",
-        downloadVideoSectionSubtitle: "貼上影片連結即可開始。",
         urlPlaceholder: "影片網址",
         search: "取得影片",
         clear: "清除",
@@ -454,8 +446,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "影片下載器",
         enableTitle: "啟用影片下載器",
         enableSubtitle: "透過網址下載影片與音訊。",
-        downloadVideoSectionTitle: "下載影片",
-        downloadVideoSectionSubtitle: "貼上影片連結即可開始。",
         urlPlaceholder: "影片網址",
         search: "取得影片",
         clear: "清除",
@@ -549,8 +539,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "動画ダウンローダー",
         enableTitle: "動画ダウンローダーを有効にする",
         enableSubtitle: "URLから動画や音声をダウンロードします。",
-        downloadVideoSectionTitle: "動画をダウンロード",
-        downloadVideoSectionSubtitle: "動画のリンクを貼り付けて開始します。",
         urlPlaceholder: "動画のURL",
         search: "動画を取得",
         clear: "消去",
@@ -644,8 +632,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "비디오 다운로더",
         enableTitle: "비디오 다운로더 활성화",
         enableSubtitle: "URL을 통해 비디오 및 오디오를 다운로드합니다.",
-        downloadVideoSectionTitle: "비디오 다운로드",
-        downloadVideoSectionSubtitle: "비디오 링크를 붙여넣어 시작하세요.",
         urlPlaceholder: "비디오 URL",
         search: "비디오 가져오기",
         clear: "지우기",
@@ -739,8 +725,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Video-Downloader",
         enableTitle: "Video-Downloader aktivieren",
         enableSubtitle: "Videos und Audio über die URL herunterladen.",
-        downloadVideoSectionTitle: "Video herunterladen",
-        downloadVideoSectionSubtitle: "Videolink einfügen, um zu beginnen.",
         urlPlaceholder: "Video-URL",
         search: "Video laden",
         clear: "Löschen",
@@ -834,8 +818,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Téléchargeur vidéo",
         enableTitle: "Activer le téléchargeur vidéo",
         enableSubtitle: "Télécharger des vidéos et du son via l'URL.",
-        downloadVideoSectionTitle: "Télécharger une vidéo",
-        downloadVideoSectionSubtitle: "Collez un lien vidéo pour commencer.",
         urlPlaceholder: "URL de la vidéo",
         search: "Obtenir la vidéo",
         clear: "Effacer",
@@ -929,8 +911,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Descargador de videos",
         enableTitle: "Activar descargador de videos",
         enableSubtitle: "Descarga videos y audio mediante la URL.",
-        downloadVideoSectionTitle: "Descargar un video",
-        downloadVideoSectionSubtitle: "Pega un enlace de video para comenzar.",
         urlPlaceholder: "URL del video",
         search: "Obtener video",
         clear: "Borrar",
@@ -1024,8 +1004,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Scaricatore video",
         enableTitle: "Abilita Scaricatore video",
         enableSubtitle: "Scarica video e audio tramite l'URL.",
-        downloadVideoSectionTitle: "Scarica un video",
-        downloadVideoSectionSubtitle: "Incolla un link video per iniziare.",
         urlPlaceholder: "URL del video",
         search: "Ottieni video",
         clear: "Cancella",
@@ -1119,8 +1097,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Baixador de Vídeo",
         enableTitle: "Ativar Baixador de Vídeo",
         enableSubtitle: "Baixe vídeos e áudios via URL.",
-        downloadVideoSectionTitle: "Baixar um vídeo",
-        downloadVideoSectionSubtitle: "Cole o link de um vídeo para começar.",
         urlPlaceholder: "URL do vídeo",
         search: "Obter vídeo",
         clear: "Limpar",
@@ -1214,8 +1190,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Загрузчик видео",
         enableTitle: "Включить загрузчик видео",
         enableSubtitle: "Скачивание видео и аудио по ссылке.",
-        downloadVideoSectionTitle: "Скачать видео",
-        downloadVideoSectionSubtitle: "Вставьте ссылку на видео, чтобы начать.",
         urlPlaceholder: "Ссылка на видео",
         search: "Получить видео",
         clear: "Очистить",
@@ -1309,8 +1283,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Завантажувач відео",
         enableTitle: "Увімкнути завантажувач відео",
         enableSubtitle: "Завантаження відео та аудіо за посиланням.",
-        downloadVideoSectionTitle: "Завантажити відео",
-        downloadVideoSectionSubtitle: "Вставте посилання на відео, щоб почати.",
         urlPlaceholder: "Посилання на відео",
         search: "Отримати відео",
         clear: "Очистити",
@@ -1404,8 +1376,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Video İndirici",
         enableTitle: "Video İndiriciyi Etkinleştir",
         enableSubtitle: "URL üzerinden video ve ses indirin.",
-        downloadVideoSectionTitle: "Bir video indirin",
-        downloadVideoSectionSubtitle: "Başlamak için bir video bağlantısı yapıştırın.",
         urlPlaceholder: "Video URL'si",
         search: "Videoyu al",
         clear: "Temizle",
@@ -1499,8 +1469,6 @@ extension VideoDownloaderFeatureStrings {
         pageTitle: "Sťahovač videí",
         enableTitle: "Zapnúť Sťahovač videí",
         enableSubtitle: "Sťahujte videá a zvuk cez URL.",
-        downloadVideoSectionTitle: "Stiahnuť video",
-        downloadVideoSectionSubtitle: "Začnite vložením odkazu na video.",
         urlPlaceholder: "URL videa",
         search: "Získať video",
         clear: "Vymazať",
@@ -1604,8 +1572,6 @@ enum VideoDownloaderStrings {
         SettingsOwnershipStrings.text(.showIsland, L10n.shared.language)
     }
 
-    static var downloadVideoSectionTitle: String { current.downloadVideoSectionTitle }
-    static var downloadVideoSectionSubtitle: String { current.downloadVideoSectionSubtitle }
     static var urlPlaceholder: String { current.urlPlaceholder }
     static var search: String { current.search }
     static var clear: String { current.clear }
