@@ -122,29 +122,10 @@ struct HubStayAwakePopover: View {
 
     private func sessionButton(_ title: String, symbol: String? = nil, selected: Bool = false,
                                action: @escaping () -> Void) -> some View {
-        Button {
+        StayAwakeSessionButton(title: title, symbol: symbol, selected: selected) {
             action()
             Self.announce(awake, l10n: l10n)
-        } label: {
-            HStack(spacing: 8) {
-                if let symbol { Image(systemName: symbol).frame(width: 16) }
-                Text(title).lineLimit(1).minimumScaleFactor(0.75)
-                if symbol != nil { Spacer(minLength: 0) }
-            }
-            .font(.system(size: symbol == nil ? 11 : 12, weight: .medium))
-            .padding(.horizontal, symbol == nil ? 6 : 10)
-            .frame(maxWidth: .infinity, minHeight: 34)
-            .contentShape(RoundedRectangle(cornerRadius: 8))
-            .background(selected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.06),
-                        in: RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
-            }
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func timePicker(now: Date) -> some View {
