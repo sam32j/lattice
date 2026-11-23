@@ -602,7 +602,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Standard",
         mixerVolumeKeyStepSmaller: "Kleiner",
         mixerAppVolumesTitle: "App-Lautstärke",
-        mixerNoAppPlaying: "Keine App spielt",
         mixerShowInactiveAppsFormat: "Inaktive Apps anzeigen (%d)",
         mixerHideInactiveApps: "Inaktive Apps ausblenden",
         mixerOutputFollowSystem: "Standard (System folgen)",

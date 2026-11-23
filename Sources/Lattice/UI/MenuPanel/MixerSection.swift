@@ -279,47 +279,38 @@ struct MixerSection: View {
             } else if orderedApps.isEmpty {
                 emptyLabel(l10n.s.mixerEmpty)
             } else {
-                // The sections hold still while a row is adjusted, so ask the
-                // apps themselves whether anything plays.
-                if activeApps.isEmpty, !orderedApps.contains(where: \.isPlaying) {
-                    Text(l10n.s.mixerNoAppPlaying)
-                        .font(.system(size: 11.5, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 8)
-                } else {
-                    ForEach(Array(activeApps.enumerated()), id: \.element.id) { index, app in
-                        if index > 0 {
-                            Divider().padding(.horizontal, 4)
-                        }
-                        MixerSettingsAppRow(
-                            app: app,
-                            outputDevices: mixer.outputDevices,
-                            isPinned: arrangement.isPinned(app.persistenceID),
-                            active: app.isPlaying,
-                            onTogglePin: {
-                                updateArrangement { $0.togglePin(app.persistenceID ?? "") }
-                                updateStabilizedListsIfNeeded(force: true)
-                            },
-                            onVolumeChanged: {
-                                let now = CFAbsoluteTimeGetCurrent()
-                                lastVolumeChangeTimes[app.id] = now
+                // With nothing playing, the inactive apps follow the title.
+                ForEach(Array(activeApps.enumerated()), id: \.element.id) { index, app in
+                    if index > 0 {
+                        Divider().padding(.horizontal, 4)
+                    }
+                    MixerSettingsAppRow(
+                        app: app,
+                        outputDevices: mixer.outputDevices,
+                        isPinned: arrangement.isPinned(app.persistenceID),
+                        active: app.isPlaying,
+                        onTogglePin: {
+                            updateArrangement { $0.togglePin(app.persistenceID ?? "") }
+                            updateStabilizedListsIfNeeded(force: true)
+                        },
+                        onVolumeChanged: {
+                            let now = CFAbsoluteTimeGetCurrent()
+                            lastVolumeChangeTimes[app.id] = now
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.05) {
+                                updateStabilizedListsIfNeeded()
+                            }
+                        },
+                        onSliderTrackingChanged: { isTracking in
+                            if isTracking {
+                                activeSliderTrackingAppIDs.insert(app.id)
+                            } else {
+                                activeSliderTrackingAppIDs.remove(app.id)
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.05) {
                                     updateStabilizedListsIfNeeded()
                                 }
-                            },
-                            onSliderTrackingChanged: { isTracking in
-                                if isTracking {
-                                    activeSliderTrackingAppIDs.insert(app.id)
-                                } else {
-                                    activeSliderTrackingAppIDs.remove(app.id)
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.05) {
-                                        updateStabilizedListsIfNeeded()
-                                    }
-                                }
                             }
-                        )
-                    }
+                        }
+                    )
                 }
 
                 if !inactiveApps.isEmpty {
@@ -345,7 +336,7 @@ struct MixerSection: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .padding(.top, 4)
+                        .padding(.top, activeApps.isEmpty ? 0 : 4)
 
                         if showInactiveApps {
                             ForEach(Array(inactiveApps.enumerated()), id: \.element.id) { index, app in

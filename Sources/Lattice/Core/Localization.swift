@@ -784,7 +784,6 @@ struct Strings {
     let mixerVolumeKeyStepStandard: String
     let mixerVolumeKeyStepSmaller: String
     let mixerAppVolumesTitle: String
-    let mixerNoAppPlaying: String
     let mixerShowInactiveAppsFormat: String
     let mixerHideInactiveApps: String
     let mixerOutputFollowSystem: String
@@ -1769,7 +1768,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Padrão",
         mixerVolumeKeyStepSmaller: "Menor",
         mixerAppVolumesTitle: "Volume dos apps",
-        mixerNoAppPlaying: "Nenhum app tocando",
         mixerShowInactiveAppsFormat: "Mostrar apps inativos (%d)",
         mixerHideInactiveApps: "Ocultar apps inativos",
         mixerOutputFollowSystem: "Padrão (seguir o sistema)",
@@ -2731,7 +2729,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Standard",
         mixerVolumeKeyStepSmaller: "Smaller",
         mixerAppVolumesTitle: "App Volumes",
-        mixerNoAppPlaying: "No app playing",
         mixerShowInactiveAppsFormat: "Show inactive apps (%d)",
         mixerHideInactiveApps: "Hide inactive apps",
         mixerOutputFollowSystem: "Default (Follow System)",

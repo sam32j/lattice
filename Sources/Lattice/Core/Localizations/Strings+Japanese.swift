@@ -602,7 +602,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "標準",
         mixerVolumeKeyStepSmaller: "小さめ",
         mixerAppVolumesTitle: "アプリの音量",
-        mixerNoAppPlaying: "再生中のアプリはありません",
         mixerShowInactiveAppsFormat: "非アクティブなアプリを表示（%d）",
         mixerHideInactiveApps: "非アクティブなアプリを隠す",
         mixerOutputFollowSystem: "デフォルト（システムに従う）",

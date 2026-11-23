@@ -603,7 +603,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "표준",
         mixerVolumeKeyStepSmaller: "작게",
         mixerAppVolumesTitle: "앱 음량",
-        mixerNoAppPlaying: "재생 중인 앱 없음",
         mixerShowInactiveAppsFormat: "비활성 앱 보기 (%d)",
         mixerHideInactiveApps: "비활성 앱 숨기기",
         mixerOutputFollowSystem: "기본값 (시스템 따름)",

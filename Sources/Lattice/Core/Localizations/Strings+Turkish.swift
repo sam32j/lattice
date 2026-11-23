@@ -602,7 +602,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Standart",
         mixerVolumeKeyStepSmaller: "Daha küçük",
         mixerAppVolumesTitle: "Uygulama sesleri",
-        mixerNoAppPlaying: "Çalan uygulama yok",
         mixerShowInactiveAppsFormat: "Etkin olmayan uygulamaları göster (%d)",
         mixerHideInactiveApps: "Etkin olmayan uygulamaları gizle",
         mixerOutputFollowSystem: "Varsayılan (sistemi izle)",

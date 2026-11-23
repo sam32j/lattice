@@ -602,7 +602,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "标准",
         mixerVolumeKeyStepSmaller: "较小",
         mixerAppVolumesTitle: "App 音量",
-        mixerNoAppPlaying: "没有 App 在播放",
         mixerShowInactiveAppsFormat: "显示不活跃的 App（%d）",
         mixerHideInactiveApps: "隐藏不活跃的 App",
         mixerOutputFollowSystem: "默认（跟随系统）",

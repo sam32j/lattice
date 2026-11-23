@@ -602,7 +602,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Štandardný",
         mixerVolumeKeyStepSmaller: "Menší",
         mixerAppVolumesTitle: "Hlasitosť aplikácií",
-        mixerNoAppPlaying: "Žiadna aplikácia neprehráva",
         mixerShowInactiveAppsFormat: "Zobraziť neaktívne aplikácie (%d)",
         mixerHideInactiveApps: "Skryť neaktívne aplikácie",
         mixerOutputFollowSystem: "Predvolené (podľa systému)",
