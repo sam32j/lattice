@@ -37,10 +37,6 @@ struct MonitorAlertsControls: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Above the list, under the caption: nothing above it changes
-            // size, so it never has to move when an alert's limit unrolls.
-            MonitorAlertsRepeatMenu()
-                .padding(.bottom, 6)
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                 VStack(spacing: 0) {
                     if index > 0 { Divider() }
@@ -48,6 +44,8 @@ struct MonitorAlertsControls: View {
                 }
                 .transition(.settingsReveal)
             }
+            MonitorAlertsRepeatMenu()
+                .padding(.top, 10)
             // Alerts silently cannot fire when macOS notifications are denied
             // for the app; without this line that state is invisible.
             if notificationsDenied, anyAlertEnabled {
@@ -210,8 +208,8 @@ struct MonitorAlertRow: View {
 }
 
 /// How soon the same alert may come back, for every alert at once. It is a
-/// small line in caption type under the card's caption, so it reads as a
-/// note on all the alerts rather than one more of them.
+/// small footnote under the list, in caption type, so it reads as a note on
+/// all the alerts rather than one more of them.
 struct MonitorAlertsRepeatMenu: View {
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.monitorAlertCooldownMinutes) private var alertCooldown = 15
