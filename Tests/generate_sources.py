@@ -850,22 +850,34 @@ def main():
                         "    func choose(applications:", "    func applyChosen("])
           + "}\n}\n")
     fan_control = "Sources/Lattice/Services/FanControl/FanControlService.swift"
+    fan_panel = "Sources/Lattice/UI/MenuPanel"
+    write("FanControlCard.swift", (ROOT / fan_panel / "FanControlCurveEditor.swift").read_text()
+          + "\nextension FanControlResumeContract {\ntypealias FanControlService = Service\n"
+          + declaration(fan_panel + "/FanControlSection.swift", "struct FanControlCardContent:")
+          + "struct Section {\nlet service: Service\n@Binding var modeRaw: String\n"
+          + declaration(fan_panel + "/FanControlSection.swift", "    private var modeBinding:")
+              .replace("private var modeBinding:", "var modeBinding:", 1)
+          + "}\n"
+          + "}\n")
     write("FanControlResume.swift", "import Foundation\n"
           + "extension FanControlResumeContract {\n"
-          + declaration("Sources/Vorssaint/Services/FanControl/FanControlXPC.swift", "enum FanControlIPC {")
+          + declaration("Sources/Lattice/Services/FanControl/FanControlXPC.swift", "enum FanControlIPC {")
           + "final class Service: Fixture {\n"
           + declaration(fan_control, "    func applyConfiguration(_ configuration:")
           .replace("applyConfiguration(configuration, resuming:", "sendConfiguration(configuration, resuming:", 1)
           + declaration(fan_control, "    private func applyConfiguration(_ configuration:")
           .replace("private func applyConfiguration", "func sendConfiguration", 1)
-          + declaration(fan_control, "    private(set) var awaitingSystemControl:", closing="}()")
+          + "".join(declaration(fan_control, prefix, closing="}()").replace("@Published ", "", 1)
+                    for prefix in ["    @Published private(set) var awaitingSystemControl:",
+                                   "    @Published private(set) var interruption:"])
           + "".join(declaration(fan_control, prefix)
                     .replace("@objc private func", "func", 1)
                     .replace("private static var", "static var", 1)
                     .replace("private var", "var", 1)
                     .replace("private func", "func", 1) for prefix in [
                         "    static func recoverIfNeeded(", "    func syncWithPreferences(",
-                        "    func returnToSystem(", "    func forgetResume(", "    func resumePreferenceDidChange(",
+                        "    func returnToSystem(", "    func forgetResume(", "    private func dismissStop(",
+                        "    func resumePreferenceDidChange(",
                         "    private static var resumableConfiguration:", "    private func resume(",
                         "    private static var helperAwaitsRegistration:",
                         "    private func rememberForResume(", "    private func stopIdleWorkIfPossible(",
@@ -879,7 +891,8 @@ def main():
                         "    private func restoreThenUnregister()",
                         "    private func finishSystemHandoff()", "    private func startTimerIfNeeded()",
                         "    private func observeFailedHandoff(", "    private func poll(", "    private func heartbeat(",
-                        "    private func requestStatus(", "    private func beginRequest(", "    private func finishRequest("])
+                        "    private func requestStatus(", "    private func connectionLost(",
+                        "    private func beginRequest(", "    private func finishRequest("])
           + "}\n}\n")
     visualizer_entry = declaration("Sources/Lattice/Services/Notch/NotchService.swift", "    func syncWithPreferences()")
     visualizer_entry = visualizer_entry.split("        preferenceSyncWork?.cancel()", 1)[0]
@@ -888,11 +901,17 @@ def main():
           + visualizer_entry + "}\n}\n}\n#sourceLocation()\n")
     write("FanControlRecovery.swift", "import Foundation\n"
           + "extension FanControlRecoveryContract {\nfinal class Controller: Fixture {\n"
+          + declaration("Sources/FanControlHelper/main.swift", "    func connectionClosed(")
+          + declaration("Sources/FanControlHelper/main.swift", "    private func applyConfiguration(session")
+              .replace("private func", "func", 1)
+              .replace("let control = FanControlHardware()", "let control = hardware", 1)
           + "".join(declaration("Sources/FanControlHelper/main.swift", prefix)
                     .replace("private func", "func", 1) for prefix in [
+                        "    private func updateActiveConfiguration(", "    private func finishFailedStart(",
                         "    private func requestedLevel(", "    private func performRestore(",
                         "    private func watchdogStopReason()",
-                        "    private func watchdogTick()", "    private func stopWatchdogIfIdle()"])
+                        "    private func watchdogTick()", "    private func stopWatchdogIfIdle()",
+                        "    private func statusResponse()", "    private func currentSnapshot()"])
           + "}\n}\n")
     fan_hardware = "Sources/Lattice/Services/FanControl/FanControlHardware.swift"
     write("FanControlHardwareContract.swift", "import Foundation\nextension FanControlHardwareContract {\n"
