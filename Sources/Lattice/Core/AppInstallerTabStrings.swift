@@ -1,0 +1,542 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Samuel Ji
+
+import Foundation
+
+/// Copy for the App Manager's App Installer tab.
+struct AppInstallerTabStrings {
+    let watchingTitle: String
+    let watchingDetail: String
+    let chooseButton: String
+    let gatekeeperVerified: String
+    let gatekeeperUnverified: String
+    let planFormat: String
+    let planTrashFormat: String
+    let skip: String
+    let stepCopying: String
+    let stepVerifying: String
+    let stepMoving: String
+    let stepEjecting: String
+    let stepTrashing: String
+    let preferencesTitle: String
+    let locationTitle: String
+    let locationCaption: String
+    let locationSystem: String
+    let locationUser: String
+    let trashTitle: String
+    let trashCaption: String
+    let revealTitle: String
+    let revealCaption: String
+    let ignoreHomebrewTitle: String
+    let ignoreHomebrewCaption: String
+    let recentTitle: String
+    let recentCountFormat: String
+    let downloadTrashed: String
+    let downloadKept: String
+    let reveal: String
+    let recentEmpty: String
+}
+
+extension FeatureStrings {
+    static func appInstallerTab(_ language: AppLanguage) -> AppInstallerTabStrings {
+        switch language {
+        case .enUS: return .enUS
+        case .ptBR: return .ptBR
+        case .tr: return .tr
+        case .ru: return .ru
+        case .es: return .es
+        case .sk: return .sk
+        case .de: return .de
+        case .fr: return .fr
+        case .it: return .it
+        case .ja: return .ja
+        case .ko: return .ko
+        case .zhHans: return .zhHans
+        case .zhTW: return .zhTW
+        case .zhHK: return .zhHK
+        case .uk: return .uk
+        }
+    }
+}
+
+extension AppInstallerTabStrings {
+    static let enUS = AppInstallerTabStrings(
+        watchingTitle: "Watching for mounted disk images",
+        watchingDetail: "Drop a .dmg here or mount any single-app disk image to verify, install, and eject it automatically",
+        chooseButton: "Choose…",
+        gatekeeperVerified: "Gatekeeper Verified",
+        gatekeeperUnverified: "Not Verified",
+        planFormat: "Copy to %@ and eject the volume",
+        planTrashFormat: "Copy to %@, eject the volume, and move the .dmg to Trash",
+        skip: "Skip",
+        stepCopying: "Copying the app…",
+        stepVerifying: "Verifying the code signature and Gatekeeper…",
+        stepMoving: "Moving the app into place…",
+        stepEjecting: "Ejecting the disk image…",
+        stepTrashing: "Moving the download to Trash…",
+        preferencesTitle: "Install Preferences",
+        locationTitle: "Install location",
+        locationCaption: "Where apps copied from disk images are placed",
+        locationSystem: "Applications (/Applications)",
+        locationUser: "User Applications (~/Applications)",
+        trashTitle: "Move download to Trash",
+        trashCaption: "Trash the .dmg file after ejecting the disk image",
+        revealTitle: "Show installed app in Finder",
+        revealCaption: "Reveal the new app when installation completes",
+        ignoreHomebrewTitle: "Ignore Homebrew cache images",
+        ignoreHomebrewCaption: "Disk images mounted by Homebrew Cask are skipped automatically",
+        recentTitle: "Recent Installs",
+        recentCountFormat: "%d apps",
+        downloadTrashed: "DMG Trashed",
+        downloadKept: "DMG Kept",
+        reveal: "Reveal",
+        recentEmpty: "Apps installed from disk images appear here.")
+
+    static let ptBR = AppInstallerTabStrings(
+        watchingTitle: "Observando imagens de disco montadas",
+        watchingDetail: "Solte um .dmg aqui ou monte uma imagem de disco com um único app para verificá-la, instalá-la e ejetá-la automaticamente",
+        chooseButton: "Escolher…",
+        gatekeeperVerified: "Verificado pelo Gatekeeper",
+        gatekeeperUnverified: "Não verificado",
+        planFormat: "Copiar para %@ e ejetar o volume",
+        planTrashFormat: "Copiar para %@, ejetar o volume e mover o .dmg para o Lixo",
+        skip: "Pular",
+        stepCopying: "Copiando o app…",
+        stepVerifying: "Verificando a assinatura de código e o Gatekeeper…",
+        stepMoving: "Colocando o app no lugar…",
+        stepEjecting: "Ejetando a imagem de disco…",
+        stepTrashing: "Movendo o download para o Lixo…",
+        preferencesTitle: "Preferências de instalação",
+        locationTitle: "Local de instalação",
+        locationCaption: "Onde ficam os apps copiados das imagens de disco",
+        locationSystem: "Aplicativos (/Applications)",
+        locationUser: "Aplicativos do usuário (~/Applications)",
+        trashTitle: "Mover download para o Lixo",
+        trashCaption: "Mover o arquivo .dmg para o Lixo depois de ejetar a imagem",
+        revealTitle: "Mostrar app instalado no Finder",
+        revealCaption: "Mostrar o novo app quando a instalação terminar",
+        ignoreHomebrewTitle: "Ignorar imagens do cache do Homebrew",
+        ignoreHomebrewCaption: "Imagens de disco montadas pelo Homebrew Cask são ignoradas automaticamente",
+        recentTitle: "Instalações recentes",
+        recentCountFormat: "%d apps",
+        downloadTrashed: "DMG no Lixo",
+        downloadKept: "DMG mantido",
+        reveal: "Mostrar",
+        recentEmpty: "Os apps instalados de imagens de disco aparecem aqui.")
+
+    static let tr = AppInstallerTabStrings(
+        watchingTitle: "Bağlanan disk görüntüleri izleniyor",
+        watchingDetail: "Buraya bir .dmg bırakın veya tek uygulamalı bir disk görüntüsü bağlayın; doğrulanır, yüklenir ve otomatik olarak çıkarılır",
+        chooseButton: "Seç…",
+        gatekeeperVerified: "Gatekeeper Doğruladı",
+        gatekeeperUnverified: "Doğrulanmadı",
+        planFormat: "%@ konumuna kopyala ve birimi çıkar",
+        planTrashFormat: "%@ konumuna kopyala, birimi çıkar ve .dmg’yi Çöp Sepeti’ne taşı",
+        skip: "Atla",
+        stepCopying: "Uygulama kopyalanıyor…",
+        stepVerifying: "Kod imzası ve Gatekeeper doğrulanıyor…",
+        stepMoving: "Uygulama yerine taşınıyor…",
+        stepEjecting: "Disk görüntüsü çıkarılıyor…",
+        stepTrashing: "İndirilen dosya Çöp Sepeti’ne taşınıyor…",
+        preferencesTitle: "Yükleme Tercihleri",
+        locationTitle: "Yükleme konumu",
+        locationCaption: "Disk görüntülerinden kopyalanan uygulamaların yeri",
+        locationSystem: "Uygulamalar (/Applications)",
+        locationUser: "Kullanıcı Uygulamaları (~/Applications)",
+        trashTitle: "İndirileni Çöp Sepeti’ne taşı",
+        trashCaption: "Disk görüntüsü çıkarıldıktan sonra .dmg dosyasını Çöp Sepeti’ne taşı",
+        revealTitle: "Yüklenen uygulamayı Finder’da göster",
+        revealCaption: "Yükleme bitince yeni uygulamayı göster",
+        ignoreHomebrewTitle: "Homebrew önbellek görüntülerini yok say",
+        ignoreHomebrewCaption: "Homebrew Cask’in bağladığı disk görüntüleri otomatik olarak atlanır",
+        recentTitle: "Son Yüklemeler",
+        recentCountFormat: "%d uygulama",
+        downloadTrashed: "DMG Silindi",
+        downloadKept: "DMG Saklandı",
+        reveal: "Göster",
+        recentEmpty: "Disk görüntülerinden yüklenen uygulamalar burada görünür.")
+
+    static let ru = AppInstallerTabStrings(
+        watchingTitle: "Отслеживание подключённых образов дисков",
+        watchingDetail: "Перетащите сюда .dmg или подключите образ с одним приложением, чтобы проверить, установить и извлечь его автоматически",
+        chooseButton: "Выбрать…",
+        gatekeeperVerified: "Проверено Gatekeeper",
+        gatekeeperUnverified: "Не проверено",
+        planFormat: "Скопировать в %@ и извлечь том",
+        planTrashFormat: "Скопировать в %@, извлечь том и переместить .dmg в Корзину",
+        skip: "Пропустить",
+        stepCopying: "Копирование приложения…",
+        stepVerifying: "Проверка подписи кода и Gatekeeper…",
+        stepMoving: "Перемещение приложения на место…",
+        stepEjecting: "Извлечение образа диска…",
+        stepTrashing: "Перемещение загрузки в Корзину…",
+        preferencesTitle: "Параметры установки",
+        locationTitle: "Место установки",
+        locationCaption: "Куда помещаются приложения из образов дисков",
+        locationSystem: "Программы (/Applications)",
+        locationUser: "Программы пользователя (~/Applications)",
+        trashTitle: "Перемещать загрузку в Корзину",
+        trashCaption: "Перемещать файл .dmg в Корзину после извлечения образа",
+        revealTitle: "Показывать приложение в Finder",
+        revealCaption: "Показать новое приложение после установки",
+        ignoreHomebrewTitle: "Пропускать образы из кэша Homebrew",
+        ignoreHomebrewCaption: "Образы, подключённые Homebrew Cask, пропускаются автоматически",
+        recentTitle: "Недавние установки",
+        recentCountFormat: "Приложений: %d",
+        downloadTrashed: "DMG в Корзине",
+        downloadKept: "DMG сохранён",
+        reveal: "Показать",
+        recentEmpty: "Здесь появятся приложения, установленные из образов дисков.")
+
+    static let es = AppInstallerTabStrings(
+        watchingTitle: "Vigilando imágenes de disco montadas",
+        watchingDetail: "Suelta aquí un .dmg o monta una imagen de disco con una sola app para verificarla, instalarla y expulsarla automáticamente",
+        chooseButton: "Elegir…",
+        gatekeeperVerified: "Verificada por Gatekeeper",
+        gatekeeperUnverified: "Sin verificar",
+        planFormat: "Copiar a %@ y expulsar el volumen",
+        planTrashFormat: "Copiar a %@, expulsar el volumen y mover el .dmg a la Papelera",
+        skip: "Omitir",
+        stepCopying: "Copiando la app…",
+        stepVerifying: "Verificando la firma de código y Gatekeeper…",
+        stepMoving: "Colocando la app en su sitio…",
+        stepEjecting: "Expulsando la imagen de disco…",
+        stepTrashing: "Moviendo la descarga a la Papelera…",
+        preferencesTitle: "Preferencias de instalación",
+        locationTitle: "Ubicación de instalación",
+        locationCaption: "Dónde se colocan las apps copiadas de imágenes de disco",
+        locationSystem: "Aplicaciones (/Applications)",
+        locationUser: "Aplicaciones del usuario (~/Applications)",
+        trashTitle: "Mover descarga a la Papelera",
+        trashCaption: "Mover el archivo .dmg a la Papelera tras expulsar la imagen",
+        revealTitle: "Mostrar app instalada en Finder",
+        revealCaption: "Mostrar la nueva app al terminar la instalación",
+        ignoreHomebrewTitle: "Ignorar imágenes de la caché de Homebrew",
+        ignoreHomebrewCaption: "Las imágenes de disco montadas por Homebrew Cask se omiten automáticamente",
+        recentTitle: "Instalaciones recientes",
+        recentCountFormat: "%d apps",
+        downloadTrashed: "DMG en la Papelera",
+        downloadKept: "DMG conservado",
+        reveal: "Mostrar",
+        recentEmpty: "Aquí aparecen las apps instaladas desde imágenes de disco.")
+
+    static let sk = AppInstallerTabStrings(
+        watchingTitle: "Sledovanie pripojených obrazov diskov",
+        watchingDetail: "Pustite sem .dmg alebo pripojte obraz disku s jednou aplikáciou a automaticky sa overí, nainštaluje a vysunie",
+        chooseButton: "Vybrať…",
+        gatekeeperVerified: "Overené Gatekeeperom",
+        gatekeeperUnverified: "Neoverené",
+        planFormat: "Skopírovať do %@ a vysunúť zväzok",
+        planTrashFormat: "Skopírovať do %@, vysunúť zväzok a presunúť .dmg do Koša",
+        skip: "Preskočiť",
+        stepCopying: "Kopíruje sa aplikácia…",
+        stepVerifying: "Overuje sa podpis kódu a Gatekeeper…",
+        stepMoving: "Aplikácia sa presúva na miesto…",
+        stepEjecting: "Vysúva sa obraz disku…",
+        stepTrashing: "Stiahnutý súbor sa presúva do Koša…",
+        preferencesTitle: "Predvoľby inštalácie",
+        locationTitle: "Umiestnenie inštalácie",
+        locationCaption: "Kam sa ukladajú aplikácie skopírované z obrazov diskov",
+        locationSystem: "Aplikácie (/Applications)",
+        locationUser: "Aplikácie používateľa (~/Applications)",
+        trashTitle: "Presunúť stiahnutý súbor do Koša",
+        trashCaption: "Po vysunutí obrazu presunúť súbor .dmg do Koša",
+        revealTitle: "Zobraziť aplikáciu vo Finderi",
+        revealCaption: "Po dokončení inštalácie zobraziť novú aplikáciu",
+        ignoreHomebrewTitle: "Ignorovať obrazy z cache Homebrew",
+        ignoreHomebrewCaption: "Obrazy diskov pripojené cez Homebrew Cask sa automaticky preskočia",
+        recentTitle: "Nedávne inštalácie",
+        recentCountFormat: "Aplikácie: %d",
+        downloadTrashed: "DMG v Koši",
+        downloadKept: "DMG ponechané",
+        reveal: "Zobraziť",
+        recentEmpty: "Tu sa zobrazia aplikácie nainštalované z obrazov diskov.")
+
+    static let de = AppInstallerTabStrings(
+        watchingTitle: "Achtet auf aktivierte Disk-Images",
+        watchingDetail: "Lege hier eine .dmg ab oder aktiviere ein Disk-Image mit einer App, um es automatisch zu prüfen, zu installieren und auszuwerfen",
+        chooseButton: "Auswählen …",
+        gatekeeperVerified: "Von Gatekeeper geprüft",
+        gatekeeperUnverified: "Nicht geprüft",
+        planFormat: "Nach %@ kopieren und das Volume auswerfen",
+        planTrashFormat: "Nach %@ kopieren, das Volume auswerfen und die .dmg in den Papierkorb legen",
+        skip: "Überspringen",
+        stepCopying: "App wird kopiert …",
+        stepVerifying: "Codesignatur und Gatekeeper werden geprüft …",
+        stepMoving: "App wird an ihren Platz bewegt …",
+        stepEjecting: "Disk-Image wird ausgeworfen …",
+        stepTrashing: "Download wird in den Papierkorb gelegt …",
+        preferencesTitle: "Installationseinstellungen",
+        locationTitle: "Installationsort",
+        locationCaption: "Wohin aus Disk-Images kopierte Apps kommen",
+        locationSystem: "Programme (/Applications)",
+        locationUser: "Benutzerprogramme (~/Applications)",
+        trashTitle: "Download in den Papierkorb legen",
+        trashCaption: "Die .dmg-Datei nach dem Auswerfen in den Papierkorb legen",
+        revealTitle: "Installierte App im Finder zeigen",
+        revealCaption: "Die neue App nach der Installation zeigen",
+        ignoreHomebrewTitle: "Images aus dem Homebrew-Cache ignorieren",
+        ignoreHomebrewCaption: "Von Homebrew Cask aktivierte Disk-Images werden automatisch übersprungen",
+        recentTitle: "Letzte Installationen",
+        recentCountFormat: "%d Apps",
+        downloadTrashed: "DMG gelöscht",
+        downloadKept: "DMG behalten",
+        reveal: "Zeigen",
+        recentEmpty: "Aus Disk-Images installierte Apps erscheinen hier.")
+
+    static let fr = AppInstallerTabStrings(
+        watchingTitle: "Surveillance des images disque montées",
+        watchingDetail: "Déposez un .dmg ici ou montez une image disque à une seule app pour la vérifier, l’installer et l’éjecter automatiquement",
+        chooseButton: "Choisir…",
+        gatekeeperVerified: "Vérifiée par Gatekeeper",
+        gatekeeperUnverified: "Non vérifiée",
+        planFormat: "Copier dans %@ et éjecter le volume",
+        planTrashFormat: "Copier dans %@, éjecter le volume et placer le .dmg dans la corbeille",
+        skip: "Ignorer",
+        stepCopying: "Copie de l’app…",
+        stepVerifying: "Vérification de la signature de code et de Gatekeeper…",
+        stepMoving: "Mise en place de l’app…",
+        stepEjecting: "Éjection de l’image disque…",
+        stepTrashing: "Placement du téléchargement dans la corbeille…",
+        preferencesTitle: "Préférences d’installation",
+        locationTitle: "Emplacement d’installation",
+        locationCaption: "Où placer les apps copiées depuis les images disque",
+        locationSystem: "Applications (/Applications)",
+        locationUser: "Applications de l’utilisateur (~/Applications)",
+        trashTitle: "Placer le téléchargement dans la corbeille",
+        trashCaption: "Placer le fichier .dmg dans la corbeille après l’éjection",
+        revealTitle: "Afficher l’app installée dans le Finder",
+        revealCaption: "Afficher la nouvelle app une fois l’installation terminée",
+        ignoreHomebrewTitle: "Ignorer les images du cache Homebrew",
+        ignoreHomebrewCaption: "Les images disque montées par Homebrew Cask sont ignorées automatiquement",
+        recentTitle: "Installations récentes",
+        recentCountFormat: "%d apps",
+        downloadTrashed: "DMG supprimé",
+        downloadKept: "DMG conservé",
+        reveal: "Afficher",
+        recentEmpty: "Les apps installées depuis des images disque apparaissent ici.")
+
+    static let it = AppInstallerTabStrings(
+        watchingTitle: "In attesa di immagini disco montate",
+        watchingDetail: "Trascina qui un .dmg o monta un’immagine disco con una sola app per verificarla, installarla ed espellerla automaticamente",
+        chooseButton: "Scegli…",
+        gatekeeperVerified: "Verificata da Gatekeeper",
+        gatekeeperUnverified: "Non verificata",
+        planFormat: "Copia in %@ ed espelli il volume",
+        planTrashFormat: "Copia in %@, espelli il volume e sposta il .dmg nel Cestino",
+        skip: "Salta",
+        stepCopying: "Copia dell’app…",
+        stepVerifying: "Verifica della firma del codice e di Gatekeeper…",
+        stepMoving: "Spostamento dell’app nella posizione finale…",
+        stepEjecting: "Espulsione dell’immagine disco…",
+        stepTrashing: "Spostamento del download nel Cestino…",
+        preferencesTitle: "Preferenze di installazione",
+        locationTitle: "Posizione di installazione",
+        locationCaption: "Dove vengono messe le app copiate dalle immagini disco",
+        locationSystem: "Applicazioni (/Applications)",
+        locationUser: "Applicazioni utente (~/Applications)",
+        trashTitle: "Sposta il download nel Cestino",
+        trashCaption: "Sposta il file .dmg nel Cestino dopo l’espulsione",
+        revealTitle: "Mostra l’app installata nel Finder",
+        revealCaption: "Mostra la nuova app al termine dell’installazione",
+        ignoreHomebrewTitle: "Ignora le immagini nella cache di Homebrew",
+        ignoreHomebrewCaption: "Le immagini disco montate da Homebrew Cask vengono saltate automaticamente",
+        recentTitle: "Installazioni recenti",
+        recentCountFormat: "%d app",
+        downloadTrashed: "DMG nel Cestino",
+        downloadKept: "DMG conservato",
+        reveal: "Mostra",
+        recentEmpty: "Le app installate da immagini disco appaiono qui.")
+
+    static let ja = AppInstallerTabStrings(
+        watchingTitle: "マウントされたディスクイメージを監視中",
+        watchingDetail: ".dmgをここにドロップするか、Appが1つ入ったディスクイメージをマウントすると、自動で確認、インストール、取り出しを行います",
+        chooseButton: "選択…",
+        gatekeeperVerified: "Gatekeeper確認済み",
+        gatekeeperUnverified: "未確認",
+        planFormat: "%@にコピーしてボリュームを取り出す",
+        planTrashFormat: "%@にコピーし、ボリュームを取り出して.dmgをゴミ箱に入れる",
+        skip: "スキップ",
+        stepCopying: "Appをコピー中…",
+        stepVerifying: "コード署名とGatekeeperを確認中…",
+        stepMoving: "Appを配置中…",
+        stepEjecting: "ディスクイメージを取り出し中…",
+        stepTrashing: "ダウンロードをゴミ箱に移動中…",
+        preferencesTitle: "インストール設定",
+        locationTitle: "インストール先",
+        locationCaption: "ディスクイメージからコピーしたAppの置き場所",
+        locationSystem: "アプリケーション（/Applications）",
+        locationUser: "ユーザのアプリケーション（~/Applications）",
+        trashTitle: "ダウンロードをゴミ箱に入れる",
+        trashCaption: "ディスクイメージを取り出した後に.dmgファイルをゴミ箱に入れます",
+        revealTitle: "インストールしたAppをFinderで表示",
+        revealCaption: "インストールが完了したら新しいAppを表示します",
+        ignoreHomebrewTitle: "Homebrewキャッシュのイメージを無視",
+        ignoreHomebrewCaption: "Homebrew Caskがマウントしたディスクイメージは自動的にスキップされます",
+        recentTitle: "最近のインストール",
+        recentCountFormat: "%d個のApp",
+        downloadTrashed: "DMGを削除済み",
+        downloadKept: "DMGを保持",
+        reveal: "表示",
+        recentEmpty: "ディスクイメージからインストールしたAppがここに表示されます。")
+
+    static let ko = AppInstallerTabStrings(
+        watchingTitle: "마운트된 디스크 이미지 감시 중",
+        watchingDetail: "여기에 .dmg를 놓거나 앱 하나가 든 디스크 이미지를 마운트하면 자동으로 확인, 설치, 추출합니다",
+        chooseButton: "선택…",
+        gatekeeperVerified: "Gatekeeper 확인됨",
+        gatekeeperUnverified: "확인되지 않음",
+        planFormat: "%@에 복사하고 볼륨 추출",
+        planTrashFormat: "%@에 복사하고 볼륨을 추출한 다음 .dmg를 휴지통으로 이동",
+        skip: "건너뛰기",
+        stepCopying: "앱 복사 중…",
+        stepVerifying: "코드 서명과 Gatekeeper 확인 중…",
+        stepMoving: "앱을 제자리로 옮기는 중…",
+        stepEjecting: "디스크 이미지 추출 중…",
+        stepTrashing: "다운로드를 휴지통으로 이동 중…",
+        preferencesTitle: "설치 환경설정",
+        locationTitle: "설치 위치",
+        locationCaption: "디스크 이미지에서 복사한 앱을 두는 곳",
+        locationSystem: "응용 프로그램(/Applications)",
+        locationUser: "사용자 응용 프로그램(~/Applications)",
+        trashTitle: "다운로드를 휴지통으로 이동",
+        trashCaption: "디스크 이미지를 추출한 뒤 .dmg 파일을 휴지통으로 이동합니다",
+        revealTitle: "설치한 앱을 Finder에서 보기",
+        revealCaption: "설치가 끝나면 새 앱을 보여 줍니다",
+        ignoreHomebrewTitle: "Homebrew 캐시 이미지 무시",
+        ignoreHomebrewCaption: "Homebrew Cask가 마운트한 디스크 이미지는 자동으로 건너뜁니다",
+        recentTitle: "최근 설치",
+        recentCountFormat: "앱 %d개",
+        downloadTrashed: "DMG 삭제됨",
+        downloadKept: "DMG 유지됨",
+        reveal: "보기",
+        recentEmpty: "디스크 이미지에서 설치한 앱이 여기에 표시됩니다.")
+
+    static let zhHans = AppInstallerTabStrings(
+        watchingTitle: "正在监视已装载的磁盘映像",
+        watchingDetail: "将 .dmg 拖到这里，或装载只含一个 App 的磁盘映像，即可自动验证、安装并推出",
+        chooseButton: "选择…",
+        gatekeeperVerified: "已通过 Gatekeeper 验证",
+        gatekeeperUnverified: "未验证",
+        planFormat: "拷贝到 %@ 并推出宗卷",
+        planTrashFormat: "拷贝到 %@，推出宗卷，并将 .dmg 移到废纸篓",
+        skip: "跳过",
+        stepCopying: "正在拷贝 App…",
+        stepVerifying: "正在验证代码签名和 Gatekeeper…",
+        stepMoving: "正在将 App 移到位…",
+        stepEjecting: "正在推出磁盘映像…",
+        stepTrashing: "正在将下载项移到废纸篓…",
+        preferencesTitle: "安装偏好设置",
+        locationTitle: "安装位置",
+        locationCaption: "从磁盘映像拷贝的 App 存放的位置",
+        locationSystem: "应用程序（/Applications）",
+        locationUser: "用户应用程序（~/Applications）",
+        trashTitle: "将下载项移到废纸篓",
+        trashCaption: "推出磁盘映像后将 .dmg 文件移到废纸篓",
+        revealTitle: "在访达中显示已安装的 App",
+        revealCaption: "安装完成后显示新的 App",
+        ignoreHomebrewTitle: "忽略 Homebrew 缓存映像",
+        ignoreHomebrewCaption: "由 Homebrew Cask 装载的磁盘映像会被自动跳过",
+        recentTitle: "最近安装",
+        recentCountFormat: "%d 个 App",
+        downloadTrashed: "DMG 已移到废纸篓",
+        downloadKept: "DMG 已保留",
+        reveal: "显示",
+        recentEmpty: "从磁盘映像安装的 App 会显示在这里。")
+
+    static let zhTW = AppInstallerTabStrings(
+        watchingTitle: "正在監看已裝載的磁碟映像檔",
+        watchingDetail: "將 .dmg 拖到這裡，或裝載只含一個 App 的磁碟映像檔，即可自動驗證、安裝並退出",
+        chooseButton: "選擇⋯",
+        gatekeeperVerified: "已通過 Gatekeeper 驗證",
+        gatekeeperUnverified: "未驗證",
+        planFormat: "拷貝到 %@ 並退出卷宗",
+        planTrashFormat: "拷貝到 %@、退出卷宗，並將 .dmg 移到垃圾桶",
+        skip: "略過",
+        stepCopying: "正在拷貝 App⋯",
+        stepVerifying: "正在驗證程式碼簽署和 Gatekeeper⋯",
+        stepMoving: "正在將 App 移到定位⋯",
+        stepEjecting: "正在退出磁碟映像檔⋯",
+        stepTrashing: "正在將下載項目移到垃圾桶⋯",
+        preferencesTitle: "安裝偏好設定",
+        locationTitle: "安裝位置",
+        locationCaption: "從磁碟映像檔拷貝的 App 存放的位置",
+        locationSystem: "應用程式（/Applications）",
+        locationUser: "使用者應用程式（~/Applications）",
+        trashTitle: "將下載項目移到垃圾桶",
+        trashCaption: "退出磁碟映像檔後將 .dmg 檔案移到垃圾桶",
+        revealTitle: "在 Finder 中顯示已安裝的 App",
+        revealCaption: "安裝完成後顯示新的 App",
+        ignoreHomebrewTitle: "忽略 Homebrew 快取映像檔",
+        ignoreHomebrewCaption: "由 Homebrew Cask 裝載的磁碟映像檔會自動略過",
+        recentTitle: "最近安裝",
+        recentCountFormat: "%d 個 App",
+        downloadTrashed: "DMG 已移到垃圾桶",
+        downloadKept: "DMG 已保留",
+        reveal: "顯示",
+        recentEmpty: "從磁碟映像檔安裝的 App 會顯示在這裡。")
+
+    static let zhHK = AppInstallerTabStrings(
+        watchingTitle: "正在監看已裝載的磁碟映像檔",
+        watchingDetail: "將 .dmg 拖到這裡，或裝載只含一個 App 的磁碟映像檔，即可自動驗證、安裝並退出",
+        chooseButton: "選擇⋯",
+        gatekeeperVerified: "已通過 Gatekeeper 驗證",
+        gatekeeperUnverified: "未驗證",
+        planFormat: "拷貝到 %@ 並退出卷宗",
+        planTrashFormat: "拷貝到 %@、退出卷宗，並將 .dmg 移到垃圾桶",
+        skip: "略過",
+        stepCopying: "正在拷貝 App⋯",
+        stepVerifying: "正在驗證程式碼簽署和 Gatekeeper⋯",
+        stepMoving: "正在將 App 移到定位⋯",
+        stepEjecting: "正在退出磁碟映像檔⋯",
+        stepTrashing: "正在將下載項目移到垃圾桶⋯",
+        preferencesTitle: "安裝偏好設定",
+        locationTitle: "安裝位置",
+        locationCaption: "從磁碟映像檔拷貝的 App 存放的位置",
+        locationSystem: "應用程式（/Applications）",
+        locationUser: "用戶應用程式（~/Applications）",
+        trashTitle: "將下載項目移到垃圾桶",
+        trashCaption: "退出磁碟映像檔後將 .dmg 檔案移到垃圾桶",
+        revealTitle: "在 Finder 中顯示已安裝的 App",
+        revealCaption: "安裝完成後顯示新的 App",
+        ignoreHomebrewTitle: "忽略 Homebrew 快取映像檔",
+        ignoreHomebrewCaption: "由 Homebrew Cask 裝載的磁碟映像檔會自動略過",
+        recentTitle: "最近安裝",
+        recentCountFormat: "%d 個 App",
+        downloadTrashed: "DMG 已移到垃圾桶",
+        downloadKept: "DMG 已保留",
+        reveal: "顯示",
+        recentEmpty: "從磁碟映像檔安裝的 App 會顯示在這裡。")
+
+    static let uk = AppInstallerTabStrings(
+        watchingTitle: "Відстеження підключених образів дисків",
+        watchingDetail: "Перетягніть сюди .dmg або підключіть образ з однією програмою, щоб автоматично перевірити, встановити й вийняти його",
+        chooseButton: "Вибрати…",
+        gatekeeperVerified: "Перевірено Gatekeeper",
+        gatekeeperUnverified: "Не перевірено",
+        planFormat: "Скопіювати в %@ і вийняти том",
+        planTrashFormat: "Скопіювати в %@, вийняти том і перемістити .dmg у Смітник",
+        skip: "Пропустити",
+        stepCopying: "Копіювання програми…",
+        stepVerifying: "Перевірка підпису коду й Gatekeeper…",
+        stepMoving: "Переміщення програми на місце…",
+        stepEjecting: "Виймання образу диска…",
+        stepTrashing: "Переміщення завантаження у Смітник…",
+        preferencesTitle: "Параметри встановлення",
+        locationTitle: "Місце встановлення",
+        locationCaption: "Куди потрапляють програми з образів дисків",
+        locationSystem: "Програми (/Applications)",
+        locationUser: "Програми користувача (~/Applications)",
+        trashTitle: "Переміщати завантаження у Смітник",
+        trashCaption: "Переміщати файл .dmg у Смітник після виймання образу",
+        revealTitle: "Показувати програму у Finder",
+        revealCaption: "Показати нову програму після встановлення",
+        ignoreHomebrewTitle: "Пропускати образи з кешу Homebrew",
+        ignoreHomebrewCaption: "Образи, підключені Homebrew Cask, пропускаються автоматично",
+        recentTitle: "Нещодавні встановлення",
+        recentCountFormat: "Програм: %d",
+        downloadTrashed: "DMG у Смітнику",
+        downloadKept: "DMG збережено",
+        reveal: "Показати",
+        recentEmpty: "Тут з’являться програми, встановлені з образів дисків.")
+}

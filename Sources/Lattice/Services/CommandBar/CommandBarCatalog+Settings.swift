@@ -6,7 +6,7 @@ extension CommandBarCatalog {
     /// Pages an action row already opens; listing them again would put two
     /// rows in the list that lead to the same place.
     private static let pagesCoveredByActions: Set<SettingsPage> = [
-        .general, .cleaner, .uninstaller, .appUpdates,
+        .general, .cleaner,
     ]
 
     static func settingsEntries(_ s: Strings,

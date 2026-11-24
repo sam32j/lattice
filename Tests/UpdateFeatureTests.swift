@@ -381,11 +381,11 @@ enum UpdateFeatureTests {
             settingsFeatureTitles[feature] ?? feature.rawValue
         }
         let expectedFeatureSearchDestinations: [(AppFeature, FeatureSettingsDestination)] = [
-            (.homebrew, FeatureSettingsDestination(.homebrew)),
+            (.homebrew, FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)),
             (.cameraPreview, FeatureSettingsDestination(.general, sectionAnchor: .cameraPreview)),
             (.screenRecorder, FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)),
             (.micMute, FeatureSettingsDestination(.audio, sectionAnchor: .micMute)),
-            (.diskImageInstaller, FeatureSettingsDestination(.diskImageInstaller)),
+            (.diskImageInstaller, FeatureSettingsDestination(.appManager, sectionAnchor: .appInstaller)),
         ]
         for (feature, destination) in expectedFeatureSearchDestinations {
             let item = featureSearchItems.first { $0.id == .feature(feature) }
@@ -420,19 +420,19 @@ enum UpdateFeatureTests {
 
         // MARK: Settings search structural deduplication
         let structuralPage = SettingsSearchItem(
-            id: .page(.homebrew), destination: FeatureSettingsDestination(.homebrew),
-            title: "Dedicated Packages Page", icon: "shippingbox", keywords: ["Formulae"])
+            id: .page(.killProcess), destination: FeatureSettingsDestination(.killProcess),
+            title: "Dedicated Processes Page", icon: "waveform", keywords: ["Ports"])
         let structuralFeature = SettingsSearchItem(
-            id: .feature(.homebrew), destination: FeatureSettingsDestination(.homebrew),
-            title: "Generated Homebrew Feature", icon: "externaldrive", feature: .homebrew)
+            id: .feature(.killProcess), destination: FeatureSettingsDestination(.killProcess),
+            title: "Generated Process Feature", icon: "externaldrive", feature: .killProcess)
         let structurallyMerged = SettingsSearchSupport.combinedItems(
             pageItems: [structuralPage], featureItems: [structuralFeature])
-        suite.expect(structurallyMerged.map(\.id) == [.page(.homebrew)]
-                && structurallyMerged.first?.title == "Dedicated Packages Page"
-                && structurallyMerged.first?.icon == "shippingbox"
-                && structurallyMerged.first?.keywords == ["Formulae"]
-                && structurallyMerged.first?.feature == .homebrew,
-               "differently titled Homebrew rows merge into the stable page row")
+        suite.expect(structurallyMerged.map(\.id) == [.page(.killProcess)]
+                && structurallyMerged.first?.title == "Dedicated Processes Page"
+                && structurallyMerged.first?.icon == "waveform"
+                && structurallyMerged.first?.keywords == ["Ports"]
+                && structurallyMerged.first?.feature == .killProcess,
+               "differently titled rows for one page's only feature merge into the stable page row")
 
         let monitorPage = SettingsSearchItem(id: .page(.monitor),
                                              destination: FeatureSettingsDestination(.monitor),
@@ -450,8 +450,6 @@ enum UpdateFeatureTests {
 
         let actionCoveredMappings: [(SettingsPage, AppFeature)] = [
             (.cleaner, .cleaner),
-            (.uninstaller, .uninstaller),
-            (.appUpdates, .appUpdates),
         ]
         let actionCoveredPages = actionCoveredMappings.map { page, feature in
             SettingsSearchItem(id: .page(page), destination: FeatureSettingsDestination(page),
@@ -476,17 +474,14 @@ enum UpdateFeatureTests {
                                 title: "Features", icon: "square.grid.2x2",
                                 keywords: ["Homebrew"],
                                 keywordFeatures: [.homebrew]),
-            SettingsSearchItem(id: .page(.appUpdates),
-                                destination: FeatureSettingsDestination(.appUpdates),
-                                title: "App Updates", icon: "app.badge.checkmark",
+            SettingsSearchItem(id: .page(.appManager),
+                                destination: FeatureSettingsDestination(.appManager),
+                                title: "App Manager", icon: "lattice.app.manager",
                                 keywords: ["Homebrew"]),
             SettingsSearchItem(id: .page(.shortcuts),
                                 destination: FeatureSettingsDestination(.shortcuts),
                                 title: "Keyboard Shortcuts", icon: "keyboard",
                                 keywords: ["Camera Preview"]),
-            SettingsSearchItem(id: .page(.homebrew),
-                                destination: FeatureSettingsDestination(.homebrew),
-                                title: "Homebrew", icon: "shippingbox"),
             SettingsSearchItem(id: .page(.general),
                                 destination: FeatureSettingsDestination(.general),
                                 title: "General", icon: "gearshape",
@@ -496,19 +491,18 @@ enum UpdateFeatureTests {
             pageItems: dedicatedSettingsItems,
             featureItems: featureSearchItems)
         suite.expect(combinedSettingsItems.filter {
-            $0.title == "Homebrew" && $0.destination == FeatureSettingsDestination(.homebrew)
-        }.count == 1
-                && combinedSettingsItems.contains { $0.id == .page(.homebrew) },
-               "the explicit Homebrew page result replaces its equivalent generated result")
+            $0.destination == FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)
+        }.map(\.id) == [.feature(.homebrew)]
+                && combinedSettingsItems.contains { $0.id == .page(.appManager) },
+               "Homebrew stays a result of its own that opens its App Manager tab")
         suite.expect(combinedSettingsItems.filter {
-            $0.destination == FeatureSettingsDestination(.appUpdates)
-        }.count == 1
-                && combinedSettingsItems.contains { $0.id == .page(.appUpdates) },
-               "a structurally one-to-one App Updates result is deduplicated to the page")
+            $0.destination == FeatureSettingsDestination(.appManager, sectionAnchor: .appUpdates)
+        }.map(\.id) == [.feature(.appUpdates)],
+               "App Updates stays a result of its own that opens its App Manager tab")
         suite.expect(combinedSettingsItems.contains { $0.id == .feature(.diskImageInstaller) },
                "a differently named feature remains discoverable through its Features fallback")
-        suite.expect(combinedSettingsItems.first { $0.id == .page(.homebrew) }?.feature == .homebrew,
-               "a deduplicated Homebrew page result keeps its feature identity")
+        suite.expect(combinedSettingsItems.first { $0.id == .page(.appManager) }?.feature == nil,
+               "the App Manager page result, owning several features, carries no single feature identity")
         suite.expect(combinedSettingsItems.first { $0.id == .page(.features) }?.feature == nil,
                "a generic page result that does not merge with a feature carries no feature identity")
         suite.expect(combinedSettingsItems.first { $0.id == .feature(.diskImageInstaller) }?.feature
@@ -517,13 +511,13 @@ enum UpdateFeatureTests {
 
         // MARK: Settings search routing
 
-        let homebrewPageItem = combinedSettingsItems.first { $0.id == .page(.homebrew) }!
+        let homebrewPageItem = combinedSettingsItems.first { $0.id == .feature(.homebrew) }!
         let unavailableHomebrewRoute = SettingsSearchSupport.route(for: homebrewPageItem) { _ in false }
-        suite.expect(unavailableHomebrewRoute.destination == FeatureSettingsDestination(.homebrew)
+        suite.expect(unavailableHomebrewRoute.destination == FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)
                 && unavailableHomebrewRoute.targetFeature == nil,
                "disabled Homebrew opens its page activation control")
         let availableHomebrewRoute = SettingsSearchSupport.route(for: homebrewPageItem) { _ in true }
-        suite.expect(availableHomebrewRoute.destination == FeatureSettingsDestination(.homebrew)
+        suite.expect(availableHomebrewRoute.destination == FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)
                 && availableHomebrewRoute.targetFeature == nil,
                "an available Homebrew result still opens its own dedicated page with no row to reveal")
 
@@ -540,7 +534,7 @@ enum UpdateFeatureTests {
 
         let diskImageItem = featureSearchItems.first { $0.id == .feature(.diskImageInstaller) }!
         let diskImageRoute = SettingsSearchSupport.route(for: diskImageItem) { _ in true }
-        suite.expect(diskImageRoute.destination == FeatureSettingsDestination(.diskImageInstaller)
+        suite.expect(diskImageRoute.destination == FeatureSettingsDestination(.appManager, sectionAnchor: .appInstaller)
                 && diskImageRoute.targetFeature == nil,
                "DMG Installer opens its dedicated installation page")
 
@@ -602,9 +596,9 @@ enum UpdateFeatureTests {
 
         let homebrewMatches = SettingsSearchSupport.matchingItems(
             query: "  HOMEBREW ", items: combinedSettingsItems)
-        suite.expect(homebrewMatches.first?.destination == FeatureSettingsDestination(.homebrew)
+        suite.expect(homebrewMatches.first?.destination == FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)
                 && homebrewMatches.map(\.id)
-                    == [.page(.homebrew), .page(.features), .page(.appUpdates)],
+                    == [.feature(.homebrew), .page(.features), .page(.appManager)],
                "an exact Homebrew title ranks before earlier generic keyword matches")
         let cameraPreviewMatches = SettingsSearchSupport.matchingItems(
             query: "Camera Preview", items: combinedSettingsItems)
@@ -618,11 +612,11 @@ enum UpdateFeatureTests {
             id: .page(.features), destination: FeatureSettingsDestination(.features),
             title: "Features", icon: "square.grid.2x2", keywords: ["Homebrew Packages"])
         let partialTitleAfterKeyword = SettingsSearchItem(
-            id: .page(.appUpdates), destination: FeatureSettingsDestination(.appUpdates),
+            id: .page(.appManager), destination: FeatureSettingsDestination(.appManager, sectionAnchor: .appUpdates),
             title: "Homebrew Packages", icon: "app.badge.checkmark")
         let partialMatches = SettingsSearchSupport.matchingItems(
             query: "brew", items: [keywordBeforePartialTitle, partialTitleAfterKeyword])
-        suite.expect(partialMatches.map(\.id) == [.page(.appUpdates), .page(.features)],
+        suite.expect(partialMatches.map(\.id) == [.page(.appManager), .page(.features)],
                "partial title containment ranks before an earlier keyword-only match")
 
         let tiedTitleMatches = [
@@ -658,10 +652,10 @@ enum UpdateFeatureTests {
         let homebrewGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "Homebrew", items: combinedSettingsItems,
             isAvailable: { _ in true })
-        suite.expect(homebrewGroups.map(\.id) == [.homebrew, .appUpdates]
-                && homebrewGroups.first?.parentMatches == true
-                && homebrewGroups.first?.suggestions.isEmpty == true,
-               "a matching main page is shown once before grouped keyword matches")
+        suite.expect(homebrewGroups.map(\.id) == [.appManager]
+                && homebrewGroups.first?.parentMatches == false
+                && homebrewGroups.first?.suggestions.map(\.title) == ["Homebrew"],
+               "Homebrew is found once, as a suggestion in the App Manager group")
 
         let settingPage = SettingsSearchItem(
             id: .page(.energy), destination: FeatureSettingsDestination(.energy),
@@ -705,7 +699,7 @@ enum UpdateFeatureTests {
         suite.expect(unavailableCameraGroups.count == 1
                 && unavailableCameraGroups[0].id == .audio
                 && unavailableCameraGroups[0].suggestions.map(\.title) == ["Port Manager", "Open port automatically"]
-                && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.homebrew)
+                && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)
                 && groupedUnavailableCameraRoute?.targetFeature == nil,
                "an off utility keyword opens its owning activation page")
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
@@ -720,7 +714,7 @@ enum UpdateFeatureTests {
         }
         suite.expect(availableCameraSetting?.title == "Open port automatically"
                 && availableCameraSettingRoute?.destination
-                    == FeatureSettingsDestination(.homebrew)
+                    == FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)
                 && availableCameraSettingRoute?.targetFeature == nil,
                "a feature-owned setting keyword opens its exact anchored section")
         let availableMixerGroups = SettingsSearchSupport.groupedMatchingItems(
@@ -2166,9 +2160,10 @@ enum UpdateFeatureTests {
                 && AppFeature.appUpdates.permissions == [.notifications, .appManagement]
                 && AppFeature.appUpdates.group == .tools,
                "app updates is an on demand tool that declares its update access")
-        suite.expect(FeatureVisibilitySupport.features(for: .appUpdates) == [.appUpdates]
-                && FeatureVisibilitySupport.isPageVisible(.appUpdates, isAvailable: { _ in false }),
-               "App Updates keeps its activation page while disabled")
+        suite.expect(FeatureVisibilitySupport.features(for: .appManager)
+                    == [.diskImageInstaller, .appUpdates, .uninstaller, .homebrew]
+                && FeatureVisibilitySupport.isPageVisible(.appManager, isAvailable: { _ in false }),
+               "App Updates keeps its App Manager page while disabled")
         suite.expect(activeSet(.notifications, on: [DefaultsKey.appUpdatesNotify],
                          strings: [DefaultsKey.appUpdatesCheckFrequency: "daily"])
                 .contains(.appUpdates),

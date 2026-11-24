@@ -238,7 +238,7 @@ def main():
     discovery_source = declaration(discovery, "    static func settingsEntries(").replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
     discovery_source = discovery_source.replace("where: \\.isAvailable", "where: { $0.isAvailable(in: defaults) }")
     write("PageCommandDiscovery.swift", "import Foundation\nextension PageCommandDiscoveryTests {\nfinal class Catalog: State {\n"
-          + "static let pagesCoveredByActions: Set<SettingsPage> = [.general, .cleaner, .uninstaller, .appUpdates]\n"
+          + "static let pagesCoveredByActions: Set<SettingsPage> = [.general, .cleaner]\n"
           + discovery_source + "}\n}\n")
     runtime = "Sources/Lattice/App/FeatureRuntime.swift"
     settings_view = (ROOT / "Sources/Lattice/UI/Settings/SettingsSearchKeyMonitor.swift").read_text()

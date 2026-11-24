@@ -679,7 +679,7 @@ struct NotchView: View {
     private var navigation: some View {
         Button(action: { service.open() }) {
             HStack(spacing: 9) {
-                Image(systemName: navigationSymbol)
+                LatticeSymbol(navigationSymbol)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.white.opacity(0.7))
                 Text(navigationTitle)

@@ -190,7 +190,7 @@ extension AppFeature {
         case .scratchpad: return "note.text"
         case .commandBar: return "command"
         case .killProcess: return "waveform.path.ecg"
-        case .videoDownloader: return "square.and.arrow.down.on.square"
+        case .videoDownloader: return "lattice.video.downloader" // LatticeSymbol.videoDownloaderSymbol
         case .monitorCPU: return "cpu"
         case .monitorGPU: return "rectangle.connected.to.line.below"
         case .monitorMemory: return "memorychip"

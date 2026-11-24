@@ -149,6 +149,7 @@ enum DefaultsKey {
     static let diskImageInstallerTrashesDownload = "diskImageInstallerTrashesDownload"
     static let diskImageInstallerRevealsApp = "diskImageInstallerRevealsApp"
     static let diskImageInstallerUseUserApplications = "diskImageInstallerUseUserApplications"
+    static let diskImageInstallerRecentInstalls = "diskImageInstallerRecentInstalls"
     static let autoQuitEnabled = "autoQuitEnabled"
     static let autoQuitExceptions = "autoQuitExceptions"  // [bundle id] kept running
     // Quit/close protection: each shortcut owns its full configuration and app list.
@@ -313,6 +314,7 @@ enum DefaultsKey {
     // The modules that were on when the System Monitor switch turned them all
     // off, so turning it back on restores the same set.
     static let monitorModulesBeforeOff = "monitorModulesBeforeOff"
+    static let appManagerModulesBeforeOff = "appManagerModulesBeforeOff"
     static let panelShowFanControl = "panelShowFanControl"
     static let fanControlMode = "fanControlMode"
     static let fanControlCoolingLevel = "fanControlCoolingLevel"

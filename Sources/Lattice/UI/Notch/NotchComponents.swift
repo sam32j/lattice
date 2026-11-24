@@ -152,7 +152,7 @@ struct NotchIconButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
+            LatticeSymbol(symbol)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(tint ?? (selected ? Color.white : Color.white.opacity(0.55)))
                 .contentTransition(.symbolEffect(.replace))
@@ -207,7 +207,7 @@ struct NotchEmptyView<Actions: View>: View {
     }
 
     private var glyph: some View {
-        Image(systemName: symbol)
+        LatticeSymbol(symbol)
             .font(.system(size: 26, weight: .light))
             .foregroundStyle(.white.opacity(0.65))
             .frame(width: 56, height: 56)

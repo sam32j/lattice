@@ -931,10 +931,10 @@ final class RadialMenuService: ObservableObject {
             case .scratchpad: ScratchpadService.shared.show()
             case .shelf: ShelfService.shared.summon()
             case .cleaner: Self.openSettings(at: .cleaner)
-            case .uninstaller: Self.openSettings(at: .uninstaller)
+            case .uninstaller: Self.openSettings(at: AppFeature.uninstaller.settingsDestination)
             case .appUpdates:
                 AppUpdatesService.shared.check()
-                Self.openSettings(at: .appUpdates)
+                Self.openSettings(at: AppFeature.appUpdates.settingsDestination)
             case .cleaningMode: CleaningModeManager.shared.activate()
             case .keepAwake: KeepAwakeManager.shared.toggle()
             }
@@ -942,7 +942,11 @@ final class RadialMenuService: ObservableObject {
     }
 
     private static func openSettings(at page: SettingsPage) {
-        SettingsRouter.shared.page = page
+        openSettings(at: FeatureSettingsDestination(page))
+    }
+
+    private static func openSettings(at destination: FeatureSettingsDestination) {
+        SettingsRouter.shared.request(destination)
         appDelegate()?.openSettingsWindow()
     }
 

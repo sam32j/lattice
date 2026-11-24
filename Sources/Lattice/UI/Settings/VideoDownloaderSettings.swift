@@ -37,7 +37,7 @@ struct VideoDownloaderSettings: View {
                 page
             } else {
                 SettingsFeatureEmptyState(title: VideoDownloaderStrings.enableTitle,
-                                          symbol: "square.and.arrow.down.on.square",
+                                          symbol: "lattice.video.downloader",
                                           description: VideoDownloaderStrings.enableSubtitle) {
                     Button(SettingsOwnershipStrings.enable(VideoDownloaderStrings.enableTitle, l10n.language)) {
                         enabled = true
