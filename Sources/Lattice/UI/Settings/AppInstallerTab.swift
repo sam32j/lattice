@@ -14,7 +14,8 @@ struct AppInstallerTab: View {
     @AppStorage(DefaultsKey.diskImageInstallerTrashesDownload) private var trashesDownload = true
     @AppStorage(DefaultsKey.diskImageInstallerRevealsApp) private var revealsApp = false
     @AppStorage(DefaultsKey.diskImageInstallerOffersUnverifiedOpen) private var offersUnverifiedOpen = false
-    /// The switch is the source of truth; Launch Services follows it.
+    /// Saved, so a DMG file macOS hands Lattice after the switch went off is
+    /// passed on to Disk Image Mounter; kept in line with macOS on appear.
     @AppStorage(DefaultsKey.diskImageInstallerOpensDiskImages) private var opensInLattice = false
 
     private var strings: AppInstallerTabStrings { FeatureStrings.appInstallerTab(l10n.language) }
@@ -35,6 +36,8 @@ struct AppInstallerTab: View {
             recentInstalls
         }
         .settingsExpansionAnimation(value: installer.detected?.id)
+        // The switch shows what macOS has, whatever changed it since.
+        .onAppear { opensInLattice = DiskImageOpenHandler.opensInLattice }
         .onChange(of: installer.detected != nil, initial: true) { _, waiting in
             AppManagerAttention.shared.diskImageWaiting = waiting
         }
@@ -144,7 +147,7 @@ struct AppInstallerTab: View {
                 SettingsControlRow(title: strings.openWithLattice) {
                     Toggle(strings.openWithLattice, isOn: Binding(get: { opensInLattice }, set: { on in
                         opensInLattice = on
-                        DiskImageOpenHandler.schedule(on)
+                        DiskImageOpenHandler.setOpensInLattice(on) { opensInLattice = $0 }
                     }))
                     .labelsHidden()
                 }
