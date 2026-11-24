@@ -4,9 +4,8 @@
 import Foundation
 
 enum SystemWidgetDetailContent {
-    static func hasGraph(for kind: MetricDetailKind, widgetDesign: Bool = true) -> Bool {
+    static func hasGraph(for kind: MetricDetailKind) -> Bool {
         switch kind {
-        case .battery: return widgetDesign || PowerSampler.hasInternalBattery
         case .fan, .connectedDevices: return false
         default: return true
         }
@@ -70,9 +69,8 @@ enum SystemWidgetDetailContent {
     }
 
     static func detailRows(for kind: MetricDetailKind, snapshot: SystemSnapshot, disk: DiskDeviceReading?,
-                           widgetDesign: Bool = true,
                            formatTemperature: (Double) -> String = { _ in "" }) -> [(String, String)] {
-        if widgetDesign, SystemWidgetLayout.isEnergyMetric(kind) { return [] }
+        if SystemWidgetLayout.isEnergyMetric(kind) { return [] }
         switch kind {
         case .cpu, .gpu, .memory:
             return []
