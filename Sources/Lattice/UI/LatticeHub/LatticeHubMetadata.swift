@@ -13,10 +13,11 @@ extension LatticeHubView {
                 ? "App Volumes"
                 : item.title(language: l10n.language)
         }
-        if item == .system {
-            if let metric = SystemNavigationState.shared.selectedMetric {
-                return metric.title(l10n.s)
-            }
+        // Inside System its header names the reading open in it; the Hub's
+        // tile is always System, whatever reading was last looked at.
+        if item == .system, launcher.activeUtility == .system,
+           let metric = SystemNavigationState.shared.selectedMetric {
+            return metric.title(l10n.s)
         }
         return item.title(language: l10n.language)
     }
