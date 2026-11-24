@@ -99,8 +99,10 @@ final class QuickToolHotkey {
             else { return OSStatus(eventNotHandledErr) }
             let released = GetEventKind(event) == UInt32(kEventHotKeyReleased)
             // Both halves go through the main queue in arrival order, so a
-            // quick press never sees its release before its press.
-            DispatchQueue.main.async { if !InputEventTap.isBlocked { if released { instance.onRelease?() } else { instance.onPress?() } } }
+            // quick press never sees its release before its press. A hotkey
+            // unregistered while its press waited (the feature suspended)
+            // no longer answers it.
+            DispatchQueue.main.async { if !InputEventTap.isBlocked, QuickToolHotkey.instances[id.id] === instance { if released { instance.onRelease?() } else { instance.onPress?() } } }
             return noErr
         }, specs.count, &specs, nil, &sharedHandler)
     }

@@ -173,6 +173,9 @@ final class RadialMenuService: ObservableObject {
             sessionIsActive: SessionActivity.shared.isActive
         ) else {
             tearDownMouseTap()
+            // A wheel held open by the button would never see its release
+            // now; it closes rather than waiting for a click to end it.
+            if sessionActive, holdPhase, holdButton != nil { endSession() }
             return
         }
         // A tap the system disabled (Accessibility revoked and regranted)
@@ -310,8 +313,10 @@ final class RadialMenuService: ObservableObject {
 
     /// The four-finger tap or click: opens a sticky menu on the primary
     /// profile, or closes any open one, like a second press of its shortcut.
-    func toggleFromTrackpad() {
-        guard RadialMenuSupport.effectiveTrackpadGesture() != .off else { return }
+    /// `gesture` is the one recognised; queued before a change of setting,
+    /// it no longer opens anything once the menu answers another gesture.
+    func toggleFromTrackpad(_ gesture: RadialMenuTrackpadGesture) {
+        guard gesture != .off, RadialMenuSupport.effectiveTrackpadGesture() == gesture else { return }
         if sessionActive {
             endSession()
             return

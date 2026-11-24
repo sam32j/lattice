@@ -251,7 +251,8 @@ def main():
     quick_hotkey = (ROOT / "Sources/Lattice/Services/QuickTools/QuickToolHotkey.swift").read_text()
     queued_press = re.search(r"DispatchQueue.main.async \{ (.+) \}", quick_hotkey)[1]
     write("PermissionResetHotkey.swift", "import Foundation\nextension PermissionResetHotkeyTests {\n"
-          + "static func deliverQueued(_ instance: Instance, released: Bool) { " + queued_press + " }\n"
+          + "static func deliverQueued(_ instance: Instance, released: Bool, id: (id: UInt32, kind: Int) = (1, 0)) { "
+          + queued_press + " }\n"
           + "static func deliverQueuedPress(_ instance: Instance) { deliverQueued(instance, released: false) }\n}\n")
     write("IslandSettingsFocus.swift", "import Foundation\nextension IslandSettingsFocusTests.Service {\n"
           + declaration("Sources/Lattice/Services/Notch/NotchService.swift", "    func prepareForSettings()") + "}\n")

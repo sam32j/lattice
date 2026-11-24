@@ -206,11 +206,15 @@ struct RadialMenuVisualCanvas: View {
                 targetIndex = dropSlot(at: value.location, center: center)
             }
             .onEnded { value in
-                if hypot(value.translation.width, value.translation.height) <= 6 {
+                // Once a drag began, letting go only ever swaps, even back
+                // where it started; a click is a press that never dragged.
+                if let from = draggingIndex {
+                    if let to = dropSlot(at: value.location, center: center), from != to,
+                       items.indices.contains(from) {
+                        onSwap(items[from], items[to])
+                    }
+                } else {
                     activate(item)
-                } else if let from = draggingIndex, let to = dropSlot(at: value.location, center: center),
-                          from != to, items.indices.contains(from) {
-                    onSwap(items[from], items[to])
                 }
                 draggingIndex = nil
                 targetIndex = nil

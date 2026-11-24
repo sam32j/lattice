@@ -406,7 +406,7 @@ final class MiddleClickService: ObservableObject {
         stateLock.unlock()
         if let firedFingers {
             if firedFingers == radialMenuFingers {
-                DispatchQueue.main.async { RadialMenuService.shared.toggleFromTrackpad() }
+                DispatchQueue.main.async { RadialMenuService.shared.toggleFromTrackpad(.tap) }
             } else {
                 postMiddleTap()
             }
@@ -575,7 +575,7 @@ final class MiddleClickService: ObservableObject {
                     return false
                 }
                 if !alreadyHeld {
-                    DispatchQueue.main.async { RadialMenuService.shared.toggleFromTrackpad() }
+                    DispatchQueue.main.async { RadialMenuService.shared.toggleFromTrackpad(.click) }
                 }
                 return nil
             }
@@ -646,7 +646,9 @@ final class MiddleClickService: ObservableObject {
         case .leftMouseDragged, .rightMouseDragged:
             let button: CGMouseButton = type == .leftMouseDragged ? .left : .right
             let (held, suppressed) = tapStateLock.withLock {
-                (middleButtonHeld, suppressedButtonSequence || radialPressButton == button)
+                // The Radial Menu's own button stays its own during a hold.
+                (middleButtonHeld && radialPressButton != button,
+                 suppressedButtonSequence || radialPressButton == button)
             }
             if held {
                 return Unmanaged.passUnretained(asMiddle(event, type: .otherMouseDragged))

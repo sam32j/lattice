@@ -338,6 +338,8 @@ struct RadialItemEditor: View {
         RadialMenuFaviconFetcher.fetchFavicon(for: item.payload) { result in
             guard faviconToken == token else { return }
             isFetchingFavicon = false
+            // A symbol picked meanwhile is the icon; its answer means nothing.
+            guard item.symbolName.isEmpty else { return }
             switch result {
             case .success(let data):
                 item.customIconData = data

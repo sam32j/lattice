@@ -254,9 +254,9 @@ struct RadialProfileEditSheet: View {
         _color = State(initialValue: profile.color)
     }
 
-    private var placeholder: String {
-        profile.preset.flatMap(RadialMenuProfilePreset.init(rawValue:))?.title(text) ?? text.presetGeneral
-    }
+    /// The name a blank entry saves as: the tab's own fallback
+    /// (`RadialMenuProfile.displayName`), whatever preset the wheel came from.
+    private var placeholder: String { text.presetGeneral }
 
     private var shownName: String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)

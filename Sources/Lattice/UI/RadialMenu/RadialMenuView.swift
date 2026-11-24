@@ -64,6 +64,7 @@ struct RadialMenuView: View {
                       : .easeIn(duration: 0.13))
                    : nil,
                    value: service.visible)
+        .onAppear(perform: placeWedgeWithoutMotion)
         .onChange(of: service.highlightedIndex) { _, _ in syncWedge() }
         .onChange(of: items.count) { _, _ in syncWedge() }
         .onChange(of: service.profileSwitchCount) { _, _ in syncWedge() }
@@ -87,6 +88,17 @@ struct RadialMenuView: View {
                                   outerRadius: RadialMenuLayout.wheelDiameter / 2))
             .frame(width: RadialMenuLayout.wheelDiameter, height: RadialMenuLayout.wheelDiameter)
             .opacity(wedgeShown ? 1 : 0)
+    }
+
+    /// A wheel that appears with a slice already highlighted (the rendering
+    /// probe's) shows its wedge at once; onChange never runs for that value.
+    private func placeWedgeWithoutMotion() {
+        guard !wedgeShown, !items.isEmpty, let index = service.highlightedIndex,
+              items.indices.contains(index) else { return }
+        let slice = 2 * Double.pi / Double(items.count)
+        wedgeSlice = slice
+        wedgeAngle = slice * Double(index)
+        wedgeShown = true
     }
 
     private func syncWedge() {
@@ -505,6 +517,8 @@ private struct RadialTabArc: View {
         .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: service.activeProfileIndex)
         .onAppear { report(placed) }
         .onChange(of: placed.map(\.span)) { _, _ in report(placed) }
+        // Spans can match across a switch while the profiles under them move.
+        .onChange(of: service.activeProfileIndex) { _, _ in report(placed) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(text.profilesHeader)
     }
@@ -691,7 +705,9 @@ struct RadialWedgeShape: Shape {
 enum RadialMenuIconStore {
     private static var icons: [String: NSImage] = [:]
     private static var names: [String: String] = [:]
-    private static var customIcons: [UUID: NSImage] = [:]
+    /// Keyed by the action and checked against its data, so an editor's
+    /// draft icon never stands in for the saved action's own.
+    private static var customIcons: [UUID: (data: Data, image: NSImage)] = [:]
 
     static func fileIcon(for payload: String) -> NSImage {
         if let cached = icons[payload] { return cached }
@@ -704,10 +720,10 @@ enum RadialMenuIconStore {
 
     static func customIcon(for item: RadialMenuItem) -> NSImage? {
         guard let data = item.customIconData else { return nil }
-        if let cached = customIcons[item.id] { return cached }
+        if let cached = customIcons[item.id], cached.data == data { return cached.image }
         guard let image = NSImage(data: data) else { return nil }
         image.size = NSSize(width: 34, height: 34)
-        customIcons[item.id] = image
+        customIcons[item.id] = (data, image)
         return image
     }
 

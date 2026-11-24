@@ -113,14 +113,15 @@ enum RadialMenuRenderingProbe {
         defaults.set(true, forKey: DefaultsKey.middleClickEnabled)
         defaults.set(4, forKey: DefaultsKey.middleClickTapFingers)
         defaults.set(4, forKey: DefaultsKey.middleClickClickFingers)
-        defaults.set("tap", forKey: DefaultsKey.radialMenuTrackpadGesture)
-        SettingsRefactorProbe.render("middle-click-radial-tap",
-                                     view: AnyView(ScrollView { MouseSettingsMiddleClickPreview().padding(20) }),
-                                     size: CGSize(width: 620, height: 520), output: output, failures: &failures)
-        defaults.set("click", forKey: DefaultsKey.radialMenuTrackpadGesture)
-        SettingsRefactorProbe.render("middle-click-radial-click",
-                                     view: AnyView(ScrollView { MouseSettingsMiddleClickPreview().padding(20) }),
-                                     size: CGSize(width: 620, height: 520), output: output, failures: &failures)
+        for gesture in ["tap", "click"] {
+            defaults.set(gesture, forKey: DefaultsKey.radialMenuTrackpadGesture)
+            for (suffix, scheme) in [("light", ColorScheme.light), ("dark", .dark)] {
+                SettingsRefactorProbe.render("middle-click-radial-\(gesture)-\(suffix)",
+                                             view: AnyView(ScrollView { MouseSettingsMiddleClickPreview().padding(20) }),
+                                             size: CGSize(width: 620, height: 520), output: output,
+                                             failures: &failures, colorScheme: scheme)
+            }
+        }
 
         defaults.removePersistentDomain(forName: identity)
         for failure in failures { print("RADIAL_RENDERING_FAILED \(failure)") }
