@@ -81,6 +81,7 @@ final class DiskImageInstallerService: ObservableObject {
 
     private func start() {
         guard mountObserver == nil else { return }
+        DiskImageOpenHandler.syncWithPreferences()
         mountObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didMountNotification,
             object: nil,

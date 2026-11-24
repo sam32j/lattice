@@ -144,7 +144,7 @@ struct AppInstallerTab: View {
                 SettingsControlRow(title: strings.openWithLattice) {
                     Toggle(strings.openWithLattice, isOn: Binding(get: { opensInLattice }, set: { on in
                         opensInLattice = on
-                        DiskImageOpenHandler.setOpensInLattice(on) {}
+                        DiskImageOpenHandler.schedule(on)
                     }))
                     .labelsHidden()
                 }
