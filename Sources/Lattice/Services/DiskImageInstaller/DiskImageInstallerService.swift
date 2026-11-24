@@ -86,7 +86,10 @@ final class DiskImageInstallerService: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let mountURL = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL else {
+            // A disk image opened the native way stays native: only with
+            // "Install opened .dmg files" on is a volume mounted elsewhere offered.
+            guard UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages),
+                  let mountURL = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL else {
                 return
             }
             self?.inspect(mountURL: mountURL)
@@ -121,14 +124,21 @@ final class DiskImageInstallerService: ObservableObject {
     /// opens disk images, chosen or dropped in the tab): it is mounted out of
     /// Finder's sight and the prompt asks before anything else happens. An
     /// image without a single app to install opens in Finder as usual.
-    func open(diskImage url: URL) {
+    /// `fromFinder` is an open macOS routed to Lattice; with the switch off
+    /// (macOS may not have caught up yet) it goes to Disk Image Mounter.
+    func open(diskImage url: URL, fromFinder: Bool = false) {
         guard url.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame else { return }
-        guard mountObserver != nil else {
+        let declined = fromFinder && !UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages)
+        guard mountObserver != nil, !declined else {
             DiskImageOpenHandler.openWithDiskImageMounter(url)
             return
         }
         workQueue.async { [weak self] in
-            let attach = Self.run("/usr/bin/hdiutil", arguments: ["attach", "-nobrowse", "-plist", url.path])
+            // No checksum pass over the whole image, which held the prompt
+            // back for seconds: the app inside is still checked by its code
+            // signature and Gatekeeper before it installs.
+            let attach = Self.run("/usr/bin/hdiutil", arguments: ["attach", "-nobrowse", "-noverify", "-noautofsck",
+                                                                  "-plist", url.path])
             let mountURL = attach.status == 0 ? DiskImageInstallerSupport.mountPoint(fromAttachPlist: attach.output) : nil
             let candidate = mountURL.flatMap { self?.candidate(mountedAt: $0) }
             DispatchQueue.main.async { [weak self] in
@@ -484,7 +494,7 @@ final class DiskImageInstallerService: ObservableObject {
         // the copy above left behind, so macOS goes on blocking it at launch
         // unless the person allows it afterwards.
         verified = Self.gatekeeperAccepts(stagedApp)
-        if !verified { Self.carryQuarantine(from: candidate.appURL, to: stagedApp) }
+        if !verified { Self.carryQuarantine(from: [candidate.imageURL, candidate.appURL], to: stagedApp) }
 
         do {
             guard let finalCollisionURLs = DiskImageInstallerSupport.collisionURLs(
@@ -586,14 +596,18 @@ final class DiskImageInstallerService: ObservableObject {
         getxattr(url.path, quarantineAttribute, nil, 0, 0, 0) > 0
     }
 
-    /// Puts the source bundle's download mark on the staged copy, which the
-    /// copy dropped, so macOS still treats the app as downloaded.
-    private static func carryQuarantine(from source: URL, to destination: URL) {
-        let size = getxattr(source.path, quarantineAttribute, nil, 0, 0, 0)
-        guard size > 0 else { return }
-        var value = [UInt8](repeating: 0, count: size)
-        guard getxattr(source.path, quarantineAttribute, &value, size, 0, 0) == size else { return }
-        _ = setxattr(destination.path, quarantineAttribute, value, size, 0, 0)
+    /// Puts the download mark on the staged copy, which the copy dropped, so
+    /// macOS still treats the app as downloaded and blocks it at launch. The
+    /// mark is on the downloaded .dmg; a volume Lattice mounts carries none.
+    private static func carryQuarantine(from sources: [URL], to destination: URL) {
+        for source in sources {
+            let size = getxattr(source.path, quarantineAttribute, nil, 0, 0, 0)
+            guard size > 0 else { continue }
+            var value = [UInt8](repeating: 0, count: size)
+            guard getxattr(source.path, quarantineAttribute, &value, size, 0, 0) == size else { continue }
+            _ = setxattr(destination.path, quarantineAttribute, value, size, 0, 0)
+            return
+        }
     }
 
     /// Asks whether an installed app macOS could not verify may open, with

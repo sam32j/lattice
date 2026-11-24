@@ -14,8 +14,8 @@ struct AppInstallerTab: View {
     @AppStorage(DefaultsKey.diskImageInstallerTrashesDownload) private var trashesDownload = true
     @AppStorage(DefaultsKey.diskImageInstallerRevealsApp) private var revealsApp = false
     @AppStorage(DefaultsKey.diskImageInstallerOffersUnverifiedOpen) private var offersUnverifiedOpen = false
-    /// Read from Launch Services, since the choice lives there.
-    @State private var opensInLattice = false
+    /// The switch is the source of truth; Launch Services follows it.
+    @AppStorage(DefaultsKey.diskImageInstallerOpensDiskImages) private var opensInLattice = false
 
     private var strings: AppInstallerTabStrings { FeatureStrings.appInstallerTab(l10n.language) }
     private var destination: String { useUserApplications ? "~/Applications" : "/Applications" }
@@ -35,7 +35,6 @@ struct AppInstallerTab: View {
             recentInstalls
         }
         .settingsExpansionAnimation(value: installer.detected?.id)
-        .onAppear { opensInLattice = DiskImageOpenHandler.opensInLattice }
         .onChange(of: installer.detected != nil, initial: true) { _, waiting in
             AppManagerAttention.shared.diskImageWaiting = waiting
         }
@@ -44,7 +43,7 @@ struct AppInstallerTab: View {
     private var dropStrip: some View {
         AppManagerDropStrip(symbol: "externaldrive.badge.plus", headline: strings.watchingTitle,
                             detail: strings.watchingDetail, types: [.fileURL],
-                            onDrop: { urls in urls.forEach(installer.open(diskImage:)) }) {
+                            onDrop: { urls in urls.forEach { installer.open(diskImage: $0) } }) {
             Button(strings.chooseButton, action: chooseDiskImage)
         }
     }
@@ -145,7 +144,7 @@ struct AppInstallerTab: View {
                 SettingsControlRow(title: strings.openWithLattice) {
                     Toggle(strings.openWithLattice, isOn: Binding(get: { opensInLattice }, set: { on in
                         opensInLattice = on
-                        DiskImageOpenHandler.setOpensInLattice(on) { opensInLattice = DiskImageOpenHandler.opensInLattice }
+                        DiskImageOpenHandler.setOpensInLattice(on) {}
                     }))
                     .labelsHidden()
                 }

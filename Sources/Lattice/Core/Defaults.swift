@@ -151,6 +151,7 @@ enum DefaultsKey {
     static let diskImageInstallerUseUserApplications = "diskImageInstallerUseUserApplications"
     static let diskImageInstallerRecentInstalls = "diskImageInstallerRecentInstalls"
     static let diskImageInstallerOffersUnverifiedOpen = "diskImageInstallerOffersUnverifiedOpen"
+    static let diskImageInstallerOpensDiskImages = "diskImageInstallerOpensDiskImages"
     static let autoQuitEnabled = "autoQuitEnabled"
     static let autoQuitExceptions = "autoQuitExceptions"  // [bundle id] kept running
     // Quit/close protection: each shortcut owns its full configuration and app list.
