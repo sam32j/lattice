@@ -883,7 +883,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         -> GlobalShortcutRole? {
         let candidates = includeInactive
             ? availableRoles(isAvailable: isAvailable)
-            : activeRoles(isOn: isOn, isAvailable: isAvailable)
+            : activeRoles(isOn: isOn, isAvailable: isAvailable, shortcutForRole: shortcutForRole)
         return candidates.first { candidate in
             guard candidate != role else { return false }
             return shortcutForRole(candidate) == shortcut
@@ -1026,9 +1026,11 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     /// shortcuts overview page. Injected readers so the harness can test the
     /// gating without touching real defaults.
     static func activeRoles(isOn: (String) -> Bool,
-                            isAvailable: (AppFeature) -> Bool = { _ in true }) -> [GlobalShortcutRole] {
+                            isAvailable: (AppFeature) -> Bool = { _ in true },
+                            shortcutForRole: (GlobalShortcutRole) -> GlobalShortcut = { $0.savedShortcut })
+        -> [GlobalShortcutRole] {
         allCases.filter { role in
-            role.isAvailable(using: isAvailable) && role.savedShortcut.isValid
+            role.isAvailable(using: isAvailable) && shortcutForRole(role).isValid
                 && role.requiredEnableKeys.allSatisfy(isOn)
         }
     }

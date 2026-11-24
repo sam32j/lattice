@@ -192,6 +192,28 @@ enum RadialMenuTriggerMigrationTests {
                 && defaults.data(forKey: DefaultsKey.radialMenuProfiles) == Data("[]".utf8)
                 && defaults.integer(forKey: DefaultsKey.radialMenuSettingsVersion) == 2,
                      "an empty profile list only records the new version")
+
+        // A record without an ID keeps its triggers; one whose profile fails
+        // to decode lends none to a later profile with the same ID.
+        defaults.removePersistentDomain(forName: domain)
+        let shared = UUID().uuidString
+        let records: [[String: Any]] = [
+            ["id": shared, "name": "Broken", "color": 42, "shortcut": other],
+            ["id": shared, "name": "Kept", "color": "blue", "items": [], "shortcut": chord],
+            ["name": "No ID", "color": "red", "items": [], "mouseButton": "back"],
+        ]
+        defaults.set(try! JSONSerialization.data(withJSONObject: records), forKey: DefaultsKey.radialMenuProfiles)
+        suite.expect(RadialMenuTriggerMigration.run(in: defaults)
+                && defaults.string(forKey: DefaultsKey.radialMenuShortcut) == chord
+                && defaults.string(forKey: DefaultsKey.radialMenuMouseButton) == "back"
+                && RadialMenuSupport.decodeProfiles(defaults.data(forKey: DefaultsKey.radialMenuProfiles),
+                                                    defaults: defaults).map(\.name) == ["Kept", "No ID"],
+                     "each profile's triggers come from its own record, with or without an ID")
+
+        suite.expect(SettingsBackupSupport.valueLooksRight(DefaultsKey.radialMenuSettingsVersion, 2)
+                && !SettingsBackupSupport.valueLooksRight(DefaultsKey.radialMenuSettingsVersion, "2")
+                && !SettingsBackupSupport.valueLooksRight(DefaultsKey.radialMenuSettingsVersion, true),
+                     "a backup's settings version is restored only as a whole number")
     }
 }
 
@@ -323,6 +345,17 @@ enum RadialProfileTabsTests {
         suite.expect(RadialProfileTabs.tabIndex(dx: inside.0, dyUp: inside.1, spans: keyed, radius: 175, capHeight: 22) == nil
                 && RadialProfileTabs.tabIndex(dx: far.0, dyUp: far.1, spans: keyed, radius: 175, capHeight: 22) == nil,
                      "the wheel itself and the far side of the rim are not tabs")
+        // Two tabs 4 points apart: both reach into the gap, and the nearer one
+        // owns each side of it, whatever order the dictionary iterates in.
+        let close: [Int: ClosedRange<Double>] = [0: -0.2...(-0.0114), 1: 0.0114...0.2]
+        let leftOfMiddle = point(-0.005), rightOfMiddle = point(0.005), middleOfGap = point(0)
+        suite.expect(RadialProfileTabs.tabIndex(dx: leftOfMiddle.0, dyUp: leftOfMiddle.1, spans: close,
+                                                radius: 175, capHeight: 22) == 0
+                && RadialProfileTabs.tabIndex(dx: rightOfMiddle.0, dyUp: rightOfMiddle.1, spans: close,
+                                              radius: 175, capHeight: 22) == 1
+                && RadialProfileTabs.tabIndex(dx: middleOfGap.0, dyUp: middleOfGap.1, spans: close,
+                                              radius: 175, capHeight: 22) == 0,
+                     "a point in a gap belongs to the nearer tab, the earlier one on a tie")
 
         let a = RadialMenuProfile(name: "A"), b = RadialMenuProfile(name: "B"), c = RadialMenuProfile(name: "C")
         let list = [a, b, c]

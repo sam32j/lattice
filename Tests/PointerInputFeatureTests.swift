@@ -4047,7 +4047,7 @@ enum MiddleClickTrackpadContract {
         let stateLock = NSLock()
         var lastTransformEnd: TimeInterval?
         var suppressedButtonSequence = false
-        var radialPressSequence = false
+        var radialPressButton: CGMouseButton?
         var fingerCount = 0
         var lastFrameUptime: TimeInterval = 0
         var fingerCountSince: TimeInterval = 0

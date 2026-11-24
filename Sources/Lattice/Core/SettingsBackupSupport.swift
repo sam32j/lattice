@@ -409,6 +409,10 @@ enum SettingsBackupSupport {
             }
         case DefaultsKey.cleaningModeEnabled, Defaults.cleaningModeShortcutMigrationKey:
             return isBoolean(value)
+        // Unregistered, yet read with integer(forKey:), which would also take
+        // text such as "2" and skip the migration an older backup still needs.
+        case DefaultsKey.radialMenuSettingsVersion:
+            return isInteger(value)
         case DefaultsKey.notchQuickAccessSide, DefaultsKey.notchQuickAccessSecond, DefaultsKey.notchQuickAccessThird:
             return value is String
         default: break

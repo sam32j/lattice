@@ -128,7 +128,8 @@ final class RadialMenuService: ObservableObject {
                                             fallback: .radialMenuDefault, in: defaults)
         if shortcut.isValid {
             registrationFailed = !hotkey.sync(enabled: true, shortcut: shortcut,
-                                              storageKey: DefaultsKey.radialMenuShortcut)
+                                              storageKey: DefaultsKey.radialMenuShortcut,
+                                              takesOver: GlobalShortcutRole.radialMenu.supportsTakeOver)
         } else {
             hotkey.unregister()
             registrationFailed = false
@@ -243,6 +244,13 @@ final class RadialMenuService: ObservableObject {
             return Unmanaged.passUnretained(event)
         }
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
+        // The release of the button holding the wheel open ends the hold even
+        // if the setting moved to another button meanwhile: its down was
+        // consumed, so its up is too.
+        if type == .otherMouseUp, holdPhase, holdButton == button {
+            endHoldPhase()
+            return nil
+        }
         // Every press and release of every extra button lands here, so the
         // cheap question comes first: one stored string, never the profiles.
         guard RadialMenuSupport.claimedMouseButton() == button else {
@@ -261,8 +269,6 @@ final class RadialMenuService: ObservableObject {
             } else {
                 beginSession(hold: true, heldButton: button)
             }
-        } else if holdPhase, holdButton == button {
-            endHoldPhase()
         }
         return nil
     }
@@ -506,6 +512,9 @@ final class RadialMenuService: ObservableObject {
         stack = [items]
         trail = []
         highlightedIndex = nil
+        // A tab the pointer rested on before the switch is no longer its
+        // aim; letting go now decides against the new wheel.
+        hoveredTabIndex = nil
         pointerActivated = false
         openPointerLocation = NSEvent.mouseLocation
         profileSwitchCount &+= 1

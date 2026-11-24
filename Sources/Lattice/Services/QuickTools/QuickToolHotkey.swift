@@ -28,9 +28,11 @@ final class QuickToolHotkey {
     }
 
     /// Applies the wanted state; returns false when macOS refused the
-    /// registration (combination taken by another app).
+    /// registration (combination taken by another app). A key whose row
+    /// never offers to take a macOS shortcut over (`takesOver: false`) makes
+    /// no claim, so a stray opt-in saved under it suppresses nothing.
     @discardableResult
-    func sync(enabled: Bool, shortcut: GlobalShortcut, storageKey: String) -> Bool {
+    func sync(enabled: Bool, shortcut: GlobalShortcut, storageKey: String, takesOver: Bool = true) -> Bool {
         guard enabled, shortcut.isValid, !InputEventTap.isBlocked else {
             unregister()
             return true
@@ -52,8 +54,10 @@ final class QuickToolHotkey {
         }
         hotKeyRef = ref
         registeredShortcut = shortcut
-        claimedKey = storageKey
-        SystemShortcutTakeover.claim(storageKey, shortcut: shortcut)
+        if takesOver {
+            claimedKey = storageKey
+            SystemShortcutTakeover.claim(storageKey, shortcut: shortcut)
+        }
         return true
     }
 

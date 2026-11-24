@@ -113,7 +113,9 @@ enum RadialProfileTabs {
     }
 
     /// The tab under a point given relative to the wheel's centre (dyUp
-    /// towards the top), or nil off the arc's band.
+    /// towards the top), or nil off the arc's band. In a gap that two tabs'
+    /// slack both reach, the nearer tab owns the point, the earlier on a tie,
+    /// so hover, dwell and click always agree.
     static func tabIndex(dx: CGFloat, dyUp: CGFloat, spans: [Int: ClosedRange<Double>],
                          radius: CGFloat, capHeight: CGFloat, slack: CGFloat = 4) -> Int? {
         let distance = (dx * dx + dyUp * dyUp).squareRoot()
@@ -121,7 +123,11 @@ enum RadialProfileTabs {
         var angle = Double(RadialMenuGeometry.angle(dx: dx, dyUp: dyUp))
         if angle > .pi { angle -= 2 * .pi }
         let cap = Double((capHeight / 2 + slack) / radius)
-        return spans.first { angle >= $0.value.lowerBound - cap && angle <= $0.value.upperBound + cap }?.key
+        func gap(_ span: ClosedRange<Double>) -> Double {
+            max(0, span.lowerBound - angle, angle - span.upperBound)
+        }
+        return spans.filter { gap($0.value) <= cap }
+            .min { gap($0.value) != gap($1.value) ? gap($0.value) < gap($1.value) : $0.key < $1.key }?.key
     }
 
     private static func wrapped(_ value: Int, count: Int) -> Int {

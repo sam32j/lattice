@@ -74,23 +74,21 @@ enum RadialMenuTriggerMigration {
     @discardableResult
     static func run(in defaults: UserDefaults) -> Bool {
         guard defaults.integer(forKey: DefaultsKey.radialMenuSettingsVersion) < currentVersion else { return false }
-        if let data = defaults.data(forKey: DefaultsKey.radialMenuProfiles),
-           let rawProfiles = try? JSONDecoder().decode([FailableValue<RadialMenuProfile>].self, from: data),
-           rawProfiles.contains(where: { $0.value != nil }) {
-            let triggers = ((try? JSONDecoder().decode([FailableValue<RadialMenuLegacyTriggers>].self, from: data)) ?? [])
-                .compactMap(\.value)
-            let profiles = RadialMenuSupport.decodeProfiles(data, defaults: defaults)
+        let pairs = legacyPairs(defaults.data(forKey: DefaultsKey.radialMenuProfiles))
+        if !pairs.isEmpty {
             let middleClickOwned = AppFeature.middleClick.isAvailable(in: defaults)
                 && defaults.bool(forKey: DefaultsKey.middleClickEnabled)
                 && defaults.integer(forKey: DefaultsKey.middleClickTapFingers) == 4
-            let result = migrate(profiles: profiles,
-                                 triggers: triggers,
+            let result = migrate(profiles: RadialMenuSupport.sanitizedProfiles(pairs.map(\.profile)),
+                                 triggers: pairs.map(\.triggers),
                                  storedShortcut: defaults.string(forKey: DefaultsKey.radialMenuShortcut),
                                  middleClickOwnedFourFingerTap: middleClickOwned)
-            defaults.set(RadialMenuSupport.encodeProfiles(result.profiles), forKey: DefaultsKey.radialMenuProfiles)
+            // The profiles go last: stopped before them, a rerun still starts
+            // from the old profiles and derives the same triggers again.
             defaults.set(result.shortcut, forKey: DefaultsKey.radialMenuShortcut)
             defaults.set(result.mouseButton, forKey: DefaultsKey.radialMenuMouseButton)
             defaults.set(result.trackpadGesture.rawValue, forKey: DefaultsKey.radialMenuTrackpadGesture)
+            defaults.set(RadialMenuSupport.encodeProfiles(result.profiles), forKey: DefaultsKey.radialMenuProfiles)
         }
         // Before profiles there was one wheel whose shortcut and mouse button
         // already lived in the menu-wide keys, so there is nothing to move.
@@ -100,8 +98,29 @@ enum RadialMenuTriggerMigration {
         return true
     }
 
-    private struct FailableValue<Value: Decodable>: Decodable {
-        let value: Value?
-        init(from decoder: Decoder) throws { value = try? Value(from: decoder) }
+    /// The stored profiles that decode, each with the triggers of its own
+    /// record under the ID it ends up with: a record without an ID keeps its
+    /// triggers, and one whose profile fails to decode lends none to a later
+    /// profile sharing its ID.
+    static func legacyPairs(_ data: Data?) -> [(profile: RadialMenuProfile, triggers: RadialMenuLegacyTriggers)] {
+        guard let data, let records = try? JSONDecoder().decode([LegacyRecord].self, from: data) else { return [] }
+        return records.compactMap { record in
+            guard let profile = record.profile else { return nil }
+            var triggers = record.triggers
+            triggers.id = profile.id
+            return (profile, triggers)
+        }
+    }
+
+    /// One stored profile, read both as today's profile and as the
+    /// triggers it carried.
+    private struct LegacyRecord: Decodable {
+        let profile: RadialMenuProfile?
+        let triggers: RadialMenuLegacyTriggers
+
+        init(from decoder: Decoder) throws {
+            profile = try? RadialMenuProfile(from: decoder)
+            triggers = (try? RadialMenuLegacyTriggers(from: decoder)) ?? RadialMenuLegacyTriggers(id: nil)
+        }
     }
 }

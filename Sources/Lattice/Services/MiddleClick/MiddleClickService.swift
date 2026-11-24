@@ -57,9 +57,10 @@ final class MiddleClickService: ObservableObject {
     /// A duplicate native down was dropped; its drag and up must be dropped as
     /// well instead of leaking an orphan event or ending the real held click.
     private var suppressedButtonSequence = false
-    /// A four-finger press opened or closed the Radial Menu: its drag and up
-    /// are consumed too, so nothing under the wheel is clicked or selected.
-    private var radialPressSequence = false
+    /// A four-finger press opened or closed the Radial Menu with this
+    /// button: its drag and up are consumed too, so nothing under the wheel
+    /// is clicked or selected. The other button's events pass as they are.
+    private var radialPressButton: CGMouseButton?
     /// The process that received the transformed down. A recovery up targets
     /// the same process even while this app is terminating.
     private var middleButtonTargetPID: pid_t?
@@ -273,7 +274,7 @@ final class MiddleClickService: ObservableObject {
         tapStateLock.withLock {
             lastTransformEnd = nil
             suppressedButtonSequence = false
-            radialPressSequence = false
+            radialPressButton = nil
         }
         stateLock.lock()
         fingerCount = 0
@@ -519,6 +520,9 @@ final class MiddleClickService: ObservableObject {
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             releaseHeldMiddleButton()
+            // A release missed while the tap was off would otherwise leave the
+            // next ordinary click without its drag and up.
+            tapStateLock.withLock { radialPressButton = nil }
             let enabled = AppFeature.middleClick.isAvailable
                 && UserDefaults.standard.bool(forKey: DefaultsKey.middleClickEnabled)
                 || stateLock.withLock { radialGesture != .off }
@@ -564,9 +568,11 @@ final class MiddleClickService: ObservableObject {
             // is clicked, and releasing does nothing.
             if MiddleClickSupport.radialClickOpens(fingerCount: pressCount, frameAge: pressAge,
                                                    settledFor: pressSettled, radialGesture: pressGesture) {
+                let button: CGMouseButton = type == .leftMouseDown ? .left : .right
                 let alreadyHeld = tapStateLock.withLock { () -> Bool in
-                    defer { radialPressSequence = true }
-                    return radialPressSequence
+                    if radialPressButton != nil { return true }
+                    radialPressButton = button
+                    return false
                 }
                 if !alreadyHeld {
                     DispatchQueue.main.async { RadialMenuService.shared.toggleFromTrackpad() }
@@ -638,8 +644,9 @@ final class MiddleClickService: ObservableObject {
                 return Unmanaged.passUnretained(asMiddle(event, type: .otherMouseDown))
             }
         case .leftMouseDragged, .rightMouseDragged:
+            let button: CGMouseButton = type == .leftMouseDragged ? .left : .right
             let (held, suppressed) = tapStateLock.withLock {
-                (middleButtonHeld, suppressedButtonSequence || radialPressSequence)
+                (middleButtonHeld, suppressedButtonSequence || radialPressButton == button)
             }
             if held {
                 return Unmanaged.passUnretained(asMiddle(event, type: .otherMouseDragged))
@@ -647,8 +654,8 @@ final class MiddleClickService: ObservableObject {
             return suppressed ? nil : Unmanaged.passUnretained(event)
         case .leftMouseUp, .rightMouseUp:
             tapStateLock.lock()
-            if radialPressSequence {
-                radialPressSequence = false
+            if radialPressButton == (type == .leftMouseUp ? .left : .right) {
+                radialPressButton = nil
                 tapStateLock.unlock()
                 return nil
             }
