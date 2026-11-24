@@ -2238,7 +2238,10 @@ enum Defaults {
         let allowed = Set(defaultOrder)
         var seen = Set<String>()
         var result: [String] = []
-        for id in raw.split(separator: ",").map(String.init) {
+        // Tiles merged into another keep their place as it.
+        let merged = ["homebrew": "appManager", "appUpdates": "appManager", "uninstaller": "appManager"]
+        for saved in raw.split(separator: ",").map(String.init) {
+            let id = allowed.contains(saved) ? saved : (merged[saved] ?? saved)
             guard allowed.contains(id), seen.insert(id).inserted else { continue }
             result.append(id)
         }

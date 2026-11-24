@@ -4,7 +4,7 @@ import AppKit
 enum HubDragProbe {
     static func run(launcher: LatticeHubService) throws {
         let defaults = UserDefaults.standard
-        defaults.set("screenshot,media,scratchpad,homebrew,clipboard,urlCleaner", forKey: DefaultsKey.quickLauncherItemOrder)
+        defaults.set("screenshot,media,scratchpad,appManager,clipboard,urlCleaner", forKey: DefaultsKey.quickLauncherItemOrder)
         SettingsRefactorProbe.setPreviewAvailability(AppFeature.homebrew, enabled: false)
         launcher.hiddenItemsRaw = "media"
         defaults.set("media", forKey: DefaultsKey.quickLauncherHiddenItems)
@@ -23,7 +23,7 @@ enum HubDragProbe {
         try HubEditingProbe.require(session.commit(toIndex: 2),
                                     "A valid insertion must complete")
         let stored = PanelLayout.itemOrder(LatticeHubItem.self, key: DefaultsKey.quickLauncherItemOrder)
-        try HubEditingProbe.require(Array(stored.prefix(6)) == [.media, .scratchpad, .homebrew, .clipboard, .screenshot, .urlCleaner],
+        try HubEditingProbe.require(Array(stored.prefix(6)) == [.media, .scratchpad, .appManager, .clipboard, .screenshot, .urlCleaner],
                                     "Drop must preserve hidden/unavailable entries while moving the visible tool")
         try HubEditingProbe.require(session.active == nil, "A completed drop must end the session")
         session.begin(.control(.cleaningMode))

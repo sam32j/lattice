@@ -39,7 +39,7 @@ enum HubEditingProbe {
             try HubPageLayoutProbe.run(output: output)
             try HubDragProbe.run(launcher: launcher)
             SettingsRefactorProbe.setPreviewAvailability(AppFeature.homebrew, enabled: true)
-            launcher.hiddenItemsRaw = "wallpaper,media,homebrew,clipboard,urlCleaner,scratchpad"
+            launcher.hiddenItemsRaw = "wallpaper,media,appManager,clipboard,urlCleaner,scratchpad"
             defaults.set(launcher.hiddenItemsRaw, forKey: DefaultsKey.quickLauncherHiddenItems)
             try HubHUDDragProbe.run(launcher: launcher, output: output)
             for size in [CGSize(width: 300, height: 282), CGSize(width: 424, height: 282), CGSize(width: 504, height: 282)] {

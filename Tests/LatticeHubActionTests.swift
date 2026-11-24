@@ -105,12 +105,10 @@ enum LatticeHubContract {
             (.scratchpad, .scratchpad, "scratchpad.show", 0.15),
             (.clipboard, .clipboardHistory, "clipboard.showHistoryWindow", 0.1),
             (.windowLayout, .windowLayout, nil, nil),
-            (.homebrew, .homebrew, nil, nil),
             (.media, .mediaTools, nil, nil),
             (.urlCleaner, .urlCleaner, nil, nil),
-            (.uninstaller, .uninstaller, nil, nil),
+            (.appManager, .diskImageInstaller, nil, nil),
             (.cleaner, .cleaner, nil, nil),
-            (.appUpdates, .appUpdates, nil, nil),
             (.shelf, .shelf, "shelf.summon", 0.15),
             (.textSnippets, .textSnippets, "snippets.show", 0.15),
             (.killProcess, .killProcess, nil, nil),
@@ -210,13 +208,16 @@ enum LatticeHubContract {
         suite.expect(launcher.handlePanelKey(NSEvent(keyCode: UInt16(kVK_ANSI_Keypad1))) != nil
                      && events.isEmpty,
                      "numeric keys no longer activate items directly")
-        for item in [LatticeHubItem.urlCleaner, .homebrew, .uninstaller, .media] {
+        for item in [LatticeHubItem.urlCleaner, .appManager, .media] {
             launcher.activeUtility = item
             launcher.prepareForPresentation()
             suite.expect(launcher.activeUtility == item,
                          "reopening preserves the working utility while its feature remains installed")
-            let key = item == .urlCleaner ? DefaultsKey.urlCleanerEnabled : item.feature.availabilityKey
-            ReviewDefaults.current.set(false, forKey: key)
+            // The App Manager tile leaves only once every module behind it is off.
+            let keys = item == .urlCleaner ? [DefaultsKey.urlCleanerEnabled]
+                : item == .appManager ? ([.diskImageInstaller, .appUpdates, .uninstaller, .homebrew] as [AppFeature]).map(\.availabilityKey)
+                : [item.feature.availabilityKey]
+            for key in keys { ReviewDefaults.current.set(false, forKey: key) }
             launcher.editingOptionsItem = item
             launcher.refreshAvailability()
             suite.expect(launcher.activeUtility == nil && launcher.editingOptionsItem == nil,
@@ -229,7 +230,7 @@ enum LatticeHubContract {
             launcher.run(item)
             suite.expect(launcher.activeUtility == nil && events.isEmpty,
                          "a stale tile action cannot activate a removed feature")
-            ReviewDefaults.current.set(true, forKey: key)
+            for key in keys { ReviewDefaults.current.set(true, forKey: key) }
         }
         launcher.candidates = []
         launcher.prepareForPresentation()
@@ -246,7 +247,7 @@ enum LatticeHubContract {
         window.firstResponder = field
         let escape = NSEvent(keyCode: UInt16(kVK_Escape), window: window)
         let steps: [(name: String, open: (Launcher) -> Void, closed: (Launcher) -> Bool)] = [
-            ("the hosted utility", { $0.activeUtility = .homebrew }, { $0.activeUtility == nil }),
+            ("the hosted utility", { $0.activeUtility = .appManager }, { $0.activeUtility == nil }),
             ("the options card", { $0.isEditing = true; $0.editingOptionsItem = .clipboard },
              { $0.editingOptionsItem == nil && $0.isEditing }),
             ("edit mode", { $0.isEditing = true }, { !$0.isEditing }),
@@ -286,37 +287,29 @@ enum LatticeHubContract {
         launcher.prepareForPresentation()
         NSSound.beeps = 0
 
-        // Type "u" should match uninstaller
-        let uninstallerIndex = launcher.visibleItems.firstIndex(of: .uninstaller)
+        // Type "a" should match App Manager
+        let managerIndex = launcher.visibleItems.firstIndex(of: .appManager)
         let cleanerIndex = launcher.visibleItems.firstIndex(of: .cleaner)
-        suite.expect(uninstallerIndex != nil && cleanerIndex != nil, "both uninstaller and cleaner are visible")
+        suite.expect(managerIndex != nil && cleanerIndex != nil, "both App Manager and cleaner are visible")
 
-        let typedU = launcher.handleTypeahead("u")
-        suite.expect(typedU && launcher.selectedIndex == uninstallerIndex && NSSound.beeps == 0,
-                     "typing 'u' selects uninstaller without beeping")
+        let typedA = launcher.handleTypeahead("a")
+        suite.expect(typedA && launcher.selectedIndex == managerIndex && NSSound.beeps == 0,
+                     "typing 'a' selects App Manager without beeping")
 
-        // Typing more matching characters keeps selection on uninstaller
-        _ = launcher.handleTypeahead("n")
-        _ = launcher.handleTypeahead("i")
-        _ = launcher.handleTypeahead("n")
-        _ = launcher.handleTypeahead("s")
-        _ = launcher.handleTypeahead("t")
-        _ = launcher.handleTypeahead("a")
-        _ = launcher.handleTypeahead("l")
-        _ = launcher.handleTypeahead("l")
-        _ = launcher.handleTypeahead("e")
-        _ = launcher.handleTypeahead("r")
-        suite.expect(launcher.selectedIndex == uninstallerIndex && launcher.typeaheadBuffer == "uninstaller",
-                     "typing 'uninstaller' retains uninstaller selection")
+        // Typing more matching characters keeps selection on App Manager
+        _ = launcher.handleTypeahead("p")
+        _ = launcher.handleTypeahead("p")
+        suite.expect(launcher.selectedIndex == managerIndex && launcher.typeaheadBuffer == "app",
+                     "typing 'app' retains App Manager selection")
 
-        // Typing 'c' now gives 'uninstallerc', which has no match:
+        // Typing 'c' now gives 'appc', which has no match:
         // Behavior must match macOS Finder: keep selection, beep, don't fall back to 'cleaner'
         let beepsBefore = NSSound.beeps
         let typedC = launcher.handleTypeahead("c")
-        suite.expect(typedC && launcher.selectedIndex == uninstallerIndex
-                     && launcher.typeaheadBuffer == "uninstallerc"
+        suite.expect(typedC && launcher.selectedIndex == managerIndex
+                     && launcher.typeaheadBuffer == "appc"
                      && NSSound.beeps == beepsBefore + 1,
-                     "typing mismatching 'c' beeps, stays on uninstaller, and does not jump to cleaner")
+                     "typing mismatching 'c' beeps, stays on App Manager, and does not jump to cleaner")
 
         // Simulating the pause / cooldown expiration resets the buffer
         launcher.typeaheadTimestamp -= (Launcher.typeaheadCooldown + 0.1)

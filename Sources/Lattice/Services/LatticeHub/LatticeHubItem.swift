@@ -6,9 +6,9 @@ import SwiftUI
 
 /// Pure workflow utilities hosted in Lattice Hub.
 enum LatticeHubItem: String, PanelOrderItem, Identifiable {
-    case screenshot, screenRecorder, recentCaptures, cleaner, uninstaller, clipboard, windowLayout,
+    case screenshot, screenRecorder, recentCaptures, cleaner, appManager, clipboard, windowLayout,
          media, urlCleaner, scratchpad,
-         homebrew, appUpdates, videoDownloader, shelf,
+         videoDownloader, shelf,
          textSnippets, killProcess, wallpaper, deviceControls,
          aiUsage, system, watch
 
@@ -28,6 +28,10 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
                      .monitorDisk, .monitorPower, .fanControl, .connectedDevices] as [AppFeature]).contains {
                 $0.isAvailable(in: defaults)
             }
+        case .appManager:
+            return ([.diskImageInstaller, .appUpdates, .uninstaller, .homebrew] as [AppFeature]).contains {
+                $0.isAvailable(in: defaults)
+            }
         case .deviceControls:
             return ([.mixer, .brightness, .extraBrightness, .soundOutputSwitcher, .micMute, .audioPriority] as [AppFeature]).contains {
                 $0.isAvailable(in: defaults)
@@ -43,15 +47,14 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         switch self {
         case .screenshot, .recentCaptures: return .screenshot
         case .cleaner: return .cleaner
-        case .uninstaller: return .uninstaller
+        // The App Installer is on whenever any App Manager module is.
+        case .appManager: return .diskImageInstaller
         case .clipboard: return .clipboardHistory
         case .windowLayout: return .windowLayout
         case .media: return .mediaTools
         case .urlCleaner: return .urlCleaner
         case .scratchpad: return .scratchpad
         case .screenRecorder: return .screenRecorder
-        case .homebrew: return .homebrew
-        case .appUpdates: return .appUpdates
         case .videoDownloader: return .videoDownloader
         case .shelf: return .shelf
         case .textSnippets: return .textSnippets
@@ -87,13 +90,11 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
             case .zhTW, .zhHK: return "視窗靠齊"
             case .uk: return "Прив’язування вікон"
             }
-        case .homebrew: return s.homebrewName
         case .media: return s.mediaName
         case .urlCleaner: return s.urlCleanerName
-        case .uninstaller: return s.uninstallerName
+        case .appManager: return FeatureStrings.appManager(language).title
         case .cleaner: return s.cleanerName
         case .scratchpad: return FeatureStrings.scratchpad(language).pageTitle
-        case .appUpdates: return FeatureStrings.appUpdates(language).pageTitle
         case .videoDownloader: return FeatureStrings.videoDownloader(language).pageTitle
         case .shelf: return s.shelfName
         case .textSnippets: return FeatureStrings.snippets(language).pageTitle
