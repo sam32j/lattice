@@ -2413,7 +2413,7 @@ final class CommandBarService: ObservableObject {
         hide()
         let uninstaller = AppUninstaller.shared
         guard uninstaller.select(appURL: url) || uninstaller.isRemoving else { return }
-        SettingsRouter.shared.page = .uninstaller
+        SettingsRouter.shared.request(AppFeature.uninstaller.settingsDestination)
         appDelegate()?.openSettingsWindow()
     }
 

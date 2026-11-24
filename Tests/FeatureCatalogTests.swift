@@ -2107,7 +2107,7 @@ enum FeatureCatalogTests {
         suite.expect(AppFeature.musicBlock.settingsDestination
                 == FeatureSettingsDestination(.keyboard, sectionAnchor: .musicBlocking)
                 && AppFeature.diskImageInstaller.settingsDestination
-                == FeatureSettingsDestination(.diskImageInstaller),
+                == FeatureSettingsDestination(.appManager, sectionAnchor: .appInstaller),
                "Music Blocking and DMG Installer use their owning settings pages")
         suite.expect(AppFeature.allCases.allSatisfy(\.hasNavigableSettingsDestination),
                "all features have a reachable settings destination")
@@ -2156,7 +2156,7 @@ enum FeatureCatalogTests {
         let featuresDestination = FeatureSettingsDestination(.features)
         settingsRouter.request(featuresDestination, targetFeature: .homebrew)
         let firstFeatureTargetRequestID = settingsRouter.requestID
-        suite.expect(settingsRouter.page == .homebrew
+        suite.expect(settingsRouter.page == .appManager
                 && settingsRouter.pendingDestinationRequest?.id == firstFeatureTargetRequestID
                 && settingsRouter.pendingFeatureTarget == nil,
                "legacy Features requests open the target owning page")
@@ -2172,7 +2172,7 @@ enum FeatureCatalogTests {
         suite.expect(settingsRouter.pendingFeatureTarget == nil,
                "a handled feature-target request is cleared")
         settingsRouter.request(featuresDestination, targetFeature: .diskImageInstaller)
-        suite.expect(settingsRouter.page == .diskImageInstaller && settingsRouter.pendingFeatureTarget == nil,
+        suite.expect(settingsRouter.page == .appManager && settingsRouter.pendingFeatureTarget == nil,
                "requesting a different target feature is observable")
         settingsRouter.request(repeatedDestination)
         suite.expect(settingsRouter.pendingFeatureTarget == nil,
@@ -2237,7 +2237,7 @@ enum FeatureCatalogTests {
         historyRouter.goBack()
         historyRouter.request(FeatureSettingsDestination(.features), targetFeature: .homebrew)
         historyRouter.goForward()
-        suite.expect(historyRouter.page == .homebrew,
+        suite.expect(historyRouter.page == .appManager,
                "a destination request after Back also discards forward history")
         historyRouter.page = .dataPermissions
         suite.expect(historyRouter.destination == FeatureSettingsDestination(.dataPermissions)

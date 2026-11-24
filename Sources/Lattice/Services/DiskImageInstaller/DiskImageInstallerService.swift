@@ -6,8 +6,12 @@ import Darwin
 import Foundation
 import SwiftUI
 
-final class DiskImageInstallerService {
+final class DiskImageInstallerService: ObservableObject {
     static let shared = DiskImageInstallerService()
+
+    /// The image the install prompt is about, for the App Installer tab.
+    @Published private(set) var detected: DetectedDiskImage?
+    @Published private(set) var recentInstalls: [DiskImageRecentInstall] = DiskImageRecentInstalls.load()
 
     private struct FileIdentity: Equatable {
         let device: UInt64
@@ -88,6 +92,63 @@ final class DiskImageInstallerService {
         pending.removeAll()
         processingMounts.removeAll()
         installPrompt?.dismiss(with: .alertSecondButtonReturn)
+        detected = nil
+    }
+
+    // MARK: The App Installer tab
+
+    /// Installs the waiting image with the saved options, as the prompt's
+    /// Install button does.
+    func installDetected() {
+        installPrompt?.dismiss(with: .alertFirstButtonReturn)
+    }
+
+    /// Leaves the waiting image mounted, as the prompt's Cancel does.
+    func skipDetected() {
+        installPrompt?.dismiss(with: .alertSecondButtonReturn)
+    }
+
+    /// Mounts a chosen or dropped disk image; the mount brings it to the
+    /// prompt and the tab like any other.
+    func open(diskImage url: URL) {
+        guard url.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    func reveal(_ install: DiskImageRecentInstall) {
+        let url = URL(fileURLWithPath: install.destinationPath)
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        }
+    }
+
+    /// Reads what the tab shows beyond the name, off the main thread.
+    private func describe(_ candidate: Candidate) {
+        let id = detected?.id
+        workQueue.async { [weak self] in
+            let bundle = Bundle(url: candidate.appURL)
+            let version = bundle?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            let size = (try? candidate.imageURL.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
+            let signature = Self.run("/usr/bin/codesign", arguments: ["-dv", "--verbose=2", candidate.appURL.path],
+                                     capturingErrors: true)
+            let developer = DiskImageRecentInstalls.developer(
+                fromCodesignOutput: String(data: signature.output, encoding: .utf8) ?? "")
+            let accepted = Self.gatekeeperAccepts(candidate.appURL)
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.detected?.id == id else { return }
+                self.detected?.version = version
+                self.detected?.imageSize = size
+                self.detected?.developer = developer
+                self.detected?.gatekeeperAccepted = accepted
+            }
+        }
+    }
+
+    private func report(_ step: DiskImageInstallStep) {
+        DispatchQueue.main.async { [weak self] in
+            guard self?.detected != nil else { return }
+            self?.detected?.phase = .installing(step)
+        }
     }
 
     private func inspect(mountURL: URL) {
@@ -166,6 +227,10 @@ final class DiskImageInstallerService {
         guard !promptActive, mountObserver != nil, let candidate = pending.first else { return }
         pending.removeFirst()
         promptActive = true
+        detected = DetectedDiskImage(id: UUID(), displayName: candidate.displayName,
+                                     appPath: candidate.appURL.path,
+                                     imageFileName: candidate.imageURL.lastPathComponent)
+        describe(candidate)
 
         let strings = FeatureStrings.diskImageInstaller(L10n.shared.language)
         let alert = NSAlert()
@@ -220,6 +285,8 @@ final class DiskImageInstallerService {
                               trashingDownload trashesDownload: Bool, revealingApp revealsApp: Bool,
                               useUserApplications usesUserApplications: Bool) {
         showProgress(for: candidate, strings: strings)
+        detected?.phase = .installing(.copying)
+        let version = detected?.version
 
         workQueue.async { [weak self] in
             let result = self?.install(candidate, trashingDownload: trashesDownload,
@@ -228,6 +295,12 @@ final class DiskImageInstallerService {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.hideProgress()
+                if case let .installed(trashed) = result.outcome, let destination = result.destinationURL {
+                    self.record(candidate, version: version, destination: destination, downloadTrashed: trashed)
+                } else if result.outcome.isInstalled, let destination = result.destinationURL {
+                    self.record(candidate, version: version, destination: destination, downloadTrashed: false)
+                }
+                self.detected = nil
                 self.present(result: result, candidate: candidate) { [weak self] in
                     if revealsApp, result.outcome.isInstalled, let destinationURL = result.destinationURL {
                         NSWorkspace.shared.activateFileViewerSelecting([destinationURL])
@@ -287,7 +360,16 @@ final class DiskImageInstallerService {
 
     private func finishCurrentCandidate() {
         promptActive = false
+        if case .installing = detected?.phase {} else { detected = nil }
         presentNextCandidate()
+    }
+
+    private func record(_ candidate: Candidate, version: String?, destination: URL, downloadTrashed: Bool) {
+        let install = DiskImageRecentInstall(id: UUID(), name: candidate.displayName, version: version,
+                                             destinationPath: destination.path,
+                                             downloadTrashed: downloadTrashed, date: Date())
+        recentInstalls = DiskImageRecentInstalls.adding(install, to: recentInstalls)
+        DiskImageRecentInstalls.save(recentInstalls)
     }
 
     private func install(_ candidate: Candidate, trashingDownload: Bool,
@@ -330,6 +412,7 @@ final class DiskImageInstallerService {
         // Carrying the mounted image's quarantine over leaves the installed app eligible for
         // path randomization, so macOS runs it from a read-only random location instead of
         // Applications. The checks below are the same assessment that flag defers to.
+        report(.copying)
         let copy = Self.run("/usr/bin/ditto", arguments: [
             "--rsrc", "--extattr", "--acl", "--noqtn",
             candidate.appURL.path, stagedApp.path,
@@ -337,6 +420,7 @@ final class DiskImageInstallerService {
         guard copy.status == 0, Self.validBundle(at: stagedApp) else {
             return InstallResult(outcome: .failed(.copy), destinationURL: destinationURL)
         }
+        report(.verifying)
         guard Self.gatekeeperAccepts(stagedApp) else {
             return InstallResult(outcome: .failed(.verification), destinationURL: destinationURL)
         }
@@ -354,11 +438,13 @@ final class DiskImageInstallerService {
                 return InstallResult(outcome: .failed(.alreadyInstalled),
                                      destinationURL: destinationURL)
             }
+            report(.moving)
             try fm.moveItem(at: stagedApp, to: destinationURL)
         } catch {
             return InstallResult(outcome: .failed(.copy), destinationURL: destinationURL)
         }
 
+        report(.ejecting)
         do {
             try NSWorkspace.shared.unmountAndEjectDevice(at: candidate.mountURL)
         } catch {
@@ -373,6 +459,7 @@ final class DiskImageInstallerService {
             return InstallResult(outcome: .installedKeepingDownload,
                                  destinationURL: destinationURL)
         }
+        report(.trashing)
         do {
             try fm.trashItem(at: candidate.imageURL, resultingItemURL: nil)
             return InstallResult(outcome: .installed(downloadTrashed: true),
@@ -455,13 +542,15 @@ final class DiskImageInstallerService {
         return FileIdentity(device: UInt64(info.st_dev), inode: UInt64(info.st_ino))
     }
 
-    private static func run(_ executable: String, arguments: [String]) -> CommandResult {
+    private static func run(_ executable: String, arguments: [String],
+                            capturingErrors: Bool = false) -> CommandResult {
         let process = Process()
         let output = Pipe()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
+        // codesign -d writes what it displays to standard error.
+        process.standardError = capturingErrors ? output : FileHandle.nullDevice
         do {
             try process.run()
         } catch {

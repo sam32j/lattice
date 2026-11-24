@@ -96,13 +96,13 @@ struct HubToolCellView: View {
     var body: some View {
         let tileContent = Group {
             if isNotch {
-                Image(systemName: iconName)
+                LatticeSymbol(iconName)
                     .font(.system(size: 22, weight: .medium))
                     .foregroundStyle(iconColor)
                     .frame(height: NotchLayout.toolHeight)
             } else {
                 VStack(spacing: 5) {
-                    Image(systemName: iconName)
+                    LatticeSymbol(iconName)
                         .font(.system(size: 20, weight: .medium))
                         .foregroundStyle(iconColor)
                         .frame(height: 24)

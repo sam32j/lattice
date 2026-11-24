@@ -21,7 +21,6 @@ struct DedicatedUtilitySettings: View {
     private var title: String {
         switch feature {
         case .cameraPreview: return FeatureStrings.cameraPreview(l10n.language).pageTitle
-        case .diskImageInstaller: return SettingsOwnershipStrings.text(.dmgInstaller, l10n.language)
         default: return ""
         }
     }

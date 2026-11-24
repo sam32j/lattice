@@ -709,7 +709,7 @@ enum CommandBarCatalog {
                 icon: .symbol("app.badge.checkmark"),
                 run: { _ in
                     AppUpdatesService.shared.check()
-                    openSettings(at: .appUpdates)
+                    openSettings(at: AppFeature.appUpdates.settingsDestination)
                 }))
         }
         if AppFeature.cleaner.isAvailable {
@@ -726,7 +726,7 @@ enum CommandBarCatalog {
                 title: s.uninstallerName,
                 subtitle: area(.uninstaller, under: s.uninstallerName),
                 icon: .symbol("externaldrive.badge.minus"),
-                run: { _ in openSettings(at: .uninstaller) }))
+                run: { _ in openSettings(at: AppFeature.uninstaller.settingsDestination) }))
             if UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled) {
                 entries.append(CommandBarEntry(
                     id: "uninstall.browse",

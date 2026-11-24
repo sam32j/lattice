@@ -139,7 +139,7 @@ struct NotchQuickAccessView: View {
         let isSlot = NotchQuickAccessEditing.placeholderSide(for: button.id) != nil
         ZStack(alignment: .topTrailing) {
             Button { editingPopoverID = button.id } label: {
-                Image(systemName: isSlot ? "plus" : (button.action?.symbol ?? "questionmark"))
+                LatticeSymbol(isSlot ? "plus" : (button.action?.symbol ?? "questionmark"))
                     .font(.system(size: 17, weight: .medium))
                     .frame(width: NotchQuickAccessLayout.diameter, height: NotchQuickAccessLayout.diameter)
                     .background(Color.black, in: Circle())
@@ -286,7 +286,7 @@ struct NotchQuickAccessView: View {
                 if action == .control(.microphone) {
                     AnimatedMicMuteSymbol(muted: microphone.isMuted, fontSize: 17, weight: .medium)
                 } else {
-                    Image(systemName: symbol)
+                    LatticeSymbol(symbol)
                         .font(.system(size: 17, weight: .medium))
                 }
             }

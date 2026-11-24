@@ -7,8 +7,8 @@ import Foundation
 /// The Settings pages. Lives here (without SwiftUI) so the visibility rules
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
-    case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
-    case mouse, keyboard, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audio, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, notch, notchMascot, notchWidget(NotchModule), notchCompanion
+    case general, features, energy, monitor, cameraPreview, appManager, launcherGrid
+    case mouse, keyboard, dock, wallpaper, cleaner, urlCleaner, media, clipboard, windowLayout, shelf, audio, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, notch, notchMascot, notchWidget(NotchModule), notchCompanion
     case shortcuts, dataPermissions, about, videoDownloader
     case captureScreenshotOptions, windowLayoutShortcuts, monitorMenuBar
 }
@@ -55,9 +55,15 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case quitProtection
     case keyboardDebounce
     case superKey
+    // The App Manager's tabs.
+    case appInstaller
+    case appUpdates
+    case appUninstaller
+    case homebrew
 
     var page: SettingsPage {
         switch self {
+        case .appInstaller, .appUpdates, .appUninstaller, .homebrew: return .appManager
         // Input and Output are the two segments of one Audio page.
         case .mixer, .soundOutputSwitcher, .audioOutputPriority, .audioPriority, .micMute:
             return .audio
@@ -182,7 +188,7 @@ extension AppFeature {
             return FeatureSettingsDestination(.clipboard, sectionAnchor: .pastePlain)
         case .shelf: return FeatureSettingsDestination(.shelf)
         case .urlCleaner: return FeatureSettingsDestination(.urlCleaner)
-        case .diskImageInstaller: return FeatureSettingsDestination(.diskImageInstaller)
+        case .diskImageInstaller: return FeatureSettingsDestination(.appManager, sectionAnchor: .appInstaller)
 
         case .mixer:
             return FeatureSettingsDestination(.audio, sectionAnchor: .mixer)
@@ -212,10 +218,10 @@ extension AppFeature {
             return FeatureSettingsDestination(.keyboard, sectionAnchor: .cleaningMode)
         case .mediaTools: return FeatureSettingsDestination(.media)
         case .cleaner: return FeatureSettingsDestination(.cleaner)
-        case .uninstaller: return FeatureSettingsDestination(.uninstaller)
+        case .uninstaller: return FeatureSettingsDestination(.appManager, sectionAnchor: .appUninstaller)
         case .killProcess: return FeatureSettingsDestination(.killProcess)
-        case .homebrew: return FeatureSettingsDestination(.homebrew)
-        case .appUpdates: return FeatureSettingsDestination(.appUpdates)
+        case .homebrew: return FeatureSettingsDestination(.appManager, sectionAnchor: .homebrew)
+        case .appUpdates: return FeatureSettingsDestination(.appManager, sectionAnchor: .appUpdates)
         case .screenshot:
             return FeatureSettingsDestination(.screenshot, sectionAnchor: .screenshot)
         case .cameraPreview:
@@ -264,9 +270,7 @@ enum FeatureVisibilitySupport {
         case .scratchpad: return [.scratchpad]
         case .urlCleaner: return [.urlCleaner]
         case .cleaner: return [.cleaner]
-        case .homebrew: return [.homebrew]
-        case .appUpdates: return [.appUpdates]
-        case .uninstaller: return [.uninstaller]
+        case .appManager: return [.diskImageInstaller, .appUpdates, .uninstaller, .homebrew]
         case .killProcess: return [.killProcess]
         case .textSnippets: return [.textSnippets]
         case .notch, .notchCompanion: return [.notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch, .notchMascot]
@@ -278,7 +282,6 @@ enum FeatureVisibilitySupport {
         case .captureScreenshotOptions: return [.screenshot]
         case .screenRecorder: return [.screenRecorder]
         case .cameraPreview: return [.cameraPreview]
-        case .diskImageInstaller: return [.diskImageInstaller]
         case .videoDownloader: return [.videoDownloader]
         case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audio, .launcherGrid:
             return []

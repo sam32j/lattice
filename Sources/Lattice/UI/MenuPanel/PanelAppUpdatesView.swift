@@ -36,7 +36,7 @@ struct PanelAppUpdatesView: View {
             // The panel's own footer already has a plain Settings button, so
             // this one is an icon: same row, no second word saying Settings.
             Button {
-                SettingsRouter.shared.page = .appUpdates
+                SettingsRouter.shared.request(AppFeature.appUpdates.settingsDestination)
                 appDelegate()?.openSettingsWindow()
             } label: {
                 Image(systemName: "gearshape")

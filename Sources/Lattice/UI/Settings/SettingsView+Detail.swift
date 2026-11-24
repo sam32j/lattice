@@ -8,7 +8,7 @@ extension SettingsView {
         case .features: GeneralSettings()
         case .textSnippets: TextSnippetsSettings()
         case .cameraPreview: DedicatedUtilitySettings(feature: .cameraPreview)
-        case .diskImageInstaller: DedicatedUtilitySettings(feature: .diskImageInstaller)
+        case .appManager: AppManagerSettings()
         case .launcherGrid: GeneralSettings()
         case .notch: NotchSettings().id("notch")
         case .notchWidget(let module): NotchSettings(initialContent: .module(module)).id(module)
@@ -30,7 +30,6 @@ extension SettingsView {
         case .dock: DockSettings()
         case .keyboard: KeyboardSettings()
         case .wallpaper: DisplaySettings(focus: .wallpaper)
-        case .uninstaller: FeatureActivationPage(feature: .uninstaller) { UninstallerView() }
         case .killProcess:
             FeatureActivationPage(feature: .killProcess,
                                   accessory: { AnyView(KillProcessRefreshButton()) }) {
@@ -38,8 +37,6 @@ extension SettingsView {
             }
         case .urlCleaner: URLSanitizerSettings()
         case .cleaner: FeatureActivationPage(feature: .cleaner) { CleanerView() }
-        case .homebrew: FeatureActivationPage(feature: .homebrew) { HomebrewSettings() }
-        case .appUpdates: FeatureActivationPage(feature: .appUpdates) { AppUpdatesSettings() }
         case .media: FeatureActivationPage(feature: .mediaTools) { MediaSettings() }
         case .videoDownloader: VideoDownloaderSettings()
         case .clipboard: ClipboardSettings()

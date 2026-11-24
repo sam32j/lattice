@@ -78,7 +78,7 @@ struct SettingsFeatureEmptyState<Actions: View>: View {
         GeometryReader { geometry in
             ScrollView {
                 ContentUnavailableView {
-                    Label(title, systemImage: symbol)
+                    Label { Text(title) } icon: { LatticeSymbol(symbol) }
                 } description: {
                     Text(description)
                 } actions: {
@@ -241,16 +241,30 @@ struct SettingsMenuToggleRow: View {
 
     let title: String
     var help: String? = nil
+    /// A module that cannot be switched off on its own: its badge text
+    /// (Always On) replaces nothing but marks the row, and the switch stays on.
+    var lockedLabel: String? = nil
     @Binding var isOn: Bool
     @State private var hovered = false
 
     var body: some View {
         Button {
+            guard lockedLabel == nil else { return }
             isOn.toggle()
         } label: {
             HStack(alignment: help == nil ? .center : .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
+                    HStack(spacing: 6) {
+                        Text(title)
+                        if let lockedLabel {
+                            Text(lockedLabel)
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 1.5)
+                                .background(Color.primary.opacity(0.07), in: Capsule())
+                        }
+                    }
                     if let help {
                         Text(help)
                             .font(.caption)
@@ -259,17 +273,18 @@ struct SettingsMenuToggleRow: View {
                     }
                 }
                 Spacer(minLength: 8)
-                Toggle(title, isOn: .constant(isOn))
+                Toggle(title, isOn: .constant(lockedLabel != nil || isOn))
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .allowsHitTesting(false)
+                    .disabled(lockedLabel != nil)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             // Concentric with the popover: its corner radius less the menu's
             // 6pt inset, so the highlight follows the outer curve.
-            .background(hovered ? Color.primary.opacity(0.06) : Color.clear,
+            .background(hovered && lockedLabel == nil ? Color.primary.opacity(0.06) : Color.clear,
                         in: RoundedRectangle(cornerRadius: Self.highlightRadius, style: .continuous))
             .contentShape(Rectangle())
         }
@@ -281,6 +296,7 @@ struct SettingsMenuToggleRow: View {
         .accessibilityRepresentation {
             Toggle(title, isOn: $isOn)
                 .accessibilityHint(help ?? "")
+                .disabled(lockedLabel != nil)
         }
     }
 }

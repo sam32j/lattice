@@ -59,7 +59,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .scratchpad: return "note.text"
         case .agents: return "apple.intelligence"
         case .watch: return "photo.badge.magnifyingglass"
-        case .videoDownloader: return "square.and.arrow.down.on.square"
+        case .videoDownloader: return "lattice.video.downloader"
         case .snippets: return "text.append"
         }
     }
