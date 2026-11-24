@@ -65,10 +65,10 @@ enum FeatureDisablementProbe {
     }
 
     private static func hubAvailability(failures: inout [String]) {
-        let feature = AppFeature.homebrew
+        let feature = AppFeature.cleaner
         SettingsRefactorProbe.setPreviewAvailability(feature, enabled: true)
         let hub = LatticeHubService.shared
-        hub.activeUtility = .homebrew
+        hub.activeUtility = .cleaner
         FeatureRuntime.shared.setPageEnabled(feature, false)
         if hub.activeUtility != nil { failures.append("Disabling did not close the current Hub utility.") }
         FeatureRuntime.shared.setPageEnabled(feature, true)

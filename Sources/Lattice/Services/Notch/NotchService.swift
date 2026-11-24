@@ -1287,8 +1287,8 @@ final class NotchService: ObservableObject {
     private func hubUtilityContentHeight(for utility: LatticeHubItem?) -> CGFloat? {
         guard let utility else { return nil }
         switch utility {
-        case .appUpdates:
-            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
+        case .appManager:
+            return MainActor.assumeIsolated { AppManagerPanelState.shared.contentHeight }
         case .videoDownloader:
             return 172
         case .deviceControls:

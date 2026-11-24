@@ -21,8 +21,8 @@ struct LatticeHubHostedUtility: View {
 
     private var fallbackHeight: CGFloat {
         switch item {
-        case .appUpdates:
-            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
+        case .appManager:
+            return AppManagerPanelState.shared.contentHeight ?? 470
         case .videoDownloader:
             return 172
         case .deviceControls:
@@ -83,18 +83,14 @@ struct LatticeHubHostedUtility: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     switch item {
-                    case .homebrew:
-                        PanelHomebrewView(showHeader: false, onClose: onClose)
                     case .media:
                         PanelMediaView(showHeader: false, onClose: onClose)
                     case .urlCleaner:
                         PanelURLCleanerView(showHeader: false, onClose: onClose)
-                    case .uninstaller:
-                        PanelUninstallerView(showHeader: false, onClose: onClose)
+                    case .appManager:
+                        PanelAppManagerView(onClose: onClose)
                     case .cleaner:
                         PanelCleanerView(showHeader: false, onClose: onClose)
-                    case .appUpdates:
-                        PanelAppUpdatesView(showHeader: false, onClose: onClose)
                     case .wallpaper:
                         WallpaperSection(collapsible: false, showHeader: false, onClose: onClose)
                     case .videoDownloader:
