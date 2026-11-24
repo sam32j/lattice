@@ -66,7 +66,6 @@ struct StayAwakeSettingsStrings {
     let batteryBelowFormat: String    // + percent
     // Title bar menu
     let countdownTitle: String
-    let countdownCaption: String
 }
 
 extension StayAwakeSettingsStrings {
@@ -164,8 +163,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Stop when battery is low",
         batteryCaption: "Ends the session before it drains your battery.",
         batteryBelowFormat: "Below %d%%",
-        countdownTitle: "Show remaining time next to the icon",
-        countdownCaption: "The menu bar icon counts down during a timed session."
+        countdownTitle: "Show remaining time next to menu bar icon"
     )
 
     static let ptBR = StayAwakeSettingsStrings(
@@ -222,8 +220,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Parar com bateria fraca",
         batteryCaption: "Encerra a sessão antes que ela esgote a bateria.",
         batteryBelowFormat: "Abaixo de %d%%",
-        countdownTitle: "Mostrar tempo restante ao lado do ícone",
-        countdownCaption: "O ícone da barra de menus faz contagem regressiva numa sessão com tempo."
+        countdownTitle: "Mostrar tempo restante ao lado do ícone da barra de menus"
     )
 
     static let tr = StayAwakeSettingsStrings(
@@ -280,8 +277,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Pil azaldığında durdur",
         batteryCaption: "Pili tüketmeden önce oturumu sonlandırır.",
         batteryBelowFormat: "%%%d altında",
-        countdownTitle: "Kalan süreyi simgenin yanında göster",
-        countdownCaption: "Süreli oturumda menü çubuğu simgesi geri sayar."
+        countdownTitle: "Kalan süreyi menü çubuğu simgesinin yanında göster"
     )
 
     static let ru = StayAwakeSettingsStrings(
@@ -338,8 +334,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Останавливать при низком заряде",
         batteryCaption: "Завершает сеанс, прежде чем он разрядит аккумулятор.",
         batteryBelowFormat: "Ниже %d%%",
-        countdownTitle: "Показывать оставшееся время рядом со значком",
-        countdownCaption: "Во время сеанса с таймером значок в строке меню ведёт обратный отсчёт."
+        countdownTitle: "Показывать оставшееся время рядом со значком в строке меню"
     )
 
     static let es = StayAwakeSettingsStrings(
@@ -396,8 +391,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Detener con batería baja",
         batteryCaption: "Termina la sesión antes de que agote la batería.",
         batteryBelowFormat: "Por debajo del %d%%",
-        countdownTitle: "Mostrar el tiempo restante junto al icono",
-        countdownCaption: "El icono de la barra de menús hace una cuenta atrás en una sesión con tiempo."
+        countdownTitle: "Mostrar el tiempo restante junto al icono de la barra de menús"
     )
 
     static let sk = StayAwakeSettingsStrings(
@@ -454,8 +448,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Zastaviť pri slabej batérii",
         batteryCaption: "Ukončí reláciu skôr, než vybije batériu.",
         batteryBelowFormat: "Pod %d %%",
-        countdownTitle: "Zobraziť zostávajúci čas vedľa ikony",
-        countdownCaption: "Počas časovanej relácie ikona na lište odpočítava."
+        countdownTitle: "Zobraziť zostávajúci čas vedľa ikony na lište"
     )
 
     static let de = StayAwakeSettingsStrings(
@@ -512,8 +505,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Bei niedrigem Batteriestand beenden",
         batteryCaption: "Beendet die Sitzung, bevor sie die Batterie leert.",
         batteryBelowFormat: "Unter %d %%",
-        countdownTitle: "Restzeit neben dem Symbol anzeigen",
-        countdownCaption: "Das Menüleistensymbol zählt bei einer Sitzung mit Dauer herunter."
+        countdownTitle: "Restzeit neben dem Menüleistensymbol anzeigen"
     )
 
     static let fr = StayAwakeSettingsStrings(
@@ -570,8 +562,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Arrêter si la batterie est faible",
         batteryCaption: "Met fin à la session avant qu’elle ne vide la batterie.",
         batteryBelowFormat: "Sous %d\u{00A0}%%",
-        countdownTitle: "Afficher le temps restant à côté de l’icône",
-        countdownCaption: "L’icône de la barre des menus décompte pendant une session minutée."
+        countdownTitle: "Afficher le temps restant à côté de l’icône de la barre des menus"
     )
 
     static let it = StayAwakeSettingsStrings(
@@ -628,8 +619,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Interrompi con batteria scarica",
         batteryCaption: "Termina la sessione prima che esaurisca la batteria.",
         batteryBelowFormat: "Sotto il %d%%",
-        countdownTitle: "Mostra il tempo rimanente accanto all’icona",
-        countdownCaption: "L’icona nella barra dei menu fa il conto alla rovescia in una sessione a tempo."
+        countdownTitle: "Mostra il tempo rimanente accanto all’icona nella barra dei menu"
     )
 
     static let ja = StayAwakeSettingsStrings(
@@ -686,8 +676,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "バッテリー残量が少ないときは停止",
         batteryCaption: "バッテリーを使い切る前にセッションを終了します。",
         batteryBelowFormat: "%d%% 未満",
-        countdownTitle: "アイコンの横に残り時間を表示",
-        countdownCaption: "時間指定のセッション中、メニューバーのアイコンがカウントダウンします。"
+        countdownTitle: "メニューバーアイコンの横に残り時間を表示"
     )
 
     static let ko = StayAwakeSettingsStrings(
@@ -744,8 +733,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "배터리가 부족하면 중지",
         batteryCaption: "배터리를 다 쓰기 전에 세션을 끝냅니다.",
         batteryBelowFormat: "%d%% 미만",
-        countdownTitle: "아이콘 옆에 남은 시간 표시",
-        countdownCaption: "시간 지정 세션 동안 메뉴 막대 아이콘이 카운트다운합니다."
+        countdownTitle: "메뉴 막대 아이콘 옆에 남은 시간 표시"
     )
 
     static let zhHans = StayAwakeSettingsStrings(
@@ -802,8 +790,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "电量不足时停止",
         batteryCaption: "在耗尽电池前结束会话。",
         batteryBelowFormat: "低于 %d%%",
-        countdownTitle: "在图标旁显示剩余时间",
-        countdownCaption: "定时会话期间，菜单栏图标会倒计时。"
+        countdownTitle: "在菜单栏图标旁显示剩余时间"
     )
 
     static let zhTW = StayAwakeSettingsStrings(
@@ -860,8 +847,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "電量不足時停止",
         batteryCaption: "在耗盡電池前結束工作階段。",
         batteryBelowFormat: "低於 %d%%",
-        countdownTitle: "在圖像旁顯示剩餘時間",
-        countdownCaption: "定時工作階段期間，選單列圖像會倒數。"
+        countdownTitle: "在選單列圖像旁顯示剩餘時間"
     )
 
     static let zhHK = StayAwakeSettingsStrings(
@@ -918,8 +904,7 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "電量不足時停止",
         batteryCaption: "在耗盡電池前結束工作階段。",
         batteryBelowFormat: "低於 %d%%",
-        countdownTitle: "在圖像旁顯示剩餘時間",
-        countdownCaption: "定時工作階段期間，選單列圖像會倒數。"
+        countdownTitle: "在選單列圖示旁顯示剩餘時間"
     )
 
     static let uk = StayAwakeSettingsStrings(
@@ -976,7 +961,6 @@ extension StayAwakeSettingsStrings {
         batteryTitle: "Зупиняти при низькому заряді",
         batteryCaption: "Завершує сеанс, перш ніж він розрядить акумулятор.",
         batteryBelowFormat: "Нижче %d%%",
-        countdownTitle: "Показувати залишок часу біля значка",
-        countdownCaption: "Під час сеансу з таймером значок у смузі меню веде зворотний відлік."
+        countdownTitle: "Показувати залишок часу біля значка в рядку меню"
     )
 }

@@ -202,7 +202,7 @@ struct StayAwakeSettingsMenu: View {
     var body: some View {
         let strings = FeatureStrings.stayAwakeSettings(l10n.language)
         VStack(alignment: .leading, spacing: 0) {
-            SettingsMenuToggleRow(title: strings.countdownTitle, help: strings.countdownCaption, isOn: $showCountdown)
+            SettingsMenuToggleRow(title: strings.countdownTitle, isOn: $showCountdown)
         }
         .padding(6)
         .frame(width: 300)

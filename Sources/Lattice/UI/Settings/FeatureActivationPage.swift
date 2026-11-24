@@ -240,7 +240,7 @@ struct SettingsMenuToggleRow: View {
     static let highlightRadius: CGFloat = 10
 
     let title: String
-    let help: String
+    var help: String? = nil
     @Binding var isOn: Bool
     @State private var hovered = false
 
@@ -248,13 +248,15 @@ struct SettingsMenuToggleRow: View {
         Button {
             isOn.toggle()
         } label: {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: help == nil ? .center : .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                    Text(help)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let help {
+                        Text(help)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Spacer(minLength: 8)
                 Toggle(title, isOn: .constant(isOn))
@@ -278,7 +280,7 @@ struct SettingsMenuToggleRow: View {
         .onHover { hovered = $0 }
         .accessibilityRepresentation {
             Toggle(title, isOn: $isOn)
-                .accessibilityHint(help)
+                .accessibilityHint(help ?? "")
         }
     }
 }
