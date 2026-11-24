@@ -11,6 +11,11 @@ extension AppUpdatesListView {
         VStack(alignment: .leading, spacing: 8) {
             summaryRow
                 .panelCard()
+            // One line above the list rather than a card after it, so the
+            // panel stays one surface; the apps it means are in the tooltip.
+            if coverageIncomplete {
+                incompleteCheckLine
+            }
 
             if allSourcesOff {
                 compactNoSourcesState
@@ -18,10 +23,6 @@ extension AppUpdatesListView {
                 compactEmptyState
             } else {
                 compactList
-            }
-            if coverageIncomplete {
-                incompleteCheck
-                    .panelCard()
             }
             if versionsUncompared {
                 uncomparableVersions
@@ -133,6 +134,32 @@ extension AppUpdatesListView {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, inNotch ? 6 : 20)
+    }
+
+    var incompleteCheckLine: some View {
+        HStack(spacing: 6) {
+            Label(text.incompleteCheck, systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(.orange)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            if storeCoverageIncomplete {
+                Button(text.openAppStore) { updates.openAppStoreUpdates() }
+                    .buttonStyle(.link)
+                    .font(.system(size: 10))
+            }
+        }
+        .frame(height: Self.incompleteLineHeight)
+        .padding(.horizontal, 4)
+        .contentShape(Rectangle())
+        .help(incompleteCheckDetail)
+    }
+
+    var incompleteCheckDetail: String {
+        var lines: [String] = []
+        if !updates.uncheckedAppNames.isEmpty { lines.append(updates.uncheckedAppNames.joined(separator: ", ")) }
+        if includeOnlineCatalog && !updates.onlineCatalogAvailable { lines.append(text.onlineUnavailable) }
+        return lines.joined(separator: "\n\n")
     }
 
     var incompleteCheck: some View {

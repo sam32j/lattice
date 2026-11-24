@@ -16,8 +16,22 @@ extension AppUpdatesListView {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
 
-        ScrollView { rows }
-            .frame(height: Self.compactHeight(rowCount: updates.items.count))
+        // No scroll view of its own: the panel around it scrolls, and a
+        // second one inside it read as two layers.
+        rows
+    }
+
+    static let incompleteLineHeight: CGFloat = 20
+
+    /// Whether the last check left apps out, as the panel's note reports it.
+    @MainActor
+    static var coverageWasIncomplete: Bool {
+        let service = AppUpdatesService.shared
+        let defaults = UserDefaults.standard
+        guard service.hasCheckedThisSession, !service.isChecking else { return false }
+        return (defaults.bool(forKey: DefaultsKey.appUpdatesIncludeAppStore) && !service.appStoreAvailable)
+            || (defaults.bool(forKey: DefaultsKey.appUpdatesIncludeOnlineCatalog) && !service.onlineCatalogAvailable)
+            || !service.uncheckedAppNames.isEmpty
     }
 
     static let compactRowHeight: CGFloat = 40
@@ -30,8 +44,10 @@ extension AppUpdatesListView {
             + CGFloat(visible - 1) * compactRowSpacing
     }
 
+    @MainActor
     static func compactUtilityHeight(itemCount: Int) -> CGFloat {
-        if itemCount == 0 { return 148 }
-        return min(290, 85 + compactHeight(rowCount: itemCount))
+        let note = coverageWasIncomplete ? incompleteLineHeight + 8 : 0
+        if itemCount == 0 { return 148 + note }
+        return min(290, 85 + compactHeight(rowCount: itemCount)) + note
     }
 }
