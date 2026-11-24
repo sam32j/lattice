@@ -34,6 +34,9 @@ struct RadialMenuVisualCanvas: View {
     @State private var draggingIndex: Int?
     @State private var dragPosition: CGPoint = .zero
     @State private var targetIndex: Int?
+    /// Resets on its own however the drag ends, cancelled included, when
+    /// `onEnded` never runs.
+    @GestureState private var dragInProgress = false
     @State private var addHovered = false
     @State private var ghostHovered = false
     @FocusState private var focusedSlot: Slot?
@@ -72,6 +75,15 @@ struct RadialMenuVisualCanvas: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .coordinateSpace(name: "RadialCanvas")
+            .onChange(of: dragInProgress) { _, inProgress in
+                guard !inProgress else { return }
+                // After onEnded has had its turn, so a finished drag still
+                // swaps; a cancelled one only loses its floating chip.
+                DispatchQueue.main.async {
+                    draggingIndex = nil
+                    targetIndex = nil
+                }
+            }
         }
         .overlay(alignment: .bottom) { bottomBar }
         .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.82), value: items.map(\.id))
@@ -186,30 +198,37 @@ struct RadialMenuVisualCanvas: View {
 
     private func dragGesture(index: Int, item: RadialMenuItem, center: CGPoint) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named("RadialCanvas"))
+            .updating($dragInProgress) { _, inProgress, _ in inProgress = true }
             .onChanged { value in
                 guard hypot(value.translation.width, value.translation.height) > 6 else { return }
                 draggingIndex = index
                 dragPosition = value.location
-                let angle = RadialMenuGeometry.angle(dx: value.location.x - center.x,
-                                                     dyUp: center.y - value.location.y)
-                // The add slot is not a drop target.
-                if let slot = RadialMenuGeometry.index(forAngle: angle, itemCount: slotCount),
-                   items.indices.contains(slot) {
-                    targetIndex = slot
-                } else {
-                    targetIndex = nil
-                }
+                targetIndex = dropSlot(at: value.location, center: center)
             }
             .onEnded { value in
                 if hypot(value.translation.width, value.translation.height) <= 6 {
                     activate(item)
-                } else if let from = draggingIndex, let to = targetIndex, from != to,
-                          items.indices.contains(from), items.indices.contains(to) {
+                } else if let from = draggingIndex, let to = dropSlot(at: value.location, center: center),
+                          from != to, items.indices.contains(from) {
                     onSwap(items[from], items[to])
                 }
                 draggingIndex = nil
                 targetIndex = nil
             }
+    }
+
+    /// The action slot a drag would land on: only over the wheel, out to
+    /// the chips' outer edge and clear of the hub. The add slot is no target.
+    private func dropSlot(at location: CGPoint, center: CGPoint) -> Int? {
+        let dx = location.x - center.x
+        let dyUp = center.y - location.y
+        let distance = hypot(dx, dyUp)
+        let outer = max(Self.wheelDiameter / 2, Self.ringRadius + Self.chipSize / 2)
+        guard distance >= Self.deadZoneRadius, distance <= outer else { return nil }
+        let angle = RadialMenuGeometry.angle(dx: dx, dyUp: dyUp)
+        guard let slot = RadialMenuGeometry.index(forAngle: angle, itemCount: slotCount),
+              items.indices.contains(slot) else { return nil }
+        return slot
     }
 
     /// A click or Return: a submenu opens, any other action is edited.

@@ -184,6 +184,9 @@ private struct ToolShortcutRecorder: View {
             roleConflict: { GlobalShortcutRole.conflict(for: $0, excluding: nil) },
             windowLayoutConflict: { WindowLayoutService.shared.shortcutConflictTitle($0) },
             systemConflict: { $0.conflictsWithSystemShortcut }) {
+            // The key bridge would keep every key, Return and Escape for the
+            // dialog's OK included.
+            coordinator.stopRecording(tool: tool)
             onError()
             return
         }

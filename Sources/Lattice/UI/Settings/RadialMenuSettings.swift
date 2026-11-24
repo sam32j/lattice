@@ -41,6 +41,7 @@ struct RadialMenuSettings: View {
     @State var pendingTakeover: RadialMenuTrackpadGesture?
     @State var gestureCoordinator: PermissionActivationCoordinator?
     @State var tabDropTarget: UUID?
+    @FocusState var focusedTabID: UUID?
     @State var tabDropAtEnd = false
     @State var tabScrollID: UUID?
     @Environment(\.colorScheme) var colorScheme

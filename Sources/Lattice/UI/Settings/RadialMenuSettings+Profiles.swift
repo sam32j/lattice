@@ -112,10 +112,15 @@ extension RadialMenuSettings {
                 Capsule().fill(Color.accentColor).frame(width: 2, height: 22).offset(x: -4)
             }
         }
-        .contentShape(Capsule())
-        .onTapGesture {
-            if selected, openSubmenuID != nil { openSubmenuID = nil } else { selectProfile(profile.id) }
+        .overlay {
+            // Keyboard focus on a tab other than the selected one. A click
+            // selects the tab it focuses, so this never rings a clicked tab.
+            if focusedTabID == profile.id, !selected {
+                Capsule().strokeBorder(Color.accentColor.opacity(0.8), lineWidth: 2)
+            }
         }
+        .contentShape(Capsule())
+        .onTapGesture { activateTab(profile.id, selected: selected) }
         .help(index == 0 ? text.primaryHelp : name)
         .draggable(profile.id.uuidString)
         .dropDestination(for: String.self) { items, _ in
@@ -127,10 +132,11 @@ extension RadialMenuSettings {
         }
         .focusable()
         .focusEffectDisabled()
+        .focused($focusedTabID, equals: profile.id)
         .onKeyPress(keys: [.space, .return, .leftArrow, .rightArrow], phases: .down) { press in
             switch press.key {
             case .space, .return:
-                selectProfile(profile.id)
+                activateTab(profile.id, selected: selected)
             case .leftArrow where press.modifiers.contains(.option):
                 moveProfile(profile.id, by: -1)
             case .rightArrow where press.modifiers.contains(.option):
@@ -145,7 +151,7 @@ extension RadialMenuSettings {
         .accessibilityValue(index == 0 ? text.primaryHelp : "")
         .accessibilityHint(submenu != nil ? text.backButton : "")
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityAction { selectProfile(profile.id) }
+        .accessibilityAction { activateTab(profile.id, selected: selected) }
         .accessibilityActions {
             if index > 0 {
                 Button(text.moveLeftButton) { moveProfile(profile.id, by: -1) }
@@ -155,6 +161,12 @@ extension RadialMenuSettings {
                 Button(text.moveRightButton) { moveProfile(profile.id, by: 1) }
             }
         }
+    }
+
+    /// Click, Return, Space and the accessibility action alike: the selected
+    /// tab leads back out of a submenu, another tab selects its profile.
+    private func activateTab(_ id: UUID, selected: Bool) {
+        if selected, openSubmenuID != nil { openSubmenuID = nil } else { selectProfile(id) }
     }
 
     /// Dropping past the last tab moves a profile to the end.
@@ -288,7 +300,8 @@ struct RadialProfileEditSheet: View {
                 Button(cancelTitle) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button(text.saveButton) {
-                    save(name, color)
+                    // Blank is the automatic name, as the preview shows it.
+                    save(name.trimmingCharacters(in: .whitespacesAndNewlines), color)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)

@@ -257,11 +257,17 @@ struct RadialItemEditor: View {
     }
 
     /// A link's own icon is fetched once typing pauses, unless a symbol was
-    /// picked for it. A newer edit makes an older answer moot.
+    /// picked for it. A newer edit makes an older answer moot, and the old
+    /// site's icon goes at once, so Save never pairs it with the new address.
     func scheduleFaviconFetch() {
         faviconToken &+= 1
         faviconStatus = nil
+        isFetchingFavicon = false
         guard item.kind == .url else { return }
+        if item.customIconData != nil {
+            item.customIconData = nil
+            RadialMenuIconStore.invalidate(item: item)
+        }
         let token = faviconToken
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.faviconDebounce) {
             guard faviconToken == token else { return }
@@ -278,6 +284,7 @@ struct RadialItemEditor: View {
             shortcutError = nil
             faviconStatus = nil
             faviconToken &+= 1
+            isFetchingFavicon = false
             if kind != .url { item.customIconData = nil }
             switch kind {
             case .tool: item.payload = availableTools.first?.rawValue ?? ""

@@ -14,6 +14,9 @@ struct CommandBarAppShortcutsView: View {
     @State private var query = ""
     @State private var filter = AppFilter.all
     @State private var message: String?
+    /// A refused alias, shown by the sheet itself: the field also saves as
+    /// its row scrolls away, when no row is left to explain it.
+    @State private var aliasRefusal: String?
     @State private var pendingTakeOver: (entry: CommandBarEntry, shortcut: GlobalShortcut)?
     @State private var sortOrder = [AppColumnOrder(column: .name)]
 
@@ -82,7 +85,9 @@ struct CommandBarAppShortcutsView: View {
 
                 TableColumn(text.appAliasLabel, sortUsing: AppColumnOrder(column: .alias)) { entry in
                     CommandBarAppAliasField(entry: entry, savedAlias: aliases[entry.stableKey] ?? "",
-                                            text: text) { report($0, for: entry) }
+                                            text: text) { refusal in
+                        if let refusal { aliasRefusal = "\(entry.title): \(refusal)" }
+                    }
                 }
                 .width(min: 110, ideal: 150)
 
@@ -156,6 +161,7 @@ struct CommandBarAppShortcutsView: View {
             if !AppFeature.commandBar.isAvailable { dismiss() }
         }
         .onChange(of: l10n.language) { _, _ in message = nil }
+        .shortcutErrorAlert($aliasRefusal)
     }
 
     private func visibleApps(shortcuts: [String: GlobalShortcut], aliases: [String: String],

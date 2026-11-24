@@ -43,6 +43,8 @@ enum RadialMenuRenderingProbe {
         let migrated = RadialMenuSupport.decodeProfiles(defaults.data(forKey: DefaultsKey.radialMenuProfiles))
         print("RADIAL_MIGRATION order=\(migrated.map(\.name)) shortcut=\(defaults.string(forKey: DefaultsKey.radialMenuShortcut) ?? "nil") button=\(defaults.string(forKey: DefaultsKey.radialMenuMouseButton) ?? "nil") gesture=\(defaults.string(forKey: DefaultsKey.radialMenuTrackpadGesture) ?? "nil") version=\(defaults.integer(forKey: DefaultsKey.radialMenuSettingsVersion)) mode=\(defaults.object(forKey: DefaultsKey.legacyRadialMenuActivationMode) as Any)")
         if migrated.map(\.name) != ["Media", "General", "Windows"]
+            || RadialMenuMouseTrigger.sanitized(defaults.string(forKey: DefaultsKey.radialMenuMouseButton) ?? "")
+                .buttonNumber != 5
             || defaults.string(forKey: DefaultsKey.radialMenuShortcut) != chord
             || defaults.string(forKey: DefaultsKey.radialMenuTrackpadGesture) != "tap" {
             failures.append("migration")
@@ -99,10 +101,12 @@ enum RadialMenuRenderingProbe {
                              ("app", RadialMenuItem(kind: .app, payload: "/System/Applications/Calculator.app")),
                              ("file-new", RadialMenuItem(kind: .file)),
                              ("file", RadialMenuItem(kind: .file, payload: NSHomeDirectory()))] {
+            // The empty ones are what Add opens with.
+            let isNew = name.hasSuffix("-new")
             SettingsRefactorProbe.render("radial-item-editor-\(name)", view: AnyView(
-                RadialItemEditor(text: FeatureStrings.radialMenu(.enUS), item: item, isNew: false,
+                RadialItemEditor(text: FeatureStrings.radialMenu(.enUS), item: item, isNew: isNew,
                                  allowsSubmenu: true, profileColor: .purple,
-                                 save: { _ in }, delete: {})),
+                                 save: { _ in }, delete: isNew ? nil : {})),
                 size: CGSize(width: 460, height: 420), output: output, failures: &failures, colorScheme: .dark)
         }
         SettingsRefactorProbe.setPreviewAvailability(.middleClick, enabled: true)

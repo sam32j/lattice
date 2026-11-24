@@ -1084,8 +1084,10 @@ enum RadialMenuGeometry {
     }
 }
 
-/// On-demand fetcher for website favicons, executed exclusively when explicitly
-/// requested by the user in the Settings editor.
+/// Fetches a website's favicon for a link action. The Settings editor calls
+/// it once typing in the address pauses (and only while no symbol is picked
+/// for the action), so the typed host is contacted without a separate
+/// request; the icon button's help says so.
 enum RadialMenuFaviconFetcher {
     /// Max allowable icon data storage: 64KB
     static let maxStoredIconBytes = 65536
