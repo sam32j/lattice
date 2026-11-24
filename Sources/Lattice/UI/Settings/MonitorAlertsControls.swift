@@ -37,6 +37,10 @@ struct MonitorAlertsControls: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Above the list, under the caption: nothing above it changes
+            // size, so it never has to move when an alert's limit unrolls.
+            MonitorAlertsRepeatMenu()
+                .padding(.bottom, 6)
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                 VStack(spacing: 0) {
                     if index > 0 { Divider() }
@@ -44,8 +48,6 @@ struct MonitorAlertsControls: View {
                 }
                 .transition(.settingsReveal)
             }
-            MonitorAlertsRepeatMenu()
-                .padding(.top, 10)
             // Alerts silently cannot fire when macOS notifications are denied
             // for the app; without this line that state is invisible.
             if notificationsDenied, anyAlertEnabled {
@@ -57,10 +59,9 @@ struct MonitorAlertsControls: View {
                     .transition(.settingsReveal)
             }
         }
-        // Each alert's limit unrolls with the page's managed reveal, the
-        // rows under it moving in the same transaction.
-        .settingsExpansionAnimation(value: [alertCPU, alertCPUTemperature, alertMemory, alertDisk,
-                                            alertBattery, alertBatteryTemperature, notificationsDenied])
+        // Each alert's limit unrolls with the page's managed reveal, keyed in
+        // MonitorSettings so the card and every row under it move together.
+        .settingsExpansionAnimation(value: notificationsDenied)
         .onAppear {
             sanitizeAlertValues()
             refreshNotificationStatus()
@@ -209,8 +210,8 @@ struct MonitorAlertRow: View {
 }
 
 /// How soon the same alert may come back, for every alert at once. It is a
-/// small footnote under the list, in caption type, so it reads as a note on
-/// all of them rather than one more alert.
+/// small line in caption type under the card's caption, so it reads as a
+/// note on all the alerts rather than one more of them.
 struct MonitorAlertsRepeatMenu: View {
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.monitorAlertCooldownMinutes) private var alertCooldown = 15

@@ -11,6 +11,14 @@ struct MonitorSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.monitorInterval) private var interval = MonitorRefreshRate.balanced.rawValue
+    // The alert switches, so an alert's limit unrolls with the page's
+    // managed reveal and the card and the rows below move in one transaction.
+    @AppStorage(DefaultsKey.monitorAlertCPU) private var alertCPU = false
+    @AppStorage(DefaultsKey.monitorAlertCPUTemperature) private var alertCPUTemperature = false
+    @AppStorage(DefaultsKey.monitorAlertBatteryTemperature) private var alertBatteryTemperature = false
+    @AppStorage(DefaultsKey.monitorAlertMemory) private var alertMemory = false
+    @AppStorage(DefaultsKey.monitorAlertDisk) private var alertDisk = false
+    @AppStorage(DefaultsKey.monitorAlertBattery) private var alertBattery = false
 
     private var strings: SystemMonitorSettingsStrings { FeatureStrings.systemMonitorSettings(l10n.language) }
 
@@ -35,6 +43,8 @@ struct MonitorSettings: View {
         // A module switched in the title bar menu brings its alert rows in or
         // takes them away in the same motion as the rest of the page.
         .settingsExpansionAnimation(value: FeatureVisibilitySupport.monitorFeatures.map(\.isAvailable))
+        .settingsExpansionAnimation(value: [alertCPU, alertCPUTemperature, alertMemory, alertDisk,
+                                            alertBattery, alertBatteryTemperature])
     }
 
     private var page: some View {
