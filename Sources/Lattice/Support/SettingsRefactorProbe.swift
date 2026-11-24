@@ -84,8 +84,11 @@ enum SettingsRefactorProbe {
                        }
                    }.padding(20)),
                    size: CGSize(width: 700, height: 160), output: output, failures: &failures, colorScheme: .light)
-            render("app-manager-panel", view: AnyView(PanelAppManagerView().frame(width: 380, height: 300).padding(12)),
-                   size: CGSize(width: 404, height: 324), output: output, failures: &failures, colorScheme: .light)
+            MainActor.assumeIsolated { AppManagerPanelState.shared.tab = .updates }
+            render("app-manager-panel", view: AnyView(
+                       LatticeHubHostedUtility(item: .appManager, notchSize: CGSize(width: 388, height: 420)) {}
+                           .frame(width: 388, height: 420).padding(12).background(Color.black)),
+                   size: CGSize(width: 412, height: 444), output: output, failures: &failures, colorScheme: .dark)
             defaults.removePersistentDomain(forName: identity)
             for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
             if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
