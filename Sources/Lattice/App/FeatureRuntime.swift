@@ -92,7 +92,9 @@ final class FeatureRuntime: ObservableObject {
     /// strands someone's settings costs far more than one that leaves a
     /// feature reporting itself unsupported.
     private func mayFlip(_ feature: AppFeature, to available: Bool) -> Bool {
-        guard !feature.isToggleOwned || feature.group == .monitor else { return false }
+        // System Monitor modules and the App Installer are switched by their
+        // page's module menu, though their switch owns them.
+        guard !feature.isToggleOwned || feature.group == .monitor || feature == .diskImageInstaller else { return false }
         guard feature.isAvailable != available else { return false }
         guard available || !FeatureMutationGuard.isBusy(feature) else { return false }
         return !available || feature.isHardwareSupported

@@ -72,20 +72,27 @@ enum AppManagerModules {
         let defaults = UserDefaults.standard
         if on {
             let saved = Set(defaults.stringArray(forKey: DefaultsKey.appManagerModulesBeforeOff) ?? [])
-            let remembered = all.filter { saved.contains($0.rawValue) }
-            let restore = remembered.isEmpty ? all : remembered
-            FeatureRuntime.shared.setAvailable(Array(Set(restore + [locked])), true)
+            let remembered = all.filter { saved.contains($0.rawValue) && $0 != locked }
+            let restore = remembered.isEmpty && saved.isEmpty ? all.filter { $0 != locked } : remembered
+            setLocked(true)
+            FeatureRuntime.shared.setAvailable(restore, true)
         } else {
             defaults.set(all.filter(\.isAvailable).map(\.rawValue), forKey: DefaultsKey.appManagerModulesBeforeOff)
-            FeatureRuntime.shared.setAvailable(all, false)
+            FeatureRuntime.shared.setAvailable(all.filter { $0 != locked }, false)
+            setLocked(false)
         }
         settingsFinishAvailabilityChange()
     }
 
     static func setModule(_ feature: AppFeature, on: Bool) {
         guard feature != locked else { return }
-        FeatureRuntime.shared.setAvailable(on ? [feature, locked] : [feature], on)
+        if on { setLocked(true) }
+        FeatureRuntime.shared.setAvailable([feature], on)
         settingsFinishAvailabilityChange()
+    }
+
+    private static func setLocked(_ on: Bool) {
+        FeatureRuntime.shared.setAvailable([locked], on)
     }
 }
 
