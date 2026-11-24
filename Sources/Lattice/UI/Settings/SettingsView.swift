@@ -117,7 +117,6 @@ struct SettingsView: View {
             .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea(.container, edges: .top) }
         }
         .navigationSplitViewStyle(.balanced)
-        .modifier(SettingsActiveLookModifier())
         .toolbar(removing: .sidebarToggle)
         .toolbar(removing: defaultTitleItem)
         .frame(minWidth: 772, maxWidth: 772, minHeight: 528, maxHeight: .infinity)
@@ -288,15 +287,4 @@ struct SettingsView: View {
     }
 
 
-}
-
-/// Draws the window as key while `SettingsActiveLookHold` says so.
-private struct SettingsActiveLookModifier: ViewModifier {
-    @ObservedObject private var hold = SettingsActiveLookHold.shared
-    @Environment(\.controlActiveState) private var actual
-
-    /// The same view either way, so holding never rebuilds the window.
-    func body(content: Content) -> some View {
-        content.environment(\.controlActiveState, hold.isHolding ? .key : actual)
-    }
 }
