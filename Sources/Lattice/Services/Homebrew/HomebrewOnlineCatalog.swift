@@ -40,8 +40,8 @@ final class HomebrewOnlineCatalog: ObservableObject {
     private var searchTask: Task<Void, Never>?
     private var versionCheckedAt: Date?
 
-    static let cacheLifetime: TimeInterval = 24 * 60 * 60
-    static let resultLimit = 8
+    nonisolated static let cacheLifetime: TimeInterval = 24 * 60 * 60
+    nonisolated static let resultLimit = 8
 
     /// Whether a newer Homebrew than the installed one has been released.
     var selfUpdateAvailable: Bool {
