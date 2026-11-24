@@ -117,16 +117,51 @@ enum DiskImageOpenHandler {
     /// Makes Lattice, or Disk Image Mounter again, the app DMG files open in.
     /// macOS confirms the change with its own dialog; the completion reports
     /// whether Lattice is the opener afterwards, so a declined change shows.
+    @MainActor
     static func setOpensInLattice(_ on: Bool, completion: @escaping (Bool) -> Void) {
         guard let type = contentTypes.first else { completion(opensInLattice); return }
         let app = on ? Bundle.main.bundleURL : mounterURL
+        // macOS's confirmation takes key focus while Lattice stays the active
+        // app, and the Settings window drew its inactive look for as long as
+        // it was up: every accent went grey and came back, a blink. The
+        // window keeps its active look until key focus returns.
+        // macOS does not always hand key focus back when its dialog closes,
+        // so the window that had it gets it back.
+        let window = NSApp.keyWindow
+        SettingsActiveLookHold.shared.isHolding = true
         NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type) { _ in
-            DispatchQueue.main.async { completion(opensInLattice) }
+            DispatchQueue.main.async {
+                completion(opensInLattice)
+                if NSApp.isActive, let window, window.isVisible, !window.isKeyWindow { window.makeKey() }
+                SettingsActiveLookHold.shared.releaseWhenKeyReturns()
+            }
         }
     }
 
     /// Opens an image the way a plain double-click would without Lattice.
     static func openWithDiskImageMounter(_ url: URL) {
         NSWorkspace.shared.open([url], withApplicationAt: mounterURL, configuration: NSWorkspace.OpenConfiguration())
+    }
+}
+
+/// Keeps the Settings window drawing as the key window while a system
+/// confirmation Lattice asked for holds key focus, so the window does not
+/// blink to its inactive look and back.
+@MainActor
+final class SettingsActiveLookHold: ObservableObject {
+    static let shared = SettingsActiveLookHold()
+    @Published var isHolding = false
+
+    /// Releases once a Lattice window is key again, or after a moment if
+    /// none becomes key (the person clicked elsewhere).
+    func releaseWhenKeyReturns() {
+        func check(_ attempt: Int) {
+            if NSApp.keyWindow != nil || attempt >= 20 {
+                isHolding = false
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { check(attempt + 1) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { check(0) }
     }
 }
