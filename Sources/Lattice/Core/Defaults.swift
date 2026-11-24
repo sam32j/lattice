@@ -342,6 +342,7 @@ enum DefaultsKey {
     // Machine-only recovery state. A true value means the helper must confirm
     // automatic fan control before this marker can be cleared.
     static let fanControlRecoveryNeeded = "fanControlRecoveryNeeded"
+    static let fanControlInterruptedStop = "fanControlInterruptedStop"
     static let fanControlHelperVersion = "fanControlHelperVersion"
     // Peripheral batteries in the Power views; also gates Bluetooth use.
     static let monitorPwrPeripherals = "monitorPwrPeripherals"

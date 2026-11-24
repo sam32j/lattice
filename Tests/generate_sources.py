@@ -851,10 +851,18 @@ def main():
           + "}\n}\n")
     fan_control = "Sources/Lattice/Services/FanControl/FanControlService.swift"
     write("FanControlResume.swift", "import Foundation\n"
-          + "extension FanControlResumeContract {\nfinal class Service: Fixture {\n"
+          + "extension FanControlResumeContract {\n"
+          + declaration("Sources/Vorssaint/Services/FanControl/FanControlXPC.swift", "enum FanControlIPC {")
+          + "final class Service: Fixture {\n"
+          + declaration(fan_control, "    func applyConfiguration(_ configuration:")
+          .replace("applyConfiguration(configuration, resuming:", "sendConfiguration(configuration, resuming:", 1)
+          + declaration(fan_control, "    private func applyConfiguration(_ configuration:")
+          .replace("private func applyConfiguration", "func sendConfiguration", 1)
+          + declaration(fan_control, "    private(set) var awaitingSystemControl:", closing="}()")
           + "".join(declaration(fan_control, prefix)
                     .replace("@objc private func", "func", 1)
                     .replace("private static var", "static var", 1)
+                    .replace("private var", "var", 1)
                     .replace("private func", "func", 1) for prefix in [
                         "    static func recoverIfNeeded(", "    func syncWithPreferences(",
                         "    func returnToSystem(", "    func forgetResume(", "    func resumePreferenceDidChange(",
@@ -865,6 +873,12 @@ def main():
                         "    private func beginResume(", "    private func cancelResumeRetry(",
                         "    private func resumeDidFail(", "    private func scheduleResumeRetry(",
                         "    private func retryResume(", "    private func applyStatus(", "    private func apply(_ response:",
+                        "    private var interruptedStop:",
+                        "    func restoreAutomatic()", "    private func restoreAutomatic(supersedingCurrentRequest:",
+                        "    static func restoreBeforeTerminationIfNeeded()", "    private func restoreBeforeTermination()",
+                        "    private func restoreThenUnregister()",
+                        "    private func finishSystemHandoff()", "    private func startTimerIfNeeded()",
+                        "    private func observeFailedHandoff(", "    private func poll(", "    private func heartbeat(",
                         "    private func requestStatus(", "    private func beginRequest(", "    private func finishRequest("])
           + "}\n}\n")
     visualizer_entry = declaration("Sources/Lattice/Services/Notch/NotchService.swift", "    func syncWithPreferences()")
