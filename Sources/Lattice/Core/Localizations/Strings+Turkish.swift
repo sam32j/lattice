@@ -707,8 +707,6 @@ extension Strings {
         menuBarSpacingLabel: "Menü çubuğu aralığı",
         menuBarSpacingStandard: "Standart",
         menuBarSpacingCompact: "Sıkışık",
-        menuBarHideIconToggle: "Lattice simgesini gizle",
-        menuBarHideIconCaption: "Metrikler çubuktan kalktığında ve bildirilecek bir şey olduğunda (güncelleme hazır, “Uyanık tut” açık veya mikrofon sessizde) simge kendiliğinden geri döner.",
         monitorLabelStyleLabel: "Etiketler",
         menuBarLabelStyleCompact: "Kompakt",
         menuBarLabelStyleClassic: "Klasik",

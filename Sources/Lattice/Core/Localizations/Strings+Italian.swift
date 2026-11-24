@@ -707,8 +707,6 @@ extension Strings {
         menuBarSpacingLabel: "Spaziatura nella barra",
         menuBarSpacingStandard: "Standard",
         menuBarSpacingCompact: "Compatta",
-        menuBarHideIconToggle: "Nascondi l’icona di Lattice",
-        menuBarHideIconCaption: "L’icona torna da sola quando le metriche lasciano la barra e quando c’è qualcosa da segnalare (un aggiornamento pronto, “Mantieni attivo” in corso o il microfono silenziato).",
         monitorLabelStyleLabel: "Etichette",
         menuBarLabelStyleCompact: "Compatte",
         menuBarLabelStyleClassic: "Classiche",

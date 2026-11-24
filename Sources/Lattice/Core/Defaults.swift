@@ -297,7 +297,6 @@ enum DefaultsKey {
     static let menuBarPreset = "menuBarPreset"           // dense
     static let menuBarMetricSpacing = "menuBarMetricSpacing" // standard | compact
     static let menuBarMetricAppearance = "menuBarMetricAppearance" // values | bars
-    static let menuBarHideIconWithMetrics = "menuBarHideIconWithMetrics" // glyph hides while metrics render in the main item
     static let menuBarIconSymbol = "menuBarIconSymbol" // system symbol name drawn instead of the glyph; empty keeps the glyph
     static let menuBarMetricOrder = "menuBarMetricOrder" // comma-separated MenuBarMetric raw values
     // Usage (or charge) and temperature of one component in one block, each
@@ -1256,7 +1255,6 @@ enum Defaults {
         DefaultsKey.menuBarPreset: "dense",
         DefaultsKey.menuBarMetricSpacing: "compact",  // owner's call: compact by default in 3.1.8
         DefaultsKey.menuBarMetricAppearance: "values",
-        DefaultsKey.menuBarHideIconWithMetrics: false,
         DefaultsKey.menuBarIconSymbol: "",
         DefaultsKey.windowLayoutHiddenActions: "",
         DefaultsKey.windowLayoutWindowGap: 0,

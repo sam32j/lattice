@@ -361,28 +361,15 @@ final class StatusItemController {
         } else {
             updateAvailable = false
         }
-        let optionEnabled = defaults.bool(forKey: DefaultsKey.menuBarHideIconWithMetrics)
-        let separateMetrics = defaults.bool(forKey: DefaultsKey.menuBarSeparateMetrics)
         let signal = updateAvailable
+        // Dynamic Island is the one thing that takes the glyph's place
+        // (General > Show menu bar icon); signals always bring it back.
         let islandHides = MenuBarSpacingSupport.islandHidesStatusIcon(
             in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal
-        let hidden = islandHides || MenuBarSpacingSupport.shouldHideStatusIcon(
-            optionEnabled: optionEnabled,
-            separateMetrics: separateMetrics,
-            metricsEnabled: MenuBarMetric.anyEnabled(in: defaults),
-            renderedTitleLength: button.attributedTitle.length,
-            mustShowForSignal: signal || keepAwakeSignal)
-        // In the separate-items mode the metrics are their own clickable
-        // items, so hiding means the whole main item steps aside instead of
-        // just its image (which is all that item has). With Dynamic Island
-        // standing in, the item goes whenever it has no text of its own.
-        let mainItemHidden = (islandHides && button.attributedTitle.length == 0)
-            || MenuBarSpacingSupport.shouldHideMainStatusItem(
-                optionEnabled: optionEnabled,
-                separateMetrics: separateMetrics,
-                metricItemsShown: renderedMetricItemCount,
-                renderedTitleLength: button.attributedTitle.length,
-                mustShowForSignal: signal || keepAwakeSignal)
+        let hidden = islandHides
+        // With Dynamic Island standing in, the item goes whenever it has no
+        // text of its own.
+        let mainItemHidden = islandHides && button.attributedTitle.length == 0
         mainItemHiddenByChoice = mainItemHidden
         let keepAwakeActive = KeepAwakeManager.shared.isActive
 
@@ -557,14 +544,8 @@ final class StatusItemController {
                 updateAvailable = false
             }
             let signal = updateAvailable
-            let glyphHidden = (MenuBarSpacingSupport.islandHidesStatusIcon(
-                in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal)
-                || MenuBarSpacingSupport.shouldHideStatusIcon(
-                    optionEnabled: defaults.bool(forKey: DefaultsKey.menuBarHideIconWithMetrics),
-                    separateMetrics: separateMetrics,
-                    metricsEnabled: !metrics.isEmpty,
-                    renderedTitleLength: 1,
-                    mustShowForSignal: signal || keepAwakeSignal)
+            let glyphHidden = MenuBarSpacingSupport.islandHidesStatusIcon(
+                in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal
             let full = NSMutableAttributedString(string: glyphHidden ? "" : " ")
             full.append(title)
             let stacked = full.string.contains("\n")

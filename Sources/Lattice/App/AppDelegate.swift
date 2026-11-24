@@ -693,7 +693,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                   item.menu == nil, item.isVisible,
                   NSEvent.pressedMouseButtons == 0,
                   Date() < deadline,
-                  !UserDefaults.standard.bool(forKey: DefaultsKey.menuBarHideIconWithMetrics),
+                  // An icon the person chose to hide (General > Show menu bar
+                  // icon) is not one to recover.
+                  !UserDefaults.standard.bool(forKey: DefaultsKey.notchHidesMenuBarIcon),
                   NSScreen.screens.map(\.frame) == screenFrames,
                   NSMenu.menuBarVisible(),
                   NSApp.currentSystemPresentationOptions.intersection(

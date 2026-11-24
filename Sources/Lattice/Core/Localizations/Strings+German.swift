@@ -707,8 +707,6 @@ extension Strings {
         menuBarSpacingLabel: "Abstand in der Menüleiste",
         menuBarSpacingStandard: "Standard",
         menuBarSpacingCompact: "Kompakt",
-        menuBarHideIconToggle: "Lattice-Symbol ausblenden",
-        menuBarHideIconCaption: "Das Symbol kehrt von selbst zurück, wenn die Messwerte die Leiste verlassen und wenn es etwas zu melden gibt (ein Update bereit, „Wachhalten“ aktiv oder das Mikrofon stumm).",
         monitorLabelStyleLabel: "Beschriftungen",
         menuBarLabelStyleCompact: "Kompakt",
         menuBarLabelStyleClassic: "Klassisch",

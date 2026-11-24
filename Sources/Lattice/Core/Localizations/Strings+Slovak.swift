@@ -707,8 +707,6 @@ extension Strings {
         menuBarSpacingLabel: "Rozostupy v lište s ponukami",
         menuBarSpacingStandard: "Štandardné",
         menuBarSpacingCompact: "Kompaktné",
-        menuBarHideIconToggle: "Skryť ikonu Lattice",
-        menuBarHideIconCaption: "Ikona sa vráti sama, keď metriky z lišty zmiznú a keď treba niečo signalizovať (pripravenú aktualizáciu, zapnutý „Bdelý režim“ alebo stlmený mikrofón).",
         monitorLabelStyleLabel: "Označenia",
         menuBarLabelStyleCompact: "Kompaktné",
         menuBarLabelStyleClassic: "Klasické",

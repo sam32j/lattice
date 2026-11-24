@@ -707,8 +707,6 @@ extension Strings {
         menuBarSpacingLabel: "菜单栏间距",
         menuBarSpacingStandard: "标准",
         menuBarSpacingCompact: "紧凑",
-        menuBarHideIconToggle: "隐藏 Lattice 图标",
-        menuBarHideIconCaption: "当指标离开菜单栏，或有需要提示的内容（更新就绪、“保持唤醒”开启中或麦克风已静音）时，图标会自动回来。",
         monitorLabelStyleLabel: "标签",
         menuBarLabelStyleCompact: "紧凑",
         menuBarLabelStyleClassic: "经典",

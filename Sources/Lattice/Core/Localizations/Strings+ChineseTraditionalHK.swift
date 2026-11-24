@@ -708,8 +708,6 @@ extension Strings {
         menuBarSpacingLabel: "選單列間距",
         menuBarSpacingStandard: "標準",
         menuBarSpacingCompact: "緊湊",
-        menuBarHideIconToggle: "隱藏 Lattice 圖示",
-        menuBarHideIconCaption: "當指標離開選單列，或有需要提示的內容（更新就緒、「保持喚醒」開啟中或麥克風已靜音）時，圖示會自動回來。",
         monitorLabelStyleLabel: "標籤",
         menuBarLabelStyleCompact: "緊湊",
         menuBarLabelStyleClassic: "經典",

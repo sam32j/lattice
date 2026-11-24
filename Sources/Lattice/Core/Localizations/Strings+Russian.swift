@@ -708,8 +708,6 @@ extension Strings {
         menuBarSpacingLabel: "Интервал в строке меню",
         menuBarSpacingStandard: "Стандартный",
         menuBarSpacingCompact: "Компактный",
-        menuBarHideIconToggle: "Скрывать значок Lattice",
-        menuBarHideIconCaption: "Значок возвращается сам, когда метрики исчезают из строки меню, а также когда есть что сообщить (готово обновление, включено «Не давать Mac уснуть» или выключен микрофон).",
         monitorLabelStyleLabel: "Подписи",
         menuBarLabelStyleCompact: "Компактные",
         menuBarLabelStyleClassic: "Классические",
