@@ -19,7 +19,7 @@ struct SwitcherAppRulesList: View {
     var body: some View {
         AppBundleList(title: text.listTitle,
                       caption: text.caption,
-                      addTitle: text.addButton,
+                      action: .exclude,
                       removeLabel: text.removeButton,
                       bundleIDs: hiddenApps,
                       reachesEveryApp: true,

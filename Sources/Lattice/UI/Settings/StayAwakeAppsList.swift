@@ -15,7 +15,7 @@ struct StayAwakeAppsList: View {
         let automation = FeatureStrings.keepAwakeAutomation(l10n.language)
         AppBundleList(title: strings.appsTitle,
                       caption: automation.runningAppsListCaption,
-                      addTitle: automation.runningAppsAddButton,
+                      action: .add,
                       removeLabel: automation.runningAppsRemoveButton,
                       bundleIDs: awake.runningAppBundleIDs,
                       reachesEveryApp: true,

@@ -47,7 +47,7 @@ extension AppUpdatesListView {
             Button {
                 showingAppPicker = true
             } label: {
-                Label(text.addException, systemImage: "plus")
+                Label(AppListAction.exclude.title(l10n.language), systemImage: "plus")
             }
         }
         .sheet(isPresented: $showingAppPicker) {

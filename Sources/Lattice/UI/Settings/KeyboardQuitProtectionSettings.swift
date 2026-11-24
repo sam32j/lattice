@@ -197,7 +197,7 @@ extension KeyboardSettings {
             let copy = QuitProtectionAppListStrings.text(enabledOnly: scope == .selectedOnly,
                                                         shortcut: shortcut.symbol, language: l10n.language)
             AppBundleList(title: copy.title, caption: copy.caption,
-                          addTitle: quitStrings.addApp, removeLabel: FeatureStrings.mouseExceptions(l10n.language).removeButton,
+                          action: scope == .selectedOnly ? .add : .exclude, removeLabel: FeatureStrings.mouseExceptions(l10n.language).removeButton,
                           bundleIDs: quitService.exceptions(for: shortcut), reachesEveryApp: true,
                           usesSheet: true, sheetTitle: copy.title,
                           onAdd: { quitService.addException($0, for: shortcut) },

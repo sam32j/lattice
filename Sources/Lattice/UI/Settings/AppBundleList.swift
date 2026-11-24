@@ -8,7 +8,8 @@ import SwiftUI
 struct AppBundleList<Accessory: View>: View {
     let title: String
     let caption: String
-    let addTitle: String
+    /// Add app… or Exclude app…, the only two things the button says.
+    let action: AppListAction
     let removeLabel: String
     /// The listed bundle identifiers in any order; rows are sorted by name.
     let bundleIDs: [String]
@@ -34,7 +35,7 @@ struct AppBundleList<Accessory: View>: View {
 
     init(title: String,
          caption: String,
-         addTitle: String,
+         action: AppListAction,
          removeLabel: String,
          bundleIDs: [String],
          reachesEveryApp: Bool = false,
@@ -52,7 +53,7 @@ struct AppBundleList<Accessory: View>: View {
         self.canRemove = canRemove
         self.title = title
         self.caption = caption
-        self.addTitle = addTitle
+        self.action = action
         self.removeLabel = removeLabel
         self.bundleIDs = bundleIDs
         self.reachesEveryApp = reachesEveryApp
@@ -114,7 +115,7 @@ struct AppBundleList<Accessory: View>: View {
     }
 
     private var addButton: some View {
-        Button { showingAppPicker = true } label: { Label(addTitle, systemImage: "plus") }
+        Button { showingAppPicker = true } label: { Label(action.title(L10n.shared.language), systemImage: "plus") }
     }
 
     private var editorTitle: String {
@@ -210,7 +211,7 @@ struct AppBundleList<Accessory: View>: View {
 extension AppBundleList where Accessory == EmptyView {
     init(title: String,
          caption: String,
-         addTitle: String,
+         action: AppListAction,
          removeLabel: String,
          bundleIDs: [String],
          reachesEveryApp: Bool = false,
@@ -223,7 +224,7 @@ extension AppBundleList where Accessory == EmptyView {
          onRemove: @escaping (String) -> Void) {
         self.init(title: title,
                   caption: caption,
-                  addTitle: addTitle,
+                  action: action,
                   removeLabel: removeLabel,
                   bundleIDs: bundleIDs,
                   reachesEveryApp: reachesEveryApp,

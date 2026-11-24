@@ -38,7 +38,7 @@ private struct DockQuitOnCloseExceptions: View {
             if !permissions.accessibility { PermissionRow(kind: .accessibility) }
             AppBundleList(title: SettingsFollowupLabels.text(.dontQuitApps, l10n.language),
                           caption: SettingsAppListDescriptions.text(l10n.language).autoQuit,
-                          addTitle: l10n.s.autoQuitAddApp,
+                          action: .exclude,
                           removeLabel: l10n.s.autoQuitExceptionsTitle,
                           bundleIDs: exceptions,
                           usesSheet: true,
