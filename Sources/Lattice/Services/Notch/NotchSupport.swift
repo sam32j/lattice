@@ -2685,6 +2685,12 @@ struct NotchGeometry: Equatable {
         let capsule = max(NotchLayout.capsuleRestingAspect * stripBodyHeight + capsuleWidthFit, stripBodyHeight * 2)
         return CGSize(width: min(cameraWidth, (capsule + shoulders).rounded()), height: cameraHeight)
     }
+    /// The shape a hidden island draws into: the camera's own black strip on
+    /// a notched display, nothing below the screen edge elsewhere.
+    var hiddenSize: CGSize {
+        let resting = restingSize(showsContent: false)
+        return isNotched ? resting : CGSize(width: resting.width, height: 0)
+    }
     /// Full screen and the Lock Screen remove outline clearance while keeping
     /// the chosen menu-bar coverage and manual fit.
     var bareCutout: CGSize {

@@ -277,10 +277,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             restoresKeyAfterRelocation = false
             panel.contentView?.releaseEqualizerPose()
         }
-        let resting = currentGeometry.isNotched
-            ? currentGeometry.restingSize(showsContent: false)
-            : CGSize(width: currentGeometry.restingSize(showsContent: false).width, height: 0)
-        present(size: resting, geometry: currentGeometry,
+        present(size: currentGeometry.hiddenSize, geometry: currentGeometry,
                 animated: animate, transitionContent: .depart,
                 hideWhenSettled: true)
     }
@@ -762,7 +759,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             panel.ignoresMouseEvents = true
             completeMissionControlConcealment()
             if panel.isVisible {
-                fadeMissionControl(to: 0)
+                shrinkForMissionControl()
             } else {
                 panel.alphaValue = 0
                 syncMissionControlMonitoring()
@@ -818,9 +815,32 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         missionControlDidConceal?()
     }
 
-    private func fadeMissionControl(to alpha: CGFloat, completion: (() -> Void)? = nil) {
+    /// Mission Control opening takes the island back into the screen edge,
+    /// the way it grows out of it when Mission Control closes, fading over
+    /// the same stretch so nothing is left where the overview draws. A
+    /// hidden or resting island, or Reduce Motion, just fades.
+    private func shrinkForMissionControl() {
+        let hidden = currentGeometry.hiddenSize
+        let drawn = canvas.visibleSize ?? targetSize
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, !hidesWhenSettled,
+              !relocationHidden, drawn != hidden else {
+            fadeMissionControl(to: 0)
+            return
+        }
+        let duration = NotchMotion.duration(from: drawn, to: hidden)
+        // The restoration size was recorded on entry; this shrink must not
+        // replace it with the hidden shape.
+        present(size: hidden, geometry: currentGeometry, animated: true, transitionContent: .depart,
+                preserveMissionControlRestoration: true)
+        fadeMissionControl(to: 0, duration: duration, timing: .easeIn)
+    }
+
+    private func fadeMissionControl(to alpha: CGFloat, duration: TimeInterval = 0.12,
+                                    timing: CAMediaTimingFunctionName = .default,
+                                    completion: (() -> Void)? = nil) {
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.12
+            context.duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : duration
+            context.timingFunction = CAMediaTimingFunction(name: timing)
             panel.animator().alphaValue = alpha
         }, completionHandler: { [weak self] in
             guard let self else { completion?(); return }
