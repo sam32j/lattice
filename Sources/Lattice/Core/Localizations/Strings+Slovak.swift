@@ -392,7 +392,7 @@ extension Strings {
         homebrewOperationTechnicalLog: "Technické detaily",
         homebrewOperationProgressUnknown: "Homebrew zatiaľ neoznámil percentá.",
 
-        mediaName: "Médiá",
+        mediaName: "Kompresia médií",
         mediaEnableCaption: "Komprimujte videá, konvertujte a upravujte obrázky, vytvárajte GIF a extrahujte text lokálne.",
         mediaLocalNote: "Lokálne. Bez siete.",
         mediaToolVideo: "Video",

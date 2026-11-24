@@ -393,7 +393,7 @@ extension Strings {
         homebrewOperationTechnicalLog: "技術詳情",
         homebrewOperationProgressUnknown: "Homebrew 尚未回報百分比。",
 
-        mediaName: "媒體",
+        mediaName: "媒體壓縮",
         mediaEnableCaption: "在本機壓縮影片、轉換和處理圖片、製作 GIF，並從圖片中擷取文字。",
         mediaLocalNote: "本機處理，不會連接網絡。",
         mediaToolVideo: "影片",

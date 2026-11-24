@@ -23,9 +23,10 @@ struct LatticeSymbol: View {
     /// symbol name can show them.
     static let appManagerSymbol = "lattice.app.manager"
     static let videoDownloaderSymbol = "lattice.video.downloader"
+    static let mediaSymbol = "lattice.media"
 
     static func isCustom(_ name: String) -> Bool {
-        name == bluetoothSymbol || name == appManagerSymbol || name == videoDownloaderSymbol
+        [bluetoothSymbol, appManagerSymbol, videoDownloaderSymbol, mediaSymbol].contains(name)
     }
 
     var body: some View {
@@ -36,6 +37,8 @@ struct LatticeSymbol: View {
             glyph { AppManagerGlyph() }
         case Self.videoDownloaderSymbol:
             glyph { VideoDownloaderGlyph() }
+        case Self.mediaSymbol:
+            glyph { MediaCompressionGlyph() }
         default:
             Image(systemName: name)
         }
@@ -153,6 +156,63 @@ struct VideoDownloaderGlyph: View {
         .aspectRatio(1, contentMode: .fit)
         // Wide like play.rectangle, it fills the symbol's width.
         .scaleEffect(1.3)
+    }
+}
+
+/// Media Compression's mark: a frame drawn in at its middle between two caps,
+/// on a 100-point grid.
+struct MediaCompressionGlyph: View {
+    var body: some View {
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+            ZStack {
+                MediaCompressionCaps().fill(.foreground)
+                MediaCompressionOutline()
+                    .stroke(.foreground, style: StrokeStyle(lineWidth: 7 * side / 100, lineCap: .round, lineJoin: .round))
+            }
+            .frame(width: side, height: side)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .scaleEffect(1.12)
+    }
+}
+
+struct MediaCompressionCaps: Shape {
+    func path(in rect: CGRect) -> Path {
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { gridPoint(x, y, in: rect) }
+        var path = Path()
+        for (edge, inner, curve) in [(CGFloat(11), CGFloat(29.5), CGFloat(1)), (89, 70.5, -1)] {
+            let d = curve
+            path.move(to: p(35, edge))
+            path.addLine(to: p(65, edge))
+            path.addCurve(to: p(68.5, edge + 6.5 * d), control1: p(68.5, edge), control2: p(70.5, edge + 2.5 * d))
+            path.addCurve(to: p(50, inner), control1: p(65, edge + 13.5 * d), control2: p(58.5, inner))
+            path.addCurve(to: p(31.5, edge + 6.5 * d), control1: p(41.5, inner), control2: p(35, edge + 13.5 * d))
+            path.addCurve(to: p(35, edge), control1: p(29.5, edge + 2.5 * d), control2: p(31.5, edge))
+            path.closeSubpath()
+        }
+        return path
+    }
+}
+
+struct MediaCompressionOutline: Shape {
+    func path(in rect: CGRect) -> Path {
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { gridPoint(x, y, in: rect) }
+        var path = Path()
+        path.move(to: p(14, 69))
+        path.addLine(to: p(14, 31))
+        path.addCurve(to: p(23, 28.5), control1: p(14, 24.5), control2: p(19, 24.5))
+        path.addCurve(to: p(50, 41), control1: p(33, 38.5), control2: p(41, 41))
+        path.addCurve(to: p(77, 28.5), control1: p(59, 41), control2: p(67, 38.5))
+        path.addCurve(to: p(86, 31), control1: p(81, 24.5), control2: p(86, 24.5))
+        path.addLine(to: p(86, 69))
+        path.addCurve(to: p(77, 71.5), control1: p(86, 75.5), control2: p(81, 75.5))
+        path.addCurve(to: p(50, 59), control1: p(67, 61.5), control2: p(59, 59))
+        path.addCurve(to: p(23, 71.5), control1: p(41, 59), control2: p(33, 61.5))
+        path.addCurve(to: p(14, 69), control1: p(19, 75.5), control2: p(14, 75.5))
+        path.closeSubpath()
+        return path
     }
 }
 

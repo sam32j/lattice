@@ -393,7 +393,7 @@ extension Strings {
         homebrewOperationTechnicalLog: "기술 세부 정보",
         homebrewOperationProgressUnknown: "Homebrew가 아직 진행률을 보고하지 않았습니다.",
 
-        mediaName: "미디어",
+        mediaName: "미디어 압축",
         mediaEnableCaption: "동영상을 압축하고 이미지를 변환 및 처리하며, GIF를 만들고 텍스트를 로컬에서 추출합니다.",
         mediaLocalNote: "로컬 처리. 네트워크 없음.",
         mediaToolVideo: "동영상",

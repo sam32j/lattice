@@ -392,7 +392,7 @@ extension Strings {
         homebrewOperationTechnicalLog: "Dettagli tecnici",
         homebrewOperationProgressUnknown: "Homebrew non ha ancora indicato una percentuale.",
 
-        mediaName: "Media",
+        mediaName: "Compressione media",
         mediaEnableCaption: "Comprimi video, converti ed elabora immagini, crea GIF ed estrai testo localmente.",
         mediaLocalNote: "Locale. Nessuna rete.",
         mediaToolVideo: "Video",

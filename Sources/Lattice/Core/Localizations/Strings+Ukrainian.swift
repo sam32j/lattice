@@ -377,7 +377,7 @@ extension Strings {
         homebrewOperationHideDetails: "Сховати деталі",
         homebrewOperationTechnicalLog: "Технічні деталі",
         homebrewOperationProgressUnknown: "Homebrew ще не повідомив відсоток виконання.",
-        mediaName: "Медіа",
+        mediaName: "Стиснення медіа",
         mediaEnableCaption: "Стискайте відео, конвертуйте та обробляйте зображення, створюйте GIF та видобувайте текст локально.",
         mediaLocalNote: "Локально. Без мережі.",
         mediaToolVideo: "Відео",

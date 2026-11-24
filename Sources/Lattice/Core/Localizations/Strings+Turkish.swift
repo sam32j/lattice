@@ -392,7 +392,7 @@ extension Strings {
         homebrewOperationTechnicalLog: "Teknik ayrıntılar",
         homebrewOperationProgressUnknown: "Homebrew henüz yüzde bildirmedi.",
 
-        mediaName: "Medya",
+        mediaName: "Medya Sıkıştırma",
         mediaEnableCaption: "Videoları sıkıştır, görselleri dönüştür ve işle, GIF oluştur ve metni yerel olarak çıkar.",
         mediaLocalNote: "Yerel. Ağ yok.",
         mediaToolVideo: "Video",

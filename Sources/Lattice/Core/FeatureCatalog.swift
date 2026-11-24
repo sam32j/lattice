@@ -164,7 +164,7 @@ extension AppFeature {
         case .colorPicker: return "eyedropper"
         case .screenOCR: return "text.viewfinder"
         case .cleaningMode: return "bubbles.and.sparkles"
-        case .mediaTools: return "rectangle.compress.vertical"
+        case .mediaTools: return "lattice.media" // LatticeSymbol.mediaSymbol
         case .cleaner: return "sparkles"
         case .uninstaller: return "externaldrive.badge.minus"
         case .homebrew: return "shippingbox"

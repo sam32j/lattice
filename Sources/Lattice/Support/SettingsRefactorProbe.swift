@@ -77,7 +77,7 @@ enum SettingsRefactorProbe {
             render("app-manager-glyphs", view: AnyView(VStack(spacing: 18) {
                        ForEach([20.0, 48.0], id: \.self) { size in
                            HStack(spacing: size) {
-                               ForEach(["tray", LatticeSymbol.videoDownloaderSymbol, "play.rectangle", "text.append",
+                               ForEach(["tray", LatticeSymbol.videoDownloaderSymbol, LatticeSymbol.mediaSymbol, "rectangle.compress.vertical", "text.append",
                                         "waveform.path.ecg", LatticeSymbol.appManagerSymbol, "cpu"],
                                        id: \.self) { LatticeSymbol($0).font(.system(size: size, weight: .medium)) }
                            }
