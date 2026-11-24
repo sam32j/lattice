@@ -556,6 +556,8 @@ enum DefaultsKey {
     static let screenshotAddToShelf = "screenshotAddToShelf"
     static let screenshotPreviewPosition = "screenshotPreviewPosition"
     static let capturePresentationDestination = "capturePresentationDestination"
+    // Where a menu bar reading opens System Monitor: automatic | floatingWindow | dynamicIsland.
+    static let systemMonitorOpenAt = "systemMonitorOpenAt"
     static let screenshotPreviewTakesFocus = "screenshotPreviewTakesFocus"
     static let capturePreviewCloseAfter = "capturePreviewCloseAfter"
     static let screenshotUploadDuration = "screenshotUploadDuration"
@@ -1483,6 +1485,7 @@ enum Defaults {
         DefaultsKey.screenshotAddToShelf: false,
         DefaultsKey.screenshotPreviewPosition: ScreenshotSupport.QuickPreviewPosition.automatic.rawValue,
         DefaultsKey.capturePresentationDestination: CapturePresentationRouting.Preference.automatic.rawValue,
+        DefaultsKey.systemMonitorOpenAt: SystemMonitorOpenRouting.Preference.automatic.rawValue,
         DefaultsKey.screenshotPreviewTakesFocus: true,
         DefaultsKey.capturePreviewCloseAfter: CapturePreviewClosePolicy.focusLost.rawValue,
         DefaultsKey.screenshotUploadDuration: ScreenshotShareDuration.oneHour.rawValue,

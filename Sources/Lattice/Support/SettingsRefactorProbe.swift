@@ -48,6 +48,8 @@ enum SettingsRefactorProbe {
             defaults.set(true, forKey: DefaultsKey.menuBarCPU)
             defaults.set(true, forKey: DefaultsKey.menuBarMemory)
             defaults.set(true, forKey: DefaultsKey.monitorAlertCPU)
+            defaults.set(true, forKey: DefaultsKey.notchEnabled)
+            FeatureRuntime.shared.setAvailable([.notch], true)
             for (name, view) in [("monitor", AnyView(MonitorSettings())),
                                  ("monitor-menu-bar", AnyView(MonitorMenuBarSettings()))] {
                 render(name, view: view, size: CGSize(width: 720, height: 900), output: output,

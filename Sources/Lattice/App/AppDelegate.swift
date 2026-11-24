@@ -367,13 +367,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func showMetricPanel(for metric: MenuBarMetric, anchoredTo button: NSStatusBarButton) {
         let detailKind = metric.detailKind
-        if NotchService.shared.acceptsSystemFeedback {
+        let destination = SystemMonitorOpenRouting.destination(
+            preference: SystemMonitorOpenRouting.preference(),
+            islandAvailable: NotchService.shared.acceptsSystemFeedback,
+            menuBarHidden: Self.menuBarHidden,
+            latticePreference: LauncherShortcutTarget.selected())
+        switch destination {
+        case .dynamicIsland:
             NotchService.shared.showMetricFromMenuBar(detailKind)
-        } else {
+        case .floatingWindow:
             // The HUD opens on the same reading, as stepping into it from
             // the Hub's System tool would, sized for it.
             LatticeHubService.shared.toggleSystemMetric(detailKind, anchoredBelow: button.window?.frame)
         }
+    }
+
+    /// Whether the menu bar hides itself: the person's own auto-hide
+    /// setting, or the front app's full screen or presentation options.
+    private static var menuBarHidden: Bool {
+        if !NSApp.currentSystemPresentationOptions.intersection([.autoHideMenuBar, .hideMenuBar]).isEmpty {
+            return true
+        }
+        return UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?["_HIHideMenuBar"] as? Bool == true
     }
 
     @objc private func appBecameActive() {

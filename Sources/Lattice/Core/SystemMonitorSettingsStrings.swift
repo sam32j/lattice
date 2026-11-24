@@ -28,6 +28,7 @@ struct SystemMonitorSettingsStrings {
     let offOption: String
     let onOption: String
     let showInMenuBar: String
+    let openAt: String
 }
 
 extension FeatureStrings {
@@ -75,7 +76,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Show as one item",
         offOption: "Off",
         onOption: "On",
-        showInMenuBar: "Show in menu bar"
+        showInMenuBar: "Show in menu bar",
+        openAt: "Open System Monitor at"
     )
 
     static let ptBR = SystemMonitorSettingsStrings(
@@ -100,7 +102,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Mostrar como um item",
         offOption: "Desativado",
         onOption: "Ativado",
-        showInMenuBar: "Mostrar na barra de menus"
+        showInMenuBar: "Mostrar na barra de menus",
+        openAt: "Abrir o Monitor do Sistema em"
     )
 
     static let tr = SystemMonitorSettingsStrings(
@@ -125,7 +128,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Tek öğe olarak göster",
         offOption: "Kapalı",
         onOption: "Açık",
-        showInMenuBar: "Menü çubuğunda göster"
+        showInMenuBar: "Menü çubuğunda göster",
+        openAt: "Sistem Monitörünü şurada aç"
     )
 
     static let ru = SystemMonitorSettingsStrings(
@@ -150,7 +154,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Показывать одним элементом",
         offOption: "Выкл.",
         onOption: "Вкл.",
-        showInMenuBar: "Показывать в строке меню"
+        showInMenuBar: "Показывать в строке меню",
+        openAt: "Открывать мониторинг системы в"
     )
 
     static let es = SystemMonitorSettingsStrings(
@@ -175,7 +180,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Mostrar como un elemento",
         offOption: "Desactivado",
         onOption: "Activado",
-        showInMenuBar: "Mostrar en la barra de menús"
+        showInMenuBar: "Mostrar en la barra de menús",
+        openAt: "Abrir el Monitor del sistema en"
     )
 
     static let sk = SystemMonitorSettingsStrings(
@@ -200,7 +206,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Zobraziť ako jednu položku",
         offOption: "Vypnuté",
         onOption: "Zapnuté",
-        showInMenuBar: "Zobraziť na lište"
+        showInMenuBar: "Zobraziť na lište",
+        openAt: "Otvoriť Monitor systému v"
     )
 
     static let de = SystemMonitorSettingsStrings(
@@ -225,7 +232,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Als ein Objekt anzeigen",
         offOption: "Aus",
         onOption: "Ein",
-        showInMenuBar: "In der Menüleiste anzeigen"
+        showInMenuBar: "In der Menüleiste anzeigen",
+        openAt: "Systemmonitor öffnen in"
     )
 
     static let fr = SystemMonitorSettingsStrings(
@@ -250,7 +258,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Afficher en un seul élément",
         offOption: "Désactivé",
         onOption: "Activé",
-        showInMenuBar: "Afficher dans la barre des menus"
+        showInMenuBar: "Afficher dans la barre des menus",
+        openAt: "Ouvrir le moniteur système dans"
     )
 
     static let it = SystemMonitorSettingsStrings(
@@ -275,7 +284,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Mostra come un elemento",
         offOption: "Disattivato",
         onOption: "Attivo",
-        showInMenuBar: "Mostra nella barra dei menu"
+        showInMenuBar: "Mostra nella barra dei menu",
+        openAt: "Apri Monitoraggio sistema in"
     )
 
     static let ja = SystemMonitorSettingsStrings(
@@ -300,7 +310,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "1つの項目として表示",
         offOption: "オフ",
         onOption: "オン",
-        showInMenuBar: "メニューバーに表示"
+        showInMenuBar: "メニューバーに表示",
+        openAt: "システムモニタを開く場所"
     )
 
     static let ko = SystemMonitorSettingsStrings(
@@ -325,7 +336,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "하나의 항목으로 표시",
         offOption: "끔",
         onOption: "켬",
-        showInMenuBar: "메뉴 막대에 표시"
+        showInMenuBar: "메뉴 막대에 표시",
+        openAt: "시스템 모니터 열기 위치"
     )
 
     static let zhHans = SystemMonitorSettingsStrings(
@@ -350,7 +362,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "显示为一个项目",
         offOption: "关闭",
         onOption: "打开",
-        showInMenuBar: "在菜单栏中显示"
+        showInMenuBar: "在菜单栏中显示",
+        openAt: "打开系统监视器的位置"
     )
 
     static let zhTW = SystemMonitorSettingsStrings(
@@ -375,7 +388,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "顯示為一個項目",
         offOption: "關閉",
         onOption: "開啟",
-        showInMenuBar: "在選單列中顯示"
+        showInMenuBar: "在選單列中顯示",
+        openAt: "打開系統監視器的位置"
     )
 
     static let zhHK = SystemMonitorSettingsStrings(
@@ -400,7 +414,8 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "顯示為一個項目",
         offOption: "關閉",
         onOption: "開啟",
-        showInMenuBar: "在選單列中顯示"
+        showInMenuBar: "在選單列中顯示",
+        openAt: "打開系統監視器的位置"
     )
 
     static let uk = SystemMonitorSettingsStrings(
@@ -425,6 +440,7 @@ extension SystemMonitorSettingsStrings {
         combineTitle: "Показувати одним елементом",
         offOption: "Вимк.",
         onOption: "Увімк.",
-        showInMenuBar: "Показувати в рядку меню"
+        showInMenuBar: "Показувати в рядку меню",
+        openAt: "Відкривати монітор системи в"
     )
 }
