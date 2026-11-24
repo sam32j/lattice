@@ -74,8 +74,9 @@ extension RadialMenuSettings {
     /// it was created in. Nothing else is a safe guess: falling back to one
     /// particular starter set replaced a renamed wheel's actions with another
     /// wheel's.
-    var resolvedPreset: RadialMenuProfilePreset? {
-        let current = selectedProfile
+    var resolvedPreset: RadialMenuProfilePreset? { preset(for: selectedProfile) }
+
+    func preset(for current: RadialMenuProfile) -> RadialMenuProfilePreset? {
         if let stored = current.preset, let preset = RadialMenuProfilePreset(rawValue: stored) {
             return preset
         }
@@ -88,7 +89,13 @@ extension RadialMenuSettings {
     /// Restoring the actions is offered only when the set to restore is
     /// known. A submenu is the person's own list, so there is nothing to put
     /// back into it.
-    var canResetProfile: Bool { openSubmenuID == nil && resolvedPreset != nil }
+    var canResetProfile: Bool { canReset(selectedProfile) }
+
+    /// Another tab's wheel resets from its own top level, where selecting it
+    /// lands; the selected one only outside a submenu.
+    func canReset(_ profile: RadialMenuProfile) -> Bool {
+        (profile.id != selectedProfile.id || openSubmenuID == nil) && preset(for: profile) != nil
+    }
 
     func resetToPresetDefaults() {
         guard profiles.indices.contains(selectedProfileIndex),

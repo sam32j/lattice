@@ -128,6 +128,7 @@ extension RadialMenuSettings {
         }
         .contentShape(Capsule())
         .onTapGesture { activateTab(profile.id, selected: selected) }
+        .contextMenu { profileActions(for: profile) }
         .help(index == 0 ? text.primaryHelp : name)
         .focusable()
         .focusEffectDisabled()
@@ -250,18 +251,33 @@ extension RadialMenuSettings {
         .accessibilityLabel(text.addProfileButton)
     }
 
+    /// A profile's actions, for the "…" menu (the selected profile) and a
+    /// tab's context menu alike. Duplicating and resetting work on the wheel
+    /// in view, so they select the tab first; the reset's confirmation then
+    /// shows the wheel it will reset.
+    @ViewBuilder
+    private func profileActions(for profile: RadialMenuProfile) -> some View {
+        let isPrimary = profiles.first?.id == profile.id
+        Button(text.editProfileButton) { editingProfile = profile }
+        Button(text.makePrimaryButton) { makePrimary(profile.id) }
+            .disabled(isPrimary)
+        Button(text.duplicateProfileButton) {
+            selectProfile(profile.id)
+            duplicateProfile()
+        }
+        Button(text.resetActionsButton) {
+            selectProfile(profile.id)
+            confirmingReset = true
+        }
+        .disabled(!canReset(profile))
+        Divider()
+        Button(text.deleteProfileButton, role: .destructive) { confirmingDeletion = profile }
+            .disabled(profiles.count <= 1)
+    }
+
     private var profileActionsMenu: some View {
-        let profile = selectedProfile
-        return Menu {
-            Button(text.editProfileButton) { editingProfile = profile }
-            Button(text.makePrimaryButton) { makePrimary(profile.id) }
-                .disabled(selectedProfileIndex == 0)
-            Button(text.duplicateProfileButton) { duplicateProfile() }
-            Button(text.resetActionsButton) { confirmingReset = true }
-                .disabled(!canResetProfile)
-            Divider()
-            Button(text.deleteProfileButton, role: .destructive) { confirmingDeletion = profile }
-                .disabled(profiles.count <= 1)
+        Menu {
+            profileActions(for: selectedProfile)
         } label: {
             Image(systemName: "ellipsis.circle")
         }
