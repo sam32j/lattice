@@ -151,6 +151,12 @@ final class DiskImageInstallerService: ObservableObject {
         }
     }
 
+    /// Drops an install from the list, for an app that is no longer there.
+    func forget(_ install: DiskImageRecentInstall) {
+        recentInstalls.removeAll { $0.id == install.id }
+        DiskImageRecentInstalls.save(recentInstalls)
+    }
+
     func reveal(_ install: DiskImageRecentInstall) {
         let url = URL(fileURLWithPath: install.destinationPath)
         if FileManager.default.fileExists(atPath: url.path) {
