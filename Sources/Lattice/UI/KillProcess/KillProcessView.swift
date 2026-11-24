@@ -91,10 +91,11 @@ struct KillProcessView: View {
                     content
                 }
                 .padding(.horizontal, compact ? 10 : 18)
-                .padding(.top, compact ? 8 : 14)
-                .padding(.bottom, compact ? 8 : 14)
+                .padding(.vertical, compact ? HubScrollEdge.inset : 14)
             }
             .scrollBounceBehavior(.basedOnSize)
+            // In the Hub and the island, rows scroll out under soft edges.
+            .hubScrollEdgeFade(surface != .settings)
             if let toast = activity.toast {
                 KillProcessToastView(toast: toast, compact: compact)
                     .padding(.horizontal, compact ? 10 : 18)

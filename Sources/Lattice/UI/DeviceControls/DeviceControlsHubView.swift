@@ -24,8 +24,9 @@ struct DeviceControlsHubView: View {
                 }
             }
             .padding(.horizontal, 2)
-            .padding(.top, 4)
-            .padding(.bottom, 6)
+            // Room for the soft edges at rest; measured with the content, so
+            // the panel is sized to include it.
+            .padding(.vertical, HubScrollEdge.inset)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                 if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
                     navigation.updateMeasuredAppVolumesHeight(height)
@@ -35,6 +36,7 @@ struct DeviceControlsHubView: View {
             }
         }
         .frame(height: notchSize?.height ?? viewportHeight ?? navigation.contentHeight, alignment: .top)
+        .hubScrollEdgeFade()
         .onAppear {
             if !volumeMixerEnabled, navigation.currentSubpage == .appVolumes {
                 navigation.resetSubpage()
