@@ -122,12 +122,20 @@ enum DiskImageOpenHandler {
     /// choice the person just made with the switch.
     static func setOpensInLattice(_ on: Bool, completion: @escaping () -> Void) {
         guard let bundleID = on ? Bundle.main.bundleIdentifier : mounterBundleID else { completion(); return }
-        for type in contentTypes {
-            // Through the protocol, so the deprecated call stays in one place.
-            _ = (LegacyHandlerSetter.self as LegacyHandlerSetting.Type).set(bundleID as CFString,
-                                                                             for: type.identifier as CFString)
+        // Off the main thread, so the switch's window never waits on Launch
+        // Services, and only when the handler is not already the one wanted.
+        DispatchQueue.global(qos: .userInitiated).async {
+            for type in contentTypes where currentHandlerID(for: type) != bundleID {
+                // Through the protocol, so the deprecated call stays in one place.
+                _ = (LegacyHandlerSetter.self as LegacyHandlerSetting.Type).set(bundleID as CFString,
+                                                                                 for: type.identifier as CFString)
+            }
+            DispatchQueue.main.async(execute: completion)
         }
-        DispatchQueue.main.async(execute: completion)
+    }
+
+    private static func currentHandlerID(for type: UTType) -> String? {
+        NSWorkspace.shared.urlForApplication(toOpen: type).flatMap { Bundle(url: $0)?.bundleIdentifier }
     }
 
     /// Opens an image the way a plain double-click would without Lattice.
