@@ -29,6 +29,7 @@ enum RemainingPageLifecycleTests {
         var automaticCheckPending = true
         var upgradeObserver: Int? = 1
         var pendingUpdateHandoffs: Set<UUID> = [UUID()]
+        var handedOffItemIDs: Set<String> = ["fixture"]
     }
     static func run(_ suite: TestSuite) {
         let domain = "io.github.sam32j.lattice.tests.remaining-lifecycle.\(UUID())"
@@ -59,6 +60,7 @@ enum RemainingPageLifecycleTests {
         suite.expect(!updates.isChecking && updates.checkCancellation == nil
                      && !updates.sourceRefreshPending && !updates.automaticCheckPending
                      && updates.upgradeObserver == nil && updates.pendingUpdateHandoffs.isEmpty
+                     && updates.handedOffItemIDs.isEmpty
                      && updates.scanGeneration > 3,
                      "disabled App Updates invalidates completion and clears pending schedules and handoffs")
     }

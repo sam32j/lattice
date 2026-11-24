@@ -71,6 +71,9 @@ final class AppUpdatesService: ObservableObject {
     /// The person was sent elsewhere to finish an update, so the list is
     /// about to be wrong until it is read again.
     var pendingUpdateHandoffs = Set<UUID>()
+    /// Rows whose updater was opened, re-read alone when the person is back
+    /// rather than scanning every app again.
+    var handedOffItemIDs = Set<String>()
     var updateHandoffPending: Bool {
         !pendingUpdateHandoffs.isEmpty
     }
