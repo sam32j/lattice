@@ -21,7 +21,7 @@ struct WindowPreviewExclusionsList: View {
     var body: some View {
         AppBundleList(title: text.listTitle,
                       caption: SettingsAppListDescriptions.text(l10n.language).dockPreview,
-                      addTitle: text.addButton,
+                      action: .exclude,
                       removeLabel: text.removeButton,
                       bundleIDs: apps,
                       reachesEveryApp: true,

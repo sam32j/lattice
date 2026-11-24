@@ -20,7 +20,7 @@ struct MouseExceptionsList: View {
     var body: some View {
         AppBundleList(title: title ?? text.listTitle,
                       caption: text.caption(for: scope),
-                      addTitle: text.addButton,
+                      action: .exclude,
                       removeLabel: text.removeButton,
                       bundleIDs: exceptions.list(scope),
                       reachesEveryApp: true,

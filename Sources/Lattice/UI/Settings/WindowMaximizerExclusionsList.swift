@@ -14,7 +14,7 @@ struct WindowMaximizerExclusionsList: View {
     var body: some View {
         AppBundleList(title: text.listTitle,
                       caption: SettingsAppListDescriptions.text(l10n.language).maximizeWindows,
-                      addTitle: text.addButton,
+                      action: .exclude,
                       removeLabel: text.removeButton,
                       bundleIDs: apps,
                       // Games often live outside the Applications folders,

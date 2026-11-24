@@ -177,7 +177,7 @@ struct ShelfSettings: View {
                     Button {
                         showingAppPicker = true
                     } label: {
-                        Label(l10n.s.autoQuitAddApp, systemImage: "plus")
+                        Label(AppListAction.exclude.title(l10n.language), systemImage: "plus")
                     }
                     Text(l10n.s.shelfExclusionsCaption)
                         .font(.caption)

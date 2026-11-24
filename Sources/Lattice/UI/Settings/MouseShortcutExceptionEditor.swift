@@ -10,7 +10,7 @@ struct MouseShortcutExceptionEditor: View {
         let _ = revision
         AppBundleList(title: strings.listTitle,
                       caption: strings.captionButtonShortcuts,
-                      addTitle: strings.addButton, removeLabel: strings.removeButton,
+                      action: .exclude, removeLabel: strings.removeButton,
                       bundleIDs: MouseShortcutExceptions.list(for: button),
                       reachesEveryApp: true, acceptsExecutables: true, usesSheet: true,
                       onAdd: { app in
