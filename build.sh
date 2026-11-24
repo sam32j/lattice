@@ -917,6 +917,7 @@ fi
 
 if (( NEED_FAN_HELPER )); then
     (
+        rm -f "$FAN_HELPER_STAMP_FILE"
         swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" "${LINKER_FLAGS[@]}" \
             "${FAN_HELPER_SOURCES[@]}" -o "build/$FAN_HELPER_ID"
         "build/$FAN_HELPER_ID" --selftest
