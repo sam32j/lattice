@@ -14,7 +14,10 @@ struct NotchCameraView: View {
     /// Showing the page is what starts the camera, and leaving it stops it:
     /// there is no closed state asking to open it.
     var body: some View {
-        Group {
+        // A ZStack, not a Group: a Group hands onAppear to whichever child
+        // its condition shows, so swapping in the restart button would start
+        // capture again by itself.
+        ZStack {
             if stoppedHere {
                 // Only reached if capture stopped while the page stayed open:
                 // offer to start it again rather than a spinner that never ends.
