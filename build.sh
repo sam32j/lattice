@@ -306,6 +306,7 @@ if (( TEST )); then
         Sources/Lattice/Core/ShortcutConflictAlert.swift
         Sources/Lattice/Services/QuickTools/CaptureSaveNaming.swift
         Sources/Lattice/Services/QuickTools/CapturePresentationRouting.swift
+        Sources/Lattice/Services/SystemMonitor/SystemMonitorOpenRouting.swift
         Sources/Lattice/Core/Defaults.swift
         Sources/Lattice/Core/LauncherShortcutTarget.swift
         Sources/Lattice/Core/PermanentInputMigration.swift

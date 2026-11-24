@@ -596,6 +596,25 @@ enum MetricsFeatureTests {
         expectEqual(String(format: alertStrings.batteryTemperatureBodyFormat, MetricFormat.temperature(40)),
                     "Battery reached 40 °C.", "battery temperature alerts read in Celsius")
 
+        // Where a menu bar reading opens System Monitor.
+        typealias Route = SystemMonitorOpenRouting
+        suite.expect(Route.destination(preference: .dynamicIsland, islandAvailable: false, menuBarHidden: false,
+                                       latticePreference: .automatic) == .floatingWindow,
+                     "without the Dynamic Island every choice opens the floating window")
+        suite.expect(Route.destination(preference: .dynamicIsland, islandAvailable: true, menuBarHidden: true,
+                                       latticePreference: .floatingWindow) == .dynamicIsland
+                        && Route.destination(preference: .floatingWindow, islandAvailable: true, menuBarHidden: false,
+                                             latticePreference: .automatic) == .floatingWindow,
+                     "a fixed choice opens where it says")
+        suite.expect(Route.destination(preference: .automatic, islandAvailable: true, menuBarHidden: false,
+                                       latticePreference: .automatic) == .dynamicIsland
+                        && Route.destination(preference: .automatic, islandAvailable: true, menuBarHidden: false,
+                                             latticePreference: .floatingWindow) == .floatingWindow,
+                     "Automatic follows Prefer Lattice opens at")
+        suite.expect(Route.destination(preference: .automatic, islandAvailable: true, menuBarHidden: true,
+                                       latticePreference: .automatic) == .floatingWindow,
+                     "Automatic opens the floating window while the menu bar hides itself")
+
         // MARK: Temperature sensor selection
 
         let m4MaxPlatform = TemperatureSensorSelector.platform(

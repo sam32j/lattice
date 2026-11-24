@@ -12,6 +12,8 @@ struct MonitorMenuBarSettings: View {
     @AppStorage(DefaultsKey.menuBarSeparateMetrics) private var separateMetrics = false
     @AppStorage(DefaultsKey.menuBarMetricSpacing) private var metricSpacing = "standard"
     @AppStorage(DefaultsKey.menuBarMetricAppearance) private var metricAppearance = "values"
+    @AppStorage(DefaultsKey.systemMonitorOpenAt) private var openAt = SystemMonitorOpenRouting.Preference.automatic.rawValue
+    @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
 
     private var appearanceStrings: MenuBarAppearanceStrings {
         FeatureStrings.menuBarAppearance(l10n.language)
@@ -58,6 +60,22 @@ struct MonitorMenuBarSettings: View {
                                    selected: appearance == .values) { metricAppearance = "values" }
                 MenuBarStyleChoice(appearance: .bars, title: appearanceStrings.bars,
                                    selected: appearance == .bars) { metricAppearance = "bars" }
+            }
+            // Only with the Dynamic Island is there a choice; without it a
+            // reading always opens in the floating window.
+            if islandEnabled && features.isAvailable(.notch) {
+                SettingsControlRow(title: strings.openAt) {
+                    let copy = CaptureInterfaceStrings.localized(l10n.language)
+                    Picker(strings.openAt, selection: $openAt) {
+                        Text(copy.automatic).tag(SystemMonitorOpenRouting.Preference.automatic.rawValue)
+                        Text(copy.floatingWindow).tag(SystemMonitorOpenRouting.Preference.floatingWindow.rawValue)
+                        Text(copy.dynamicIsland).tag(SystemMonitorOpenRouting.Preference.dynamicIsland.rawValue)
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                .transition(.settingsReveal)
             }
             // Bars take the System widget's colors and levels, so there is
             // nothing to set for them; combining usage and temperature is a
