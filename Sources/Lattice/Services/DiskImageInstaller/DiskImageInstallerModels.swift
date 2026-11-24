@@ -114,88 +114,19 @@ enum DiskImageOpenHandler {
         return Bundle(url: handler)?.bundleIdentifier == Bundle.main.bundleIdentifier
     }
 
-    static let mounterBundleID = "com.apple.DiskImageMounter"
-
-    private static var pendingChange: Bool?
-    private static var observers: [NSObjectProtocol] = []
-
-    /// Records the switch and applies it once the window showing it is out of
-    /// the way. Changing the handler made macOS redraw the Settings window
-    /// with a visible blink, so it waits for Settings to close or Lattice to
-    /// stop being the active app.
-    @MainActor
-    static func schedule(_ on: Bool) {
-        pendingChange = on
-        guard observers.isEmpty else { return }
-        let center = NotificationCenter.default
-        let apply: (Notification) -> Void = { _ in applyPending() }
-        // A real window closing, such as Settings; not a popover or an alert
-        // inside it, which would blink the window still showing.
-        let windowClosed: (Notification) -> Void = { note in
-            guard let window = note.object as? NSWindow, window.styleMask.contains(.titled),
-                  !(window is NSPanel) else { return }
-            applyPending()
+    /// Makes Lattice, or Disk Image Mounter again, the app DMG files open in.
+    /// macOS confirms the change with its own dialog; the completion reports
+    /// whether Lattice is the opener afterwards, so a declined change shows.
+    static func setOpensInLattice(_ on: Bool, completion: @escaping (Bool) -> Void) {
+        guard let type = contentTypes.first else { completion(opensInLattice); return }
+        let app = on ? Bundle.main.bundleURL : mounterURL
+        NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type) { _ in
+            DispatchQueue.main.async { completion(opensInLattice) }
         }
-        observers = [
-            center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main, using: apply),
-            center.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main, using: windowClosed),
-            center.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main, using: apply),
-        ]
-    }
-
-    /// Applies the saved switch now: at launch, and when a scheduled change
-    /// comes due.
-    static func applyPending() {
-        guard let on = pendingChange else { return }
-        pendingChange = nil
-        setOpensInLattice(on) {}
-    }
-
-    /// Makes sure Lattice still opens .dmg files at launch when the switch is
-    /// on. With it off, nothing is touched: another app chosen since stays.
-    static func syncWithPreferences() {
-        guard UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages) else { return }
-        pendingChange = true
-        applyPending()
-    }
-
-    /// Makes Lattice, or Disk Image Mounter again, the app disk images open in.
-    /// Set through Launch Services directly: NSWorkspace's way asks with a
-    /// system dialog whose appearance flashed the Settings window, for a
-    /// choice the person just made with the switch.
-    static func setOpensInLattice(_ on: Bool, completion: @escaping () -> Void) {
-        guard let bundleID = on ? Bundle.main.bundleIdentifier : mounterBundleID else { completion(); return }
-        // Off the main thread, so the switch's window never waits on Launch
-        // Services, and only when the handler is not already the one wanted.
-        DispatchQueue.global(qos: .userInitiated).async {
-            for type in contentTypes where currentHandlerID(for: type) != bundleID {
-                // Through the protocol, so the deprecated call stays in one place.
-                _ = (LegacyHandlerSetter.self as LegacyHandlerSetting.Type).set(bundleID as CFString,
-                                                                                 for: type.identifier as CFString)
-            }
-            DispatchQueue.main.async(execute: completion)
-        }
-    }
-
-    private static func currentHandlerID(for type: UTType) -> String? {
-        NSWorkspace.shared.urlForApplication(toOpen: type).flatMap { Bundle(url: $0)?.bundleIdentifier }
     }
 
     /// Opens an image the way a plain double-click would without Lattice.
     static func openWithDiskImageMounter(_ url: URL) {
         NSWorkspace.shared.open([url], withApplicationAt: mounterURL, configuration: NSWorkspace.OpenConfiguration())
-    }
-}
-
-private protocol LegacyHandlerSetting {
-    static func set(_ bundleID: CFString, for type: CFString) -> OSStatus
-}
-
-/// Launch Services' own setter, deprecated in favor of one that asks with a
-/// system dialog for every change.
-private enum LegacyHandlerSetter: LegacyHandlerSetting {
-    @available(macOS, deprecated: 12.0)
-    static func set(_ bundleID: CFString, for type: CFString) -> OSStatus {
-        LSSetDefaultRoleHandlerForContentType(type, .all, bundleID)
     }
 }
