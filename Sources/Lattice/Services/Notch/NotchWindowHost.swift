@@ -827,15 +827,17 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             fadeMissionControl(to: 0)
             return
         }
-        let duration = NotchMotion.duration(from: drawn, to: hidden)
-        // The restoration size was recorded on entry; this shrink must not
-        // replace it with the hidden shape.
-        present(size: hidden, geometry: currentGeometry, animated: true, transitionContent: .depart,
+        // Into the camera itself: a notice reaching toward its wider side has
+        // its centre beside the camera's. The restoration keeps the notice's
+        // geometry, recorded on entry; this shrink must not replace it.
+        var centred = currentGeometry
+        centred.surfaceShift = 0
+        present(size: hidden, geometry: centred, animated: true, transitionContent: .depart,
                 preserveMissionControlRestoration: true)
         // Fading alongside, the island was gone before the shrink could be
-        // seen. It fades only once it has closed to the screen edge.
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
-            guard let self, self.concealedForMissionControl else { return }
+        // seen. It fades once the resize has settled at the screen edge.
+        whenSettled { [weak self] in
+            guard let self, self.concealedForMissionControl, self.panel.alphaValue > 0 else { return }
             self.fadeMissionControl(to: 0)
         }
     }
