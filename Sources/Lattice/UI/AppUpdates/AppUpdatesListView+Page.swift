@@ -18,6 +18,11 @@ extension AppUpdatesListView {
 
                 availableUpdatesHeader
 
+                if coverageIncomplete {
+                    pageIncompleteNote
+                        .transition(reduceMotion ? .identity : .opacity)
+                }
+
                 if allSourcesOff {
                     noSourcesCard
                         .transition(reduceMotion ? .identity : .opacity)
@@ -71,6 +76,26 @@ extension AppUpdatesListView {
         .onChange(of: statusHeadline) { _, newHeadline in
             AccessibilityNotification.Announcement("\(newHeadline), \(statusDetail)").post()
         }
+    }
+
+    /// The same note the panel shows: which apps the check left out.
+    var pageIncompleteNote: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(text.incompleteCheck).font(.system(size: 12, weight: .semibold))
+                Text(incompleteCheckDetail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            if storeCoverageIncomplete {
+                Button(text.openAppStore) { updates.openAppStoreUpdates() }
+            }
+        }
+        .padding(12)
+        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     var availableUpdatesHeader: some View {
