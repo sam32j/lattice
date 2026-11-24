@@ -318,6 +318,14 @@ struct MetricDetailView: View {
             refreshProcessRows(force: true, delay: 0.2)
         }
         .onReceive(monitor.$snapshot) { _ in refreshProcessRows(force: false) }
+        // The island sizes itself from this detail's layout, which grows as
+        // its readings arrive. Opened straight from a menu bar reading, they
+        // arrive after it opens, so a change in the layout's height resizes
+        // the island to fit, as it already fits when entered step by step.
+        .onChange(of: fitsIsland ? navigation.height(for: monitor.snapshot) : 0) { _, _ in
+            guard fitsIsland, navigation.selectedMetric == kind else { return }
+            NotchService.shared.refreshPresentation()
+        }
         .onChange(of: navigation.showingSpeedTest) { [weak speed] _, showing in
             guard fitsIsland else { return }
             if showing {

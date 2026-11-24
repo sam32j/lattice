@@ -370,7 +370,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if NotchService.shared.acceptsSystemFeedback {
             NotchService.shared.showMetric(detailKind, toggle: true)
         } else {
-            LatticeHubService.shared.toggle()
+            // The HUD opens on the same reading, as stepping into it from
+            // the Hub's System tool would, sized for it.
+            LatticeHubService.shared.toggleSystemMetric(detailKind, anchoredBelow: button.window?.frame)
         }
     }
 
