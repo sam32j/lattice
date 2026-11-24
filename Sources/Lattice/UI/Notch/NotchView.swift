@@ -702,7 +702,7 @@ struct NotchView: View {
                 NotchFanControlView()
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { service.updateFanDetailHeight($0) }
             } else {
-                MetricDetailView(kind: metric)
+                MetricDetailView(kind: metric, presentation: .island)
             }
         } else if service.modules.isEmpty {
             NotchEmptyView(symbol: "slider.horizontal.3", message: text.empty) {

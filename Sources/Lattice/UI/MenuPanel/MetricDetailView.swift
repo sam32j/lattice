@@ -107,7 +107,7 @@ extension MenuBarMetric {
 
 struct MetricDetailView: View {
     enum Presentation {
-        case menuPanel, hubPanel, island
+        case hubPanel, island
     }
 
     @ObservedObject private var l10n = L10n.shared
@@ -120,9 +120,8 @@ struct MetricDetailView: View {
 
     private let presentation: Presentation
     private var fitsIsland: Bool { presentation == .island }
-    private var usesWidgetDesign: Bool { presentation != .menuPanel }
-    private var showsHeroTitle: Bool { usesWidgetDesign && SystemWidgetLayout.showsHeroTitle(kind) }
-    private var isWidgetEnergy: Bool { usesWidgetDesign && SystemWidgetLayout.isEnergyMetric(kind) }
+    private var showsHeroTitle: Bool { SystemWidgetLayout.showsHeroTitle(kind) }
+    private var isWidgetEnergy: Bool { SystemWidgetLayout.isEnergyMetric(kind) }
     private var isDesktopEnergy: Bool { isWidgetEnergy && !PowerSampler.hasInternalBattery }
     private var processKind: BreakdownKind? { isWidgetEnergy ? .cpuPower : kind.processKind }
     @StateObject private var navigation: SystemNavigationState
@@ -134,10 +133,10 @@ struct MetricDetailView: View {
     @State private var metricViewOwner = UUID()
     private let processLimit = 15
 
-    init(kind: MetricDetailKind, presentation: Presentation = .menuPanel) {
+    init(kind: MetricDetailKind, presentation: Presentation) {
         self.kind = kind
         self.presentation = presentation
-        _navigation = StateObject(wrappedValue: presentation == .menuPanel ? SystemNavigationState() : .shared)
+        _navigation = StateObject(wrappedValue: .shared)
     }
 
     private func severity(for fraction: Double, inverted: Bool = false) -> Int {
@@ -269,7 +268,7 @@ struct MetricDetailView: View {
                             .frame(height: fitsIsland ? SystemWidgetLayout.heroHeight(kind) : nil, alignment: .topLeading)
                     }
 
-                    if SystemWidgetDetailContent.hasGraph(for: kind, widgetDesign: usesWidgetDesign) {
+                    if SystemWidgetDetailContent.hasGraph(for: kind) {
                         graphSection
                     }
 
@@ -344,7 +343,6 @@ struct MetricDetailView: View {
     }
 
     private func updateMonitorNeeds() {
-        guard usesWidgetDesign else { return }
         var needs = isWidgetEnergy && PowerSampler.hasInternalBattery
             ? MetricDetailKind.battery.monitorNeeds : kind.monitorNeeds
         needs.cpuCores = kind == .cpu
@@ -473,7 +471,7 @@ struct MetricDetailView: View {
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundStyle(Color.secondary)
                         }
-                        if usesWidgetDesign, kind == .memory, let ratio = memoryRatio {
+                        if kind == .memory, let ratio = memoryRatio {
                             Spacer(minLength: 0)
                             SystemMemoryPressureChip(level: .memory(pressure: monitor.snapshot.memoryPressure, fraction: ratio))
                         }
@@ -484,7 +482,7 @@ struct MetricDetailView: View {
                         .lineLimit(1)
                 }
             }
-            if !usesWidgetDesign || kind != .memory { Spacer(minLength: 8) }
+            if kind != .memory { Spacer(minLength: 8) }
             if let auxLines = heroAuxLines, kind != .network {
                 VStack(alignment: .trailing, spacing: 2) {
                     ForEach(auxLines, id: \.self) { line in
@@ -608,7 +606,7 @@ struct MetricDetailView: View {
                   maxValue: maxValue,
                   fillOpacity: 0.35,
                   lineWidth: 2,
-                  showsZeroBaseline: !usesWidgetDesign,
+                  showsZeroBaseline: false,
                   horizontalPositions: positions)
             .frame(height: SystemWidgetLayout.graphHeight)
             .graphCeilingLabel(ceilingLabel)
@@ -620,7 +618,7 @@ struct MetricDetailView: View {
         let up = monitor.snapshot.netUpHistory
         let peak = MetricFormat.networkGraphCeiling(max(down.max() ?? 0, up.max() ?? 0, 1))
         ZStack {
-            Sparkline(values: down.count >= 2 ? down : [0, 0], color: graphColor, maxValue: peak, fillOpacity: 0.35, lineWidth: 2, showsZeroBaseline: !usesWidgetDesign)
+            Sparkline(values: down.count >= 2 ? down : [0, 0], color: graphColor, maxValue: peak, fillOpacity: 0.35, lineWidth: 2, showsZeroBaseline: false)
             Sparkline(values: up.count >= 2 ? up : [0, 0],
                       color: PanelMetricColor.green(for: colorScheme),
                       maxValue: peak,
@@ -642,7 +640,7 @@ struct MetricDetailView: View {
                       maxValue: peak,
                       fillOpacity: 0.35,
                       lineWidth: 2,
-                      showsZeroBaseline: !usesWidgetDesign)
+                      showsZeroBaseline: false)
             Sparkline(values: write.count >= 2 ? write : [0, 0],
                       color: Color(red: 0.19, green: 0.82, blue: 0.35),
                       maxValue: peak,
@@ -654,7 +652,7 @@ struct MetricDetailView: View {
     }
 
     private func factsGrid(_ list: [(String, String, String?, String?)]) -> some View {
-        let columns = usesWidgetDesign ? SystemWidgetLayout.factColumns(kind) : 3
+        let columns = SystemWidgetLayout.factColumns(kind)
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: min(list.count, columns)),
                          alignment: .leading, spacing: SystemWidgetLayout.factRowSpacing) {
             ForEach(list, id: \.0) { fact in
@@ -711,7 +709,7 @@ struct MetricDetailView: View {
                     } label: {
                         Text(navigation.showMoreProcesses ? "Show less" : "Show more")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(usesWidgetDesign ? (colorScheme == .dark ? Color.white : Color.accentColor) : Color.accentColor)
+                            .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                     }
                     .buttonStyle(.plain)
                 }
@@ -960,13 +958,13 @@ private struct ProcessRowSkeleton: View {
                       maxValue: peak,
                       fillOpacity: 0.30,
                       lineWidth: 2,
-                      showsZeroBaseline: !usesWidgetDesign)
+                      showsZeroBaseline: false)
             Sparkline(values: ul,
                       color: Color(red: 0.19, green: 0.82, blue: 0.35),
                       maxValue: peak,
                       fillOpacity: 0.20,
                       lineWidth: 1.5,
-                      showsZeroBaseline: !usesWidgetDesign)
+                      showsZeroBaseline: false)
         }
         .frame(height: SystemWidgetLayout.graphHeight)
         .graphCeilingLabel("\(Int(peak.rounded())) Mbps")
@@ -1034,7 +1032,6 @@ private struct ProcessRowSkeleton: View {
             return SystemWidgetDetailContent.energyFacts(power: snapshot.power, hasBattery: !isDesktopEnergy,
                                                          temperature: snapshot.batteryTemperature.map(formatTemperature))
         }
-        if !usesWidgetDesign, let legacy = menuPanelFacts(snapshot) { return legacy }
         switch kind {
         case .cpu:
             return [
@@ -1113,59 +1110,10 @@ private struct ProcessRowSkeleton: View {
         }
     }
 
-    private func menuPanelFacts(_ snapshot: SystemSnapshot) -> [(String, String, String?, String?)]? {
-        switch kind {
-        case .cpu:
-            return [("Temp", snapshot.cpuTemperature.map(formatTemperature) ?? "-", nil, nil),
-                    ("Performance", snapshot.cpuUsage.map(MetricFormat.percent) ?? "-", nil, nil),
-                    ("Uptime", SystemInfo.uptimeString(), nil, nil)]
-        case .gpu:
-            return [("Temp", snapshot.gpuTemperature.map(formatTemperature) ?? "-", nil, nil),
-                    ("Top app", processRows.first?.name ?? "-", nil, nil),
-                    ("Usage", snapshot.gpuUsage.map(MetricFormat.percent) ?? "-", nil, nil)]
-        case .memory:
-            let pressure: String
-            switch snapshot.memoryPressure {
-            case .normal: pressure = l10n.s.pressureNormal
-            case .warning: pressure = l10n.s.pressureWarning
-            case .critical: pressure = l10n.s.pressureCritical
-            case .unknown: pressure = "-"
-            }
-            return [("Pressure", pressure, nil, nil),
-                    ("Compressed", snapshot.memoryCompressed.map(formatMemory) ?? "-", nil, nil),
-                    ("Cached", snapshot.memoryCached.map(formatMemory) ?? "-", nil, nil),
-                    ("Swap", snapshot.memorySwapUsed.map(formatMemory) ?? "-", nil, nil)]
-        default:
-            return nil
-        }
-    }
-
     private var moreDetails: [(String, String)] {
         let snapshot = monitor.snapshot
-        if !usesWidgetDesign {
-            switch kind {
-            case .cpu:
-                #if arch(arm64)
-                let architecture = "Apple Silicon"
-                #else
-                let architecture = "Intel (x86_64)"
-                #endif
-                return [("Cores", "\(ProcessInfo.processInfo.processorCount) cores"),
-                        ("Active cores", "\(ProcessInfo.processInfo.activeProcessorCount) cores"),
-                        ("Architecture", architecture)]
-            case .gpu:
-                return [("Renderer", SystemWidgetHardware.gpu.model ?? l10n.s.gpuLabel)]
-            case .memory:
-                var details: [(String, String)] = []
-                if let wired = snapshot.memoryWired { details.append(("Wired", formatMemory(wired))) }
-                if let swap = snapshot.memorySwapUsed { details.append(("Swap used", formatMemory(swap))) }
-                return details
-            default:
-                break
-            }
-        }
         return SystemWidgetDetailContent.detailRows(for: kind, snapshot: snapshot, disk: currentDisk,
-                                                    widgetDesign: usesWidgetDesign, formatTemperature: formatTemperature)
+                                                    formatTemperature: formatTemperature)
     }
 
     private var heroPrimaryValue: String {
@@ -1210,14 +1158,9 @@ private struct ProcessRowSkeleton: View {
         }
         switch kind {
         case .cpu:
-            if !usesWidgetDesign {
-                let cores = "\(ProcessInfo.processInfo.activeProcessorCount) cores"
-                return snapshot.cpuTemperature.map { "\(formatTemperature($0)) · \(cores)" } ?? cores
-            }
             let model = SystemWidgetHardware.cpuModel ?? l10n.s.cpuLabel
             return "\(model) • \(SystemWidgetHardware.cpuCoreCount) cores"
         case .gpu:
-            if !usesWidgetDesign { return snapshot.gpuTemperature.map(formatTemperature) ?? l10n.s.gpuLabel }
             let hardware = SystemWidgetHardware.gpu
             let model = hardware.model ?? l10n.s.gpuLabel
             return hardware.coreCount.map { "\(model) • \($0) cores" } ?? model
@@ -1354,7 +1297,7 @@ private struct ProcessRowSkeleton: View {
                 DispatchQueue.main.async {
                     guard self.refreshSerial == serial,
                           self.processKind == processKind,
-                          !self.usesWidgetDesign || self.navigation.selectedMetric == self.kind else { return }
+                          self.navigation.selectedMetric == self.kind else { return }
                     self.updateProcessRows(rows, loading: loading)
                     if rows.isEmpty && warmingNetwork {
                         self.refreshProcessRows(force: true, delay: 1.0)
