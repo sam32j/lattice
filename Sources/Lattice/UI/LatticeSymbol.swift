@@ -116,30 +116,43 @@ struct AppManagerMark: Shape {
 /// The Video Downloader's mark: a player window with a play button and a
 /// download badge at its corner, on a 100-point grid.
 struct VideoDownloaderGlyph: View {
+    /// Stroke widths on the 100-point grid, a touch heavier than the source
+    /// drawing so it reads at the weight of the SF Symbols beside it.
+    static let frameWidth: CGFloat = 8.0
+    static let arrowWidth: CGFloat = 4.4
+
     var body: some View {
         GeometryReader { proxy in
             let side = min(proxy.size.width, proxy.size.height)
             let scale = side / 100
             ZStack {
                 VideoDownloaderFrame()
-                    .stroke(.foreground, style: StrokeStyle(lineWidth: 6 * scale, lineCap: .butt, lineJoin: .round))
-                VideoDownloaderPlay().fill(.foreground)
+                    .stroke(.foreground, style: StrokeStyle(lineWidth: Self.frameWidth * scale,
+                                                            lineCap: .butt, lineJoin: .round))
+                VideoDownloaderPlay()
+                    .fill(.foreground)
+                    // The play mark sits a little small in the source.
+                    .scaleEffect(1.18, anchor: UnitPoint(x: 0.47, y: 0.46))
                 ZStack {
                     Circle()
                         .fill(.foreground)
-                        .frame(width: 36 * scale, height: 36 * scale)
+                        .frame(width: 38 * scale, height: 38 * scale)
                         .position(x: 73 * scale, y: 66 * scale)
                     VideoDownloaderArrow()
-                        .stroke(.black, style: StrokeStyle(lineWidth: 3.8 * scale, lineCap: .round, lineJoin: .round))
+                        .stroke(.black, style: StrokeStyle(lineWidth: Self.arrowWidth * scale,
+                                                           lineCap: .round, lineJoin: .round))
                         .blendMode(.destinationOut)
                 }
                 .compositingGroup()
             }
             .frame(width: side, height: side)
+            // The drawing spans x 10 to 92 and y 18 to 85; centre it.
+            .offset(x: -1 * scale, y: -1.5 * scale)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .aspectRatio(1, contentMode: .fit)
-        .scaleEffect(1.1)
+        // Wide like play.rectangle, it fills the symbol's width.
+        .scaleEffect(1.3)
     }
 }
 
