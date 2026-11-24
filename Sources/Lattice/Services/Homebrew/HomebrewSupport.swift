@@ -492,10 +492,46 @@ enum HomebrewCommandBuilder {
             "\(homeDirectory)/.bashrc",
             "\(homeDirectory)/.profile",
         ]
-        return ([primary] + common).reduce(into: [String]()) { result, path in
+        // zsh reads its other startup files from ZDOTDIR when ~/.zshenv sets
+        // it, as dotfile setups that keep them under ~/.config/zsh do.
+        let zdotdirFiles = zshDotDirectory(homeDirectory: homeDirectory).map { directory in
+            [".zprofile", ".zshrc", ".zshenv", ".zlogin"].map { "\(directory)/\($0)" }
+        } ?? []
+        return ([primary] + common + zdotdirFiles).reduce(into: [String]()) { result, path in
             if !result.contains(path) {
                 result.append(path)
             }
+        }
+    }
+
+    /// The ZDOTDIR `~/.zshenv` exports, with `$HOME` and `~` expanded; nil
+    /// when it sets none or points back at the home folder.
+    static func zshDotDirectory(homeDirectory: String = NSHomeDirectory()) -> String? {
+        guard let contents = try? String(contentsOfFile: "\(homeDirectory)/.zshenv", encoding: .utf8) else { return nil }
+        for raw in contents.split(separator: "\n") {
+            var line = raw.trimmingCharacters(in: .whitespaces)
+            guard !line.hasPrefix("#") else { continue }
+            if line.hasPrefix("export ") { line = String(line.dropFirst("export ".count)) }
+            guard line.hasPrefix("ZDOTDIR=") else { continue }
+            var value = String(line.dropFirst("ZDOTDIR=".count))
+            if let comment = value.range(of: " #") { value = String(value[..<comment.lowerBound]) }
+            value = value.trimmingCharacters(in: CharacterSet(charactersIn: "\"' "))
+            value = value.replacingOccurrences(of: "${HOME}", with: homeDirectory)
+                .replacingOccurrences(of: "$HOME", with: homeDirectory)
+            if value.hasPrefix("~") { value = homeDirectory + value.dropFirst() }
+            guard !value.isEmpty, value != homeDirectory, !value.contains("$") else { return nil }
+            return value
+        }
+        return nil
+    }
+
+    /// Whether a startup file sets Homebrew up: the exact line Lattice would
+    /// write, or any uncommented `brew shellenv` call, however it is spelled.
+    static func setsUpHomebrew(_ contents: String, expectedLine: String) -> Bool {
+        if contents.contains(expectedLine) { return true }
+        return contents.split(separator: "\n").contains { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return !trimmed.hasPrefix("#") && trimmed.contains("brew shellenv")
         }
     }
 

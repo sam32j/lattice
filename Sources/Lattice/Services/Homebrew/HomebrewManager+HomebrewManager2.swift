@@ -171,12 +171,50 @@ extension HomebrewManager {
         let paths = HomebrewCommandBuilder.shellProfilePathsToCheck()
         shellConfigProfilePath = primaryPath
         isShellConfigured = paths.contains { path in
-            guard let contents = try? String(contentsOfFile: path) else { return false }
-            return contents.contains(expectedLine)
+            guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else { return false }
+            return HomebrewCommandBuilder.setsUpHomebrew(contents, expectedLine: expectedLine)
         }
         if isShellConfigured {
             didOpenShellConfig = false
+            return
         }
+        // No startup file says so, but a setup can live anywhere a shell
+        // sources. The login shell itself answers whether brew is found.
+        let shell = HomebrewCommandBuilder.currentShellPath
+        workQueue.async { [weak self] in
+            let found = Self.loginShellFindsBrew(shell: shell, brewPath: brewPath)
+            DispatchQueue.main.async {
+                guard let self, found, self.brewPath == brewPath || self.brewPath == nil else { return }
+                self.isShellConfigured = true
+                self.didOpenShellConfig = false
+            }
+        }
+    }
+
+    /// Runs the person's login shell once, interactively so its rc files are
+    /// read too, and asks where `brew` is. Gives up after a few seconds.
+    nonisolated static func loginShellFindsBrew(shell: String, brewPath: String) -> Bool {
+        guard !shell.isEmpty, FileManager.default.isExecutableFile(atPath: shell) else { return false }
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = URL(fileURLWithPath: shell)
+        process.arguments = ["-l", "-i", "-c", "command -v brew"]
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        process.standardInput = FileHandle.nullDevice
+        guard (try? process.run()) != nil else { return false }
+        let deadline = DispatchTime.now() + 5
+        let done = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in done.signal() }
+        if done.wait(timeout: deadline) == .timedOut {
+            process.terminate()
+            return false
+        }
+        let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        let resolved = text.split(separator: "\n").last.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+        return resolved == brewPath
+            || URL(fileURLWithPath: resolved).resolvingSymlinksInPath().path
+                == URL(fileURLWithPath: brewPath).resolvingSymlinksInPath().path
     }
 
     func markOperationComplete(result: HomebrewOperationResult,
