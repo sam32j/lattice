@@ -63,6 +63,29 @@ enum SettingsRefactorProbe {
             if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
             exit(failures.isEmpty ? 0 : 1)
         }
+        if CommandLine.arguments.contains("--app-manager-only") {
+            var failures = [String]()
+            MainActor.assumeIsolated { AppManagerModules.setOn(true) }
+            for tab in AppManagerTab.allCases {
+                MainActor.assumeIsolated { AppManagerSettings.lastTab = tab }
+                for scheme in [ColorScheme.light, .dark] {
+                    render("app-manager-\(tab.rawValue)-\(scheme == .dark ? "dark" : "light")",
+                           view: AnyView(AppManagerSettings()), size: CGSize(width: 720, height: 900),
+                           output: output, failures: &failures, colorScheme: scheme)
+                }
+            }
+            render("app-manager-glyphs", view: AnyView(HStack(spacing: 24) {
+                       ForEach([LatticeSymbol.appManagerSymbol, LatticeSymbol.videoDownloaderSymbol, "shippingbox"],
+                               id: \.self) { LatticeSymbol($0).font(.system(size: 48)) }
+                   }.padding(20)),
+                   size: CGSize(width: 260, height: 100), output: output, failures: &failures, colorScheme: .light)
+            render("app-manager-panel", view: AnyView(PanelAppManagerView().frame(width: 380, height: 300).padding(12)),
+                   size: CGSize(width: 404, height: 324), output: output, failures: &failures, colorScheme: .light)
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--island-settings-only") {
             var failures = [String]()
             NotchSettingsRenderingProbe.run(output: output, failures: &failures)
