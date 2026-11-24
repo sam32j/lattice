@@ -177,6 +177,11 @@ extension LatticeHubService {
         opensUtilityDirectly = false
         panelResizer.cancel()
         lastDismissedTime = ProcessInfo.processInfo.systemUptime
+        // Only a Hub still showing a reading can have been closed by that
+        // reading's click; after any other utility, the next click opens it.
+        if activeUtility != .system || SystemNavigationState.shared.selectedMetric != systemMetricFromMenuBar {
+            systemMetricFromMenuBar = nil
+        }
         stayAwakeOptionsPresented = false
         removeMonitors()
         isEditing = false
