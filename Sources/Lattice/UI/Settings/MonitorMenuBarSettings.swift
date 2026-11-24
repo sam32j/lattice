@@ -12,7 +12,6 @@ struct MonitorMenuBarSettings: View {
     @AppStorage(DefaultsKey.menuBarSeparateMetrics) private var separateMetrics = false
     @AppStorage(DefaultsKey.menuBarMetricSpacing) private var metricSpacing = "standard"
     @AppStorage(DefaultsKey.menuBarMetricAppearance) private var metricAppearance = "values"
-    @AppStorage(DefaultsKey.menuBarHideIconWithMetrics) private var hideIconWithMetrics = false
 
     private var appearanceStrings: MenuBarAppearanceStrings {
         FeatureStrings.menuBarAppearance(l10n.language)
@@ -76,10 +75,6 @@ struct MonitorMenuBarSettings: View {
                 .labelsHidden()
                 .fixedSize()
             }
-            SettingsControlRow(title: l10n.s.menuBarHideIconToggle) {
-                Toggle(l10n.s.menuBarHideIconToggle, isOn: $hideIconWithMetrics).labelsHidden()
-            }
-            .help(l10n.s.menuBarHideIconCaption)
         }
     }
 }

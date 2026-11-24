@@ -681,8 +681,6 @@ extension Strings {
         menuBarSpacingLabel: "Інтервал на смузі меню",
         menuBarSpacingStandard: "Стандартний",
         menuBarSpacingCompact: "Компактний",
-        menuBarHideIconToggle: "Ховати значок Lattice",
-        menuBarHideIconCaption: "Значок повертається сам, коли метрики зникають зі смуги меню, а також коли є що повідомити (готове оновлення, увімкнено «Не давати Mac заснути» або вимкнено мікрофон).",
         monitorLabelStyleLabel: "Підписи",
         menuBarLabelStyleCompact: "Компактні",
         menuBarLabelStyleClassic: "Класичні",

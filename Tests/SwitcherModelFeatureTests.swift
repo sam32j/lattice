@@ -2255,8 +2255,6 @@ enum SwitcherModelFeatureTests {
                                                         visibleFrame: CGRect(x: 0, y: 0,
                                                                              width: 1470, height: 300)).maxY == 300,
                "a screen too short for the panel still shows its top")
-        suite.expect(registeredDefaults[DefaultsKey.menuBarHideIconWithMetrics] as? Bool == false,
-               "the menu bar icon stays visible by default")
         suite.expect(MenuBarSpacingSupport.keepAwakeSignals(active: true)
                      && MenuBarSpacingSupport.keepAwakeSignals(active: true),
                "an active Keep Awake brings back the glyph that shows it")
@@ -2269,54 +2267,11 @@ enum SwitcherModelFeatureTests {
         let keepAwakeHoldCode = stripCommentLines((statusControllerSource
             .components(separatedBy: "func setMicBadgeHeld(_ held: Bool) {").last ?? "")
             .components(separatedBy: "\n    }").first ?? "")
-        suite.expect(statusControllerSource
-                        .components(separatedBy: "mustShowForSignal: signal || keepAwakeSignal").count == 4,
-               "every hide path brings the glyph back for a running Keep Awake")
         suite.expect(keepAwakeHoldCode.contains("heldKeepAwakeSignal = currentKeepAwakeSignal")
                      && keepAwakeHoldCode.contains("heldKeepAwakeSignal = nil")
                      && keepAwakeHoldCode.contains("refresh()")
                      && statusControllerSource.contains("heldKeepAwakeSignal ?? currentKeepAwakeSignal"),
                "starting or stopping Keep Awake from an open panel does not bring the glyph back under it")
-        suite.expect(MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: true, separateMetrics: false,
-                                                          metricsEnabled: true, renderedTitleLength: 12,
-                                                          mustShowForSignal: false),
-               "the glyph hides when metrics render in the title and the option is on")
-        suite.expect(!MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: false, separateMetrics: false,
-                                                           metricsEnabled: true, renderedTitleLength: 12,
-                                                           mustShowForSignal: false),
-               "the glyph never hides while the option is off")
-        suite.expect(!MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: true, separateMetrics: false,
-                                                           metricsEnabled: true, renderedTitleLength: 0,
-                                                           mustShowForSignal: false),
-               "an empty rendered title keeps the glyph, so the item can never turn invisible")
-        suite.expect(!MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: true, separateMetrics: false,
-                                                           metricsEnabled: false, renderedTitleLength: 6,
-                                                           mustShowForSignal: false),
-               "a countdown-only title keeps the glyph when no metric is enabled")
-        suite.expect(!MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: true, separateMetrics: true,
-                                                           metricsEnabled: true, renderedTitleLength: 6,
-                                                           mustShowForSignal: false),
-               "separate metric items keep the glyph in the otherwise empty main item")
-        suite.expect(!MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: true, separateMetrics: false,
-                                                           metricsEnabled: true, renderedTitleLength: 12,
-                                                           mustShowForSignal: true),
-               "an available update or muted mic brings the glyph back to carry the signal")
-        suite.expect(MenuBarSpacingSupport.shouldHideMainStatusItem(optionEnabled: true, separateMetrics: true,
-                                                              metricItemsShown: 2, renderedTitleLength: 0,
-                                                              mustShowForSignal: false),
-               "with separate metric items installed the whole main item may step aside")
-        suite.expect(!MenuBarSpacingSupport.shouldHideMainStatusItem(optionEnabled: true, separateMetrics: true,
-                                                               metricItemsShown: 0, renderedTitleLength: 0,
-                                                               mustShowForSignal: false),
-               "no installed metric items keep the main item, so the app never vanishes")
-        suite.expect(!MenuBarSpacingSupport.shouldHideMainStatusItem(optionEnabled: true, separateMetrics: true,
-                                                               metricItemsShown: 2, renderedTitleLength: 5,
-                                                               mustShowForSignal: false),
-               "an active countdown renders in the main item and keeps it visible")
-        suite.expect(!MenuBarSpacingSupport.shouldHideMainStatusItem(optionEnabled: true, separateMetrics: false,
-                                                               metricItemsShown: 2, renderedTitleLength: 0,
-                                                               mustShowForSignal: false),
-               "the whole-item hiding only applies to the separate-items mode")
 
         // Dynamic Island may take the icon's place, but only while it runs:
         // with the island off or removed, nothing else on screen would lead
@@ -2369,10 +2324,6 @@ enum SwitcherModelFeatureTests {
                "a metric with nothing to show yet gets no item at all")
         suite.expect(MenuBarSpacingSupport.keepsMetricStatusItem(hasRenderedTitle: true, itemExists: true),
                "an item already showing a reading stays")
-        suite.expect(!MenuBarSpacingSupport.shouldHideMainStatusItem(optionEnabled: true, separateMetrics: true,
-                                                               metricItemsShown: 2, renderedTitleLength: 0,
-                                                               mustShowForSignal: true),
-               "a signal brings the main item back even in the separate-items mode")
         suite.expect(MenuBarSpacingSupport.needsTitleRefreshTimer(keepAwakeActive: true,
                                                             showsCountdown: true,
                                                             hasEndDate: true),

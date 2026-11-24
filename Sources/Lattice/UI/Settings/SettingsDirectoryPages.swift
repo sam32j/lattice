@@ -241,7 +241,7 @@ extension SettingsDirectory {
             ]),
             (SettingsOwnershipStrings.text(.utilities, language), utilityPages(s, language: language) + [
                 SettingsDirectoryItem(page: .monitor, title: s.tabMonitor, icon: "cpu",
-                                      keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle,
+                                      keywords: [s.menuBarSpacingLabel,
                                                  s.monitorShowCPU, s.monitorShowGPU, s.monitorShowMemory,
                                                  s.monitorShowNetwork, s.diskStorageSettings, s.diskSection, s.powerSection,
                                                  FeatureStrings.connectedDevices(language).title,
