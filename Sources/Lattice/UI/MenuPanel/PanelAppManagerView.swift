@@ -22,22 +22,25 @@ final class AppManagerPanelState: ObservableObject {
     /// The height the island gives the panel: App Updates sizes to its list,
     /// the others take the utility's usual height.
     var contentHeight: CGFloat? {
-        let bar: CGFloat = tabs.count > 1 ? 34 : 0
+        // The tabs sit in the surface's header, outside this height.
         switch shownTab {
         case .updates:
-            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count) + bar
+            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
         case .installer:
-            return 210 + bar
+            return 210
         case .uninstaller, .homebrew:
             return nil
         }
     }
 }
 
-/// The App Manager in the Hub and the island: a compact tab picker over the
-/// panel of the module it names.
+/// The App Manager in the Hub and the island: the panel of the module the
+/// tab names. The tab is chosen in the surface's own header: a menu beside
+/// the island's pin, a full-width segmented control under the floating Hub's
+/// title, so scrolling never hides it.
 struct PanelAppManagerView: View {
     var onClose: () -> Void = {}
+    var showsPicker = true
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var state = AppManagerPanelState.shared
@@ -46,15 +49,8 @@ struct PanelAppManagerView: View {
     var body: some View {
         let strings = FeatureStrings.appManager(l10n.language)
         VStack(alignment: .leading, spacing: 8) {
-            if state.tabs.count > 1 {
-                Picker(strings.tabsLabel, selection: Binding(get: { state.shownTab }, set: { state.tab = $0 })) {
-                    ForEach(state.tabs, id: \.self) { tab in
-                        Text(shortTitle(tab, strings)).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .controlSize(.small)
+            if showsPicker {
+                AppManagerPanelPicker()
             }
             Group {
                 switch state.shownTab {
@@ -74,8 +70,13 @@ struct PanelAppManagerView: View {
         }
     }
 
-    /// The segment names without the "App" every one would repeat.
-    private func shortTitle(_ tab: AppManagerTab, _ strings: AppManagerStrings) -> String {
+}
+
+extension AppManagerTab {
+    /// The tab's name without the "App" every one would repeat, for the
+    /// Hub's narrow pickers.
+    func shortTitle(_ strings: AppManagerStrings) -> String {
+        let tab = self
         switch tab {
         case .homebrew: return strings.tabHomebrew
         default:
@@ -160,5 +161,59 @@ struct PanelAppInstallerView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The floating Hub's App Manager tabs: a full-width segmented control.
+struct AppManagerPanelPicker: View {
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
+    @ObservedObject private var state = AppManagerPanelState.shared
+
+    var body: some View {
+        let strings = FeatureStrings.appManager(l10n.language)
+        if state.tabs.count > 1 {
+            Picker(strings.tabsLabel, selection: Binding(get: { state.shownTab }, set: { state.tab = $0 })) {
+                ForEach(state.tabs, id: \.self) { tab in
+                    Text(tab.shortTitle(strings)).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+/// The island's App Manager tabs: a text menu in the band beside the pin.
+struct AppManagerTabMenu: View {
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
+    @ObservedObject private var state = AppManagerPanelState.shared
+
+    var body: some View {
+        let strings = FeatureStrings.appManager(l10n.language)
+        if state.tabs.count > 1 {
+            Menu {
+                Picker(strings.tabsLabel, selection: Binding(get: { state.shownTab }, set: { state.tab = $0 })) {
+                    ForEach(state.tabs, id: \.self) { tab in
+                        Text(tab.title(strings)).tag(tab)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            } label: {
+                // One text run, so the menu label keeps the chevron after the name.
+                (Text(state.shownTab.shortTitle(strings) + " ")
+                 + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
+                .foregroundStyle(Color.white.opacity(0.6))
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .controlSize(.small)
+            .accessibilityLabel(strings.tabsLabel)
+            .accessibilityValue(state.shownTab.title(strings))
+        }
     }
 }

@@ -194,6 +194,10 @@ struct LatticeHubView: View {
                         if launcher.activeUtility == .wallpaper {
                             WallpaperSourceMenu(surface: .island)
                         }
+                        if launcher.activeUtility == .appManager {
+                            AppManagerTabMenu()
+                                .font(.system(size: 11, weight: .semibold))
+                        }
                         islandPinButton
                     }
                 } else {

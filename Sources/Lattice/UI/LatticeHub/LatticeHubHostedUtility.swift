@@ -14,7 +14,9 @@ struct LatticeHubHostedUtility: View {
         // Floating panels can be moved upward; only content taller than the
         // available display needs its own scroll viewport.
         guard let notchSize else {
-            return min(fallbackHeight, max(100, launcher.floatingPanelHeightBudget - 92))
+            // The App Manager's tabs add a row to the header above.
+            let header: CGFloat = item == .appManager ? 92 + 30 : 92
+            return min(fallbackHeight, max(100, launcher.floatingPanelHeightBudget - header))
         }
         return notchSize.height
     }
@@ -88,7 +90,8 @@ struct LatticeHubHostedUtility: View {
                     case .urlCleaner:
                         PanelURLCleanerView(showHeader: false, onClose: onClose)
                     case .appManager:
-                        PanelAppManagerView(onClose: onClose)
+                        // The tab is chosen in the header, which never scrolls.
+                        PanelAppManagerView(onClose: onClose, showsPicker: false)
                     case .cleaner:
                         PanelCleanerView(showHeader: false, onClose: onClose)
                     case .wallpaper:
