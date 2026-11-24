@@ -1685,60 +1685,20 @@ enum PointerInputFeatureTests {
                                                  positionUnavailable: false, systemOwnsThreeFingerTap: true,
                                                  tapFingers: 3),
                "three-finger tap stands down while the system drag gesture owns it")
-        suite.expect(MiddleClickSupport.radialMenuTapFingers(radialMenuWantsTap: true, middleClickTapFingers: 0) == 4
-                && MiddleClickSupport.radialMenuTapFingers(radialMenuWantsTap: true, middleClickTapFingers: 3) == 4
-                && MiddleClickSupport.radialMenuTapFingers(radialMenuWantsTap: false, middleClickTapFingers: 0) == 0,
-               "a radial menu wheel that asks for the tap gets four fingers, beside a three-finger middle click")
-        suite.expect(MiddleClickSupport.radialMenuTapFingers(radialMenuWantsTap: true, middleClickTapFingers: 4) == 0,
-               "a middle click already on four fingers keeps them")
-        let tapWheel = RadialMenuProfile(name: "Tap", trackpadTap: true)
-        let legacyWheel = Data(#"[{"name":"Old","shortcut":"","mouseButton":"off","items":[]}]"#.utf8)
-        suite.expect(RadialMenuSupport.decodeProfiles(RadialMenuSupport.encodeProfiles([tapWheel])).first?.trackpadTap == true
-                && RadialMenuSupport.decodeProfiles(legacyWheel).first?.trackpadTap == false,
-               "the trackpad tap is saved with its wheel and off for wheels saved before it")
-        suite.expect(RadialMenuSupport.needsAccessibility([tapWheel]),
-               "a wheel opened by the trackpad tap needs the event tap's Accessibility permission")
+        suite.expect(MiddleClickSupport.radialMenuGestureFingers(radialGesture: .tap) == 4
+                && MiddleClickSupport.radialMenuGestureFingers(radialGesture: .click) == 4
+                && MiddleClickSupport.radialMenuGestureFingers(radialGesture: .off) == 0,
+               "the radial menu's trackpad gesture always uses four fingers, never three")
+        let legacyWheel = Data(#"[{"name":"Old","shortcut":"","mouseButton":"off","trackpadTap":true,"items":[]}]"#.utf8)
+        suite.expect(RadialMenuSupport.decodeProfiles(legacyWheel).count == 1,
+               "a wheel saved with its own triggers still decodes; the migration reads those")
         let shortcutTapWheel = RadialMenuProfile(
-            name: "Tap", shortcut: "cmd+shift+space",
-            items: [RadialMenuItem(kind: .app, payload: "/System/Library/CoreServices/Finder.app")],
-            trackpadTap: true)
+            name: "Tap",
+            items: [RadialMenuItem(kind: .app, payload: "/System/Library/CoreServices/Finder.app")])
         let copiedWheel = shortcutTapWheel.duplicate(named: "Tap 2")
         suite.expect(copiedWheel.id != shortcutTapWheel.id && copiedWheel.name == "Tap 2"
-                && copiedWheel.items == shortcutTapWheel.items
-                && copiedWheel.shortcut.isEmpty && !copiedWheel.trackpadTap,
-               "a duplicated wheel keeps the actions but leaves the shortcut and the trackpad tap to the original")
-        // #2614: a wheel picked in Settings opens only from its own triggers.
-        suite.expect(RadialMenuSupport.hasTrigger(shortcutTapWheel)
-                && RadialMenuSupport.hasTrigger(RadialMenuProfile(shortcut: GlobalShortcut.radialMenuDefault.storageValue))
-                && RadialMenuSupport.hasTrigger(RadialMenuProfile(mouseButton: RadialMenuMouseTrigger.button(4).rawValue))
-                && RadialMenuSupport.hasTrigger(tapWheel),
-               "a shortcut, a mouse button or the trackpad tap each open a wheel")
-        suite.expect(!RadialMenuSupport.hasTrigger(copiedWheel)
-                && !RadialMenuSupport.hasTrigger(RadialMenuProfile(shortcut: "not a shortcut",
-                                                                   mouseButton: RadialMenuMouseTrigger.off.rawValue)),
-               "a wheel without a shortcut, a mouse button or the tap has nothing that opens it")
-        // A button opens only the first wheel that has it, so a second wheel
-        // on the same button would hide the caption and still never open.
-        let forwardWheel = RadialMenuProfile(name: "Forward", mouseButton: RadialMenuMouseTrigger.forward.rawValue)
-        let copiedForwardWheel = forwardWheel.duplicate(named: "Forward 2")
-        suite.expect(RadialMenuMouseTrigger.sanitized(copiedForwardWheel.mouseButton) == .off
-                && !RadialMenuSupport.hasTrigger(copiedForwardWheel),
-               "a duplicated wheel leaves the mouse button to the original, the only wheel it opens")
-        let movedButton = RadialMenuSupport.assigning(mouseButton: RadialMenuMouseTrigger.forward.rawValue,
-                                                      to: copiedWheel.id, in: [forwardWheel, copiedWheel])
-        suite.expect(movedButton.map(\.mouseButton)
-                == [RadialMenuMouseTrigger.off.rawValue, RadialMenuMouseTrigger.forward.rawValue],
-               "giving a wheel a mouse button takes it off the wheel that opened with it")
-        let otherButton = RadialMenuSupport.assigning(mouseButton: RadialMenuMouseTrigger.button(5).rawValue,
-                                                      to: copiedWheel.id, in: [forwardWheel, copiedWheel])
-        suite.expect(otherButton.map(\.mouseButton)
-                == [RadialMenuMouseTrigger.forward.rawValue, RadialMenuMouseTrigger.button(5).rawValue],
-               "a different button leaves the other wheels as they are")
-        var savedCopy = forwardWheel
-        savedCopy.id = UUID()
-        suite.expect(RadialMenuSupport.sanitizedProfiles([forwardWheel, savedCopy]).map(\.mouseButton)
-                == [RadialMenuMouseTrigger.forward.rawValue, RadialMenuMouseTrigger.off.rawValue],
-               "a button saved on two wheels stays on the first, the only one it ever opened")
+                && copiedWheel.items == shortcutTapWheel.items && copiedWheel.color == shortcutTapWheel.color,
+               "a duplicated wheel keeps the actions and the color under a new identity")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
                                                 positionUnavailable: false, systemOwnsThreeFingerTap: true,
@@ -4087,6 +4047,7 @@ enum MiddleClickTrackpadContract {
         let stateLock = NSLock()
         var lastTransformEnd: TimeInterval?
         var suppressedButtonSequence = false
+        var radialPressButton: CGMouseButton?
         var fingerCount = 0
         var lastFrameUptime: TimeInterval = 0
         var fingerCountSince: TimeInterval = 0

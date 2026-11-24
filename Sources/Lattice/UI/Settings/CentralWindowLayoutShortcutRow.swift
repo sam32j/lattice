@@ -68,11 +68,7 @@ struct CentralWindowLayoutShortcutRow: View {
                     }
                 }
             }
-            if let errorText {
-                Text(errorText)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            } else if isRecording {
+            if isRecording {
                 Text(ShortcutRecordingCaption.text(l10n.s, canClear: true))
                     .font(.caption)
                     .foregroundStyle(.secondary)

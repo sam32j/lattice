@@ -14,7 +14,7 @@ extension SettingsView {
         case .notchWidget(let module): NotchSettings(initialContent: .module(module)).id(module)
         case .notchCompanion: NotchSettings(initialContent: .companion).id("companion")
         case .notchMascot: NotchMascotSettings()
-        case .radialMenu: FeatureConfigurationPage(feature: .radialMenu) { RadialMenuSettings() }
+        case .radialMenu: RadialMenuSettings()
         case .commandBar: FeatureConfigurationPage(feature: .commandBar) { CommandBarSettings() }
         case .energy:
             if router.destination.sectionAnchor == .keepAwake {

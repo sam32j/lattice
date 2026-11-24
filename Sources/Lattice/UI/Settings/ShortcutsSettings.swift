@@ -15,23 +15,9 @@ struct ShortcutsSettings: View {
     /// Keyboard), and each opens on its own.
     @State private var expandedFeatures: [String: Set<AppFeature>] = [:]
     @State private var showsAppShortcuts = false
-    @AppStorage(DefaultsKey.radialMenuProfiles) private var radialMenuProfilesData: Data?
-    @AppStorage(DefaultsKey.radialMenuEnabled) private var radialMenuEnabled = false
 
     private var text: ShortcutSettingsStrings { FeatureStrings.shortcuts(l10n.language) }
     private var hub: FeatureHubStrings { FeatureStrings.hub(l10n.language) }
-
-    private var radialProfiles: [RadialMenuProfile] {
-        RadialMenuSupport.decodeProfiles(radialMenuProfilesData)
-    }
-
-    private func radialMenuHasActiveShortcut(profiles: [RadialMenuProfile]) -> Bool {
-        guard radialMenuEnabled else { return false }
-        return profiles.contains {
-            !$0.shortcut.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                && GlobalShortcut(storageValue: $0.shortcut) != nil
-        }
-    }
 
     private var captureRoles: [GlobalShortcutRole] {
         GlobalShortcutRole.captureRoles(in: availableRoles)
@@ -78,7 +64,7 @@ struct ShortcutsSettings: View {
                 continue
             }
             if GlobalShortcutRole.captureFeatures.contains(feature) { continue }
-            if feature == .windowLayout || feature == .radialMenu {
+            if feature == .windowLayout {
                 if feature.isAvailable { add(feature, page: page(for: feature)) }
                 continue
             }
@@ -153,40 +139,13 @@ struct ShortcutsSettings: View {
     }
 
     @ViewBuilder
-    private func radialMenuGroupRows(in group: String) -> some View {
-        let profiles = radialProfiles
-        disclosureHeader(
-            title: FeatureStrings.radialMenu(l10n.language).pageTitle,
-            symbolName: AppFeature.radialMenu.symbolName,
-            isActive: radialMenuHasActiveShortcut(profiles: profiles),
-            count: profiles.count,
-            isExpanded: expansionBinding(for: .radialMenu, in: group)
-        )
-        if expandedFeatures[group, default: []].contains(.radialMenu) {
-            ForEach(profiles) { profile in
-                CentralRadialMenuShortcutRow(
-                    profile: profile,
-                    allProfiles: profiles,
-                    isRadialEnabled: radialMenuEnabled,
-                    text: text,
-                    showsSuperKeyAlternative: superKey.isRunning,
-                    superKeyModifiers: superKey.modifiers
-                )
-                .disclosureIndent()
-            }
-        }
-    }
-
-    @ViewBuilder
     private func featureRows(_ feature: AppFeature, on featurePage: SettingsPage,
                              in group: String) -> some View {
         let roles = availableRoles.filter { $0.feature == feature && page(for: $0) == featurePage }
         let count = feature == .windowLayout
             ? WindowLayoutAction.shortcutActions.count + roles.count
-            : (feature == .radialMenu ? radialProfiles.count : roles.count)
-        if feature == .radialMenu {
-            radialMenuGroupRows(in: group)
-        } else if count > 1 {
+            : roles.count
+        if count > 1 {
             featureHeader(feature, roles: roles, count: count, in: group)
             if expandedFeatures[group, default: []].contains(feature) {
                 if feature == .windowLayout {
@@ -338,111 +297,7 @@ private struct ShortcutEntry: Hashable {
     var expansionKey: String { String(describing: page) }
 }
 
-/// The radial menu's shortcut row provides a synced keyboard shortcut setter
-/// for each profile, keeping both settings surfaces in two-way sync.
-private struct CentralRadialMenuShortcutRow: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var superKey = SuperKeyService.shared
-    let profile: RadialMenuProfile
-    let allProfiles: [RadialMenuProfile]
-    let isRadialEnabled: Bool
-    let text: ShortcutSettingsStrings
-    let showsSuperKeyAlternative: Bool
-    let superKeyModifiers: GlobalShortcutModifiers
-
-    @State private var errorText: String?
-    @State private var isRecording = false
-
-    private var radialText: RadialMenuFeatureStrings {
-        FeatureStrings.radialMenu(l10n.language)
-    }
-
-    private var shortcut: GlobalShortcut? {
-        GlobalShortcut(storageValue: profile.shortcut)
-    }
-
-    private var isActive: Bool {
-        isRadialEnabled && shortcut != nil
-    }
-
-    private var superKeyAlternative: String? {
-        guard showsSuperKeyAlternative, let shortcut else { return nil }
-        return shortcut.superKeyAlternative(
-            sourceLabel: FeatureStrings.superKey(l10n.language).sourceLabel(superKey.source),
-            superKeyModifiers: superKeyModifiers
-        )
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .top, spacing: 8) {
-                ShortcutRowLabel(
-                    title: profile.displayName(radialText),
-                    symbolName: AppFeature.radialMenu.symbolName,
-                    contextLabel: nil,
-                    statusText: isActive ? text.active : text.inactive,
-                    statusIsActive: isActive
-                )
-                Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    CompactShortcutBindingRecorder(
-                        recordingID: "central-radial-profile-\(profile.id.uuidString)",
-                        shortcut: shortcut,
-                        isEnabled: true,
-                        width: 140,
-                        emptyTitle: l10n.s.shortcutNone,
-                        canClear: shortcut != nil,
-                        canReset: false,
-                        errorText: $errorText,
-                        onClear: {
-                            errorText = nil
-                            saveShortcut("")
-                        },
-                        onReset: {},
-                        onCapture: { newShortcut in
-                            if let owner = RadialMenuSupport.conflictTitle(
-                                for: newShortcut,
-                                excluding: profile.id,
-                                in: allProfiles,
-                                radialText: radialText,
-                                strings: l10n.s,
-                                additionalConflict: { SettingsShortcutConflicts.title(for: $0, language: l10n.language) }
-                            ) {
-                                errorText = String(format: l10n.s.shortcutConflictFormat, owner)
-                                return
-                            }
-                            errorText = nil
-                            saveShortcut(newShortcut.storageValue)
-                        },
-                        onRecordingChange: { isRecording = $0 }
-                    )
-                    if let alternative = superKeyAlternative {
-                        Text(String(format: text.superKeyAlternativeFormat, alternative))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(alternative)
-                    }
-                }
-            }
-            if let errorText {
-                Text(errorText)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            } else if isRecording {
-                Text(ShortcutRecordingCaption.text(l10n.s, canClear: true))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private func saveShortcut(_ storageValue: String) {
-        RadialMenuSupport.updateShortcut(storageValue, for: profile.id)
-        FeatureRuntime.shared.sync([.radialMenu])
-    }
-}
-
-/// Conflicts shared by the central and per-profile radial shortcut editors.
+/// Conflicts the radial menu's shortcut row checks beyond the Lattice roles.
 enum SettingsShortcutConflicts {
     static func title(for shortcut: GlobalShortcut, language: AppLanguage) -> String? {
         if AppFeature.windowLayout.isAvailable,

@@ -1,182 +1,403 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Samuel Ji
+
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 extension RadialMenuSettings {
-    // MARK: - Profile Rows
+    // MARK: - Profile tabs (the editor's top bar)
 
-    var profileManagementRow: some View {
-        HStack(spacing: 8) {
-            Picker(text.profilePickerLabel, selection: Binding(
-                get: { selectedProfile.id },
-                set: { newID in
-                    selectedProfileID = newID
-                    openSubmenuID = nil
-                    dragging = nil
+    /// One tab per profile, the first being the primary; "+" adds a profile
+    /// from a starter set and "…" holds the selected profile's actions.
+    /// Only the tabs scroll; the two buttons stay put.
+    var profileTopBar: some View {
+        HStack(spacing: 6) {
+            // Scrolled through its own position, so bringing the selected
+            // tab into view never scrolls the page around it.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Self.tabSpacing) {
+                    let destination = tabDragDestination
+                    ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
+                        let isDragged = tabDrag?.id == profile.id
+                        profileTab(profile, index: index)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                                tabWidths[profile.id] = width
+                            }
+                            // The dragged tab tracks the pointer; the tabs it
+                            // passes slide aside to open its slot.
+                            .offset(x: isDragged ? (tabDrag?.translation ?? 0)
+                                                 : tabShift(for: index, destination: destination))
+                            .animation(isDragged || reduceMotion ? nil : .easeInOut(duration: 0.15),
+                                       value: destination)
+                            .zIndex(isDragged ? 1 : 0)
+                            .gesture(tabReorderGesture(for: profile.id, index: index))
+                            .id(profile.id)
+                    }
                 }
-            )) {
-                ForEach(profiles) { profile in
-                    Text(profile.displayName(text))
-                        .tag(profile.id)
+                .scrollTargetLayout()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+            }
+            .scrollPosition(id: $tabScrollID, anchor: .center)
+            .mask(
+                HStack(spacing: 0) {
+                    LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 16)
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 16)
+                }
+            )
+            .onChange(of: selectedProfileID) { _, id in
+                guard let id else { return }
+                withAnimation(.easeOut(duration: 0.2)) { tabScrollID = id }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(text.profilesHeader)
+            .help(text.profilesHelp)
+
+            addProfileMenu
+            profileActionsMenu
+                .padding(.trailing, 10)
+        }
+    }
+
+    private func profileTab(_ profile: RadialMenuProfile, index: Int) -> some View {
+        let selected = profile.id == selectedProfile.id
+        let name = profile.displayName(text)
+        let submenu = selected ? openSubmenu : nil
+        let foreground = selected ? AnyShapeStyle(profile.color.foreground(for: colorScheme))
+                                  : AnyShapeStyle(.primary)
+        return HStack(spacing: 0) {
+            HStack(spacing: 5) {
+                // The primary's star is its mark; the others carry their dot.
+                if index == 0 {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(selected ? foreground : AnyShapeStyle(profile.color.color(for: colorScheme)))
+                        .accessibilityHidden(true)
+                } else {
+                    RadialProfileDot(color: profile.color, size: selected ? 8 : 10, onOwnFill: selected)
+                }
+                Text(name)
+                    .font(.callout.weight(selected ? .semibold : .regular))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 140, alignment: .leading)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .foregroundStyle(foreground)
+            }
+            .padding(.leading, 10)
+            .padding(.trailing, submenu == nil ? 10 : 14)
+            .frame(height: 28)
+            .background(
+                RadialAppendingPillSegment(pointed: submenu != nil)
+                    .fill(selected ? AnyShapeStyle(profile.color.gradient(for: colorScheme))
+                                   : AnyShapeStyle(Color.primary.opacity(0.06)))
+            )
+            .zIndex(1)
+            if let submenu {
+                // Inside a submenu the tab grows a segment naming it; the
+                // profile's part leads back to the profile's own wheel.
+                Text(submenu.displayName(text, stableToggles: true))
+                    .font(.callout)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 140, alignment: .leading)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 12)
+                    .frame(height: 28)
+                    .background(
+                        UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                               bottomTrailingRadius: 14, topTrailingRadius: 14,
+                                               style: .continuous)
+                            .fill(profile.color.color(for: colorScheme).opacity(0.22))
+                    )
+                    .padding(.leading, -10)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.18), value: submenu?.id)
+        .overlay {
+            // Keyboard focus on a tab other than the selected one. A click
+            // selects the tab it focuses, so this never rings a clicked tab.
+            if focusedTabID == profile.id, !selected {
+                Capsule().strokeBorder(Color.accentColor.opacity(0.8), lineWidth: 2)
+            }
+        }
+        .contentShape(Capsule())
+        .onTapGesture { activateTab(profile.id, selected: selected) }
+        .contextMenu { profileActions(for: profile) }
+        .help(index == 0 ? text.primaryHelp : name)
+        .focusable()
+        .focusEffectDisabled()
+        .focused($focusedTabID, equals: profile.id)
+        .onKeyPress(keys: [.space, .return, .leftArrow, .rightArrow], phases: .down) { press in
+            switch press.key {
+            case .space, .return:
+                activateTab(profile.id, selected: selected)
+            case .leftArrow where press.modifiers.contains(.option):
+                moveProfile(profile.id, by: -1)
+            case .rightArrow where press.modifiers.contains(.option):
+                moveProfile(profile.id, by: 1)
+            default:
+                return .ignored
+            }
+            return .handled
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(submenu.map { "\(name), \($0.displayName(text, stableToggles: true))" } ?? name)
+        .accessibilityValue(index == 0 ? text.primaryHelp : "")
+        .accessibilityHint(submenu != nil ? text.backButton : "")
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { activateTab(profile.id, selected: selected) }
+        .accessibilityActions {
+            if index > 0 {
+                Button(text.moveLeftButton) { moveProfile(profile.id, by: -1) }
+                Button(text.makePrimaryButton) { makePrimary(profile.id) }
+            }
+            if index < profiles.count - 1 {
+                Button(text.moveRightButton) { moveProfile(profile.id, by: 1) }
+            }
+        }
+    }
+
+    /// Click, Return, Space and the accessibility action alike: the selected
+    /// tab leads back out of a submenu, another tab selects its profile.
+    private func activateTab(_ id: UUID, selected: Bool) {
+        if selected, openSubmenuID != nil { openSubmenuID = nil } else { selectProfile(id) }
+    }
+
+    // MARK: Reordering by drag
+
+    static let tabSpacing: CGFloat = 6
+
+    private var orderedTabWidths: [CGFloat] { profiles.map { tabWidths[$0.id] ?? 0 } }
+
+    /// The slot the dragged tab would land in now.
+    private var tabDragDestination: Int? {
+        guard let tabDrag else { return nil }
+        if let landing = tabDrag.landing { return landing }
+        return RadialProfileTabs.dragDestination(widths: orderedTabWidths, spacing: Self.tabSpacing,
+                                                 from: tabDrag.startIndex, translation: tabDrag.translation)
+    }
+
+    private func tabShift(for index: Int, destination: Int?) -> CGFloat {
+        guard let tabDrag, let destination else { return 0 }
+        return RadialProfileTabs.dragShift(index: index, from: tabDrag.startIndex, destination: destination,
+                                           widths: orderedTabWidths, spacing: Self.tabSpacing)
+    }
+
+    /// Drawn by SwiftUI rather than handed to the system's drag and drop,
+    /// whose floating copy sat over the tab left in the strip. A short move
+    /// still counts as a click.
+    private func tabReorderGesture(for id: UUID, index: Int) -> some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .global)
+            .onChanged { value in
+                guard !tabSettling else { return }
+                if tabDrag?.id != id {
+                    tabDrag = RadialTabDrag(id: id, startIndex: index, translation: 0, landing: nil)
+                }
+                tabDrag?.translation = value.translation.width
+            }
+            .onEnded { _ in
+                guard !tabSettling, let drag = tabDrag, drag.id == id,
+                      let destination = tabDragDestination else { return }
+                tabSettling = true
+                // The slot is decided now. Measured while the tab slides into
+                // it, a narrower neighbour could hand the slot back for a
+                // moment and the opened gap would bounce.
+                tabDrag?.landing = destination
+                let settle = RadialProfileTabs.dragSettleOffset(from: drag.startIndex, destination: destination,
+                                                                widths: orderedTabWidths,
+                                                                spacing: Self.tabSpacing)
+                // Settle into the slot first, then commit the order with no
+                // animation: every tab already sits where the new order puts it.
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) { tabDrag?.translation = settle }
+                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : 0.12)) {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        if destination != drag.startIndex {
+                            profiles = RadialProfileTabs.moving(id, to: destination, in: profiles)
+                        }
+                        tabDrag = nil
+                        tabSettling = false
+                    }
+                    if destination != drag.startIndex { persist() }
                 }
             }
-            .disabled(!enabled)
+    }
 
-            Menu {
-                ForEach(RadialMenuProfilePreset.allCases) { preset in
+    private var addProfileMenu: some View {
+        Menu {
+            Button(text.newBlankProfileButton) { addProfile(preset: .blank) }
+            Divider()
+            Section(text.presetProfilesHeader) {
+                ForEach(RadialMenuProfilePreset.allCases.filter { $0 != .blank }) { preset in
                     Button(preset.title(text)) {
                         addProfile(preset: preset)
                     }
                 }
-            } label: {
-                Image(systemName: "plus")
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .help(text.addProfileButton)
-            .disabled(!enabled)
-
-            Button {
-                duplicateProfile()
-            } label: {
-                Image(systemName: "plus.square.on.square")
-            }
-            .buttonStyle(.borderless)
-            .help(text.duplicateProfileButton)
-            .disabled(!enabled)
-
-            Button {
-                confirmingDeletion = selectedProfile
-            } label: {
-                Image(systemName: "trash")
-            }
-            .buttonStyle(.borderless)
-            .help(text.deleteProfileButton)
-            .disabled(!enabled || profiles.count <= 1)
-            .confirmationDialog(
-                String(format: text.deleteProfileConfirmFormat, confirmingDeletion?.displayName(text) ?? ""),
-                isPresented: Binding(get: { confirmingDeletion != nil },
-                                     set: { if !$0 { confirmingDeletion = nil } }),
-                titleVisibility: .visible,
-                presenting: confirmingDeletion
-            ) { profile in
-                Button(text.deleteProfileButton, role: .destructive) {
-                    deleteProfile(id: profile.id)
-                }
-                Button(l10n.s.uninstallerCancel, role: .cancel) {}
-            } message: { _ in
-                Text(text.deleteProfileConfirmMessage)
-            }
+        } label: {
+            Image(systemName: "plus")
         }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(text.addProfileButton)
+        .accessibilityLabel(text.addProfileButton)
     }
 
+    /// A profile's actions, for the "…" menu (the selected profile) and a
+    /// tab's context menu alike. Duplicating and resetting work on the wheel
+    /// in view, so they select the tab first; the reset's confirmation then
+    /// shows the wheel it will reset.
     @ViewBuilder
-    var profileConfigurationRows: some View {
-        let profile = selectedProfile
-        let pIndex = selectedProfileIndex
-
-        TextField(text.profileNameLabel, text: Binding(
-            get: { profile.name },
-            set: { newName in
-                guard profiles.indices.contains(pIndex) else { return }
-                profiles[pIndex].name = newName
-                persist()
-            }
-        ), prompt: Text(text.presetGeneral))
-        .disabled(!enabled)
-
-        HStack {
-            Text(text.profileColorLabel)
-            Spacer()
-            RadialMenuColorPicker(
-                selection: Binding(
-                    get: { profile.color },
-                    set: { newColor in
-                        guard profiles.indices.contains(pIndex) else { return }
-                        profiles[pIndex].color = newColor
-                        persist()
-                    }
-                ),
-                strings: text
-            )
+    private func profileActions(for profile: RadialMenuProfile) -> some View {
+        let isPrimary = profiles.first?.id == profile.id
+        Button(text.editProfileButton) { editingProfile = profile }
+        Button(text.makePrimaryButton) { makePrimary(profile.id) }
+            .disabled(isPrimary)
+        Button(text.duplicateProfileButton) {
+            selectProfile(profile.id)
+            duplicateProfile()
         }
-        .disabled(!enabled)
-
-        ProfileShortcutRow(
-            shortcutValue: Binding(
-                get: { profile.shortcut },
-                set: { newShortcut in
-                    guard profiles.indices.contains(pIndex) else { return }
-                    profiles[pIndex].shortcut = newShortcut
-                    if pIndex == 0 {
-                        UserDefaults.standard.set(newShortcut, forKey: DefaultsKey.radialMenuShortcut)
-                    }
-                    persist()
-                }
-            ),
-            isEnabled: enabled,
-            text: text,
-            l10n: l10n,
-            conflictTitle: { shortcutConflictTitle($0, excluding: profile.id) },
-            onChange: {
-                persist()
-            }
-        )
-
-        PermissionGatedPicker(title: text.profileMouseTriggerLabel, selection: Binding(
-            get: { profile.mouseButton },
-            set: { newTrigger in
-                guard RadialProfileActivation.index(requestedID: profile.id, selectedID: selectedProfile.id,
-                    enabled: enabled, profiles: profiles) != nil else { return }
-                // One wheel owns each button: claiming it here releases the others.
-                profiles = RadialMenuSupport.assigning(mouseButton: newTrigger,
-                                                       to: profile.id, in: profiles)
-                persist()
-            }
-        ), requiring: { RadialMenuMouseTrigger.sanitized($0) == .off ? [] : [.accessibility] }) {
-            Text(text.mouseTriggerOff).tag(RadialMenuMouseTrigger.off.rawValue)
-            ForEach(Array(MouseButtonShortcutSupport.buttonRange), id: \.self) { button in
-                Text(mouseTriggerName(for: button))
-                    .tag(RadialMenuMouseTrigger.button(button).rawValue)
-            }
+        Button(text.resetActionsButton) {
+            selectProfile(profile.id)
+            confirmingReset = true
         }
-        .disabled(!enabled)
-
-        Text(text.mouseTriggerRequirement)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-        if RadialMenuMouseTrigger.sanitized(profile.mouseButton) != .off {
-            if let button = RadialMenuMouseTrigger.sanitized(profile.mouseButton).buttonNumber,
-               button == MouseButtonShortcutSupport.backButtonNumber
-                || button == MouseButtonShortcutSupport.forwardButtonNumber {
-                Text(text.mouseTriggerWarning)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            buttonTestRow(for: profile.mouseButton)
-        }
-
-        PermissionGatedToggle(text.trackpadTapLabel, isOn: Binding(
-            get: { profile.trackpadTap },
-            set: { on in
-                guard let pIndex = RadialProfileActivation.index(requestedID: profile.id, selectedID: selectedProfile.id,
-                    enabled: enabled, profiles: profiles) else { return }
-                // One wheel owns the tap: claiming it here releases the others.
-                for index in profiles.indices { profiles[index].trackpadTap = on && index == pIndex }
-                persist()
-            }
-        ))
-        .disabled(!enabled)
-
-        if profile.trackpadTap, MiddleClickSupport.radialMenuTapFingers(
-            radialMenuWantsTap: true,
-            middleClickTapFingers: AppFeature.middleClick.isAvailable && middleClickEnabled
-                ? middleClickTapFingers : 0) == 0 {
-            Text(text.trackpadTapConflict)
-                .font(.caption)
-                .foregroundStyle(.orange)
-        }
+        .disabled(!canReset(profile))
+        Divider()
+        Button(text.deleteProfileButton, role: .destructive) { confirmingDeletion = profile }
+            .disabled(profiles.count <= 1)
     }
 
+    private var profileActionsMenu: some View {
+        Menu {
+            profileActions(for: selectedProfile)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(text.profileMenuButton)
+        .accessibilityLabel(text.profileMenuButton)
+    }
+}
+
+// MARK: - Edit profile sheet
+
+/// Name and color of one profile, with a live preview of its tab.
+struct RadialProfileEditSheet: View {
+    let profile: RadialMenuProfile
+    let text: RadialMenuFeatureStrings
+    let cancelTitle: String
+    let save: (String, RadialMenuColor) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var name: String
+    @State private var color: RadialMenuColor
+
+    init(profile: RadialMenuProfile, text: RadialMenuFeatureStrings, cancelTitle: String,
+         save: @escaping (String, RadialMenuColor) -> Void) {
+        self.profile = profile
+        self.text = text
+        self.cancelTitle = cancelTitle
+        self.save = save
+        _name = State(initialValue: profile.name)
+        _color = State(initialValue: profile.color)
+    }
+
+    /// The name a blank entry saves as: the tab's own fallback
+    /// (`RadialMenuProfile.displayName`), whatever preset the wheel came from.
+    private var placeholder: String { text.presetGeneral }
+
+    private var shownName: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? text.presetGeneral : trimmed
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(text.editProfileTitle)
+                .font(.headline)
+
+            TextField(text.profileNameLabel, text: $name, prompt: Text(placeholder))
+                .textFieldStyle(.roundedBorder)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(text.profileColorLabel)
+                RadialMenuColorPicker(selection: $color, strings: text)
+            }
+
+            HStack {
+                Spacer()
+                HStack(spacing: 5) {
+                    RadialProfileDot(color: color, size: 8, onOwnFill: true)
+                    Text(shownName)
+                        .font(.callout.weight(.semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: 140)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .foregroundStyle(color.foreground(for: colorScheme))
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 28)
+                .background(Capsule().fill(color.gradient(for: colorScheme)))
+                .accessibilityElement(children: .combine)
+                Spacer()
+            }
+
+            HStack {
+                Spacer()
+                Button(cancelTitle) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button(text.saveButton) {
+                    // Blank is the automatic name, as the preview shows it.
+                    save(name.trimmingCharacters(in: .whitespacesAndNewlines), color)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 380)
+    }
+}
+
+/// A tab's leading segment: a capsule, or, with a submenu appended, a
+/// capsule whose trailing end comes to a point over the segment after it.
+struct RadialAppendingPillSegment: Shape {
+    var pointed: Bool
+
+    func path(in rect: CGRect) -> Path {
+        guard pointed else { return Capsule().path(in: rect) }
+        let radius = rect.height / 2
+        let tip: CGFloat = 8
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + radius, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - tip, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.maxX - tip, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + radius, y: rect.maxY))
+        path.addArc(center: CGPoint(x: rect.minX + radius, y: rect.midY), radius: radius,
+                    startAngle: .degrees(90), endAngle: .degrees(270), clockwise: false)
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// A profile tab being dragged in the Settings strip.
+struct RadialTabDrag: Equatable {
+    let id: UUID
+    let startIndex: Int
+    var translation: CGFloat
+    /// Set on release: the slot it settles into.
+    var landing: Int?
 }

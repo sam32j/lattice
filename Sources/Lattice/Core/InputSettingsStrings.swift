@@ -9,6 +9,11 @@ enum InputSettingsStrings {
         /// Under a picker whose three-finger choice macOS is using.
         let tapTaken: String
         let clickTaken: String
+        /// While the Radial Menu holds the four-finger gesture.
+        var tapTakenByRadial = ""
+        var clickTakenByRadial = ""
+        var clickUnavailable = ""
+        var clickUnavailableNote = ""
         /// One, a few (Russian, Ukrainian and Slovak only) and many apps.
         let oneApp: String
         var fewApps: String? = nil
@@ -75,6 +80,37 @@ enum InputSettingsStrings {
     }
 
     static func middleClick(_ language: AppLanguage) -> MiddleClick {
+        var strings = middleClickBase(language)
+        let radial = middleClickRadial(language)
+        strings.tapTakenByRadial = radial[0]
+        strings.clickTakenByRadial = radial[1]
+        strings.clickUnavailable = radial[2]
+        strings.clickUnavailableNote = radial[3]
+        return strings
+    }
+
+    /// Tap taken, click taken, click unavailable and its note.
+    private static func middleClickRadial(_ language: AppLanguage) -> [String] {
+        switch language {
+        case .enUS: return ["4-finger tap is used by the Radial Menu.", "4-finger click is used by the Radial Menu.", "Not available", "Taken by the Radial Menu and three-finger drag."]
+        case .ptBR: return ["O toque com 4 dedos está em uso pelo menu radial.", "O clique com 4 dedos está em uso pelo menu radial.", "Indisponível", "Em uso pelo menu radial e pelo arrastar com três dedos."]
+        case .es: return ["El menú radial usa el toque con 4 dedos.", "El menú radial usa el clic con 4 dedos.", "No disponible", "En uso por el menú radial y el arrastre con tres dedos."]
+        case .de: return ["Tippen mit 4 Fingern wird vom Radialmenü verwendet.", "Klicken mit 4 Fingern wird vom Radialmenü verwendet.", "Nicht verfügbar", "Belegt durch Radialmenü und Dreifingerziehen."]
+        case .fr: return ["Le toucher à 4 doigts est utilisé par le menu radial.", "Le clic à 4 doigts est utilisé par le menu radial.", "Indisponible", "Utilisé par le menu radial et le glissement à trois doigts."]
+        case .it: return ["Il tocco con 4 dita è usato dal menu radiale.", "Il clic con 4 dita è usato dal menu radiale.", "Non disponibile", "In uso dal menu radiale e dal trascinamento a tre dita."]
+        case .ja: return ["4本指のタップはラジアルメニューで使用されています。", "4本指のクリックはラジアルメニューで使用されています。", "使用不可", "ラジアルメニューと3本指ドラッグで使用中です。"]
+        case .ko: return ["네 손가락 탭은 방사형 메뉴에서 사용 중입니다.", "네 손가락 클릭은 방사형 메뉴에서 사용 중입니다.", "사용할 수 없음", "방사형 메뉴와 세 손가락 드래그에서 사용 중입니다."]
+        case .zhHans: return ["四指轻点由径向菜单使用。", "四指点按由径向菜单使用。", "不可用", "已由径向菜单和三指拖移使用。"]
+        case .zhTW: return ["四指點一下由放射狀選單使用。", "四指按一下由放射狀選單使用。", "無法使用", "已由放射狀選單和三指拖移使用。"]
+        case .zhHK: return ["四指輕點由放射狀選單使用。", "四指點按由放射狀選單使用。", "無法使用", "已由放射狀選單和三指拖移使用。"]
+        case .ru: return ["Касание 4 пальцами использует радиальное меню.", "Нажатие 4 пальцами использует радиальное меню.", "Недоступно", "Занято радиальным меню и перетягиванием тремя пальцами."]
+        case .uk: return ["Дотик 4 пальцями використовує радіальне меню.", "Натискання 4 пальцями використовує радіальне меню.", "Недоступно", "Зайнято радіальним меню та перетягуванням трьома пальцями."]
+        case .tr: return ["4 parmakla dokunma Dairesel menü tarafından kullanılıyor.", "4 parmakla tıklama Dairesel menü tarafından kullanılıyor.", "Kullanılamaz", "Dairesel menü ve üç parmakla sürükleme tarafından kullanılıyor."]
+        case .sk: return ["Ťuknutie 4 prstami používa radiálne menu.", "Kliknutie 4 prstami používa radiálne menu.", "Nedostupné", "Používa radiálne menu a ťahanie tromi prstami."]
+        }
+    }
+
+    private static func middleClickBase(_ language: AppLanguage) -> MiddleClick {
         switch language {
         case .enUS:
             return MiddleClick(clickWith: "Click with", ignoredApps: "Ignored apps", configure: "Configure…",

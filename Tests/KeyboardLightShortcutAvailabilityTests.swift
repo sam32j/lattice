@@ -14,7 +14,7 @@ enum KeyboardLightShortcutAvailabilityTests {
                              "saved preferences cannot activate unsupported keyboard-light roles")
                 suite.expect(GlobalShortcutRole.conflict(for: role.defaultShortcut, excluding: nil,
                     isOn: { _ in true }, isAvailable: { _ in false },
-                    shortcutForRole: { $0.defaultShortcut }, radialMenuShortcuts: { [] }) == (supported ? role : nil),
+                    shortcutForRole: { $0.defaultShortcut }) == (supported ? role : nil),
                              "unsupported keyboard-light roles do not reserve shortcuts")
             }
         }

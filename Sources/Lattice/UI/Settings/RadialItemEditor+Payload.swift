@@ -1,70 +1,34 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Samuel Ji
+
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 extension RadialItemEditor {
+    /// The target row for the chosen kind of action, in the same one-line
+    /// shape as the rest of the editor. Errors show in the control or as a
+    /// mark beside it, never as a paragraph.
     @ViewBuilder
     var payloadEditor: some View {
         switch item.kind {
         case .app:
-            LabeledContent(text.kindApp) {
+            editorRow(text.kindApp) {
                 Button(chooseTitle) { choose(applications: true) }
             }
         case .file:
-            LabeledContent(text.kindFile) {
+            editorRow(text.kindFile) {
                 Button(chooseTitle) { choose(applications: false) }
             }
         case .url:
-            VStack(alignment: .leading, spacing: 6) {
+            editorRow(text.kindURL,
+                      status: urlIsInvalid && !item.payload.isEmpty ? .problem(text.urlInvalid) : nil) {
                 TextField(text.kindURL, text: $item.payload, prompt: Text(text.urlPlaceholder))
-                    .onChange(of: item.payload) { _, _ in
-                        faviconStatus = nil
-                    }
-
-                HStack(spacing: 8) {
-                    Button {
-                        fetchWebsiteFavicon()
-                    } label: {
-                        if isFetchingFavicon {
-                            HStack(spacing: 4) {
-                                ProgressView()
-                                    .controlSize(.small)
-                                Text(text.fetchFaviconLoading)
-                            }
-                        } else {
-                            Text(text.fetchFaviconButton)
-                        }
-                    }
-                    .disabled(isFetchingFavicon || item.payload.trimmingCharacters(in: .whitespaces).isEmpty || urlIsInvalid)
-
-                    if let faviconStatus {
-                        switch faviconStatus {
-                        case .success:
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                Text(text.fetchFaviconSuccess)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        case .error:
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundStyle(.orange)
-                                Text(text.fetchFaviconError)
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-                    }
-                }
-
-                Text(text.fetchFaviconDisclaimer)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .textFieldStyle(.roundedBorder)
+                    .labelsHidden()
+                    .frame(width: Self.fieldWidth)
             }
         case .shortcut:
-            LabeledContent(text.kindShortcut) {
+            editorRow(text.kindShortcut) {
                 CompactShortcutBindingRecorder(
                     recordingID: "radial-item-shortcut",
                     shortcut: GlobalShortcut(storageValue: item.payload),
@@ -72,49 +36,76 @@ extension RadialItemEditor {
                     emptyTitle: l10n.s.shortcutNone,
                     canClear: !item.payload.isEmpty,
                     errorText: $shortcutError,
-                    onClear: {
-                        item.payload = ""
-                        shortcutError = nil
-                    },
+                    onClear: { item.payload = "" },
                     onReset: {},
-                    onCapture: {
-                        item.payload = $0.storageValue
-                        shortcutError = nil
-                    })
+                    onCapture: { item.payload = $0.storageValue })
             }
-        case .tool:
-            Picker(text.toolLabel, selection: $item.payload) {
-                ForEach(availableTools) { tool in
-                    Text(tool.feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)))
-                        .tag(tool.rawValue)
-                }
+        case .tool where item.tool?.isControl != true:
+            editorRow(text.toolLabel) {
+                payloadPicker(text.toolLabel, availableUtilities.map {
+                    .init(value: $0.rawValue, title: toolTitle($0), symbol: $0.symbolName)
+                })
             }
-        case .quickToggle:
-            let quickToggleText = FeatureStrings.quickToggles(l10n.language)
-            Picker(quickToggleText.pageTitle, selection: $item.payload) {
-                ForEach(availableQuickToggles) { action in
-                    Label(action.radialTitle, systemImage: action.symbolName)
-                        .tag(action.rawValue)
+        case .tool, .quickToggle:
+            // Quick toggles and the utilities that are really switches, in
+            // one alphabetical menu; each keeps the kind it is stored as.
+            let title = FeatureStrings.quickToggles(l10n.language).pageTitle
+            editorRow(title) {
+                let toggles: [SettingsPopUpPicker<String>.Option] = availableQuickToggles.map {
+                    .init(value: "toggle:" + $0.rawValue, title: $0.settingsTitle(text), symbol: $0.symbolName)
                 }
+                let tools: [SettingsPopUpPicker<String>.Option] = availableControlTools.map {
+                    .init(value: "tool:" + $0.rawValue, title: toolTitle($0), symbol: $0.symbolName)
+                }
+                let sorted = (toggles + tools).sorted {
+                    $0.title.localizedStandardCompare($1.title) == .orderedAscending
+                }
+                SettingsPopUpPicker(title: title, options: sorted,
+                                    selection: controlBinding, exactWidth: Self.fieldWidth)
             }
         case .windowLayout:
             let windowText = FeatureStrings.windowLayout(l10n.language)
-            Picker(windowText.title, selection: $item.payload) {
-                ForEach(WindowLayoutAction.allCases) { action in
-                    Label(action.title(windowText), systemImage: action.symbolName)
-                        .tag(action.rawValue)
-                }
+            editorRow(windowText.title) {
+                payloadPicker(windowText.title, WindowLayoutAction.allCases.map {
+                    .init(value: $0.rawValue, title: $0.radialTitle(text), symbol: $0.symbolName)
+                })
             }
         case .media:
-            Picker(text.mediaLabel, selection: $item.payload) {
-                Text(text.mediaPlayPause).tag(RadialMenuMediaKey.playPause.rawValue)
-                Text(text.mediaPrevious).tag(RadialMenuMediaKey.previousTrack.rawValue)
-                Text(text.mediaNext).tag(RadialMenuMediaKey.nextTrack.rawValue)
-                Text(text.mediaNowPlaying).tag(RadialMenuMediaKey.nowPlaying.rawValue)
+            editorRow(text.mediaLabel) {
+                payloadPicker(text.mediaLabel, [
+                    .init(value: RadialMenuMediaKey.playPause.rawValue, title: text.mediaPlayPause),
+                    .init(value: RadialMenuMediaKey.previousTrack.rawValue, title: text.mediaPrevious),
+                    .init(value: RadialMenuMediaKey.nextTrack.rawValue, title: text.mediaNext),
+                    .init(value: RadialMenuMediaKey.nowPlaying.rawValue, title: text.mediaNowPlaying),
+                ])
             }
         case .submenu:
             EmptyView()
         }
     }
 
+    /// Every menu of the editor: the same pop-up at exactly the field width,
+    /// so the controls line up whatever their titles.
+    func payloadPicker(_ title: String, _ options: [SettingsPopUpPicker<String>.Option]) -> some View {
+        SettingsPopUpPicker(title: title, options: options, selection: $item.payload, exactWidth: Self.fieldWidth)
+    }
+
+    func toolTitle(_ tool: RadialMenuTool) -> String {
+        tool.feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language))
+    }
+
+    /// A quick toggle or a control tool, as one choice.
+    var controlBinding: Binding<String> {
+        Binding(get: {
+            (item.kind == .tool ? "tool:" : "toggle:") + item.payload
+        }, set: { tagged in
+            if tagged.hasPrefix("tool:") {
+                item.kind = .tool
+                item.payload = String(tagged.dropFirst("tool:".count))
+            } else {
+                item.kind = .quickToggle
+                item.payload = String(tagged.dropFirst("toggle:".count))
+            }
+        })
+    }
 }

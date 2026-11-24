@@ -37,15 +37,19 @@ enum MiddleClickSupport {
     /// contact that are indistinguishable from real presses here, so the
     /// press moves to four fingers (issue #2061). Look Up's three-finger tap
     /// synthesizes no press, so it leaves the press alone.
-    /// `clickFingers` is the user's chosen count, 3 (default) or 4.
+    /// `clickFingers` is the user's chosen count, 3 (default) or 4. A Radial
+    /// Menu that opens on the four-finger click takes four from it.
     static func actionForClick(fingerCount: Int,
                                frameAge: TimeInterval,
                                settledFor: TimeInterval,
                                sinceLastTransformEnd: TimeInterval?,
                                systemDragGestureEnabled: Bool,
-                               clickFingers: Int = 3) -> MiddleClickClickAction {
-        let pressFingers = availableClickSelection(clickFingers, systemDragEnabled: systemDragGestureEnabled)
-        guard fingerCount == pressFingers, frameAge >= 0, frameAge <= fingerFreshness else {
+                               clickFingers: Int = 3,
+                               radialGesture: RadialMenuTrackpadGesture = .off) -> MiddleClickClickAction {
+        let pressFingers = effectiveClickFingers(stored: clickFingers,
+                                                 systemDragEnabled: systemDragGestureEnabled,
+                                                 radialGesture: radialGesture)
+        guard pressFingers != 0, fingerCount == pressFingers, frameAge >= 0, frameAge <= fingerFreshness else {
             return .passThrough
         }
         if let sinceLastTransformEnd, sinceLastTransformEnd >= 0,
@@ -115,11 +119,41 @@ enum MiddleClickSupport {
         return true
     }
 
-    /// The finger count whose tap opens the radial menu, or 0 for none. Only
-    /// four fingers: macOS keeps no gesture of its own there, while three
-    /// belong to Look Up and three-finger drag. A middle click already set to
-    /// four fingers keeps them, so turning this on never changes it.
-    static func radialMenuTapFingers(radialMenuWantsTap: Bool, middleClickTapFingers: Int) -> Int {
-        radialMenuWantsTap && middleClickTapFingers != 4 ? 4 : 0
+    // MARK: - Radial Menu precedence
+
+    /// The finger count of the Radial Menu's trackpad gesture, or 0 for none.
+    /// Only four fingers: three belong to Look Up and three-finger drag. It
+    /// never depends on Middle Click: the menu takes precedence there.
+    static func radialMenuGestureFingers(radialGesture: RadialMenuTrackpadGesture) -> Int {
+        radialGesture == .off ? 0 : 4
+    }
+
+    /// The tap Middle Click really answers. macOS owning the three-finger
+    /// tap turns a saved three off; the Radial Menu's four-finger tap turns
+    /// a saved four off. The saved choice itself is never rewritten.
+    static func effectiveTapFingers(stored: Int, systemOwnsThreeFingerTap: Bool,
+                                    radialGesture: RadialMenuTrackpadGesture) -> Int {
+        let available = availableTapSelection(stored, systemOwnsThreeFingerTap: systemOwnsThreeFingerTap)
+        return available == 4 && radialGesture == .tap ? 0 : available
+    }
+
+    /// The press Middle Click really answers. With the Radial Menu on the
+    /// four-finger click, a press at four moves to three when macOS leaves
+    /// three free, and otherwise there is none (0).
+    static func effectiveClickFingers(stored: Int, systemDragEnabled: Bool,
+                                      radialGesture: RadialMenuTrackpadGesture) -> Int {
+        let available = availableClickSelection(stored, systemDragEnabled: systemDragEnabled)
+        guard available == 4, radialGesture == .click else { return available }
+        return systemDragEnabled ? 0 : 3
+    }
+
+    /// Whether a physical press opens (or closes) the Radial Menu: four
+    /// fingers that settled before the force built up, read from a fresh
+    /// frame. Swipes and pinches carry no press, so they never get here.
+    static func radialClickOpens(fingerCount: Int, frameAge: TimeInterval, settledFor: TimeInterval,
+                                 radialGesture: RadialMenuTrackpadGesture) -> Bool {
+        radialGesture == .click && fingerCount == 4
+            && frameAge >= 0 && frameAge <= fingerFreshness
+            && settledFor >= minimumSettle
     }
 }

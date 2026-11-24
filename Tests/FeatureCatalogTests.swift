@@ -1479,23 +1479,29 @@ enum FeatureCatalogTests {
         suite.expect(activeSet(.accessibility, on: [DefaultsKey.cleaningModeShortcutEnabled])
                 == [.windowLayout, .cleaningMode, .commandBar, .screenRecorder],
                "cleaning mode uses accessibility when enabled")
-        func radialMenuUsesAccessibility(_ profile: RadialMenuProfile, legacyItems: [RadialMenuItem]) -> Bool {
+        func radialMenuUsesAccessibility(_ profile: RadialMenuProfile, legacyItems: [RadialMenuItem],
+                                         mouseButton: RadialMenuMouseTrigger = .off,
+                                         gesture: RadialMenuTrackpadGesture = .off) -> Bool {
             let stored = [DefaultsKey.radialMenuProfiles: RadialMenuSupport.encodeProfiles([profile]),
                           DefaultsKey.radialMenuItems: RadialMenuSupport.encode(legacyItems)]
+            let strings = [DefaultsKey.radialMenuMouseButton: mouseButton.rawValue,
+                           DefaultsKey.radialMenuTrackpadGesture: gesture.rawValue]
             return AppFeature.activeFeatures(using: .accessibility,
                                              isAvailable: { _ in true },
                                              boolFor: { $0 == DefaultsKey.radialMenuEnabled },
-                                             stringFor: { _ in nil },
+                                             stringFor: { strings[$0] },
                                              dataFor: { stored[$0] ?? nil })
                 .contains(.radialMenu)
         }
         let appItem = RadialMenuItem(kind: .app, payload: "/Applications/Safari.app")
         let shortcutItem = RadialMenuItem(kind: .shortcut, payload: "control+option+command:49")
-        suite.expect(radialMenuUsesAccessibility(
-                    RadialMenuProfile(mouseButton: RadialMenuMouseTrigger.back.rawValue, items: [appItem]),
-                    legacyItems: [appItem])
+        suite.expect(radialMenuUsesAccessibility(RadialMenuProfile(items: [appItem]), legacyItems: [appItem],
+                                                 mouseButton: .back)
+                && radialMenuUsesAccessibility(RadialMenuProfile(items: [appItem]), legacyItems: [appItem],
+                                               gesture: .tap)
+                && radialMenuUsesAccessibility(RadialMenuProfile(items: [shortcutItem]), legacyItems: [appItem])
                 && !radialMenuUsesAccessibility(RadialMenuProfile(items: [appItem]), legacyItems: [shortcutItem]),
-               "radial menu accessibility follows the saved profiles, not the pre-profile wheel")
+               "radial menu accessibility follows the saved profiles and the menu's own mouse button and gesture")
         suite.expect(activeSet(.accessibility, on: [DefaultsKey.scrollInverterEnabled]).contains(.scrollInverter),
                "an enabled feature counts as using its permission")
         suite.expect(activeSet(.accessibility, on: [DefaultsKey.scrollInverterHorizontalEnabled])
@@ -1985,23 +1991,19 @@ enum FeatureCatalogTests {
         } else {
             UserDefaults.standard.removeObject(forKey: DefaultsKey.windowDirectionalEnabled)
         }
-        let radialMenuEnergyKeys = [DefaultsKey.radialMenuProfiles, DefaultsKey.radialMenuMouseButton]
+        let radialMenuEnergyKeys = [DefaultsKey.radialMenuMouseButton, DefaultsKey.radialMenuTrackpadGesture]
         let previousRadialMenuEnergy = radialMenuEnergyKeys.map { UserDefaults.standard.object(forKey: $0) }
-        func radialMenuEnergy(_ profiles: [RadialMenuProfile]?,
-                              legacyButton: RadialMenuMouseTrigger) -> FeatureEnergyProfile {
-            UserDefaults.standard.set(profiles.flatMap(RadialMenuSupport.encodeProfiles),
-                                      forKey: DefaultsKey.radialMenuProfiles)
-            UserDefaults.standard.set(legacyButton.rawValue, forKey: DefaultsKey.radialMenuMouseButton)
+        func radialMenuEnergy(button: RadialMenuMouseTrigger,
+                              gesture: RadialMenuTrackpadGesture) -> FeatureEnergyProfile {
+            UserDefaults.standard.set(button.rawValue, forKey: DefaultsKey.radialMenuMouseButton)
+            UserDefaults.standard.set(gesture.rawValue, forKey: DefaultsKey.radialMenuTrackpadGesture)
             return AppFeature.radialMenu.energyProfile
         }
-        suite.expect(radialMenuEnergy([RadialMenuProfile(mouseButton: RadialMenuMouseTrigger.back.rawValue)],
-                                      legacyButton: .off) == .mouse
-                && radialMenuEnergy([RadialMenuProfile(trackpadTap: true)], legacyButton: .off) == .mouse
-                && radialMenuEnergy([RadialMenuProfile()], legacyButton: .back) == .idle,
-               "radial menu energy follows the saved profiles and their trackpad tap, not the pre-profile button")
-        suite.expect(radialMenuEnergy(nil, legacyButton: .back) == .mouse
-                && radialMenuEnergy(nil, legacyButton: .off) == .idle,
-               "without saved profiles the pre-profile button still decides radial menu energy")
+        suite.expect(radialMenuEnergy(button: .back, gesture: .off) == .mouse
+                && radialMenuEnergy(button: .off, gesture: .tap) == .mouse
+                && radialMenuEnergy(button: .off, gesture: .click) == .mouse
+                && radialMenuEnergy(button: .off, gesture: .off) == .idle,
+               "radial menu energy follows the menu's mouse button and trackpad gesture")
         for (key, value) in zip(radialMenuEnergyKeys, previousRadialMenuEnergy) {
             UserDefaults.standard.set(value, forKey: key)
         }

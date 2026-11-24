@@ -26,7 +26,6 @@ struct CompactShortcutBindingRecorder: View {
 
     @State private var pressedModifiers: GlobalShortcutModifiers = []
     @State private var modifierRecording = ModifierShortcutRecording()
-    @State private var shakeAttempts: CGFloat = 0
 
     private var isRecording: Bool {
         coordinator.activeCustomID == recordingID
@@ -38,23 +37,19 @@ struct CompactShortcutBindingRecorder: View {
             isEnabled: isEnabled,
             isRecording: isRecording,
             pressedModifiers: pressedModifiers,
-            errorText: errorText,
             emptyTitle: emptyTitle,
             width: width,
-            shakeAttempts: shakeAttempts,
+            shakeAttempts: 0,
             onToggleRecording: toggleRecording,
             onClear: canClear ? clear : nil,
             onReset: canReset ? reset : nil
         )
-        .onChange(of: errorText) { oldValue, newValue in
-            guard newValue != nil, newValue != oldValue else { return }
-            NSSound.beep()
-            withAnimation(.default) { shakeAttempts += 1 }
-            let shown = newValue
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                if errorText == shown { errorText = nil }
-            }
+        // A refusal is explained in a dialog; listening stops so the dialog
+        // gets the keyboard.
+        .onChange(of: errorText) { _, newValue in
+            if newValue != nil { stopRecording() }
         }
+        .shortcutErrorAlert($errorText)
         .onChange(of: coordinator.activeCustomID) { oldValue, newValue in
             if oldValue == recordingID, newValue != recordingID {
                 pressedModifiers = []

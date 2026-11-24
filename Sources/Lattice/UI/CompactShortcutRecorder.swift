@@ -34,7 +34,6 @@ struct CompactShortcutRecorder: View {
     @AppStorage private var rawValue: String
     @State private var pressedModifiers: GlobalShortcutModifiers = []
     @State private var errorText: String?
-    @State private var shakeAttempts: CGFloat = 0
     @State private var pendingTakeOver: GlobalShortcut?
     @State private var conflictAlert: ShortcutConflictAlert?
 
@@ -69,10 +68,9 @@ struct CompactShortcutRecorder: View {
                 isEnabled: true,
                 isRecording: isRecording,
                 pressedModifiers: pressedModifiers,
-                errorText: errorText,
                 emptyTitle: l10n.s.shortcutNone,
                 width: 140,
-                shakeAttempts: shakeAttempts,
+                shakeAttempts: 0,
                 onToggleRecording: toggleRecording,
                 onClear: hasShortcut ? clearShortcut : nil,
                 onReset: !hasShortcut || isModifiedFromDefault ? resetToDefault : nil)
@@ -90,6 +88,7 @@ struct CompactShortcutRecorder: View {
             }
         }
         .shortcutConflictAlert($conflictAlert)
+        .shortcutErrorAlert($errorText)
         .onChange(of: coordinator.activeRole) { _, newRole in
             if newRole != role { pressedModifiers = [] }
         }
@@ -118,13 +117,10 @@ struct CompactShortcutRecorder: View {
         }
     }
 
+    /// Explained in a dialog, like a clash with another action.
     private func showError(_ text: String) {
+        coordinator.stopRecording(role: role)
         errorText = text
-        NSSound.beep()
-        withAnimation(.default) { shakeAttempts += 1 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            if errorText == text { errorText = nil }
-        }
     }
 
     private func resetToDefault() {

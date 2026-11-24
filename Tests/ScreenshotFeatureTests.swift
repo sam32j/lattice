@@ -3724,32 +3724,20 @@ enum ScreenshotFeatureTests {
         suite.expect(Defaults.registeredDefaults[DefaultsKey.radialMenuShortcut] as? String
                 == "control+option+command:49",
                "the default radial menu shortcut is control option command space")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.radialMenuAtPointer] as? Bool == true,
-               "the radial menu opens at the pointer by default")
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.legacyRadialMenuAtPointer] == nil
+                && Defaults.registeredDefaults[DefaultsKey.legacyRadialMenuActivationMode] == nil,
+               "the retired placement and opening-behavior choices are no longer registered")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.radialMenuMouseButton] as? String == "off",
-               "the side button trigger ships off")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.radialMenuActivationMode] as? String == "pressOrHold",
-               "the radial menu preserves its adaptive gesture by default")
-        suite.expect(RadialMenuActivationMode.sanitized("press") == .press
-                && RadialMenuActivationMode.sanitized("hold") == .hold
-                && RadialMenuActivationMode.sanitized(nil) == .pressOrHold
-                && RadialMenuActivationMode.sanitized("future-mode") == .pressOrHold,
-               "the radial activation mode decodes known values and safely falls back")
-        suite.expect(!RadialMenuActivationMode.press.startsHeld(
-                    requestedHold: true, hasHeldButton: false, shortcutHasModifiers: true)
-                && RadialMenuActivationMode.hold.startsHeld(
-                    requestedHold: true, hasHeldButton: false, shortcutHasModifiers: true)
-                && RadialMenuActivationMode.pressOrHold.startsHeld(
-                    requestedHold: false, hasHeldButton: true, shortcutHasModifiers: false)
-                && !RadialMenuActivationMode.hold.startsHeld(
-                    requestedHold: false, hasHeldButton: false, shortcutHasModifiers: true),
-               "only hold-capable summons enter the held phase")
-        suite.expect(RadialMenuActivationMode.pressOrHold.releaseAction(hasSelection: false) == .stayOpen
-                && RadialMenuActivationMode.hold.releaseAction(hasSelection: false) == .dismiss
-                && RadialMenuActivationMode.hold.releaseAction(hasSelection: true) == .select,
-               "release keeps the adaptive wheel, dismisses an empty strict hold, or selects its target")
+               "the radial menu has no mouse button by default")
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.radialMenuTrackpadGesture] as? String == "off"
+                && RadialMenuTrackpadGesture.sanitized("tap") == .tap
+                && RadialMenuTrackpadGesture.sanitized("click") == .click
+                && RadialMenuTrackpadGesture.sanitized("swipe") == .off
+                && RadialMenuTrackpadGesture.sanitized(nil) == .off,
+               "the radial trackpad gesture is off by default and decodes safely")
         suite.expect(RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: true, superKeyHeld: false)
                 && RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: true)
+                && RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: false, keyHeld: true)
                 && !RadialMenuSupport.shortcutIsStillHeld(modifiersHeld: false, superKeyHeld: false),
                "the radial hold follows physical modifiers or the virtual super key")
         suite.expect(RadialMenuMouseTrigger.sanitized("back") == .back

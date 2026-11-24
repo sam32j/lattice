@@ -18,15 +18,21 @@ final class QuickToolHotkey {
     /// hears about this hotkey coming and going.
     private var claimedKey: String?
     var onPress: (() -> Void)?
+    /// The key of the combination coming back up. Carbon reports it for every
+    /// registered hotkey; owners that care about holds (the radial menu)
+    /// listen, the rest leave it nil.
+    var onRelease: (() -> Void)?
 
     init(id: UInt32) {
         hotKeyID = id
     }
 
     /// Applies the wanted state; returns false when macOS refused the
-    /// registration (combination taken by another app).
+    /// registration (combination taken by another app). A key whose row
+    /// never offers to take a macOS shortcut over (`takesOver: false`) makes
+    /// no claim, so a stray opt-in saved under it suppresses nothing.
     @discardableResult
-    func sync(enabled: Bool, shortcut: GlobalShortcut, storageKey: String) -> Bool {
+    func sync(enabled: Bool, shortcut: GlobalShortcut, storageKey: String, takesOver: Bool = true) -> Bool {
         guard enabled, shortcut.isValid, !InputEventTap.isBlocked else {
             unregister()
             return true
@@ -48,8 +54,10 @@ final class QuickToolHotkey {
         }
         hotKeyRef = ref
         registeredShortcut = shortcut
-        claimedKey = storageKey
-        SystemShortcutTakeover.claim(storageKey, shortcut: shortcut)
+        if takesOver {
+            claimedKey = storageKey
+            SystemShortcutTakeover.claim(storageKey, shortcut: shortcut)
+        }
         return true
     }
 
@@ -75,8 +83,10 @@ final class QuickToolHotkey {
 
     private static func installSharedHandlerIfNeeded() {
         guard sharedHandler == nil else { return }
-        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
-                                 eventKind: UInt32(kEventHotKeyPressed))
+        var specs = [EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                                   eventKind: UInt32(kEventHotKeyPressed)),
+                     EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                                   eventKind: UInt32(kEventHotKeyReleased))]
         InstallEventHandler(GetEventDispatcherTarget(), { _, event, _ -> OSStatus in
             var id = EventHotKeyID()
             if let event {
@@ -84,11 +94,16 @@ final class QuickToolHotkey {
                                   EventParamType(typeEventHotKeyID), nil,
                                   MemoryLayout<EventHotKeyID>.size, nil, &id)
             }
-            guard id.signature == 0x5655_5154,
+            guard let event, id.signature == 0x5655_5154,
                   let instance = QuickToolHotkey.instances[id.id]
             else { return OSStatus(eventNotHandledErr) }
-            DispatchQueue.main.async { if !InputEventTap.isBlocked { instance.onPress?() } }
+            let released = GetEventKind(event) == UInt32(kEventHotKeyReleased)
+            // Both halves go through the main queue in arrival order, so a
+            // quick press never sees its release before its press. A hotkey
+            // unregistered while its press waited (the feature suspended)
+            // no longer answers it.
+            DispatchQueue.main.async { if !InputEventTap.isBlocked, QuickToolHotkey.instances[id.id] === instance { if released { instance.onRelease?() } else { instance.onPress?() } } }
             return noErr
-        }, 1, &spec, nil, &sharedHandler)
+        }, specs.count, &specs, nil, &sharedHandler)
     }
 }

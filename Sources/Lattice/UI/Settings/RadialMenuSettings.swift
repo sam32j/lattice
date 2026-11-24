@@ -3,34 +3,59 @@
 
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
-/// Settings > Radial menu: profiles, colors, shortcuts, the master switch,
-/// opening behavior, placement and list of actions per profile.
+/// Settings > Radial Menu: a header with the feature's switch, then cards.
+/// "Open the menu" holds the one shortcut, trackpad gesture and mouse button
+/// that open it; the editor holds the profiles (tabs) and the wheel of the
+/// selected one, where every action is added, edited, moved and removed.
 struct RadialMenuSettings: View {
     @ObservedObject var l10n = L10n.shared
     @ObservedObject var permissions = Permissions.shared
     @ObservedObject var service = RadialMenuService.shared
+    @ObservedObject var middleClick = MiddleClickService.shared
+    @ObservedObject var runtime = FeatureRuntime.shared
     @AppStorage(DefaultsKey.radialMenuEnabled) var enabled = false
-    @AppStorage(DefaultsKey.radialMenuAtPointer) var atPointer = true
-    @AppStorage(DefaultsKey.radialMenuActivationMode) var activationModeRaw =
-        RadialMenuActivationMode.pressOrHold.rawValue
+    @AppStorage(DefaultsKey.radialMenuShortcut) var shortcutRaw = GlobalShortcut.radialMenuDefault.storageValue
+    @AppStorage(DefaultsKey.radialMenuMouseButton) var mouseButtonRaw = RadialMenuMouseTrigger.off.rawValue
+    @AppStorage(DefaultsKey.radialMenuTrackpadGesture) var trackpadGestureRaw = RadialMenuTrackpadGesture.off.rawValue
     @AppStorage(DefaultsKey.middleClickEnabled) var middleClickEnabled = false
     @AppStorage(DefaultsKey.middleClickTapFingers) var middleClickTapFingers = 0
+    @AppStorage(DefaultsKey.middleClickClickFingers) var middleClickClickFingers = 3
 
     @State var profiles: [RadialMenuProfile] = RadialMenuSupport.decodeProfiles(
         UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles))
     @State var lastSyncedProfilesData: Data?
     @State var selectedProfileID: UUID?
-    /// The submenu being edited; empty means the root wheel.
+    /// The submenu being edited; nil means the root wheel.
     @State var openSubmenuID: UUID?
+
+    init(openSubmenuID: UUID? = nil) {
+        _openSubmenuID = State(initialValue: openSubmenuID)
+    }
     @State var editing: RadialMenuItem?
-    @State var dragging: RadialMenuItem?
-    @State var showList = false
+    @State var editingProfile: RadialMenuProfile?
     @State var confirmingDeletion: RadialMenuProfile?
+    @State var confirmingReset = false
+    @State var conflictAlert: ShortcutConflictAlert?
+    @State var invalidShortcutMessage: String?
+    @State var pendingTakeover: RadialMenuTrackpadGesture?
+    @State var gestureCoordinator: PermissionActivationCoordinator?
+    @FocusState var focusedTabID: UUID?
+    /// A tab being dragged: which, from what slot, and how far the pointer
+    /// has moved. The order stays put until the tab is let go.
+    @State var tabDrag: RadialTabDrag?
+    /// A released tab is settling into its slot; a new drag waits for it.
+    @State var tabSettling = false
+    /// Each tab's measured width, for slots of differing size.
+    @State var tabWidths: [UUID: CGFloat] = [:]
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @State var tabScrollID: UUID?
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.settingsPermissionAccess) var permissionAccess
 
     var text: RadialMenuFeatureStrings { FeatureStrings.radialMenu(l10n.language) }
+
+    var featureOn: Bool { runtime.isAvailable(.radialMenu) }
 
     var selectedProfileIndex: Int {
         if let selectedProfileID, let idx = profiles.firstIndex(where: { $0.id == selectedProfileID }) {
@@ -51,7 +76,7 @@ struct RadialMenuSettings: View {
     }
 
     /// Falls back to the root when the drilled submenu no longer exists (a
-    /// restored backup can pull it away), so the list never strands empty.
+    /// restored backup can pull it away), so the editor never strands empty.
     var level: [RadialMenuItem] {
         guard let openSubmenu else { return currentProfileItems }
         return openSubmenu.children
@@ -62,131 +87,28 @@ struct RadialMenuSettings: View {
         return currentProfileItems.first { $0.id == openSubmenuID }
     }
 
+    var mouseButton: RadialMenuMouseTrigger { RadialMenuMouseTrigger.sanitized(mouseButtonRaw) }
+    var trackpadGesture: RadialMenuTrackpadGesture { RadialMenuTrackpadGesture.sanitized(trackpadGestureRaw) }
+
+    var showsPermissionCard: Bool {
+        RadialMenuSupport.needsAccessibility(profiles, mouseButton: mouseButton, trackpadGesture: trackpadGesture)
+            && !permissions.accessibility
+    }
+
     var body: some View {
-        Form {
-            Section {
-                FeatureActivationControl(feature: .radialMenu).toggleStyle(.switch)
-                Text(text.hubDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if service.registrationFailed {
-                    Text(l10n.s.shortcutInvalid)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                Picker(text.activationModeLabel, selection: $activationModeRaw) {
-                    Text(text.activationModePressOrHold)
-                        .tag(RadialMenuActivationMode.pressOrHold.rawValue)
-                    Text(text.activationModePress)
-                        .tag(RadialMenuActivationMode.press.rawValue)
-                    Text(text.activationModeHold)
-                        .tag(RadialMenuActivationMode.hold.rawValue)
-                }
-                .disabled(!enabled)
-                Text(text.activationModeCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker(text.positionLabel, selection: $atPointer) {
-                    Text(text.positionPointer).tag(true)
-                    Text(text.positionCenter).tag(false)
-                }
-                .pickerStyle(.segmented)
-                Button(text.tryButton) {
-                    RadialMenuService.shared.presentPreview(for: selectedProfile)
-                }
-            } header: {
-                Text(text.pageTitle)
-            }
-
-            if RadialMenuSupport.needsAccessibility(profiles), !permissions.accessibility {
-                Section {
-                    PermissionRow(kind: .accessibility)
-                    Text(RadialMenuSupport.usesWindowLayout(currentProfileItems)
-                         ? FeatureStrings.windowLayout(l10n.language).missingPermission
-                         : text.permissionCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                openCard
+                if featureOn {
+                    if showsPermissionCard { permissionCard }
+                    editorCard
                 }
             }
-
-            Section {
-                profileManagementRow
-                if enabled, !RadialMenuSupport.hasTrigger(selectedProfile) {
-                    Text(text.profileNoTrigger)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                profileConfigurationRows.id(selectedProfile.id)
-            } header: {
-                Text(text.profilesHeader)
-            }
-
-            Section {
-                RadialMenuVisualCanvas(
-                    items: level,
-                    profileColor: selectedProfile.color.color(for: colorScheme),
-                    text: text,
-                    openSubmenu: openSubmenu,
-                    onSelect: { item in editing = item },
-                    onReorder: { moved, target in swap(moved, with: target) },
-                    onRemove: { item in remove(id: item.id) },
-                    onOpenSubmenu: { item in openSubmenuID = item.id },
-                    onBack: { openSubmenuID = nil; dragging = nil },
-                    onAdd: { editing = RadialMenuItem(kind: .app) },
-                    onReset: canResetProfile ? { resetToPresetDefaults() } : nil
-                )
-                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-
-                Text(text.canvasHint)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if level.count < RadialMenuSupport.maxItemsPerWheel {
-                    Button {
-                        editing = RadialMenuItem(kind: .app)
-                    } label: {
-                        Label(text.addButton, systemImage: "plus")
-                    }
-                }
-
-                DisclosureGroup(showList ? text.hideListButton : text.showListButton, isExpanded: $showList) {
-                    if let openSubmenu {
-                        Button {
-                            openSubmenuID = nil
-                            dragging = nil
-                        } label: {
-                            Label("\(text.backButton)  \(openSubmenu.displayName(text))",
-                                  systemImage: "chevron.backward")
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Color.accentColor)
-                    }
-                    if level.isEmpty {
-                        Text(text.emptyCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(level) { item in
-                        RadialItemRow(item: item,
-                                      text: text,
-                                      dragging: $dragging,
-                                      edit: {
-                                          editing = item
-                                      },
-                                      remove: { remove(id: item.id) },
-                                      openChildren: item.kind == .submenu ? { openSubmenuID = item.id } : nil,
-                                      moveHandler: { moved, target in move(moved, before: target) })
-                    }
-                }
-            } header: {
-                Text(text.actionsHeader)
-            } footer: {
-                Text(level.count >= RadialMenuSupport.maxItemsPerWheel ? text.limitCaption : text.hubDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            .frame(maxWidth: 760, alignment: .leading)
+            .padding(22)
+            .frame(maxWidth: .infinity)
         }
-        .formStyle(.grouped)
+        .settingsExpansionAnimation(value: [showsPermissionCard, featureOn])
         .onAppear {
             let data = UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles)
             lastSyncedProfilesData = data
@@ -197,18 +119,18 @@ struct RadialMenuSettings: View {
             if selectedProfileID == nil || !profiles.contains(where: { $0.id == selectedProfileID }) {
                 selectedProfileID = profiles.first?.id
             }
+            middleClick.refreshDragGestureConflict()
         }
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
             refreshProfilesFromDefaults()
         }
-        .onDrop(of: [UTType.text], delegate: RadialDragCleanupDelegate(dragging: $dragging))
         .sheet(item: $editing) { item in
             let isNew = !level.contains { $0.id == item.id }
             RadialItemEditor(text: text,
                              item: item,
                              isNew: isNew,
                              allowsSubmenu: openSubmenuID == nil,
-                             openChildren: item.kind == .submenu ? { openSubmenuID = item.id } : nil,
+                             profileColor: selectedProfile.color,
                              save: { saved in
                                  upsert(saved)
                                  if isNew, saved.kind == .submenu {
@@ -217,10 +139,91 @@ struct RadialMenuSettings: View {
                              },
                              delete: isNew ? nil : { remove(id: item.id) })
         }
-        .onChange(of: enabled) { _, on in
-            RadialMenuService.shared.syncWithPreferences()
-            requestAccessibilityIfNeeded(on)
+        .sheet(item: $editingProfile) { profile in
+            RadialProfileEditSheet(profile: profile, text: text, cancelTitle: l10n.s.uninstallerCancel) { name, color in
+                saveProfile(id: profile.id, name: name, color: color)
+            }
+        }
+        .confirmationDialog(
+            String(format: text.deleteProfileConfirmFormat, confirmingDeletion?.displayName(text) ?? ""),
+            isPresented: Binding(get: { confirmingDeletion != nil },
+                                 set: { if !$0 { confirmingDeletion = nil } }),
+            titleVisibility: .visible,
+            presenting: confirmingDeletion
+        ) { profile in
+            Button(text.deleteProfileConfirmButton, role: .destructive) {
+                deleteProfile(id: profile.id)
+            }
+            Button(l10n.s.uninstallerCancel, role: .cancel) {}
+        } message: { profile in
+            if let next = RadialProfileTabs.nextPrimary(afterDeleting: profile.id, in: profiles) {
+                Text(String(format: text.deletePrimaryConfirmMessageFormat, next.displayName(text)))
+            } else {
+                Text(text.deleteProfileConfirmMessage)
+            }
+        }
+        .confirmationDialog(text.resetActionsConfirm, isPresented: $confirmingReset, titleVisibility: .visible) {
+            Button(text.resetActionsConfirm, role: .destructive) { resetToPresetDefaults() }
+            Button(l10n.s.uninstallerCancel, role: .cancel) {}
+        } message: {
+            Text(text.resetActionsConfirmMessage)
+        }
+        .alert(pendingTakeover == .click ? text.takeoverClickTitle : text.takeoverTapTitle,
+               isPresented: Binding(get: { pendingTakeover != nil },
+                                    set: { if !$0 { pendingTakeover = nil } }),
+               presenting: pendingTakeover) { gesture in
+            Button(text.takeoverConfirm) { applyTrackpadGesture(gesture) }
+                .keyboardShortcut(.defaultAction)
+            Button(l10n.s.uninstallerCancel, role: .cancel) {}
+        } message: { _ in
+            Text(text.takeoverMessage)
+        }
+        .permissionActivationLifetime($gestureCoordinator)
+    }
+
+    // MARK: - Permission
+
+    private var permissionCard: some View {
+        SettingsCard {
+            VStack(alignment: .leading, spacing: 6) {
+                PermissionRow(kind: .accessibility)
+                Text(text.permissionCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .help(text.permissionCaption)
+            }
         }
     }
 
+    // MARK: - Editor
+
+    private var editorCard: some View {
+        VStack(spacing: 0) {
+            profileTopBar
+                .frame(height: 44)
+            RadialMenuVisualCanvas(
+                items: level,
+                profileColor: selectedProfile.color,
+                text: text,
+                isSubmenu: openSubmenu != nil,
+                onEdit: { item in editing = item },
+                onSwap: { moved, target in swap(moved, with: target) },
+                onMove: { item, step in move(item, by: step) },
+                onRemove: { item in remove(id: item.id) },
+                onOpenSubmenu: { item in openSubmenuID = item.id },
+                onBack: { openSubmenuID = nil },
+                onAdd: { editing = RadialMenuItem(kind: .app) }
+            )
+            .id("\(selectedProfile.id).\(openSubmenuID?.uuidString ?? "root")")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(height: 360)
+        .frame(maxWidth: .infinity)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(text.editorLabel)
+    }
 }

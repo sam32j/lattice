@@ -83,6 +83,9 @@ enum SettingsBackupSupport {
         DefaultsKey.textSnippets,
         DefaultsKey.radialMenuItems,
         DefaultsKey.radialMenuProfiles,
+        // Travels so a new backup restores as migrated, while an older one,
+        // which lacks it, migrates its per-profile triggers on relaunch.
+        DefaultsKey.radialMenuSettingsVersion,
         DefaultsKey.commandBarLinks,
         DefaultsKey.commandBarRowShortcuts,
         DefaultsKey.language,
@@ -401,6 +404,10 @@ enum SettingsBackupSupport {
             }
         case DefaultsKey.cleaningModeEnabled, Defaults.cleaningModeShortcutMigrationKey:
             return isBoolean(value)
+        // Unregistered, yet read with integer(forKey:), which would also take
+        // text such as "2" and skip the migration an older backup still needs.
+        case DefaultsKey.radialMenuSettingsVersion:
+            return isInteger(value)
         case DefaultsKey.notchQuickAccessSide, DefaultsKey.notchQuickAccessSecond, DefaultsKey.notchQuickAccessThird:
             return value is String
         default: break

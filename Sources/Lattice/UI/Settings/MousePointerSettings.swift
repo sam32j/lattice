@@ -101,10 +101,40 @@ extension MouseSettings {
         }
     }
 
+    /// The Radial Menu's four-finger gesture while it holds one. It takes
+    /// precedence there; Middle Click's saved choices stay as they are.
+    var radialGestureForMiddleClick: RadialMenuTrackpadGesture {
+        _ = (radialMenuTrackpadGesture, radialMenuEnabled)
+        return RadialMenuSupport.effectiveTrackpadGesture(isAvailable: features.isAvailable(.radialMenu))
+    }
+
     var middleClickCard: some View {
         let strings = InputSettingsStrings.middleClick(l10n.language)
         let dragOwnsThree = middleClick.systemDragGestureConflict
         let tapOwnsThree = middleClick.systemOwnsThreeFingerTap
+        let radial = radialGestureForMiddleClick
+        let effectiveClick = MiddleClickSupport.effectiveClickFingers(
+            stored: Defaults.sanitizedMiddleClickClickFingers(middleClickClickFingers),
+            systemDragEnabled: dragOwnsThree, radialGesture: radial)
+        let effectiveTap = MiddleClickSupport.effectiveTapFingers(
+            stored: Defaults.sanitizedMiddleClickTapFingers(middleClickTapFingers),
+            systemOwnsThreeFingerTap: tapOwnsThree, radialGesture: radial)
+        let clickNote: RadialRowNote.Content? = {
+            if radial == .click {
+                return effectiveClick == 0 ? .problem(strings.clickUnavailableNote) : .info(strings.clickTakenByRadial)
+            }
+            return dragOwnsThree ? .problem(strings.clickTaken) : nil
+        }()
+        let tapNote: RadialRowNote.Content? = radial == .tap
+            ? .info(strings.tapTakenByRadial)
+            : (tapOwnsThree ? .problem(strings.tapTaken) : nil)
+        var clickOptions: [SettingsPopUpPicker<Int>.Option] = [
+            threeFingerOption(available: !dragOwnsThree),
+            .init(value: 4, title: l10n.s.middleClickTapFourFingers, isEnabled: radial != .click),
+        ]
+        if effectiveClick == 0 {
+            clickOptions.insert(.init(value: 0, title: strings.clickUnavailable, isEnabled: false), at: 0)
+        }
         return SettingsCard(symbol: "hand.tap", title: l10n.s.middleClickSection) {
             VStack(alignment: .leading, spacing: 12) {
                 SettingsControlRow(title: l10n.s.middleClickEnable,
@@ -118,27 +148,21 @@ extension MouseSettings {
                 }
                 if middleClickEnabled {
                     VStack(alignment: .leading, spacing: 8) {
-                        fingerPickerRow(title: strings.clickWith,
-                                        note: dragOwnsThree ? strings.clickTaken : nil) {
-                            SettingsPopUpPicker(title: strings.clickWith, options: [
-                                threeFingerOption(available: !dragOwnsThree),
-                                .init(value: 4, title: l10n.s.middleClickTapFourFingers),
-                            ], selection: Binding(
-                                get: { MiddleClickSupport.availableClickSelection(middleClickClickFingers,
-                                                                                  systemDragEnabled: dragOwnsThree) },
+                        fingerPickerRow(title: strings.clickWith, note: clickNote) {
+                            SettingsPopUpPicker(title: strings.clickWith, options: clickOptions,
+                                                selection: Binding(
+                                get: { effectiveClick },
                                 set: { middleClickClickFingers = $0 }))
                             .fixedSize()
                             .onChange(of: middleClickClickFingers) { _, _ in middleClick.syncWithPreferences() }
                         }
-                        fingerPickerRow(title: l10n.s.middleClickTapPicker,
-                                        note: tapOwnsThree ? strings.tapTaken : nil) {
+                        fingerPickerRow(title: l10n.s.middleClickTapPicker, note: tapNote) {
                             SettingsPopUpPicker(title: l10n.s.middleClickTapPicker, options: [
                                 .init(value: 0, title: l10n.s.middleClickTapOff),
                                 threeFingerOption(available: !tapOwnsThree),
-                                .init(value: 4, title: l10n.s.middleClickTapFourFingers),
+                                .init(value: 4, title: l10n.s.middleClickTapFourFingers, isEnabled: radial != .tap),
                             ], selection: Binding(
-                                get: { MiddleClickSupport.availableTapSelection(middleClickTapFingers,
-                                                                                systemOwnsThreeFingerTap: tapOwnsThree) },
+                                get: { effectiveTap },
                                 set: { middleClickTapFingers = $0 }))
                             .fixedSize()
                             .help(l10n.s.middleClickTapCaption)
@@ -160,19 +184,16 @@ extension MouseSettings {
         }
     }
 
-    /// A finger picker with, while macOS is using its three-finger choice, an
-    /// amber line under the title saying so. It belongs to the row, so the
-    /// rows keep their rhythm instead of being split by a note between them.
-    private func fingerPickerRow<Control: View>(title: String, note: String?,
+    /// A finger picker with a one-line note under its title while something
+    /// else is using a choice: macOS its three fingers, or the Radial Menu
+    /// its four. The note belongs to the row, so the rows keep their rhythm.
+    private func fingerPickerRow<Control: View>(title: String, note: RadialRowNote.Content?,
                                                @ViewBuilder picker: () -> Control) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                 if let note {
-                    Text(note)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
+                    RadialRowNote(content: note)
                 }
             }
             Spacer(minLength: 12)
@@ -181,7 +202,7 @@ extension MouseSettings {
     }
 
     /// Always listed so the menu keeps its shape, and greyed while macOS is
-    /// using three fingers; the row's amber note says so.
+    /// using three fingers; the row's note says so.
     private func threeFingerOption(available: Bool) -> SettingsPopUpPicker<Int>.Option {
         .init(value: 3, title: l10n.s.middleClickTapThreeFingers, isEnabled: available)
     }
