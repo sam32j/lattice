@@ -321,10 +321,6 @@ enum UninstallerFlowTests {
                          && service.mode == .uninstallReview(entryID: "b"),
                          "Escape cancels just the package confirmation")
             service.mode = .search
-            Preferences.standard.enabled = false
-            service.beginUninstallReview(appURL: b, entryID: "b")
-            suite.expect(service.mode == .search, "disabling the toggle rejects a previously offered row")
-            Preferences.standard.enabled = true
             Feature.available = false
             service.beginUninstallReview(appURL: b, entryID: "b")
             suite.expect(service.mode == .search, "uninstalling the feature rejects a previously offered row")
@@ -368,10 +364,6 @@ enum UninstallerFlowTests {
             service.finishUninstallReview()
             suite.expect(service.cachedApps.map(\.url) == [a] && service.uninstallSelectionEntries.isEmpty,
                          "a confirmed removal disappears from the browse list and Finder shortcut")
-            suite.expect(Defaults.registeredDefaults[DefaultsKey.uninstallerCommandBarEnabled] as? Bool == false,
-                         "the integration starts off")
-            suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.uninstallerCommandBarEnabled),
-                         "backup includes the command-bar preference")
         } catch {
             suite.expect(false, "uninstaller fixture failed: \(error)")
         }

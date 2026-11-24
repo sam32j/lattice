@@ -2701,7 +2701,6 @@ final class CommandBarService: ObservableObject {
     private func beginUninstallReview(appURL url: URL, entryID: String) {
         let uninstaller = AppUninstaller.shared
         guard AppFeature.uninstaller.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled),
               uninstaller.select(appURL: url) else {
             uninstallWarning = uninstaller.isRemoving
                 ? L10n.shared.s.uninstallerRemoving : L10n.shared.s.uninstallerSelectionUnavailable
@@ -2958,7 +2957,6 @@ final class CommandBarService: ObservableObject {
         guard AppFeature.commandBar.isAvailable, !appsLoading else { return }
         appsLoading = true
         let listsUninstallable = AppFeature.uninstaller.isAvailable
-            && UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let apps = SpotlightNames.enriching(InstalledApps.installedApplications(
                 includeSystemApplications: true,
@@ -3182,9 +3180,7 @@ final class CommandBarService: ObservableObject {
     }
 
     private func loadUninstallSelectionEntries(for id: UUID, requestID: UUID? = nil) {
-        guard AppFeature.uninstaller.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled)
-        else { return }
+        guard AppFeature.uninstaller.isAvailable else { return }
         guard !uninstallSelectionLoading else { return }
         uninstallSelectionLoading = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in

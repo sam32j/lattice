@@ -43,6 +43,7 @@ struct AppUninstallerTabStrings {
     let openTrash: String
     let done: String
     let close: String
+    let uninstallButton: String
 }
 
 extension FeatureStrings {
@@ -69,8 +70,8 @@ extension FeatureStrings {
 
 extension AppUninstallerTabStrings {
     static let enUS = AppUninstallerTabStrings(
-        dropTitle: "Drop an app to uninstall",
-        dropDetail: "Finds caches, preferences, containers, and Homebrew casks",
+        dropTitle: "Uninstall an App",
+        dropDetail: "Drag an app here to uninstall it and its data.",
         fdaTitle: "Full Disk Access not granted",
         fdaDetail: "Sandboxed app data in ~/Library/Containers can’t be scanned or removed without Full Disk Access.",
         grantAccess: "Grant Access",
@@ -106,11 +107,12 @@ extension AppUninstallerTabStrings {
         grant: "Grant",
         openTrash: "Open Trash",
         done: "Done",
-        close: "Close")
+        close: "Close",
+        uninstallButton: "Uninstall…")
 
     static let ptBR = AppUninstallerTabStrings(
-        dropTitle: "Solte um app para desinstalar",
-        dropDetail: "Encontra caches, preferências, contêineres e casks do Homebrew",
+        dropTitle: "Desinstalar um app",
+        dropDetail: "Arraste um app aqui para desinstalá-lo junto com seus dados.",
         fdaTitle: "Acesso Total ao Disco não concedido",
         fdaDetail: "Os dados de apps isolados em ~/Library/Containers não podem ser analisados nem removidos sem o Acesso Total ao Disco.",
         grantAccess: "Conceder acesso",
@@ -146,11 +148,12 @@ extension AppUninstallerTabStrings {
         grant: "Conceder",
         openTrash: "Abrir Lixo",
         done: "OK",
-        close: "Fechar")
+        close: "Fechar",
+        uninstallButton: "Desinstalar…")
 
     static let tr = AppUninstallerTabStrings(
-        dropTitle: "Kaldırmak için bir uygulama bırakın",
-        dropDetail: "Önbellekleri, tercihleri, kapsayıcıları ve Homebrew cask’lerini bulur",
+        dropTitle: "Bir Uygulamayı Kaldır",
+        dropDetail: "Bir uygulamayı verileriyle birlikte kaldırmak için buraya sürükleyin.",
         fdaTitle: "Tam Disk Erişimi verilmedi",
         fdaDetail: "~/Library/Containers içindeki korumalı uygulama verileri Tam Disk Erişimi olmadan taranamaz veya kaldırılamaz.",
         grantAccess: "Erişim Ver",
@@ -186,11 +189,12 @@ extension AppUninstallerTabStrings {
         grant: "Ver",
         openTrash: "Çöp Sepeti’ni Aç",
         done: "Bitti",
-        close: "Kapat")
+        close: "Kapat",
+        uninstallButton: "Kaldır…")
 
     static let ru = AppUninstallerTabStrings(
-        dropTitle: "Перетащите приложение для удаления",
-        dropDetail: "Находит кэши, настройки, контейнеры и cask Homebrew",
+        dropTitle: "Удаление приложения",
+        dropDetail: "Перетащите сюда приложение, чтобы удалить его вместе с данными.",
         fdaTitle: "Нет полного доступа к диску",
         fdaDetail: "Без полного доступа к диску нельзя проверить и удалить данные изолированных приложений в ~/Library/Containers.",
         grantAccess: "Предоставить доступ",
@@ -226,11 +230,12 @@ extension AppUninstallerTabStrings {
         grant: "Предоставить",
         openTrash: "Открыть Корзину",
         done: "Готово",
-        close: "Закрыть")
+        close: "Закрыть",
+        uninstallButton: "Удалить…")
 
     static let es = AppUninstallerTabStrings(
-        dropTitle: "Suelta una app para desinstalarla",
-        dropDetail: "Encuentra cachés, preferencias, contenedores y casks de Homebrew",
+        dropTitle: "Desinstalar una app",
+        dropDetail: "Arrastra aquí una app para desinstalarla junto con sus datos.",
         fdaTitle: "Sin acceso total al disco",
         fdaDetail: "Los datos de apps aisladas en ~/Library/Containers no se pueden analizar ni eliminar sin acceso total al disco.",
         grantAccess: "Conceder acceso",
@@ -266,11 +271,12 @@ extension AppUninstallerTabStrings {
         grant: "Conceder",
         openTrash: "Abrir Papelera",
         done: "Listo",
-        close: "Cerrar")
+        close: "Cerrar",
+        uninstallButton: "Desinstalar…")
 
     static let sk = AppUninstallerTabStrings(
-        dropTitle: "Pustite sem aplikáciu na odinštalovanie",
-        dropDetail: "Nájde cache, nastavenia, kontajnery a casky Homebrew",
+        dropTitle: "Odinštalovať aplikáciu",
+        dropDetail: "Presuňte sem aplikáciu a odinštalujte ju aj s jej údajmi.",
         fdaTitle: "Úplný prístup k disku nie je povolený",
         fdaDetail: "Údaje izolovaných aplikácií v ~/Library/Containers nemožno bez úplného prístupu k disku prehľadať ani odstrániť.",
         grantAccess: "Povoliť prístup",
@@ -306,11 +312,12 @@ extension AppUninstallerTabStrings {
         grant: "Povoliť",
         openTrash: "Otvoriť Kôš",
         done: "Hotovo",
-        close: "Zavrieť")
+        close: "Zavrieť",
+        uninstallButton: "Odinštalovať…")
 
     static let de = AppUninstallerTabStrings(
-        dropTitle: "App zum Deinstallieren hier ablegen",
-        dropDetail: "Findet Caches, Einstellungen, Container und Homebrew-Casks",
+        dropTitle: "App deinstallieren",
+        dropDetail: "Ziehe eine App hierher, um sie samt ihren Daten zu deinstallieren.",
         fdaTitle: "Kein Festplattenvollzugriff",
         fdaDetail: "Daten von Sandbox-Apps in ~/Library/Containers lassen sich ohne Festplattenvollzugriff weder prüfen noch entfernen.",
         grantAccess: "Zugriff erlauben",
@@ -346,11 +353,12 @@ extension AppUninstallerTabStrings {
         grant: "Erlauben",
         openTrash: "Papierkorb öffnen",
         done: "Fertig",
-        close: "Schließen")
+        close: "Schließen",
+        uninstallButton: "Deinstallieren …")
 
     static let fr = AppUninstallerTabStrings(
-        dropTitle: "Déposez une app à désinstaller",
-        dropDetail: "Trouve les caches, préférences, conteneurs et casks Homebrew",
+        dropTitle: "Désinstaller une app",
+        dropDetail: "Faites glisser une app ici pour la désinstaller avec ses données.",
         fdaTitle: "Accès complet au disque non accordé",
         fdaDetail: "Les données des apps isolées dans ~/Library/Containers ne peuvent pas être analysées ni supprimées sans l’accès complet au disque.",
         grantAccess: "Accorder l’accès",
@@ -386,11 +394,12 @@ extension AppUninstallerTabStrings {
         grant: "Accorder",
         openTrash: "Ouvrir la corbeille",
         done: "Terminé",
-        close: "Fermer")
+        close: "Fermer",
+        uninstallButton: "Désinstaller…")
 
     static let it = AppUninstallerTabStrings(
-        dropTitle: "Trascina un’app da disinstallare",
-        dropDetail: "Trova cache, preferenze, contenitori e cask Homebrew",
+        dropTitle: "Disinstalla un’app",
+        dropDetail: "Trascina qui un’app per disinstallarla insieme ai suoi dati.",
         fdaTitle: "Accesso completo al disco non concesso",
         fdaDetail: "I dati delle app isolate in ~/Library/Containers non possono essere analizzati né rimossi senza l’accesso completo al disco.",
         grantAccess: "Concedi accesso",
@@ -426,11 +435,12 @@ extension AppUninstallerTabStrings {
         grant: "Concedi",
         openTrash: "Apri Cestino",
         done: "Fine",
-        close: "Chiudi")
+        close: "Chiudi",
+        uninstallButton: "Disinstalla…")
 
     static let ja = AppUninstallerTabStrings(
-        dropTitle: "アンインストールするAppをドロップ",
-        dropDetail: "キャッシュ、設定、コンテナ、Homebrew caskを探します",
+        dropTitle: "Appをアンインストール",
+        dropDetail: "Appをここにドラッグすると、データごとアンインストールします。",
         fdaTitle: "フルディスクアクセスが許可されていません",
         fdaDetail: "フルディスクアクセスがないと、~/Library/Containers内のサンドボックスAppのデータを検索・削除できません。",
         grantAccess: "アクセスを許可",
@@ -466,11 +476,12 @@ extension AppUninstallerTabStrings {
         grant: "許可",
         openTrash: "ゴミ箱を開く",
         done: "完了",
-        close: "閉じる")
+        close: "閉じる",
+        uninstallButton: "アンインストール…")
 
     static let ko = AppUninstallerTabStrings(
-        dropTitle: "제거할 앱을 놓으세요",
-        dropDetail: "캐시, 환경설정, 컨테이너, Homebrew cask를 찾습니다",
+        dropTitle: "앱 제거",
+        dropDetail: "앱을 여기로 드래그하면 데이터와 함께 제거합니다.",
         fdaTitle: "전체 디스크 접근 권한이 없음",
         fdaDetail: "전체 디스크 접근 권한이 없으면 ~/Library/Containers의 샌드박스 앱 데이터를 검사하거나 제거할 수 없습니다.",
         grantAccess: "접근 허용",
@@ -506,11 +517,12 @@ extension AppUninstallerTabStrings {
         grant: "허용",
         openTrash: "휴지통 열기",
         done: "완료",
-        close: "닫기")
+        close: "닫기",
+        uninstallButton: "제거…")
 
     static let zhHans = AppUninstallerTabStrings(
-        dropTitle: "拖入要卸载的 App",
-        dropDetail: "查找缓存、偏好设置、容器和 Homebrew cask",
+        dropTitle: "卸载 App",
+        dropDetail: "将 App 拖到这里，即可连同其数据一起卸载。",
         fdaTitle: "未授予完全磁盘访问权限",
         fdaDetail: "没有完全磁盘访问权限，无法扫描或移除 ~/Library/Containers 中沙盒 App 的数据。",
         grantAccess: "授予权限",
@@ -546,11 +558,12 @@ extension AppUninstallerTabStrings {
         grant: "授予",
         openTrash: "打开废纸篓",
         done: "完成",
-        close: "关闭")
+        close: "关闭",
+        uninstallButton: "卸载…")
 
     static let zhTW = AppUninstallerTabStrings(
-        dropTitle: "拖入要解除安裝的 App",
-        dropDetail: "尋找快取、偏好設定、容器和 Homebrew cask",
+        dropTitle: "解除安裝 App",
+        dropDetail: "將 App 拖到這裡，即可連同其資料一起解除安裝。",
         fdaTitle: "未授予完整磁碟取用權限",
         fdaDetail: "沒有完整磁碟取用權限，無法掃描或移除 ~/Library/Containers 中沙盒 App 的資料。",
         grantAccess: "授予權限",
@@ -586,11 +599,12 @@ extension AppUninstallerTabStrings {
         grant: "授予",
         openTrash: "打開垃圾桶",
         done: "完成",
-        close: "關閉")
+        close: "關閉",
+        uninstallButton: "解除安裝⋯")
 
     static let zhHK = AppUninstallerTabStrings(
-        dropTitle: "拖入要解除安裝的 App",
-        dropDetail: "尋找快取、偏好設定、容器和 Homebrew cask",
+        dropTitle: "解除安裝 App",
+        dropDetail: "將 App 拖到這裡，即可連同其資料一起解除安裝。",
         fdaTitle: "未授予完整磁碟取用權限",
         fdaDetail: "沒有完整磁碟取用權限，無法掃描或移除 ~/Library/Containers 中沙盒 App 的資料。",
         grantAccess: "授予權限",
@@ -626,11 +640,12 @@ extension AppUninstallerTabStrings {
         grant: "授予",
         openTrash: "打開垃圾桶",
         done: "完成",
-        close: "關閉")
+        close: "關閉",
+        uninstallButton: "解除安裝⋯")
 
     static let uk = AppUninstallerTabStrings(
-        dropTitle: "Перетягніть програму для видалення",
-        dropDetail: "Знаходить кеші, налаштування, контейнери й cask Homebrew",
+        dropTitle: "Видалення програми",
+        dropDetail: "Перетягніть сюди програму, щоб видалити її разом із даними.",
         fdaTitle: "Немає повного доступу до диска",
         fdaDetail: "Без повного доступу до диска не можна перевірити й видалити дані ізольованих програм у ~/Library/Containers.",
         grantAccess: "Надати доступ",
@@ -666,5 +681,6 @@ extension AppUninstallerTabStrings {
         grant: "Надати",
         openTrash: "Відкрити Смітник",
         done: "Готово",
-        close: "Закрити")
+        close: "Закрити",
+        uninstallButton: "Видалити…")
 }

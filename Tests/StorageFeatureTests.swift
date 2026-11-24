@@ -53,7 +53,7 @@ enum StorageFeatureTests {
                "no failure, no permission note")
         // Both done states have to route through that decision and name what
         // survived; neither may spell a tick of its own.
-        for path in ["Sources/Lattice/UI/Uninstall/UninstallerView.swift",
+        for path in ["Sources/Lattice/UI/Settings/AppUninstallerTab.swift",
                      "Sources/Lattice/UI/MenuPanel/PanelUninstallerView.swift"] {
             let source = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
             suite.expect(source.contains("UninstallFailureNote(items:"),
