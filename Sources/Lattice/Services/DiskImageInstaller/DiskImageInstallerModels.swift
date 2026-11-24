@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Samuel Ji
 
+import AppKit
 import Foundation
+import UniformTypeIdentifiers
 
 /// A mounted disk image waiting to be installed, as the App Installer tab
 /// shows it. The details beyond the name arrive a moment later: they read the
@@ -16,6 +18,8 @@ struct DetectedDiskImage: Equatable {
     let displayName: String
     let appPath: String
     let imageFileName: String
+    /// The app is already installed; installing replaces that copy.
+    var replacesExisting = false
     var version: String?
     var imageSize: Int64?
     var developer: String?
@@ -84,5 +88,43 @@ enum DiskImageRecentInstalls {
             }
         }
         return nil
+    }
+}
+
+extension DiskImageInstallerSupport {
+    /// The mount point `hdiutil attach -plist` reports for the image's volume.
+    static func mountPoint(fromAttachPlist data: Data) -> URL? {
+        guard let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+              let entities = plist["system-entities"] as? [[String: Any]] else { return nil }
+        return entities.lazy.compactMap { $0["mount-point"] as? String }.first.map { URL(fileURLWithPath: $0) }
+    }
+}
+
+/// Whether double-clicking a disk image opens it in Lattice, which asks
+/// before installing, or in macOS's own Disk Image Mounter.
+enum DiskImageOpenHandler {
+    static let mounterURL = URL(fileURLWithPath: "/System/Library/CoreServices/DiskImageMounter.app")
+    static let contentTypes = ["com.apple.disk-image-udif", "com.apple.disk-image"].compactMap { UTType($0) }
+
+    static var opensInLattice: Bool {
+        guard let type = contentTypes.first,
+              let handler = NSWorkspace.shared.urlForApplication(toOpen: type) else { return false }
+        return handler.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+    }
+
+    /// Makes Lattice, or Disk Image Mounter again, the app disk images open in.
+    static func setOpensInLattice(_ on: Bool, completion: @escaping () -> Void) {
+        let app = on ? Bundle.main.bundleURL : mounterURL
+        let group = DispatchGroup()
+        for type in contentTypes {
+            group.enter()
+            NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type) { _ in group.leave() }
+        }
+        group.notify(queue: .main, execute: completion)
+    }
+
+    /// Opens an image the way a plain double-click would without Lattice.
+    static func openWithDiskImageMounter(_ url: URL) {
+        NSWorkspace.shared.open([url], withApplicationAt: mounterURL, configuration: NSWorkspace.OpenConfiguration())
     }
 }

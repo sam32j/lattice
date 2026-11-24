@@ -59,8 +59,9 @@ enum MediaEditorFileTests {
         let data = try? Data(contentsOf: URL(fileURLWithPath: "Resources/Info.plist"))
         let plist = data.flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) as? [String: Any] }
         let types = plist?["CFBundleDocumentTypes"] as? [[String: Any]] ?? []
-        suite.expect(types.count == 2 && types.allSatisfy { $0["CFBundleTypeRole"] as? String == "Editor"
-                     && $0["LSHandlerRank"] as? String == "Alternate" },
-                     "Finder advertises alternate editors without claiming default associations")
+        // Images and video for the media editor, disk images for the App Installer.
+        suite.expect(types.count == 3 && types.allSatisfy { $0["LSHandlerRank"] as? String == "Alternate" }
+                     && types.filter { $0["CFBundleTypeRole"] as? String == "Editor" }.count == 2,
+                     "Finder advertises alternate handlers without claiming default associations")
     }
 }
