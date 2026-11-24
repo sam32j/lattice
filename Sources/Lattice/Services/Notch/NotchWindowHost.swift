@@ -816,9 +816,9 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
     }
 
     /// Mission Control opening takes the island back into the screen edge,
-    /// the way it grows out of it when Mission Control closes, fading over
-    /// the same stretch so nothing is left where the overview draws. A
-    /// hidden or resting island, or Reduce Motion, just fades.
+    /// the way it grows out of it when Mission Control closes, then fades
+    /// what is left so nothing stays where the overview draws. A hidden or
+    /// resting island, or Reduce Motion, just fades.
     private func shrinkForMissionControl() {
         let hidden = currentGeometry.hiddenSize
         let drawn = canvas.visibleSize ?? targetSize
@@ -832,15 +832,17 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         // replace it with the hidden shape.
         present(size: hidden, geometry: currentGeometry, animated: true, transitionContent: .depart,
                 preserveMissionControlRestoration: true)
-        fadeMissionControl(to: 0, duration: duration, timing: .easeIn)
+        // Fading alongside, the island was gone before the shrink could be
+        // seen. It fades only once it has closed to the screen edge.
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            guard let self, self.concealedForMissionControl else { return }
+            self.fadeMissionControl(to: 0)
+        }
     }
 
-    private func fadeMissionControl(to alpha: CGFloat, duration: TimeInterval = 0.12,
-                                    timing: CAMediaTimingFunctionName = .default,
-                                    completion: (() -> Void)? = nil) {
+    private func fadeMissionControl(to alpha: CGFloat, completion: (() -> Void)? = nil) {
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : duration
-            context.timingFunction = CAMediaTimingFunction(name: timing)
+            context.duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.12
             panel.animator().alphaValue = alpha
         }, completionHandler: { [weak self] in
             guard let self else { completion?(); return }
