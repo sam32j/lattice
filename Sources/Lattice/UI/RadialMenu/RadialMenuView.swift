@@ -465,6 +465,7 @@ private struct RadialTabArc: View {
     @ObservedObject var service: RadialMenuService
     let text: RadialMenuFeatureStrings
     let colorScheme: ColorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let nameFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
 
@@ -501,7 +502,7 @@ private struct RadialTabArc: View {
             ForEach(placed) { item in label(item) }
         }
         .frame(width: service.panelSide, height: service.panelSide)
-        .animation(.easeOut(duration: 0.18), value: service.activeProfileIndex)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: service.activeProfileIndex)
         .onAppear { report(placed) }
         .onChange(of: placed.map(\.span)) { _, _ in report(placed) }
         .accessibilityElement(children: .contain)
@@ -536,16 +537,35 @@ private struct RadialTabArc: View {
         case star, dot, character(String)
     }
 
-    /// The name cut to fit the tab, with an ellipsis when it had to be.
+    /// The name cut to fit the tab, with an ellipsis when it had to be, as
+    /// the pieces set along the arc: one per character, or the whole name
+    /// as one piece in a script that joins or reorders its letters.
     private func fittedName(_ name: String) -> [String] {
         let characters = name.map(String.init)
         func width(_ parts: [String]) -> CGFloat {
             (parts.joined() as NSString).size(withAttributes: [.font: Self.nameFont]).width
         }
-        guard width(characters) > 120 else { return characters }
         var kept = characters
-        while !kept.isEmpty, width(kept + ["…"]) > 120 { kept.removeLast() }
-        return kept + ["…"]
+        if width(characters) > 120 {
+            while !kept.isEmpty, width(kept + ["…"]) > 120 { kept.removeLast() }
+            kept.append("…")
+        }
+        return Self.needsShaping(name) ? [kept.joined()] : kept
+    }
+
+    /// Arabic, Hebrew, the Indic scripts and their kin shape letters by their
+    /// neighbours and may run right to left, so set one at a time they
+    /// come apart; such a name is drawn as one run, turned at its centre.
+    static func needsShaping(_ name: String) -> Bool {
+        name.unicodeScalars.contains { scalar in
+            switch scalar.value {
+            case 0x0590...0x08FF, 0x0900...0x0DFF, 0x0F00...0x109F, 0x1780...0x18AF,
+                 0xA800...0xABFF, 0xFB1D...0xFDFF, 0xFE70...0xFEFF, 0x10800...0x10FFF, 0x11000...0x11FFF:
+                return true
+            default:
+                return false
+            }
+        }
     }
 
     private func glyphWidth(_ glyph: Glyph, dotSize: CGFloat) -> CGFloat {
