@@ -30,12 +30,14 @@ extension AppUpdatesService {
             startUpgrade([token])
         case .appStore:
             if let page = item.storePage, let url = URL(string: page) {
+                handedOffItemIDs.insert(item.id)
                 handOff(url)
             } else {
                 openAppStoreUpdates()
             }
         case .onlineCatalog:
             guard let path = item.bundlePath else { return }
+            handedOffItemIDs.insert(item.id)
             handOff(URL(fileURLWithPath: path))
         }
     }
@@ -43,6 +45,8 @@ extension AppUpdatesService {
     func openAppStoreUpdates() {
         guard AppFeature.appUpdates.isAvailable else { return }
         guard let url = URL(string: "macappstore://showUpdatesPage") else { return }
+        // The store may update any of its apps from there.
+        handedOffItemIDs.formUnion(items.filter { $0.source == .appStore }.map(\.id))
         handOff(url)
     }
 
@@ -76,7 +80,8 @@ extension AppUpdatesService {
                 self?.upgradeObserver = nil
                 self?.installingItemIDs.subtract(matchingIDs)
                 guard status.result == .succeeded else { return }
-                self?.check()
+                // Only these casks changed; the rest of the list still holds.
+                self?.dropUpdated(Set(matchingIDs))
             }
         HomebrewManager.shared.upgradeCasks(tokens, owner: .appUpdates)
     }
@@ -92,11 +97,48 @@ extension AppUpdatesService {
     /// simply old. Otherwise reopening the panel costs nothing.
     func checkIfNeeded() {
         reloadRules()
+        // Back from an updater: only the apps handed off are read again.
+        let handedOff = !handedOffItemIDs.isEmpty
+        if handedOff { refreshHandedOff() }
         guard AppUpdatesSupport.shouldRecheck(hasCheckedThisSession: hasCheckedThisSession,
-                                              handoffPending: updateHandoffPending,
+                                              handoffPending: updateHandoffPending && !handedOff,
                                               lastCheck: lastCheck,
                                               now: Date()) else { return }
         check()
+    }
+
+    /// Re-reads each handed-off app's version from its bundle and drops the
+    /// rows now current. One still behind stays, and is read again on the
+    /// next return, since an app may finish updating after relaunching.
+    func refreshHandedOff() {
+        let ids = handedOffItemIDs
+        let current = items.filter { ids.contains($0.id) && Self.isNowCurrent($0) }.map(\.id)
+        let stillListed = Set(items.map(\.id))
+        handedOffItemIDs = ids.intersection(stillListed).subtracting(current)
+        dropUpdated(Set(current))
+    }
+
+    /// Takes rows that were updated out of the list, without a scan.
+    func dropUpdated(_ ids: Set<String>) {
+        guard !ids.isEmpty else { return }
+        items.removeAll { ids.contains($0.id) }
+        allItems.removeAll { ids.contains($0.id) }
+        selection.subtract(ids)
+        knownIDs.subtract(ids)
+        installingItemIDs.subtract(ids)
+        UserDefaults.standard.set(items.count, forKey: DefaultsKey.appUpdatesLastCount)
+    }
+
+    /// Whether the app a row stands for now reports the version the row
+    /// offered, read from its Info.plist so a replaced bundle is not served
+    /// from Bundle's cache.
+    static func isNowCurrent(_ item: AppUpdatesSupport.Item) -> Bool {
+        guard let path = item.bundlePath,
+              let info = NSDictionary(contentsOf: URL(fileURLWithPath: path)
+                .appendingPathComponent("Contents/Info.plist")) as? [String: Any],
+              let version = (info["CFBundleShortVersionString"] as? String) ?? (info["CFBundleVersion"] as? String)
+        else { return false }
+        return !AppUpdatesSupport.isNewer(item.latestVersion, than: version)
     }
 
     /// Called when the app comes back to the front. Returning from an updater

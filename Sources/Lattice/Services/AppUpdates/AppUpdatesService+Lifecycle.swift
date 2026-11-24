@@ -75,5 +75,6 @@ extension AppUpdatesService {
         automaticCheckPending = false
         upgradeObserver = nil
         pendingUpdateHandoffs.removeAll()
+        handedOffItemIDs.removeAll()
     }
 }
