@@ -1628,6 +1628,9 @@ def main():
         "false"
     )
 
+    # The Hub restore after a menu bar reading reaches the shared Hub, which
+    # this island fixture does not model.
+    music_visibility = music_visibility.replace("        restoreHubAfterMenuBarReading()\n", "")
     music_visibility = music_visibility.replace("UserDefaults.standard", "ReviewDefaults.current!")
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
     music_visibility = music_visibility.replace("videoDownloader: hasVideoDownloadActivity", "videoDownloader: false")
