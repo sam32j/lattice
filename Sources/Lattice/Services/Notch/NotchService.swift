@@ -2068,6 +2068,7 @@ final class NotchService: ObservableObject {
         // End the Hub paging session only when the whole island closes.
         // A subpage's Back button leaves this position untouched.
         LatticeHubService.shared.hubIslandPage = 0
+        restoreHubAfterMenuBarReading()
         if closesCommandBar { commandBarDidClose() }
         removeEventMonitors()
         syncVisibleConsumers()
@@ -2075,6 +2076,23 @@ final class NotchService: ObservableObject {
     }
 
     func toggle() { expanded ? collapse() : open() }
+
+    /// Closing the island after a menu bar reading puts the Hub back where it
+    /// was. A Hub the user moved on to another tool in the meantime is theirs
+    /// now and stays as they left it.
+    private func restoreHubAfterMenuBarReading() {
+        guard let previous = hubStateBeforeMenuBarReading else { return }
+        hubStateBeforeMenuBarReading = nil
+        let launcher = LatticeHubService.shared
+        guard launcher.activeUtility == .system else { return }
+        SystemNavigationState.shared.reset()
+        launcher.activeUtility = previous.utility
+        if let recent = previous.recent {
+            UserDefaults.standard.set(recent, forKey: DefaultsKey.recentHubUtility)
+        } else {
+            UserDefaults.standard.removeObject(forKey: DefaultsKey.recentHubUtility)
+        }
+    }
 
     /// The island stays on screen, so only a manual resign takes its keyboard.
     /// While Lattice stays the active app (its Settings window is open, for
@@ -2458,6 +2476,11 @@ final class NotchService: ObservableObject {
     /// tool reaches, so it is sized the same way. A second click on the same
     /// reading closes it. Without the Hub in the island, the System page
     /// shows the reading instead.
+    /// What the Hub showed, and remembered as its last tool, before a menu
+    /// bar reading took it over. Put back when the island closes, so a
+    /// reading's one-off view never becomes the Hub's last place.
+    private var hubStateBeforeMenuBarReading: (utility: LatticeHubItem?, recent: String?)?
+
     func showMetricFromMenuBar(_ metric: MetricDetailKind) {
         guard metricIsAvailable(metric) else { return }
         let launcher = LatticeHubService.shared
@@ -2470,6 +2493,10 @@ final class NotchService: ObservableObject {
         guard modules.contains(.hub), LatticeHubItem.system.isAvailable() else {
             showMetric(metric, toggle: true)
             return
+        }
+        if hubStateBeforeMenuBarReading == nil {
+            hubStateBeforeMenuBarReading = (launcher.activeUtility,
+                                            UserDefaults.standard.string(forKey: DefaultsKey.recentHubUtility))
         }
         // A floating Hub left open would hide as the island takes focus and
         // take the shared System state with it, so it goes first.
