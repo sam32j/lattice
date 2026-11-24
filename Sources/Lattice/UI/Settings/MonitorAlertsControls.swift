@@ -202,7 +202,7 @@ struct MonitorAlertRow: View {
         }
         .labelsHidden()
         .controlSize(.small)
-        .frame(width: 180)
+        .frame(width: 140)
         .accessibilityValue(String(format: limit.format, limit.label(limit.value.wrappedValue)))
     }
 }
