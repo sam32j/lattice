@@ -930,7 +930,7 @@ def main():
                                    "    private struct CommandResult {"])
           + "final class Service: Fixture {\n"
           + "".join(declaration(disk_image, prefix).replace("private ", "", 1)
-                    for prefix in ["    private func inspect(", "    private func candidate(",
+                    for prefix in ["    private func candidate(",
                                    "    private static func isHomebrewImage(",
                                    "    private static func fileIdentity(", "    private static func validBundle("])
           + "}\n}\n")

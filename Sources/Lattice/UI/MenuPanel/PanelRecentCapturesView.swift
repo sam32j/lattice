@@ -290,6 +290,7 @@ struct RecentCapturesView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .padding(.vertical, fillsAvailableSpace ? HubScrollEdge.inset : 0)
                 }
                 .onAppear {
                     // Back from editing a capture: open where that capture is.
@@ -301,6 +302,7 @@ struct RecentCapturesView: View {
             .scrollBounceBehavior(.basedOnSize)
             .frame(maxWidth: .infinity,
                    maxHeight: fillsAvailableSpace ? .infinity : 300)
+            .hubScrollEdgeFade(fillsAvailableSpace)
         }
     }
 

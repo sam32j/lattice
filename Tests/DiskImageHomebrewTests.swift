@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// Production mount inspection and candidate selection with a controlled
+/// Production candidate selection with a controlled
 /// hdiutil response and temporary directories. No disk image is mounted and
 /// no app is installed or opened.
 enum DiskImageHomebrewTests {
@@ -38,11 +38,6 @@ enum DiskImageHomebrewTests {
             CommandResult(status: 0, output: info)
         }
         let workQueue = Queue()
-        var mountObserver: Bool? = true
-        var processingMounts = Set<String>()
-        var pending: [Candidate] = []
-        var prompts = 0
-        func presentNextCandidate() { prompts += 1 }
     }
 
     static func run(_ suite: TestSuite) {
@@ -97,28 +92,6 @@ enum DiskImageHomebrewTests {
             try info(manual)
             suite.expect(service.candidate(mountedAt: mount)?.imageURL == manual,
                          "production candidate selection retains a manual app image")
-            service.inspect(mountURL: mount)
-            service.inspect(mountURL: mount)
-            suite.expect(service.workQueue.work.count == 1,
-                         "one manual mount is inspected even during a cask install, without duplicate work")
-            service.workQueue.drain()
-            DispatchQueue.main.drain()
-            suite.expect(service.prompts == 1 && service.pending.first?.imageURL == manual
-                         && service.processingMounts.isEmpty,
-                         "a manual mount still reaches its prompt while Homebrew is active")
-
-            let disabled = Service()
-            disabled.inspect(mountURL: mount)
-            disabled.workQueue.drain()
-            disabled.mountObserver = nil
-            DispatchQueue.main.drain()
-            suite.expect(disabled.prompts == 0 && disabled.pending.isEmpty,
-                         "stopping the installer still rejects a late inspection result")
-            let stopped = Service()
-            stopped.mountObserver = nil
-            stopped.inspect(mountURL: mount)
-            suite.expect(stopped.workQueue.work.isEmpty,
-                         "a disabled installer does not inspect new mounts")
         } catch {
             suite.expect(false, "disk image fixture failed: \(error)")
         }

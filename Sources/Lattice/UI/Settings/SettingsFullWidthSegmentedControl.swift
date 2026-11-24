@@ -7,48 +7,66 @@ import SwiftUI
 /// A segmented control as wide as the space it is given, with equal segments.
 /// SwiftUI's segmented picker on macOS keeps to its labels' width, which reads
 /// as a small switch rather than the page's own sections.
-struct SettingsFullWidthSegmentedControl<Value: Hashable>: NSViewRepresentable {
+///
+/// One thumb stays on screen and slides to the selected segment's place, so a
+/// new choice made mid-slide carries on from where the thumb is, in either
+/// direction.
+struct SettingsFullWidthSegmentedControl<Value: Hashable>: View {
     let title: String
     let options: [(value: Value, label: String)]
     @Binding var selection: Value
+    /// A dot after a segment's label, for a section that wants attention.
+    var dot: (Value) -> Color? = { _ in nil }
 
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    func makeNSView(context: Context) -> NSSegmentedControl {
-        let control = NSSegmentedControl(labels: options.map(\.label), trackingMode: .selectOne,
-                                         target: context.coordinator,
-                                         action: #selector(Coordinator.selectionChanged(_:)))
-        control.segmentDistribution = .fillEqually
-        control.controlSize = .large
-        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        control.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        return control
+    private var selectedIndex: Int {
+        options.firstIndex { $0.value == selection } ?? 0
     }
 
-    func updateNSView(_ control: NSSegmentedControl, context: Context) {
-        context.coordinator.parent = self
-        control.setAccessibilityLabel(title)
-        if control.segmentCount != options.count { control.segmentCount = options.count }
-        for (index, option) in options.enumerated() where control.label(forSegment: index) != option.label {
-            control.setLabel(option.label, forSegment: index)
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options.indices, id: \.self) { index in
+                segment(options[index])
+            }
         }
-        let selected = options.firstIndex { $0.value == selection } ?? -1
-        if control.selectedSegment != selected { control.selectedSegment = selected }
-    }
-
-    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSSegmentedControl, context: Context) -> CGSize? {
-        let natural = nsView.intrinsicContentSize
-        return CGSize(width: max(proposal.width ?? natural.width, natural.width), height: natural.height)
-    }
-
-    final class Coordinator: NSObject {
-        var parent: SettingsFullWidthSegmentedControl
-
-        init(_ parent: SettingsFullWidthSegmentedControl) { self.parent = parent }
-
-        @MainActor @objc func selectionChanged(_ sender: NSSegmentedControl) {
-            guard parent.options.indices.contains(sender.selectedSegment) else { return }
-            parent.selection = parent.options[sender.selectedSegment].value
+        .background(alignment: .leading) {
+            GeometryReader { proxy in
+                let width = proxy.size.width / CGFloat(max(options.count, 1))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .shadow(color: .black.opacity(0.12), radius: 1, y: 0.5)
+                    .frame(width: width)
+                    .offset(x: width * CGFloat(selectedIndex))
+            }
         }
+        .padding(2)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .animation(reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.1), value: selectedIndex)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(title)
+    }
+
+    private func segment(_ option: (value: Value, label: String)) -> some View {
+        let selected = option.value == selection
+        return Button {
+            selection = option.value
+        } label: {
+            HStack(spacing: 5) {
+                Text(option.label)
+                    .lineLimit(1)
+                if let color = dot(option.value) {
+                    Circle().fill(color).frame(width: 6, height: 6)
+                }
+            }
+            .font(.system(size: 12, weight: selected ? .semibold : .regular))
+            .foregroundStyle(selected ? Color.primary : Color.secondary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 24)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .focusEffectDisabled()
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 }

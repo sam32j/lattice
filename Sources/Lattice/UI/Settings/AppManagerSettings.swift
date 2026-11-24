@@ -170,8 +170,10 @@ struct AppManagerSettings: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            // The cross-fade is the content's alone: the tab bar's thumb
+            // keeps its own spring.
+            .animation(.easeInOut(duration: 0.18), value: shownTab)
         }
-        .animation(.easeInOut(duration: 0.18), value: shownTab)
     }
 }
 
@@ -182,46 +184,13 @@ struct AppManagerTabBar: View {
     @Binding var selection: AppManagerTab
     let strings: AppManagerStrings
     @ObservedObject private var attention = AppManagerAttention.shared
-    @Namespace private var thumb
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(tabs, id: \.self) { tab in
-                Button {
-                    selection = tab
-                } label: {
-                    HStack(spacing: 5) {
-                        Text(tab.title(strings))
-                            .lineLimit(1)
-                        if let dot = attention.dot(for: tab) {
-                            Circle().fill(dot).frame(width: 6, height: 6)
-                        }
-                    }
-                    .font(.system(size: 12, weight: selection == tab ? .semibold : .regular))
-                    .foregroundStyle(selection == tab ? Color.primary : Color.secondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 24)
-                    .background {
-                        if selection == tab {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(Color(nsColor: .controlBackgroundColor))
-                                .shadow(color: .black.opacity(0.12), radius: 1, y: 0.5)
-                                .matchedGeometryEffect(id: "thumb", in: thumb)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .focusEffectDisabled()
-                .accessibilityAddTraits(selection == tab ? [.isSelected] : [])
-            }
-        }
-        .padding(2)
-        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .animation(reduceMotion ? nil : .spring(duration: 0.25, bounce: 0.1), value: selection)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(strings.tabsLabel)
+        SettingsFullWidthSegmentedControl(
+            title: strings.tabsLabel,
+            options: tabs.map { ($0, $0.title(strings)) },
+            selection: $selection,
+            dot: { attention.dot(for: $0) })
     }
 }
 

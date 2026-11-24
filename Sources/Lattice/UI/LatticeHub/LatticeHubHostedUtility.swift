@@ -121,16 +121,22 @@ enum HubScrollEdge {
 }
 
 extension View {
-    func hubScrollEdgeFade() -> some View {
+    /// Fades the top and bottom `HubScrollEdge.inset` of a scrolling area and
+    /// rounds its corners; the content needs that much room at rest.
+    func hubScrollEdgeFade(_ isActive: Bool = true) -> some View {
         mask {
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                    .frame(height: HubScrollEdge.inset)
+            if isActive {
+                VStack(spacing: 0) {
+                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                        .frame(height: HubScrollEdge.inset)
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                        .frame(height: HubScrollEdge.inset)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: HubScrollEdge.cornerRadius, style: .continuous))
+            } else {
                 Rectangle()
-                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: HubScrollEdge.inset)
             }
-            .clipShape(RoundedRectangle(cornerRadius: HubScrollEdge.cornerRadius, style: .continuous))
         }
     }
 }
@@ -197,7 +203,9 @@ private struct LatticeHubSystemUtility: View {
                 content
             }
             .scrollBounceBehavior(.basedOnSize)
+            .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
             .frame(height: notchSize.height)
+            .hubScrollEdgeFade()
         } else if notchSize == nil, navigation.selectedMetric != nil,
                   navigation.selectedMetric != .cpu {
             // Keep the natural detail height when it fits. Only oversized
@@ -212,8 +220,10 @@ private struct LatticeHubSystemUtility: View {
                     }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .frame(height: min(floatingDetailNaturalHeight,
+            .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
+            .frame(height: min(floatingDetailNaturalHeight + HubScrollEdge.inset * 2,
                                max(100, launcher.floatingPanelHeightBudget - 92)))
+            .hubScrollEdgeFade()
         } else {
             content
                 .frame(height: notchSize?.height, alignment: .top)

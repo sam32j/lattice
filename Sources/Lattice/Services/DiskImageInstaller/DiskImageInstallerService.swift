@@ -59,14 +59,15 @@ final class DiskImageInstallerService: ObservableObject {
 
     private let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.disk-image-installer",
                                           qos: .utility)
-    private var mountObserver: NSObjectProtocol?
+    /// Whether the App Installer is on. It never watches mounts: a disk
+    /// image another app mounts (an app updating itself) is left alone, and
+    /// only one opened with Lattice is offered.
+    private var isRunning = false
     private var pending: [Candidate] = []
-    private var processingMounts = Set<String>()
     private var promptActive = false
     private var installPrompt: NonModalAlert?
     private var progressPanel: NSPanel?
-    /// The volume the prompt is about, so the same mount reported twice (by
-    /// its mount notification and by Lattice opening it) asks once.
+    /// The volume the prompt is about, so the same image opened twice asks once.
     private var activeMountPath: String?
     /// Volumes Lattice mounted itself, hidden from Finder: a cancelled
     /// prompt ejects them again rather than leave them mounted out of sight.
@@ -80,29 +81,12 @@ final class DiskImageInstallerService: ObservableObject {
     }
 
     private func start() {
-        guard mountObserver == nil else { return }
-        mountObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didMountNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            // A disk image opened the native way stays native: only with
-            // "Install opened .dmg files" on is a volume mounted elsewhere offered.
-            guard UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages),
-                  let mountURL = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL else {
-                return
-            }
-            self?.inspect(mountURL: mountURL)
-        }
+        isRunning = true
     }
 
     private func stop() {
-        if let mountObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(mountObserver)
-        }
-        mountObserver = nil
+        isRunning = false
         pending.removeAll()
-        processingMounts.removeAll()
         installPrompt?.dismiss(with: .alertSecondButtonReturn)
         detected = nil
     }
@@ -129,7 +113,7 @@ final class DiskImageInstallerService: ObservableObject {
     func open(diskImage url: URL, fromFinder: Bool = false) {
         guard url.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame else { return }
         let declined = fromFinder && !UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages)
-        guard mountObserver != nil, !declined else {
+        guard isRunning, !declined else {
             DiskImageOpenHandler.openWithDiskImageMounter(url)
             return
         }
@@ -203,23 +187,6 @@ final class DiskImageInstallerService: ObservableObject {
         }
     }
 
-    private func inspect(mountURL: URL) {
-        guard mountObserver != nil else { return }
-        let path = mountURL.standardizedFileURL.resolvingSymlinksInPath().path
-        guard processingMounts.insert(path).inserted else { return }
-
-        workQueue.async { [weak self] in
-            let candidate = self?.candidate(mountedAt: mountURL)
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.processingMounts.remove(path)
-                guard self.mountObserver != nil, let candidate else { return }
-                self.pending.append(candidate)
-                self.presentNextCandidate()
-            }
-        }
-    }
-
     /// Only Homebrew's own images are excluded. An unrelated manual mount
     /// must still be offered while a cask installation is running.
     private static func isHomebrewImage(_ imageURL: URL) -> Bool {
@@ -277,7 +244,7 @@ final class DiskImageInstallerService: ObservableObject {
     }
 
     private func presentNextCandidate() {
-        guard !promptActive, mountObserver != nil, let candidate = pending.first else { return }
+        guard !promptActive, isRunning, let candidate = pending.first else { return }
         pending.removeFirst()
         if pending.contains(where: { $0.mountURL.standardizedFileURL.path == candidate.mountURL.standardizedFileURL.path }) {
             pending.removeAll { $0.mountURL.standardizedFileURL.path == candidate.mountURL.standardizedFileURL.path }
