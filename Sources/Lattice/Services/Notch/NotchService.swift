@@ -2081,9 +2081,14 @@ final class NotchService: ObservableObject {
     /// was. A Hub the user moved on to another tool in the meantime is theirs
     /// now and stays as they left it.
     private func restoreHubAfterMenuBarReading() {
+        let launcher = LatticeHubService.shared
+        // A reading opened on the island's own System page leaves its
+        // selection behind; with System not open in the Hub, it is stale.
+        if launcher.activeUtility != .system, SystemNavigationState.shared.selectedMetric != nil {
+            SystemNavigationState.shared.reset()
+        }
         guard let previous = hubStateBeforeMenuBarReading else { return }
         hubStateBeforeMenuBarReading = nil
-        let launcher = LatticeHubService.shared
         guard launcher.activeUtility == .system else { return }
         SystemNavigationState.shared.reset()
         launcher.activeUtility = previous.utility
