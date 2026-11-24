@@ -368,7 +368,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func showMetricPanel(for metric: MenuBarMetric, anchoredTo button: NSStatusBarButton) {
         let detailKind = metric.detailKind
         if NotchService.shared.acceptsSystemFeedback {
-            NotchService.shared.showMetric(detailKind, toggle: true)
+            NotchService.shared.showMetricFromMenuBar(detailKind)
         } else {
             // The HUD opens on the same reading, as stepping into it from
             // the Hub's System tool would, sized for it.

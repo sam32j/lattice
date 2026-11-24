@@ -2453,6 +2453,31 @@ final class NotchService: ObservableObject {
         if toggle { detailHasPage = false }
     }
 
+    /// A menu bar reading's click: the island opens on the Hub with System
+    /// at that reading, the same place stepping in through the Hub's System
+    /// tool reaches, so it is sized the same way. A second click on the same
+    /// reading closes it. Without the Hub in the island, the System page
+    /// shows the reading instead.
+    func showMetricFromMenuBar(_ metric: MetricDetailKind) {
+        guard metricIsAvailable(metric) else { return }
+        let launcher = LatticeHubService.shared
+        let navigation = SystemNavigationState.shared
+        if expanded, selected == .hub, launcher.activeUtility == .system,
+           navigation.selectedMetric == metric, !showingCommandBar {
+            collapse()
+            return
+        }
+        guard modules.contains(.hub), LatticeHubItem.system.isAvailable() else {
+            showMetric(metric, toggle: true)
+            return
+        }
+        navigation.selectMetric(metric)
+        launcher.opensUtilityDirectly = false
+        launcher.activeUtility = .system
+        open(.hub)
+        refreshPresentation(transitionContent: .page)
+    }
+
     /// Fan Control is a single card, so its detail fits the card instead of
     /// opening a tall, mostly empty page. A taller card still scrolls in it.
     func updateFanDetailHeight(_ height: CGFloat) {
