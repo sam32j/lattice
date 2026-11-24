@@ -51,7 +51,8 @@ struct AppInstallerTab: View {
 
     private func chooseDiskImage() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "dmg") ?? .diskImage]
+        panel.allowedContentTypes = DiskImageOpenHandler.contentTypes
+        panel.allowsOtherFileTypes = false
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
@@ -192,13 +193,19 @@ struct AppInstallerTab: View {
     }
 
     private func recentRow(_ install: DiskImageRecentInstall) -> some View {
-        HStack(spacing: 12) {
+        let missing = !FileManager.default.fileExists(atPath: install.destinationPath)
+        return HStack(spacing: 12) {
             AppManagerAppIcon(path: install.destinationPath, name: install.name)
+                .saturation(missing ? 0 : 1)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(install.name).font(.system(size: 13, weight: .medium))
-                    AppManagerChip(text: install.downloadTrashed ? strings.downloadTrashed : strings.downloadKept,
-                                   tone: install.downloadTrashed ? .green : .muted)
+                    if missing {
+                        AppManagerChip(text: strings.notFound)
+                    } else {
+                        AppManagerChip(text: install.downloadTrashed ? strings.downloadTrashed : strings.downloadKept,
+                                       tone: install.downloadTrashed ? .green : .muted)
+                    }
                 }
                 Text([install.version, (install.destinationPath as NSString).abbreviatingWithTildeInPath,
                       AppManagerFormat.relative(install.date, language: l10n.language)]
@@ -209,8 +216,13 @@ struct AppInstallerTab: View {
                     .truncationMode(.middle)
             }
             Spacer(minLength: 8)
-            Button(strings.reveal) { installer.reveal(install) }
-                .disabled(!FileManager.default.fileExists(atPath: install.destinationPath))
+            if missing {
+                Button(strings.clear) { installer.forget(install) }
+            } else {
+                Button(strings.reveal) { installer.reveal(install) }
+            }
         }
+        // An app deleted since reads as gone.
+        .opacity(missing ? 0.55 : 1)
     }
 }

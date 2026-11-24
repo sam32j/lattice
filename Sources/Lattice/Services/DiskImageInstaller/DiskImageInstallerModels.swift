@@ -104,29 +104,47 @@ extension DiskImageInstallerSupport {
 /// before installing, or in macOS's own Disk Image Mounter.
 enum DiskImageOpenHandler {
     static let mounterURL = URL(fileURLWithPath: "/System/Library/CoreServices/DiskImageMounter.app")
-    /// The .dmg type alone: each type set asks macOS, and macOS asks the
-    /// person, so a second type showed the confirmation twice.
+    /// The .dmg type, the one a downloaded disk image has.
     static let contentTypes = ["com.apple.disk-image-udif"].compactMap { UTType($0) }
 
+    /// By bundle identifier, so another copy of this same app counts too.
     static var opensInLattice: Bool {
         guard let type = contentTypes.first,
               let handler = NSWorkspace.shared.urlForApplication(toOpen: type) else { return false }
-        return handler.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        return Bundle(url: handler)?.bundleIdentifier == Bundle.main.bundleIdentifier
     }
 
+    static let mounterBundleID = "com.apple.DiskImageMounter"
+
     /// Makes Lattice, or Disk Image Mounter again, the app disk images open in.
+    /// Set through Launch Services directly: NSWorkspace's way asks with a
+    /// system dialog whose appearance flashed the Settings window, for a
+    /// choice the person just made with the switch.
     static func setOpensInLattice(_ on: Bool, completion: @escaping () -> Void) {
-        let app = on ? Bundle.main.bundleURL : mounterURL
-        let group = DispatchGroup()
+        guard let bundleID = on ? Bundle.main.bundleIdentifier : mounterBundleID else { completion(); return }
         for type in contentTypes {
-            group.enter()
-            NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type) { _ in group.leave() }
+            // Through the protocol, so the deprecated call stays in one place.
+            _ = (LegacyHandlerSetter.self as LegacyHandlerSetting.Type).set(bundleID as CFString,
+                                                                             for: type.identifier as CFString)
         }
-        group.notify(queue: .main, execute: completion)
+        DispatchQueue.main.async(execute: completion)
     }
 
     /// Opens an image the way a plain double-click would without Lattice.
     static func openWithDiskImageMounter(_ url: URL) {
         NSWorkspace.shared.open([url], withApplicationAt: mounterURL, configuration: NSWorkspace.OpenConfiguration())
+    }
+}
+
+private protocol LegacyHandlerSetting {
+    static func set(_ bundleID: CFString, for type: CFString) -> OSStatus
+}
+
+/// Launch Services' own setter, deprecated in favor of one that asks with a
+/// system dialog for every change.
+private enum LegacyHandlerSetter: LegacyHandlerSetting {
+    @available(macOS, deprecated: 12.0)
+    static func set(_ bundleID: CFString, for type: CFString) -> OSStatus {
+        LSSetDefaultRoleHandlerForContentType(type, .all, bundleID)
     }
 }
