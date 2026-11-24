@@ -104,7 +104,9 @@ extension DiskImageInstallerSupport {
 /// before installing, or in macOS's own Disk Image Mounter.
 enum DiskImageOpenHandler {
     static let mounterURL = URL(fileURLWithPath: "/System/Library/CoreServices/DiskImageMounter.app")
-    static let contentTypes = ["com.apple.disk-image-udif", "com.apple.disk-image"].compactMap { UTType($0) }
+    /// The .dmg type alone: each type set asks macOS, and macOS asks the
+    /// person, so a second type showed the confirmation twice.
+    static let contentTypes = ["com.apple.disk-image-udif"].compactMap { UTType($0) }
 
     static var opensInLattice: Bool {
         guard let type = contentTypes.first,

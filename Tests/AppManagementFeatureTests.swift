@@ -1913,7 +1913,7 @@ enum AppManagementFeatureTests {
             contentsOfFile: "Sources/Lattice/Services/DiskImageInstaller/DiskImageInstallerService.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!installerSource.isEmpty && !installerSource.contains(".runModal()")
-               && installerSource.components(separatedBy: "NonModalAlert.present(").count == 3,
-               "the install prompt and the result alert both open without a modal session")
+               && installerSource.components(separatedBy: "NonModalAlert.present(").count == 4,
+               "the install prompt, the result alert and the unverified-app question open without a modal session")
     }
 }
