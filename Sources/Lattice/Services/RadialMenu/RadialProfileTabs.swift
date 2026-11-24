@@ -55,16 +55,51 @@ enum RadialProfileTabs {
         return result
     }
 
-    /// Moves a profile in front of another, the drop of a dragged tab on the
-    /// tab it lands before. Nil appends it.
-    static func moving(_ id: UUID, before target: UUID?,
-                       in profiles: [RadialMenuProfile]) -> [RadialMenuProfile] {
-        guard id != target, let from = profiles.firstIndex(where: { $0.id == id }) else { return profiles }
-        var result = profiles
-        let profile = result.remove(at: from)
-        let destination = target.flatMap { target in result.firstIndex { $0.id == target } } ?? result.count
-        result.insert(profile, at: destination)
-        return result
+    // MARK: Dragging a tab in the Settings strip
+
+    /// The slot a dragged tab lands in: past every tab whose centre its own
+    /// centre has crossed. Tabs differ in width, so slots are measured.
+    static func dragDestination(widths: [CGFloat], spacing: CGFloat,
+                                from: Int, translation: CGFloat) -> Int {
+        guard widths.indices.contains(from) else { return from }
+        let centres = tabCentres(widths: widths, spacing: spacing)
+        let dragged = centres[from] + translation
+        let passedRight = centres.indices.filter { $0 > from && dragged > centres[$0] }.count
+        let passedLeft = centres.indices.filter { $0 < from && dragged < centres[$0] }.count
+        return from + passedRight - passedLeft
+    }
+
+    /// How far the tab at `index` slides aside while the dragged tab, from
+    /// `from`, is over `destination`: one dragged tab's width and gap.
+    static func dragShift(index: Int, from: Int, destination: Int,
+                          widths: [CGFloat], spacing: CGFloat) -> CGFloat {
+        guard widths.indices.contains(from), index != from else { return 0 }
+        let gap = widths[from] + spacing
+        if from < destination, (from + 1...destination).contains(index) { return -gap }
+        if destination < from, (destination..<from).contains(index) { return gap }
+        return 0
+    }
+
+    /// How far the dragged tab travels from its own slot to sit in
+    /// `destination`, past the tabs that slid aside for it.
+    static func dragSettleOffset(from: Int, destination: Int,
+                                 widths: [CGFloat], spacing: CGFloat) -> CGFloat {
+        guard widths.indices.contains(from), widths.indices.contains(destination) else { return 0 }
+        if destination > from {
+            return widths[(from + 1)...destination].reduce(0, +) + CGFloat(destination - from) * spacing
+        }
+        if destination < from {
+            return -(widths[destination..<from].reduce(0, +) + CGFloat(from - destination) * spacing)
+        }
+        return 0
+    }
+
+    private static func tabCentres(widths: [CGFloat], spacing: CGFloat) -> [CGFloat] {
+        var leading: CGFloat = 0
+        return widths.map { width in
+            defer { leading += width + spacing }
+            return leading + width / 2
+        }
     }
 
     static func makingPrimary(_ id: UUID, in profiles: [RadialMenuProfile]) -> [RadialMenuProfile] {

@@ -53,15 +53,6 @@ extension RadialMenuSettings {
         persist()
     }
 
-    func moveProfile(_ id: UUID, before target: UUID?) {
-        let reordered = RadialProfileTabs.moving(id, before: target, in: profiles)
-        tabDropTarget = nil
-        tabDropAtEnd = false
-        guard reordered != profiles else { return }
-        profiles = reordered
-        persist()
-    }
-
     func moveProfile(_ id: UUID, by step: Int) {
         guard let index = profiles.firstIndex(where: { $0.id == id }) else { return }
         let destination = index + step

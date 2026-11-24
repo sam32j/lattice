@@ -360,10 +360,28 @@ enum RadialProfileTabsTests {
         let a = RadialMenuProfile(name: "A"), b = RadialMenuProfile(name: "B"), c = RadialMenuProfile(name: "C")
         let list = [a, b, c]
         suite.expect(RadialProfileTabs.makingPrimary(c.id, in: list).map(\.id) == [c.id, a.id, b.id]
-                && RadialProfileTabs.moving(c.id, before: a.id, in: list).first?.id == c.id
-                && RadialProfileTabs.moving(a.id, before: nil, in: list).map(\.id) == [b.id, c.id, a.id]
+                && RadialProfileTabs.moving(c.id, to: 0, in: list).map(\.id) == [c.id, a.id, b.id]
+                && RadialProfileTabs.moving(a.id, to: 2, in: list).map(\.id) == [b.id, c.id, a.id]
                 && RadialProfileTabs.moving(b.id, to: 0, in: list).first?.id == b.id,
                      "reordering keeps the first tab as the primary")
+
+        // Tabs 40, 80 and 60 wide with 6 between: centres at 20, 86 and 162.
+        let widths: [CGFloat] = [40, 80, 60]
+        suite.expect(RadialProfileTabs.dragDestination(widths: widths, spacing: 6, from: 0, translation: 60) == 0
+                && RadialProfileTabs.dragDestination(widths: widths, spacing: 6, from: 0, translation: 70) == 1
+                && RadialProfileTabs.dragDestination(widths: widths, spacing: 6, from: 0, translation: 500) == 2
+                && RadialProfileTabs.dragDestination(widths: widths, spacing: 6, from: 2, translation: -80) == 1
+                && RadialProfileTabs.dragDestination(widths: widths, spacing: 6, from: 2, translation: -500) == 0,
+                     "a dragged tab lands past each tab whose centre it crosses, clamped to the ends")
+        suite.expect(RadialProfileTabs.dragShift(index: 1, from: 0, destination: 2, widths: widths, spacing: 6) == -46
+                && RadialProfileTabs.dragShift(index: 2, from: 0, destination: 2, widths: widths, spacing: 6) == -46
+                && RadialProfileTabs.dragShift(index: 0, from: 2, destination: 0, widths: widths, spacing: 6) == 66
+                && RadialProfileTabs.dragShift(index: 2, from: 0, destination: 1, widths: widths, spacing: 6) == 0,
+                     "the tabs passed slide aside by the dragged tab's width and gap, the rest stay")
+        suite.expect(RadialProfileTabs.dragSettleOffset(from: 0, destination: 2, widths: widths, spacing: 6) == 152
+                && RadialProfileTabs.dragSettleOffset(from: 2, destination: 0, widths: widths, spacing: 6) == -132
+                && RadialProfileTabs.dragSettleOffset(from: 1, destination: 1, widths: widths, spacing: 6) == 0,
+                     "a released tab settles exactly into the slot that opened for it")
         let deleted = RadialProfileTabs.deleting(a.id, in: list)
         suite.expect(deleted?.profiles.map(\.id) == [b.id, c.id] && deleted?.selected == b.id
                 && RadialProfileTabs.nextPrimary(afterDeleting: a.id, in: list)?.id == b.id

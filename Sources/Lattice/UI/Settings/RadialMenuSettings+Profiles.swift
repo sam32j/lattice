@@ -15,12 +15,24 @@ extension RadialMenuSettings {
             // Scrolled through its own position, so bringing the selected
             // tab into view never scrolls the page around it.
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
+                HStack(spacing: Self.tabSpacing) {
+                    let destination = tabDragDestination
                     ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
+                        let isDragged = tabDrag?.id == profile.id
                         profileTab(profile, index: index)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                                tabWidths[profile.id] = width
+                            }
+                            // The dragged tab tracks the pointer; the tabs it
+                            // passes slide aside to open its slot.
+                            .offset(x: isDragged ? (tabDrag?.translation ?? 0)
+                                                 : tabShift(for: index, destination: destination))
+                            .animation(isDragged || reduceMotion ? nil : .easeInOut(duration: 0.15),
+                                       value: destination)
+                            .zIndex(isDragged ? 1 : 0)
+                            .gesture(tabReorderGesture(for: profile.id, index: index))
                             .id(profile.id)
                     }
-                    endDropZone
                 }
                 .scrollTargetLayout()
                 .padding(.horizontal, 16)
@@ -107,11 +119,6 @@ extension RadialMenuSettings {
             }
         }
         .animation(.easeOut(duration: 0.18), value: submenu?.id)
-        .overlay(alignment: .leading) {
-            if tabDropTarget == profile.id {
-                Capsule().fill(Color.accentColor).frame(width: 2, height: 22).offset(x: -4)
-            }
-        }
         .overlay {
             // Keyboard focus on a tab other than the selected one. A click
             // selects the tab it focuses, so this never rings a clicked tab.
@@ -122,14 +129,6 @@ extension RadialMenuSettings {
         .contentShape(Capsule())
         .onTapGesture { activateTab(profile.id, selected: selected) }
         .help(index == 0 ? text.primaryHelp : name)
-        .draggable(profile.id.uuidString)
-        .dropDestination(for: String.self) { items, _ in
-            guard let raw = items.first, let id = UUID(uuidString: raw) else { return false }
-            moveProfile(id, before: profile.id)
-            return true
-        } isTargeted: { targeted in
-            if targeted { tabDropTarget = profile.id } else if tabDropTarget == profile.id { tabDropTarget = nil }
-        }
         .focusable()
         .focusEffectDisabled()
         .focused($focusedTabID, equals: profile.id)
@@ -169,21 +168,60 @@ extension RadialMenuSettings {
         if selected, openSubmenuID != nil { openSubmenuID = nil } else { selectProfile(id) }
     }
 
-    /// Dropping past the last tab moves a profile to the end.
-    private var endDropZone: some View {
-        Color.clear
-            .frame(width: 18, height: 28)
-            .overlay(alignment: .leading) {
-                if tabDropAtEnd {
-                    Capsule().fill(Color.accentColor).frame(width: 2, height: 22)
+    // MARK: Reordering by drag
+
+    static let tabSpacing: CGFloat = 6
+
+    private var orderedTabWidths: [CGFloat] { profiles.map { tabWidths[$0.id] ?? 0 } }
+
+    /// The slot the dragged tab would land in now.
+    private var tabDragDestination: Int? {
+        guard let tabDrag else { return nil }
+        return RadialProfileTabs.dragDestination(widths: orderedTabWidths, spacing: Self.tabSpacing,
+                                                 from: tabDrag.startIndex, translation: tabDrag.translation)
+    }
+
+    private func tabShift(for index: Int, destination: Int?) -> CGFloat {
+        guard let tabDrag, let destination else { return 0 }
+        return RadialProfileTabs.dragShift(index: index, from: tabDrag.startIndex, destination: destination,
+                                           widths: orderedTabWidths, spacing: Self.tabSpacing)
+    }
+
+    /// Drawn by SwiftUI rather than handed to the system's drag and drop,
+    /// whose floating copy sat over the tab left in the strip. A short move
+    /// still counts as a click.
+    private func tabReorderGesture(for id: UUID, index: Int) -> some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .global)
+            .onChanged { value in
+                guard !tabSettling else { return }
+                if tabDrag?.id != id {
+                    tabDrag = RadialTabDrag(id: id, startIndex: index, translation: 0)
+                }
+                tabDrag?.translation = value.translation.width
+            }
+            .onEnded { _ in
+                guard !tabSettling, let drag = tabDrag, drag.id == id,
+                      let destination = tabDragDestination else { return }
+                tabSettling = true
+                let settle = RadialProfileTabs.dragSettleOffset(from: drag.startIndex, destination: destination,
+                                                                widths: orderedTabWidths,
+                                                                spacing: Self.tabSpacing)
+                // Settle into the slot first, then commit the order with no
+                // animation: every tab already sits where the new order puts it.
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) { tabDrag?.translation = settle }
+                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : 0.12)) {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        if destination != drag.startIndex {
+                            profiles = RadialProfileTabs.moving(id, to: destination, in: profiles)
+                        }
+                        tabDrag = nil
+                        tabSettling = false
+                    }
+                    if destination != drag.startIndex { persist() }
                 }
             }
-            .dropDestination(for: String.self) { items, _ in
-                guard let raw = items.first, let id = UUID(uuidString: raw) else { return false }
-                moveProfile(id, before: nil)
-                return true
-            } isTargeted: { tabDropAtEnd = $0 }
-            .accessibilityHidden(true)
     }
 
     private var addProfileMenu: some View {
@@ -332,4 +370,11 @@ struct RadialAppendingPillSegment: Shape {
         path.closeSubpath()
         return path
     }
+}
+
+/// A profile tab being dragged in the Settings strip.
+struct RadialTabDrag: Equatable {
+    let id: UUID
+    let startIndex: Int
+    var translation: CGFloat
 }

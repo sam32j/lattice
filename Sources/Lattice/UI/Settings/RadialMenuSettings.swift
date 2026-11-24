@@ -40,9 +40,15 @@ struct RadialMenuSettings: View {
     @State var invalidShortcutMessage: String?
     @State var pendingTakeover: RadialMenuTrackpadGesture?
     @State var gestureCoordinator: PermissionActivationCoordinator?
-    @State var tabDropTarget: UUID?
     @FocusState var focusedTabID: UUID?
-    @State var tabDropAtEnd = false
+    /// A tab being dragged: which, from what slot, and how far the pointer
+    /// has moved. The order stays put until the tab is let go.
+    @State var tabDrag: RadialTabDrag?
+    /// A released tab is settling into its slot; a new drag waits for it.
+    @State var tabSettling = false
+    /// Each tab's measured width, for slots of differing size.
+    @State var tabWidths: [UUID: CGFloat] = [:]
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @State var tabScrollID: UUID?
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.settingsPermissionAccess) var permissionAccess
