@@ -57,6 +57,10 @@ struct MonitorAlertsControls: View {
                     .transition(.settingsReveal)
             }
         }
+        // Each alert's limit unrolls with the page's managed reveal, the
+        // rows under it moving in the same transaction.
+        .settingsExpansionAnimation(value: [alertCPU, alertCPUTemperature, alertMemory, alertDisk,
+                                            alertBattery, alertBatteryTemperature, notificationsDenied])
         .onAppear {
             sanitizeAlertValues()
             refreshNotificationStatus()
@@ -165,7 +169,7 @@ struct MonitorAlertRow: View {
                 Text(row.title)
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                Toggle(row.title, isOn: row.isOn.animation(reduceMotion ? nil : .settingsExpansion))
+                Toggle(row.title, isOn: row.isOn)
                     .labelsHidden()
                     .toggleStyle(.switch)
             }
