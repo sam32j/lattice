@@ -254,17 +254,7 @@ struct SettingsMenuToggleRow: View {
         } label: {
             HStack(alignment: help == nil ? .center : .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 6) {
-                        Text(title)
-                        if let lockedLabel {
-                            Text(lockedLabel)
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 1.5)
-                                .background(Color.primary.opacity(0.07), in: Capsule())
-                        }
-                    }
+                    Text(title)
                     if let help {
                         Text(help)
                             .font(.caption)
@@ -273,12 +263,22 @@ struct SettingsMenuToggleRow: View {
                     }
                 }
                 Spacer(minLength: 8)
-                Toggle(title, isOn: .constant(lockedLabel != nil || isOn))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                    .allowsHitTesting(false)
-                    .disabled(lockedLabel != nil)
+                if let lockedLabel {
+                    // Fixed on: the badge stands where its switch would.
+                    Text(lockedLabel)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.primary.opacity(0.07), in: Capsule())
+                        .fixedSize()
+                } else {
+                    Toggle(title, isOn: .constant(isOn))
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .allowsHitTesting(false)
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)

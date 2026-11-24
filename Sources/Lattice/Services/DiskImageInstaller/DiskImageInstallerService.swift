@@ -278,12 +278,14 @@ final class DiskImageInstallerService: ObservableObject {
         let tab = FeatureStrings.appInstallerTab(L10n.shared.language)
         let defaults = UserDefaults.standard
         let usesUserApplications = defaults.bool(forKey: DefaultsKey.diskImageInstallerUseUserApplications)
-        let folder = usesUserApplications ? strings.userApplicationsFolder : strings.applicationsFolder
+        let trashesDownload = defaults.bool(forKey: DefaultsKey.diskImageInstallerTrashesDownload)
+        let folder = usesUserApplications ? tab.folderUser : tab.folderSystem
+        let body = candidate.replacing.isEmpty
+            ? (trashesDownload ? tab.installTrashBodyFormat : tab.installBodyFormat)
+            : (trashesDownload ? tab.replaceTrashBodyFormat : tab.replaceBodyFormat)
         let alert = NSAlert()
-        alert.messageText = strings.promptTitle
-        alert.informativeText = candidate.replacing.isEmpty
-            ? String(format: strings.promptBodyFormat, candidate.displayName, folder)
-            : String(format: tab.replaceBodyFormat, candidate.displayName, folder)
+        alert.messageText = String(format: tab.installTitleFormat, candidate.displayName)
+        alert.informativeText = String(format: body, candidate.displayName, folder)
         alert.icon = NSWorkspace.shared.icon(forFile: candidate.appURL.path)
         alert.addButton(withTitle: strings.installButton)
         alert.addButton(withTitle: tab.installManually)
@@ -301,7 +303,7 @@ final class DiskImageInstallerService: ObservableObject {
             switch response {
             case .alertFirstButtonReturn:
                 self.beginInstall(candidate, strings: strings,
-                                  trashingDownload: defaults.bool(forKey: DefaultsKey.diskImageInstallerTrashesDownload),
+                                  trashingDownload: trashesDownload,
                                   revealingApp: defaults.bool(forKey: DefaultsKey.diskImageInstallerRevealsApp),
                                   useUserApplications: usesUserApplications)
             case .alertSecondButtonReturn:
@@ -326,8 +328,9 @@ final class DiskImageInstallerService: ObservableObject {
         let version = detected?.version
 
         workQueue.async { [weak self] in
+            var verified = true
             let result = self?.install(candidate, trashingDownload: trashesDownload,
-                                       useUserApplications: usesUserApplications)
+                                       useUserApplications: usesUserApplications, verified: &verified)
                 ?? InstallResult(outcome: .failed(.copy), destinationURL: nil)
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
@@ -342,7 +345,15 @@ final class DiskImageInstallerService: ObservableObject {
                     if revealsApp, result.outcome.isInstalled, let destinationURL = result.destinationURL {
                         NSWorkspace.shared.activateFileViewerSelecting([destinationURL])
                     }
-                    self?.finishCurrentCandidate()
+                    guard !verified, result.outcome.isInstalled, let destinationURL = result.destinationURL,
+                          UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOffersUnverifiedOpen),
+                          Self.isQuarantined(destinationURL) else {
+                        self?.finishCurrentCandidate()
+                        return
+                    }
+                    self?.offerToAllow(destinationURL, name: candidate.displayName) {
+                        self?.finishCurrentCandidate()
+                    }
                 }
             }
         }
@@ -415,7 +426,7 @@ final class DiskImageInstallerService: ObservableObject {
     }
 
     private func install(_ candidate: Candidate, trashingDownload: Bool,
-                         useUserApplications: Bool) -> InstallResult {
+                         useUserApplications: Bool, verified: inout Bool) -> InstallResult {
         let fm = FileManager.default
         let applicationsDomain = DiskImageInstallerSupport.applicationsDomain(
             useUserApplications: useUserApplications)
@@ -463,9 +474,11 @@ final class DiskImageInstallerService: ObservableObject {
             return InstallResult(outcome: .failed(.copy), destinationURL: destinationURL)
         }
         report(.verifying)
-        guard Self.gatekeeperAccepts(stagedApp) else {
-            return InstallResult(outcome: .failed(.verification), destinationURL: destinationURL)
-        }
+        // An app macOS would refuse still installs, keeping the download mark
+        // the copy above left behind, so macOS goes on blocking it at launch
+        // unless the person allows it afterwards.
+        verified = Self.gatekeeperAccepts(stagedApp)
+        if !verified { Self.carryQuarantine(from: candidate.appURL, to: stagedApp) }
 
         do {
             guard let finalCollisionURLs = DiskImageInstallerSupport.collisionURLs(
@@ -557,6 +570,46 @@ final class DiskImageInstallerService: ObservableObject {
         // Not runModal either: this runs inside the hop after the install.
         NSApp.activate(ignoringOtherApps: true)
         NonModalAlert.present(alert) { _ in completion() }
+    }
+
+    // MARK: Unverified apps
+
+    private static let quarantineAttribute = "com.apple.quarantine"
+
+    static func isQuarantined(_ url: URL) -> Bool {
+        getxattr(url.path, quarantineAttribute, nil, 0, 0, 0) > 0
+    }
+
+    /// Puts the source bundle's download mark on the staged copy, which the
+    /// copy dropped, so macOS still treats the app as downloaded.
+    private static func carryQuarantine(from source: URL, to destination: URL) {
+        let size = getxattr(source.path, quarantineAttribute, nil, 0, 0, 0)
+        guard size > 0 else { return }
+        var value = [UInt8](repeating: 0, count: size)
+        guard getxattr(source.path, quarantineAttribute, &value, size, 0, 0) == size else { return }
+        _ = setxattr(destination.path, quarantineAttribute, value, size, 0, 0)
+    }
+
+    /// Asks whether an installed app macOS could not verify may open, with
+    /// what that means; only a yes removes the download mark.
+    private func offerToAllow(_ app: URL, name: String, completion: @escaping () -> Void) {
+        let tab = FeatureStrings.appInstallerTab(L10n.shared.language)
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.icon = NSWorkspace.shared.icon(forFile: app.path)
+        alert.messageText = String(format: tab.allowTitleFormat, name)
+        alert.informativeText = String(format: tab.allowBodyFormat, name)
+        // The safe choice is the default one.
+        alert.addButton(withTitle: tab.keepBlockedButton)
+        alert.addButton(withTitle: tab.allowButton)
+        NSApp.activate(ignoringOtherApps: true)
+        NonModalAlert.present(alert) { [weak self] response in
+            guard response == .alertSecondButtonReturn, let self else { completion(); return }
+            self.workQueue.async {
+                _ = Self.run("/usr/bin/xattr", arguments: ["-dr", Self.quarantineAttribute, app.path])
+                DispatchQueue.main.async(execute: completion)
+            }
+        }
     }
 
     /// Whether every copy now in the way is one the prompt said it would

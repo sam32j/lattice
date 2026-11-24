@@ -13,6 +13,7 @@ struct AppInstallerTab: View {
     @AppStorage(DefaultsKey.diskImageInstallerUseUserApplications) private var useUserApplications = false
     @AppStorage(DefaultsKey.diskImageInstallerTrashesDownload) private var trashesDownload = true
     @AppStorage(DefaultsKey.diskImageInstallerRevealsApp) private var revealsApp = false
+    @AppStorage(DefaultsKey.diskImageInstallerOffersUnverifiedOpen) private var offersUnverifiedOpen = false
     /// Read from Launch Services, since the choice lives there.
     @State private var opensInLattice = false
 
@@ -154,6 +155,10 @@ struct AppInstallerTab: View {
                 Divider()
                 SettingsControlRow(title: strings.revealTitle, caption: strings.revealCaption) {
                     Toggle(strings.revealTitle, isOn: $revealsApp).labelsHidden()
+                }
+                Divider()
+                SettingsControlRow(title: strings.unverifiedToggle, caption: strings.unverifiedCaption) {
+                    Toggle(strings.unverifiedToggle, isOn: $offersUnverifiedOpen).labelsHidden()
                 }
                 Divider()
                 SettingsControlRow(title: strings.ignoreHomebrewTitle, caption: strings.ignoreHomebrewCaption) {
