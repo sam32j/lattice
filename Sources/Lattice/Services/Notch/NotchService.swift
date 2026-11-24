@@ -1778,6 +1778,9 @@ final class NotchService: ObservableObject {
         NotchNotificationService.shared.stop()
         settingsSignature = ""
         expanded = false
+        // Torn down without a collapse (the Mac locking, say), the island
+        // still hands the Hub back as a menu bar reading found it.
+        restoreHubAfterMenuBarReading()
         peeking = false
         dragPlaceholder = false
         endFileDrop()
