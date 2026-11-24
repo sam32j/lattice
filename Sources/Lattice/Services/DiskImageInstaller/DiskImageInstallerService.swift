@@ -368,6 +368,7 @@ final class DiskImageInstallerService: ObservableObject {
                 // An unverified app is settled first, so the result that
                 // follows describes an app that opens, or one still blocked.
                 guard !verified, result.outcome.isInstalled, let destinationURL = result.destinationURL,
+                      UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages),
                       UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOffersUnverifiedOpen),
                       Self.isQuarantined(destinationURL) else {
                     announce()

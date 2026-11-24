@@ -36,6 +36,7 @@ struct AppInstallerTab: View {
             recentInstalls
         }
         .settingsExpansionAnimation(value: installer.detected?.id)
+        .settingsExpansionAnimation(value: opensInLattice)
         // The switch shows what macOS has, whatever changed it since.
         .onAppear { opensInLattice = DiskImageOpenHandler.opensInLattice }
         .onChange(of: installer.detected != nil, initial: true) { _, waiting in
@@ -151,6 +152,17 @@ struct AppInstallerTab: View {
                     }))
                     .labelsHidden()
                 }
+                // Part of opening DMG files with Lattice, so shown only with it.
+                if opensInLattice {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Divider()
+                        SettingsControlRow(title: strings.unverifiedToggle, caption: strings.unverifiedCaption) {
+                            Toggle(strings.unverifiedToggle, isOn: $offersUnverifiedOpen).labelsHidden()
+                        }
+                        .padding(.top, 13)
+                    }
+                    .transition(.settingsReveal)
+                }
                 Divider()
                 SettingsControlRow(title: strings.trashTitle, caption: strings.trashCaption) {
                     Toggle(strings.trashTitle, isOn: $trashesDownload).labelsHidden()
@@ -158,10 +170,6 @@ struct AppInstallerTab: View {
                 Divider()
                 SettingsControlRow(title: strings.revealTitle, caption: strings.revealCaption) {
                     Toggle(strings.revealTitle, isOn: $revealsApp).labelsHidden()
-                }
-                Divider()
-                SettingsControlRow(title: strings.unverifiedToggle, caption: strings.unverifiedCaption) {
-                    Toggle(strings.unverifiedToggle, isOn: $offersUnverifiedOpen).labelsHidden()
                 }
                 Divider()
                 SettingsControlRow(title: strings.ignoreHomebrewTitle, caption: strings.ignoreHomebrewCaption) {
