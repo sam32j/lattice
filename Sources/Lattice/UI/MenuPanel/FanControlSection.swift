@@ -315,7 +315,7 @@ struct FanControlCardContent: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled(isWorking)
+                .disabled(isWorking || systemControlUnconfirmed)
                 .frame(maxWidth: .infinity)
             case .curve:
                 Button(strings.applyCurve) {
@@ -323,7 +323,7 @@ struct FanControlCardContent: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled(isWorking || !curveCanRun)
+                .disabled(isWorking || systemControlUnconfirmed || !curveCanRun)
                 .frame(maxWidth: .infinity)
             }
         }
