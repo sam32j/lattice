@@ -511,6 +511,8 @@ if (( TEST )); then
         Sources/Lattice/Core/SystemMonitorSettingsStrings.swift
         Sources/Lattice/Core/AppManagerStrings.swift
         Sources/Lattice/Core/AppInstallerTabStrings.swift
+        Sources/Lattice/Core/AppUninstallerTabStrings.swift
+        Sources/Lattice/Core/HomebrewTabStrings.swift
         Sources/Lattice/Core/BluetoothSleepStrings.swift
         Sources/Lattice/Core/FanControlStrings.swift
         Sources/Lattice/Core/ConnectedDevicesStrings.swift

@@ -55,7 +55,11 @@ extension AppUpdatesListView {
                         .transition(.settingsReveal)
                 }
             }
-            .padding(18)
+            // The App Manager's tabs share one column width and margins.
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // The one driver for the notify row's reveal, whichever window or

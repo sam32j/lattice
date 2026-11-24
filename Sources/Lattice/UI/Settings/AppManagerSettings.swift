@@ -158,8 +158,8 @@ struct AppManagerSettings: View {
                 switch shownTab {
                 case .installer: AppInstallerTab().transition(.opacity)
                 case .updates: AppUpdatesSettings().transition(.opacity)
-                case .uninstaller: UninstallerView().transition(.opacity)
-                case .homebrew: HomebrewSettings().transition(.opacity)
+                case .uninstaller: AppUninstallerTab().transition(.opacity)
+                case .homebrew: HomebrewTab().transition(.opacity)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
