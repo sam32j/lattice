@@ -89,6 +89,10 @@ final class LatticeHubService: ObservableObject {
     @Published var navigationToken = UUID()
     @Published var hubIslandPage: Int = 0
     var lastDismissedTime: TimeInterval = 0
+    /// The menu bar reading the Hub is showing, while it was opened from
+    /// one; kept through a dismissal so that reading's own click can tell
+    /// it closed the Hub rather than asked for it again.
+    var systemMetricFromMenuBar: MetricDetailKind?
     var lastKeyboardActionTimestamp: TimeInterval = 0
     @Published var presentationID = UUID() {
         didSet { editingPresentation.reset() }
