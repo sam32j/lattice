@@ -177,6 +177,7 @@ extension RadialMenuSettings {
     /// The slot the dragged tab would land in now.
     private var tabDragDestination: Int? {
         guard let tabDrag else { return nil }
+        if let landing = tabDrag.landing { return landing }
         return RadialProfileTabs.dragDestination(widths: orderedTabWidths, spacing: Self.tabSpacing,
                                                  from: tabDrag.startIndex, translation: tabDrag.translation)
     }
@@ -195,7 +196,7 @@ extension RadialMenuSettings {
             .onChanged { value in
                 guard !tabSettling else { return }
                 if tabDrag?.id != id {
-                    tabDrag = RadialTabDrag(id: id, startIndex: index, translation: 0)
+                    tabDrag = RadialTabDrag(id: id, startIndex: index, translation: 0, landing: nil)
                 }
                 tabDrag?.translation = value.translation.width
             }
@@ -203,6 +204,10 @@ extension RadialMenuSettings {
                 guard !tabSettling, let drag = tabDrag, drag.id == id,
                       let destination = tabDragDestination else { return }
                 tabSettling = true
+                // The slot is decided now. Measured while the tab slides into
+                // it, a narrower neighbour could hand the slot back for a
+                // moment and the opened gap would bounce.
+                tabDrag?.landing = destination
                 let settle = RadialProfileTabs.dragSettleOffset(from: drag.startIndex, destination: destination,
                                                                 widths: orderedTabWidths,
                                                                 spacing: Self.tabSpacing)
@@ -377,4 +382,6 @@ struct RadialTabDrag: Equatable {
     let id: UUID
     let startIndex: Int
     var translation: CGFloat
+    /// Set on release: the slot it settles into.
+    var landing: Int?
 }
