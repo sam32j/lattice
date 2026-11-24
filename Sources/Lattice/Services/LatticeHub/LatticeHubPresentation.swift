@@ -70,9 +70,20 @@ extension LatticeHubService {
         let navigation = SystemNavigationState.shared
         if isVisible, activeUtility == .system, navigation.selectedMetric == kind {
             hide()
+            systemMetricFromMenuBar = nil
+            return
+        }
+        // An unpinned Hub hides on the mouse-down of a click outside it, so
+        // a second click on the reading it shows arrives with it already
+        // hidden. That click only closed it; a click on another reading
+        // still opens the Hub on that one.
+        let justDismissed = ProcessInfo.processInfo.systemUptime - lastDismissedTime < 0.35
+        if !isVisible, justDismissed, systemMetricFromMenuBar == kind {
+            systemMetricFromMenuBar = nil
             return
         }
         guard LatticeHubItem.system.isAvailable() else { return }
+        systemMetricFromMenuBar = kind
         navigation.selectMetric(kind)
         if isVisible {
             opensUtilityDirectly = true
