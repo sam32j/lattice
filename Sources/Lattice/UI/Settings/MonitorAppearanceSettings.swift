@@ -163,6 +163,9 @@ struct MenuBarReadingsList: View {
     @State private var dragging: MenuBarReadingGroup?
     @State private var dragStartIndex = 0
     @State private var dragTranslation: CGFloat = 0
+    /// A released row is settling into its slot; a new drag waits for it,
+    /// so every released drag commits its own move.
+    @State private var settling = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Every row is one line, so a drag moves one slot per row height.
@@ -225,6 +228,7 @@ struct MenuBarReadingsList: View {
     private func reorderGesture(for group: MenuBarReadingGroup, index: Int, count: Int) -> some Gesture {
         DragGesture(minimumDistance: 3, coordinateSpace: .named(Self.space))
             .onChanged { value in
+                guard !settling else { return }
                 if dragging != group {
                     dragging = group
                     dragStartIndex = index
@@ -232,7 +236,8 @@ struct MenuBarReadingsList: View {
                 dragTranslation = value.translation.height
             }
             .onEnded { _ in
-                guard dragging == group, let target = proposedIndex(count: count) else { return }
+                guard !settling, dragging == group, let target = proposedIndex(count: count) else { return }
+                settling = true
                 let settle = CGFloat(target - dragStartIndex) * Self.rowHeight
                 // Settle into the slot first, then commit the order with no
                 // animation: every row is already where the new order puts it.
@@ -242,8 +247,11 @@ struct MenuBarReadingsList: View {
                     transaction.disablesAnimations = true
                     withTransaction(transaction) {
                         move(group, toVisibleIndex: target)
-                        dragging = nil
-                        dragTranslation = 0
+                        if dragging == group {
+                            dragging = nil
+                            dragTranslation = 0
+                        }
+                        settling = false
                     }
                     save()
                 }
