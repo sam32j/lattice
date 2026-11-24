@@ -36,7 +36,9 @@ extension AppUpdatesListView {
 
     static let compactRowHeight: CGFloat = 40
     static let compactRowSpacing: CGFloat = 5
-    static let compactVisibleRows = 4
+    /// The panel grows with the list up to this many apps; past it the
+    /// panel's own scroll view takes over.
+    static let compactVisibleRows = 10
 
     static func compactHeight(rowCount: Int) -> CGFloat {
         let visible = min(max(rowCount, 1), compactVisibleRows)
@@ -48,6 +50,6 @@ extension AppUpdatesListView {
     static func compactUtilityHeight(itemCount: Int) -> CGFloat {
         let note = coverageWasIncomplete ? incompleteLineHeight + 8 : 0
         if itemCount == 0 { return 148 + note }
-        return min(290, 85 + compactHeight(rowCount: itemCount)) + note
+        return 85 + compactHeight(rowCount: itemCount) + note
     }
 }

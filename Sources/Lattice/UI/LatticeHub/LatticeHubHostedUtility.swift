@@ -103,7 +103,34 @@ struct LatticeHubHostedUtility: View {
                     }
                 }
             }
+            // Content scrolls out under a soft edge rather than being cut by
+            // a hard line against the header and the bottom; the margin keeps
+            // it clear of the fade until it scrolls.
+            .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
             .frame(height: viewportHeight)
+            .hubScrollEdgeFade()
+        }
+    }
+}
+
+/// The soft top and bottom edges of a Hub utility that scrolls.
+enum HubScrollEdge {
+    /// The fade's height, and the margin that keeps content out of it at rest.
+    static let inset: CGFloat = 10
+    static let cornerRadius: CGFloat = 12
+}
+
+extension View {
+    func hubScrollEdgeFade() -> some View {
+        mask {
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                    .frame(height: HubScrollEdge.inset)
+                Rectangle()
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: HubScrollEdge.inset)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: HubScrollEdge.cornerRadius, style: .continuous))
         }
     }
 }
