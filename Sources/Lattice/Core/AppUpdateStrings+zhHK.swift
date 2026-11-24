@@ -43,7 +43,7 @@ extension AppUpdateStrings {
         openAppHint: "打開 App，等佢自己嘅更新程式完成更新",
         includeOnlineToggle: "包含其他已安裝嘅 App",
         includeOnlineCaption: "支援時會直接向開發者查詢，再用公開目錄補充搜尋。更新由 App 自行安裝。",
-        incompleteCheck: "檢查未完成",
+        incompleteCheck: "無法檢查以下 App",
         onlineUnavailable: "無法完成網上檢查。其他結果仍然會顯示。",
         skipVersionFormat: "略過版本 %@",
         excludeApp: "唔檢查呢個 App",

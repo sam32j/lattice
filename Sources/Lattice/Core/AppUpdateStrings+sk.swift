@@ -43,7 +43,7 @@ extension AppUpdateStrings {
         openAppHint: "Otvorí aplikáciu, aby jej vlastný aktualizátor mohol dokončiť aktualizáciu",
         includeOnlineToggle: "Zahrnúť ostatné nainštalované aplikácie",
         includeOnlineCaption: "Pri podpore kontroluje priamo u vývojárov a dopĺňa to verejným katalógom. Aktualizáciu inštaluje samotná aplikácia.",
-        incompleteCheck: "Kontrola nedokončená",
+        incompleteCheck: "Tieto aplikácie sa nepodarilo skontrolovať",
         onlineUnavailable: "Online kontrolu sa nepodarilo dokončiť. Ostatné výsledky sa aj tak zobrazujú.",
         skipVersionFormat: "Preskočiť verziu %@",
         excludeApp: "Nekontrolovať túto aplikáciu",

@@ -43,7 +43,7 @@ extension AppUpdateStrings {
         openAppHint: "Kendi güncelleyicisinin tamamlaması için uygulamayı açar",
         includeOnlineToggle: "Yüklü diğer uygulamaları dahil et",
         includeOnlineCaption: "Desteklendiğinde doğrudan uygulama geliştiricilerine danışır, ardından herkese açık bir katalog kullanır. Güncellemeyi uygulamanın kendisi yükler.",
-        incompleteCheck: "Denetim tamamlanamadı",
+        incompleteCheck: "Bu uygulamalar denetlenemedi",
         onlineUnavailable: "Çevrimiçi denetleme tamamlanamadı. Diğer sonuçlar gösterilmeye devam ediyor.",
         skipVersionFormat: "%@ sürümünü atla",
         excludeApp: "Bu uygulamayı denetleme",
