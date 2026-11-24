@@ -42,7 +42,7 @@ extension SettingsDirectory {
                                       featureKeywords: [
                                         (.scratchpad, [FeatureStrings.scratchpad(language).pageTitle]),
                                       ]),
-                SettingsDirectoryItem(page: .media, title: s.mediaName, icon: "rectangle.compress.vertical",
+                SettingsDirectoryItem(page: .media, title: s.mediaName, icon: "lattice.media",
                                       keywords: ["PDF", "GIF", "PNG", "JPEG", "convert", "resize", "watermark",
                                                  "rename", "profile", "fit", "fill", "crop",
                                                  s.mediaStartConvertPDF, s.ocrName]),

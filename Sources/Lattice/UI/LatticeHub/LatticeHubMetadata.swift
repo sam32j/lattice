@@ -29,7 +29,7 @@ extension LatticeHubView {
         case .recentCaptures: return "photo.stack"
         case .clipboard: return "doc.on.clipboard"
         case .windowLayout: return "rectangle.3.group"
-        case .media: return "rectangle.compress.vertical"
+        case .media: return LatticeSymbol.mediaSymbol
         case .urlCleaner: return "link"
         case .appManager: return LatticeSymbol.appManagerSymbol
         case .cleaner: return "sparkle"

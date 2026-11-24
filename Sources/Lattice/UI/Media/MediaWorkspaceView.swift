@@ -274,7 +274,7 @@ struct MediaWorkspaceView: View {
     private var header: some View {
         if showHeader {
             HStack(spacing: 9) {
-                Label(l10n.s.mediaName, systemImage: "rectangle.compress.vertical")
+                Label { Text(l10n.s.mediaName) } icon: { LatticeSymbol(LatticeSymbol.mediaSymbol) }
                     .font(.system(size: compact ? 12 : 16, weight: .semibold))
                 Spacer(minLength: 0)
                 Text(l10n.s.mediaLocalNote)

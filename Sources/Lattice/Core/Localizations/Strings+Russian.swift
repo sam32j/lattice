@@ -393,7 +393,7 @@ extension Strings {
         homebrewOperationTechnicalLog: "Технические детали",
         homebrewOperationProgressUnknown: "Homebrew ещё не сообщил процент выполнения.",
 
-        mediaName: "Медиа",
+        mediaName: "Сжатие медиа",
         mediaEnableCaption: "Сжимайте видео, преобразуйте и обрабатывайте изображения, создавайте GIF и извлекайте текст локально.",
         mediaLocalNote: "Локально. Без сети.",
         mediaToolVideo: "Видео",
