@@ -53,11 +53,13 @@ struct MonitorSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsCard {
-                    MonitorSubpageRow(title: strings.menuBarTitle, caption: strings.menuBarCaption) {
+                    MonitorSubpageRow(symbol: "menubar.rectangle", title: strings.menuBarTitle,
+                                      caption: strings.menuBarCaption) {
                         SettingsRouter.shared.request(FeatureSettingsDestination(.monitorMenuBar))
                     }
                     Divider()
-                    SettingsControlRow(title: strings.refreshTitle, caption: refreshCaption) {
+                    SettingsRow(symbol: "gauge.with.dots.needle.67percent", title: strings.refreshTitle,
+                                caption: refreshCaption) {
                         Picker(strings.refreshTitle, selection: $interval) {
                             ForEach(MonitorRefreshRate.allCases, id: \.self) { rate in
                                 Text(title(for: rate)).tag(rate.rawValue)
@@ -68,9 +70,12 @@ struct MonitorSettings: View {
                         .fixedSize()
                     }
                 }
-                SettingsCard(title: FeatureStrings.monitorAlerts(l10n.language).section,
+                SettingsCard(symbol: "bell.badge", title: FeatureStrings.monitorAlerts(l10n.language).section,
                              caption: FeatureStrings.monitorAlerts(l10n.language).caption) {
+                    // Under the title text, past the header's icon, so the
+                    // alerts read as the card's contents.
                     MonitorAlertsControls()
+                        .padding(.leading, MonitorSettings.cardTextInset)
                 }
             }
             .frame(maxWidth: 760)
@@ -80,6 +85,9 @@ struct MonitorSettings: View {
         .toggleStyle(.switch)
         .onAppear { interval = Defaults.sanitizedMonitorInterval(interval) }
     }
+
+    /// A card header's icon tile and the gap after it, where its title starts.
+    static let cardTextInset: CGFloat = 26 + 10
 
     private var rate: MonitorRefreshRate {
         MonitorRefreshRate(rawValue: Defaults.sanitizedMonitorInterval(interval)) ?? .balanced
@@ -217,6 +225,7 @@ private struct MonitorModulesMenu: View {
 
 /// A row that opens a subpage, with its chevron.
 struct MonitorSubpageRow: View {
+    let symbol: String
     let title: String
     let caption: String
     let action: () -> Void
@@ -224,6 +233,12 @@ struct MonitorSubpageRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
+                LatticeSymbol(symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 26, height: 26)
+                    .background(Color.accentColor.opacity(0.12),
+                                in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .foregroundStyle(.primary)
