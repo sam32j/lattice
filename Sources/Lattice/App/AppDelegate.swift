@@ -187,7 +187,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        MediaEditorFileOpener.shared.open(urls)
+        // Disk images Lattice was asked to open go to the App Installer.
+        let isDiskImage: (URL) -> Bool = { $0.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame }
+        urls.filter(isDiskImage).forEach(DiskImageInstallerService.shared.open(diskImage:))
+        let others = urls.filter { !isDiskImage($0) }
+        if !others.isEmpty { MediaEditorFileOpener.shared.open(others) }
     }
 
     /// Asking another app about its windows waits for that app to answer, and

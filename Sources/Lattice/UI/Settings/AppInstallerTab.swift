@@ -13,6 +13,8 @@ struct AppInstallerTab: View {
     @AppStorage(DefaultsKey.diskImageInstallerUseUserApplications) private var useUserApplications = false
     @AppStorage(DefaultsKey.diskImageInstallerTrashesDownload) private var trashesDownload = true
     @AppStorage(DefaultsKey.diskImageInstallerRevealsApp) private var revealsApp = false
+    /// Read from Launch Services, since the choice lives there.
+    @State private var opensInLattice = false
 
     private var strings: AppInstallerTabStrings { FeatureStrings.appInstallerTab(l10n.language) }
     private var destination: String { useUserApplications ? "~/Applications" : "/Applications" }
@@ -32,6 +34,7 @@ struct AppInstallerTab: View {
             recentInstalls
         }
         .settingsExpansionAnimation(value: installer.detected?.id)
+        .onAppear { opensInLattice = DiskImageOpenHandler.opensInLattice }
         .onChange(of: installer.detected != nil, initial: true) { _, waiting in
             AppManagerAttention.shared.diskImageWaiting = waiting
         }
@@ -63,6 +66,7 @@ struct AppInstallerTab: View {
                     case .waiting:
                         HStack(spacing: 6) {
                             Text(image.displayName).font(.system(size: 13, weight: .semibold))
+                            if image.replacesExisting { AppManagerChip(text: strings.updateChip, tone: .accent) }
                             if let accepted = image.gatekeeperAccepted {
                                 AppManagerChip(text: accepted ? strings.gatekeeperVerified : strings.gatekeeperUnverified,
                                                tone: accepted ? .green : .orange)
@@ -82,7 +86,9 @@ struct AppInstallerTab: View {
             case .waiting:
                 Divider()
                 HStack(spacing: 10) {
-                    Text(String(format: trashesDownload ? strings.planTrashFormat : strings.planFormat, destination))
+                    Text(String(format: image.replacesExisting
+                                    ? (trashesDownload ? strings.planReplaceTrashFormat : strings.planReplaceFormat)
+                                    : (trashesDownload ? strings.planTrashFormat : strings.planFormat), destination))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 8)
@@ -124,7 +130,7 @@ struct AppInstallerTab: View {
         VStack(alignment: .leading, spacing: 8) {
             AppManagerSectionHeader(title: strings.preferencesTitle)
             SettingsCard {
-                SettingsControlRow(title: strings.locationTitle, caption: strings.locationCaption) {
+                SettingsControlRow(title: strings.locationTitle) {
                     Picker(strings.locationTitle, selection: $useUserApplications) {
                         Text(strings.locationSystem).tag(false)
                         Text(strings.locationUser).tag(true)
@@ -132,6 +138,14 @@ struct AppInstallerTab: View {
                     .pickerStyle(.menu)
                     .labelsHidden()
                     .fixedSize()
+                }
+                Divider()
+                SettingsControlRow(title: strings.openWithLattice) {
+                    Toggle(strings.openWithLattice, isOn: Binding(get: { opensInLattice }, set: { on in
+                        opensInLattice = on
+                        DiskImageOpenHandler.setOpensInLattice(on) { opensInLattice = DiskImageOpenHandler.opensInLattice }
+                    }))
+                    .labelsHidden()
                 }
                 Divider()
                 SettingsControlRow(title: strings.trashTitle, caption: strings.trashCaption) {

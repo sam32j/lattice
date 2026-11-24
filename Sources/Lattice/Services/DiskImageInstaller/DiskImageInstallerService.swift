@@ -24,6 +24,9 @@ final class DiskImageInstallerService: ObservableObject {
         let imageURL: URL
         let imageIdentity: FileIdentity
         let displayName: String
+        /// Copies already in the Applications folders, which an install
+        /// moves to the Trash: an installed app is offered as an update.
+        let replacing: [URL]
     }
 
     private enum InstallFailure {
@@ -62,6 +65,12 @@ final class DiskImageInstallerService: ObservableObject {
     private var promptActive = false
     private var installPrompt: NonModalAlert?
     private var progressPanel: NSPanel?
+    /// The volume the prompt is about, so the same mount reported twice (by
+    /// its mount notification and by Lattice opening it) asks once.
+    private var activeMountPath: String?
+    /// Volumes Lattice mounted itself, hidden from Finder: a cancelled
+    /// prompt ejects them again rather than leave them mounted out of sight.
+    private var hiddenMounts = Set<String>()
 
     private init() {}
 
@@ -108,11 +117,38 @@ final class DiskImageInstallerService: ObservableObject {
         installPrompt?.dismiss(with: .alertSecondButtonReturn)
     }
 
-    /// Mounts a chosen or dropped disk image; the mount brings it to the
-    /// prompt and the tab like any other.
+    /// Opens a disk image handed to Lattice (double-clicked while Lattice
+    /// opens disk images, chosen or dropped in the tab): it is mounted out of
+    /// Finder's sight and the prompt asks before anything else happens. An
+    /// image without a single app to install opens in Finder as usual.
     func open(diskImage url: URL) {
         guard url.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame else { return }
-        NSWorkspace.shared.open(url)
+        guard mountObserver != nil else {
+            DiskImageOpenHandler.openWithDiskImageMounter(url)
+            return
+        }
+        workQueue.async { [weak self] in
+            let attach = Self.run("/usr/bin/hdiutil", arguments: ["attach", "-nobrowse", "-plist", url.path])
+            let mountURL = attach.status == 0 ? DiskImageInstallerSupport.mountPoint(fromAttachPlist: attach.output) : nil
+            let candidate = mountURL.flatMap { self?.candidate(mountedAt: $0) }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                guard let mountURL else {
+                    DiskImageOpenHandler.openWithDiskImageMounter(url)
+                    return
+                }
+                guard let candidate else {
+                    NSWorkspace.shared.open(mountURL)
+                    return
+                }
+                let path = mountURL.standardizedFileURL.path
+                self.hiddenMounts.insert(path)
+                guard self.activeMountPath != path,
+                      !self.pending.contains(where: { $0.mountURL.standardizedFileURL.path == path }) else { return }
+                self.pending.append(candidate)
+                self.presentNextCandidate()
+            }
+        }
     }
 
     func reveal(_ install: DiskImageRecentInstall) {
@@ -210,9 +246,9 @@ final class DiskImageInstallerService: ObservableObject {
         guard apps.count == 1, let appURL = apps.first,
               let collisionURLs = DiskImageInstallerSupport.collisionURLs(for: appURL,
                 useUserApplications: useUserApplications,
-                fileManager: fm),
-              collisionURLs.allSatisfy({ !fm.fileExists(atPath: $0.path) })
+                fileManager: fm)
         else { return nil }
+        let replacing = collisionURLs.filter { fm.fileExists(atPath: $0.path) }
 
         let preferredName = Bundle(url: appURL)?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
         return Candidate(mountURL: mountURL,
@@ -220,64 +256,65 @@ final class DiskImageInstallerService: ObservableObject {
                          imageURL: imageURL,
                          imageIdentity: imageIdentity,
                          displayName: DiskImageInstallerSupport.displayName(preferred: preferredName,
-                                                                            appURL: appURL))
+                                                                            appURL: appURL),
+                         replacing: replacing)
     }
 
     private func presentNextCandidate() {
         guard !promptActive, mountObserver != nil, let candidate = pending.first else { return }
         pending.removeFirst()
+        if pending.contains(where: { $0.mountURL.standardizedFileURL.path == candidate.mountURL.standardizedFileURL.path }) {
+            pending.removeAll { $0.mountURL.standardizedFileURL.path == candidate.mountURL.standardizedFileURL.path }
+        }
         promptActive = true
         detected = DetectedDiskImage(id: UUID(), displayName: candidate.displayName,
                                      appPath: candidate.appURL.path,
-                                     imageFileName: candidate.imageURL.lastPathComponent)
+                                     imageFileName: candidate.imageURL.lastPathComponent,
+                                     replacesExisting: !candidate.replacing.isEmpty)
         describe(candidate)
 
+        activeMountPath = candidate.mountURL.standardizedFileURL.path
         let strings = FeatureStrings.diskImageInstaller(L10n.shared.language)
+        let tab = FeatureStrings.appInstallerTab(L10n.shared.language)
+        let defaults = UserDefaults.standard
+        let usesUserApplications = defaults.bool(forKey: DefaultsKey.diskImageInstallerUseUserApplications)
+        let folder = usesUserApplications ? strings.userApplicationsFolder : strings.applicationsFolder
         let alert = NSAlert()
         alert.messageText = strings.promptTitle
+        alert.informativeText = candidate.replacing.isEmpty
+            ? String(format: strings.promptBodyFormat, candidate.displayName, folder)
+            : String(format: tab.replaceBodyFormat, candidate.displayName, folder)
         alert.icon = NSWorkspace.shared.icon(forFile: candidate.appURL.path)
         alert.addButton(withTitle: strings.installButton)
+        alert.addButton(withTitle: tab.installManually)
         alert.addButton(withTitle: L10n.shared.s.uninstallerCancel)
-
-        let defaults = UserDefaults.standard
-        let trashDownload = NSButton(checkboxWithTitle: strings.trashDownloadOption, target: nil, action: nil)
-        trashDownload.state = defaults.bool(forKey: DefaultsKey.diskImageInstallerTrashesDownload) ? .on : .off
-        let revealApp = NSButton(checkboxWithTitle: strings.revealAppOption, target: nil, action: nil)
-        revealApp.state = defaults.bool(forKey: DefaultsKey.diskImageInstallerRevealsApp) ? .on : .off
-        let destinationPrompt = DiskImageInstallDestinationPrompt(alert: alert, strings: strings,
-                                                                  displayName: candidate.displayName)
-        let userApplications = NSButton(checkboxWithTitle: strings.useUserApplications,
-                                        target: destinationPrompt,
-                                        action: #selector(DiskImageInstallDestinationPrompt.updateDestination(_:)))
-        userApplications.state = defaults.bool(forKey: DefaultsKey.diskImageInstallerUseUserApplications) ? .on : .off
-        destinationPrompt.updateDestination(userApplications)
-        let options = NSStackView(views: [trashDownload, revealApp, userApplications])
-        options.orientation = .vertical
-        options.alignment = .leading
-        options.spacing = 6
-        options.frame = NSRect(origin: .zero, size: options.fittingSize)
-        alert.accessoryView = options
 
         // Not runModal: this runs inside a main-queue block (the hop after the
         // mount check), and a modal loop started there holds back later
         // main-queue work, such as shortcut actions, until the alert closes.
         // Its modal panel mode also stops default-mode timers (issue #1665).
+        // The options live on the App Manager's App Installer tab.
         NSApp.activate(ignoringOtherApps: true)
-        installPrompt = NonModalAlert.present(alert, retaining: [destinationPrompt]) { [weak self] response in
+        installPrompt = NonModalAlert.present(alert) { [weak self] response in
             guard let self else { return }
             self.installPrompt = nil
-            guard response == .alertFirstButtonReturn else {
+            switch response {
+            case .alertFirstButtonReturn:
+                self.beginInstall(candidate, strings: strings,
+                                  trashingDownload: defaults.bool(forKey: DefaultsKey.diskImageInstallerTrashesDownload),
+                                  revealingApp: defaults.bool(forKey: DefaultsKey.diskImageInstallerRevealsApp),
+                                  useUserApplications: usesUserApplications)
+            case .alertSecondButtonReturn:
+                // Install by hand: the volume opens in Finder, as a plain open would.
+                self.hiddenMounts.remove(candidate.mountURL.standardizedFileURL.path)
+                NSWorkspace.shared.open(candidate.mountURL)
                 self.finishCurrentCandidate()
-                return
+            default:
+                if self.hiddenMounts.remove(candidate.mountURL.standardizedFileURL.path) != nil {
+                    try? NSWorkspace.shared.unmountAndEjectDevice(at: candidate.mountURL)
+                }
+                self.finishCurrentCandidate()
             }
-            let trashesDownload = trashDownload.state == .on
-            let revealsApp = revealApp.state == .on
-            let usesUserApplications = userApplications.state == .on
-            defaults.set(trashesDownload, forKey: DefaultsKey.diskImageInstallerTrashesDownload)
-            defaults.set(revealsApp, forKey: DefaultsKey.diskImageInstallerRevealsApp)
-            defaults.set(usesUserApplications, forKey: DefaultsKey.diskImageInstallerUseUserApplications)
-            self.beginInstall(candidate, strings: strings, trashingDownload: trashesDownload,
-                              revealingApp: revealsApp, useUserApplications: usesUserApplications)
         }
     }
 
@@ -360,6 +397,11 @@ final class DiskImageInstallerService: ObservableObject {
 
     private func finishCurrentCandidate() {
         promptActive = false
+        // The same volume queued again while it was being asked about is done.
+        if let finished = activeMountPath {
+            pending.removeAll { $0.mountURL.standardizedFileURL.path == finished }
+        }
+        activeMountPath = nil
         if case .installing = detected?.phase {} else { detected = nil }
         presentNextCandidate()
     }
@@ -391,7 +433,7 @@ final class DiskImageInstallerService: ObservableObject {
         else {
             return InstallResult(outcome: .failed(.copy), destinationURL: nil)
         }
-        guard collisionURLs.allSatisfy({ !fm.fileExists(atPath: $0.path) }) else {
+        guard Self.onlyReplaces(collisionURLs, candidate.replacing, fileManager: fm) else {
             return InstallResult(outcome: .failed(.alreadyInstalled),
                                  destinationURL: destinationURL)
         }
@@ -434,9 +476,13 @@ final class DiskImageInstallerService: ObservableObject {
             else {
                 return InstallResult(outcome: .failed(.copy), destinationURL: destinationURL)
             }
-            guard finalCollisionURLs.allSatisfy({ !fm.fileExists(atPath: $0.path) }) else {
+            guard Self.onlyReplaces(finalCollisionURLs, candidate.replacing, fileManager: fm) else {
                 return InstallResult(outcome: .failed(.alreadyInstalled),
                                      destinationURL: destinationURL)
+            }
+            // The copy being updated goes to the Trash, where it can be put back.
+            for existing in finalCollisionURLs where fm.fileExists(atPath: existing.path) {
+                try fm.trashItem(at: existing, resultingItemURL: nil)
             }
             report(.moving)
             try fm.moveItem(at: stagedApp, to: destinationURL)
@@ -511,6 +557,13 @@ final class DiskImageInstallerService: ObservableObject {
         // Not runModal either: this runs inside the hop after the install.
         NSApp.activate(ignoringOtherApps: true)
         NonModalAlert.present(alert) { _ in completion() }
+    }
+
+    /// Whether every copy now in the way is one the prompt said it would
+    /// replace: one that appeared since then still stops the install.
+    private static func onlyReplaces(_ collisions: [URL], _ replacing: [URL], fileManager fm: FileManager) -> Bool {
+        let allowed = Set(replacing.map { $0.standardizedFileURL.path })
+        return collisions.allSatisfy { !fm.fileExists(atPath: $0.path) || allowed.contains($0.standardizedFileURL.path) }
     }
 
     private static func validBundle(at appURL: URL) -> Bool {
@@ -591,34 +644,5 @@ private struct DiskImageInstallProgressView: View {
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(message)
-    }
-}
-
-private final class DiskImageInstallDestinationPrompt: NSObject {
-    let alert: NSAlert
-    let strings: DiskImageInstallerStrings
-    let displayName: String
-
-    init(alert: NSAlert, strings: DiskImageInstallerStrings, displayName: String) {
-        self.alert = alert
-        self.strings = strings
-        self.displayName = displayName
-    }
-
-    @objc func updateDestination(_ sender: NSButton) {
-        let folder = sender.state == .on ? strings.userApplicationsFolder : strings.applicationsFolder
-        alert.informativeText = String(format: strings.promptBodyFormat, displayName, folder)
-        // The alert keeps the height it was laid out with, and the home-folder
-        // wording can need one more line than the default one, which would cut
-        // its last line off. Lay the alert out again for the longer wording,
-        // keeping the bottom edge in place so the options stay under the
-        // pointer; the shorter wording simply leaves that line blank.
-        guard sender.state == .on, alert.window.isVisible else { return }
-        let window = alert.window
-        let bottom = window.frame.minY
-        alert.layout()
-        var frame = window.frame
-        frame.origin.y = bottom
-        window.setFrame(frame, display: true)
     }
 }

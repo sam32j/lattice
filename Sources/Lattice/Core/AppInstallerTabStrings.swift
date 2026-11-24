@@ -20,7 +20,6 @@ struct AppInstallerTabStrings {
     let stepTrashing: String
     let preferencesTitle: String
     let locationTitle: String
-    let locationCaption: String
     let locationSystem: String
     let locationUser: String
     let trashTitle: String
@@ -35,6 +34,12 @@ struct AppInstallerTabStrings {
     let downloadKept: String
     let reveal: String
     let recentEmpty: String
+    let installManually: String
+    let replaceBodyFormat: String
+    let openWithLattice: String
+    let planReplaceFormat: String
+    let planReplaceTrashFormat: String
+    let updateChip: String
 }
 
 extension FeatureStrings {
@@ -76,7 +81,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Moving the download to Trash…",
         preferencesTitle: "Install Preferences",
         locationTitle: "Install location",
-        locationCaption: "Where apps copied from disk images are placed",
         locationSystem: "Applications (/Applications)",
         locationUser: "User Applications (~/Applications)",
         trashTitle: "Move download to Trash",
@@ -90,7 +94,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG Trashed",
         downloadKept: "DMG Kept",
         reveal: "Reveal",
-        recentEmpty: "Apps installed from disk images appear here.")
+        recentEmpty: "Apps installed from disk images appear here.",
+        installManually: "Install Manually",
+        replaceBodyFormat: "%1$@ will replace the copy in %2$@, and the disk image will be ejected.",
+        openWithLattice: "Open disk images with Lattice",
+        planReplaceFormat: "Replace the copy in %@ and eject the volume",
+        planReplaceTrashFormat: "Replace the copy in %@, eject the volume, and move the .dmg to Trash",
+        updateChip: "Update")
 
     static let ptBR = AppInstallerTabStrings(
         watchingTitle: "Observando imagens de disco montadas",
@@ -108,7 +118,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Movendo o download para o Lixo…",
         preferencesTitle: "Preferências de instalação",
         locationTitle: "Local de instalação",
-        locationCaption: "Onde ficam os apps copiados das imagens de disco",
         locationSystem: "Aplicativos (/Applications)",
         locationUser: "Aplicativos do usuário (~/Applications)",
         trashTitle: "Mover download para o Lixo",
@@ -122,7 +131,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG no Lixo",
         downloadKept: "DMG mantido",
         reveal: "Mostrar",
-        recentEmpty: "Os apps instalados de imagens de disco aparecem aqui.")
+        recentEmpty: "Os apps instalados de imagens de disco aparecem aqui.",
+        installManually: "Instalar manualmente",
+        replaceBodyFormat: "%1$@ vai substituir a cópia em %2$@, e a imagem de disco será ejetada.",
+        openWithLattice: "Abrir imagens de disco com o Lattice",
+        planReplaceFormat: "Substituir a cópia em %@ e ejetar o volume",
+        planReplaceTrashFormat: "Substituir a cópia em %@, ejetar o volume e mover o .dmg para o Lixo",
+        updateChip: "Atualização")
 
     static let tr = AppInstallerTabStrings(
         watchingTitle: "Bağlanan disk görüntüleri izleniyor",
@@ -140,7 +155,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "İndirilen dosya Çöp Sepeti’ne taşınıyor…",
         preferencesTitle: "Yükleme Tercihleri",
         locationTitle: "Yükleme konumu",
-        locationCaption: "Disk görüntülerinden kopyalanan uygulamaların yeri",
         locationSystem: "Uygulamalar (/Applications)",
         locationUser: "Kullanıcı Uygulamaları (~/Applications)",
         trashTitle: "İndirileni Çöp Sepeti’ne taşı",
@@ -154,7 +168,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG Silindi",
         downloadKept: "DMG Saklandı",
         reveal: "Göster",
-        recentEmpty: "Disk görüntülerinden yüklenen uygulamalar burada görünür.")
+        recentEmpty: "Disk görüntülerinden yüklenen uygulamalar burada görünür.",
+        installManually: "Elle Yükle",
+        replaceBodyFormat: "%1$@, %2$@ içindeki kopyanın yerini alacak ve disk görüntüsü çıkarılacak.",
+        openWithLattice: "Disk görüntülerini Lattice ile aç",
+        planReplaceFormat: "%@ içindeki kopyayı değiştir ve birimi çıkar",
+        planReplaceTrashFormat: "%@ içindeki kopyayı değiştir, birimi çıkar ve .dmg’yi Çöp Sepeti’ne taşı",
+        updateChip: "Güncelleme")
 
     static let ru = AppInstallerTabStrings(
         watchingTitle: "Отслеживание подключённых образов дисков",
@@ -172,7 +192,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Перемещение загрузки в Корзину…",
         preferencesTitle: "Параметры установки",
         locationTitle: "Место установки",
-        locationCaption: "Куда помещаются приложения из образов дисков",
         locationSystem: "Программы (/Applications)",
         locationUser: "Программы пользователя (~/Applications)",
         trashTitle: "Перемещать загрузку в Корзину",
@@ -186,7 +205,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG в Корзине",
         downloadKept: "DMG сохранён",
         reveal: "Показать",
-        recentEmpty: "Здесь появятся приложения, установленные из образов дисков.")
+        recentEmpty: "Здесь появятся приложения, установленные из образов дисков.",
+        installManually: "Установить вручную",
+        replaceBodyFormat: "%1$@ заменит копию в %2$@, а образ диска будет извлечён.",
+        openWithLattice: "Открывать образы дисков в Lattice",
+        planReplaceFormat: "Заменить копию в %@ и извлечь том",
+        planReplaceTrashFormat: "Заменить копию в %@, извлечь том и переместить .dmg в Корзину",
+        updateChip: "Обновление")
 
     static let es = AppInstallerTabStrings(
         watchingTitle: "Vigilando imágenes de disco montadas",
@@ -204,7 +229,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Moviendo la descarga a la Papelera…",
         preferencesTitle: "Preferencias de instalación",
         locationTitle: "Ubicación de instalación",
-        locationCaption: "Dónde se colocan las apps copiadas de imágenes de disco",
         locationSystem: "Aplicaciones (/Applications)",
         locationUser: "Aplicaciones del usuario (~/Applications)",
         trashTitle: "Mover descarga a la Papelera",
@@ -218,7 +242,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG en la Papelera",
         downloadKept: "DMG conservado",
         reveal: "Mostrar",
-        recentEmpty: "Aquí aparecen las apps instaladas desde imágenes de disco.")
+        recentEmpty: "Aquí aparecen las apps instaladas desde imágenes de disco.",
+        installManually: "Instalar manualmente",
+        replaceBodyFormat: "%1$@ sustituirá la copia de %2$@ y se expulsará la imagen de disco.",
+        openWithLattice: "Abrir imágenes de disco con Lattice",
+        planReplaceFormat: "Sustituir la copia de %@ y expulsar el volumen",
+        planReplaceTrashFormat: "Sustituir la copia de %@, expulsar el volumen y mover el .dmg a la Papelera",
+        updateChip: "Actualización")
 
     static let sk = AppInstallerTabStrings(
         watchingTitle: "Sledovanie pripojených obrazov diskov",
@@ -236,7 +266,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Stiahnutý súbor sa presúva do Koša…",
         preferencesTitle: "Predvoľby inštalácie",
         locationTitle: "Umiestnenie inštalácie",
-        locationCaption: "Kam sa ukladajú aplikácie skopírované z obrazov diskov",
         locationSystem: "Aplikácie (/Applications)",
         locationUser: "Aplikácie používateľa (~/Applications)",
         trashTitle: "Presunúť stiahnutý súbor do Koša",
@@ -250,7 +279,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG v Koši",
         downloadKept: "DMG ponechané",
         reveal: "Zobraziť",
-        recentEmpty: "Tu sa zobrazia aplikácie nainštalované z obrazov diskov.")
+        recentEmpty: "Tu sa zobrazia aplikácie nainštalované z obrazov diskov.",
+        installManually: "Inštalovať ručne",
+        replaceBodyFormat: "%1$@ nahradí kópiu v %2$@ a obraz disku sa vysunie.",
+        openWithLattice: "Otvárať obrazy diskov v Lattice",
+        planReplaceFormat: "Nahradiť kópiu v %@ a vysunúť zväzok",
+        planReplaceTrashFormat: "Nahradiť kópiu v %@, vysunúť zväzok a presunúť .dmg do Koša",
+        updateChip: "Aktualizácia")
 
     static let de = AppInstallerTabStrings(
         watchingTitle: "Achtet auf aktivierte Disk-Images",
@@ -268,7 +303,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Download wird in den Papierkorb gelegt …",
         preferencesTitle: "Installationseinstellungen",
         locationTitle: "Installationsort",
-        locationCaption: "Wohin aus Disk-Images kopierte Apps kommen",
         locationSystem: "Programme (/Applications)",
         locationUser: "Benutzerprogramme (~/Applications)",
         trashTitle: "Download in den Papierkorb legen",
@@ -282,7 +316,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG gelöscht",
         downloadKept: "DMG behalten",
         reveal: "Zeigen",
-        recentEmpty: "Aus Disk-Images installierte Apps erscheinen hier.")
+        recentEmpty: "Aus Disk-Images installierte Apps erscheinen hier.",
+        installManually: "Manuell installieren",
+        replaceBodyFormat: "%1$@ ersetzt die Kopie in %2$@, und das Disk-Image wird ausgeworfen.",
+        openWithLattice: "Disk-Images mit Lattice öffnen",
+        planReplaceFormat: "Die Kopie in %@ ersetzen und das Volume auswerfen",
+        planReplaceTrashFormat: "Die Kopie in %@ ersetzen, das Volume auswerfen und die .dmg in den Papierkorb legen",
+        updateChip: "Update")
 
     static let fr = AppInstallerTabStrings(
         watchingTitle: "Surveillance des images disque montées",
@@ -300,7 +340,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Placement du téléchargement dans la corbeille…",
         preferencesTitle: "Préférences d’installation",
         locationTitle: "Emplacement d’installation",
-        locationCaption: "Où placer les apps copiées depuis les images disque",
         locationSystem: "Applications (/Applications)",
         locationUser: "Applications de l’utilisateur (~/Applications)",
         trashTitle: "Placer le téléchargement dans la corbeille",
@@ -314,7 +353,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG supprimé",
         downloadKept: "DMG conservé",
         reveal: "Afficher",
-        recentEmpty: "Les apps installées depuis des images disque apparaissent ici.")
+        recentEmpty: "Les apps installées depuis des images disque apparaissent ici.",
+        installManually: "Installer manuellement",
+        replaceBodyFormat: "%1$@ remplacera la copie dans %2$@, et l’image disque sera éjectée.",
+        openWithLattice: "Ouvrir les images disque avec Lattice",
+        planReplaceFormat: "Remplacer la copie dans %@ et éjecter le volume",
+        planReplaceTrashFormat: "Remplacer la copie dans %@, éjecter le volume et placer le .dmg dans la corbeille",
+        updateChip: "Mise à jour")
 
     static let it = AppInstallerTabStrings(
         watchingTitle: "In attesa di immagini disco montate",
@@ -332,7 +377,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Spostamento del download nel Cestino…",
         preferencesTitle: "Preferenze di installazione",
         locationTitle: "Posizione di installazione",
-        locationCaption: "Dove vengono messe le app copiate dalle immagini disco",
         locationSystem: "Applicazioni (/Applications)",
         locationUser: "Applicazioni utente (~/Applications)",
         trashTitle: "Sposta il download nel Cestino",
@@ -346,7 +390,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG nel Cestino",
         downloadKept: "DMG conservato",
         reveal: "Mostra",
-        recentEmpty: "Le app installate da immagini disco appaiono qui.")
+        recentEmpty: "Le app installate da immagini disco appaiono qui.",
+        installManually: "Installa manualmente",
+        replaceBodyFormat: "%1$@ sostituirà la copia in %2$@ e l’immagine disco verrà espulsa.",
+        openWithLattice: "Apri le immagini disco con Lattice",
+        planReplaceFormat: "Sostituisci la copia in %@ ed espelli il volume",
+        planReplaceTrashFormat: "Sostituisci la copia in %@, espelli il volume e sposta il .dmg nel Cestino",
+        updateChip: "Aggiornamento")
 
     static let ja = AppInstallerTabStrings(
         watchingTitle: "マウントされたディスクイメージを監視中",
@@ -364,7 +414,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "ダウンロードをゴミ箱に移動中…",
         preferencesTitle: "インストール設定",
         locationTitle: "インストール先",
-        locationCaption: "ディスクイメージからコピーしたAppの置き場所",
         locationSystem: "アプリケーション（/Applications）",
         locationUser: "ユーザのアプリケーション（~/Applications）",
         trashTitle: "ダウンロードをゴミ箱に入れる",
@@ -378,7 +427,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMGを削除済み",
         downloadKept: "DMGを保持",
         reveal: "表示",
-        recentEmpty: "ディスクイメージからインストールしたAppがここに表示されます。")
+        recentEmpty: "ディスクイメージからインストールしたAppがここに表示されます。",
+        installManually: "手動でインストール",
+        replaceBodyFormat: "%1$@が%2$@のコピーを置き換え、ディスクイメージを取り出します。",
+        openWithLattice: "ディスクイメージをLatticeで開く",
+        planReplaceFormat: "%@のコピーを置き換えてボリュームを取り出す",
+        planReplaceTrashFormat: "%@のコピーを置き換え、ボリュームを取り出して.dmgをゴミ箱に入れる",
+        updateChip: "アップデート")
 
     static let ko = AppInstallerTabStrings(
         watchingTitle: "마운트된 디스크 이미지 감시 중",
@@ -396,7 +451,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "다운로드를 휴지통으로 이동 중…",
         preferencesTitle: "설치 환경설정",
         locationTitle: "설치 위치",
-        locationCaption: "디스크 이미지에서 복사한 앱을 두는 곳",
         locationSystem: "응용 프로그램(/Applications)",
         locationUser: "사용자 응용 프로그램(~/Applications)",
         trashTitle: "다운로드를 휴지통으로 이동",
@@ -410,7 +464,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG 삭제됨",
         downloadKept: "DMG 유지됨",
         reveal: "보기",
-        recentEmpty: "디스크 이미지에서 설치한 앱이 여기에 표시됩니다.")
+        recentEmpty: "디스크 이미지에서 설치한 앱이 여기에 표시됩니다.",
+        installManually: "수동으로 설치",
+        replaceBodyFormat: "%1$@이(가) %2$@의 사본을 대체하고 디스크 이미지를 추출합니다.",
+        openWithLattice: "Lattice로 디스크 이미지 열기",
+        planReplaceFormat: "%@의 사본을 대체하고 볼륨 추출",
+        planReplaceTrashFormat: "%@의 사본을 대체하고 볼륨을 추출한 다음 .dmg를 휴지통으로 이동",
+        updateChip: "업데이트")
 
     static let zhHans = AppInstallerTabStrings(
         watchingTitle: "正在监视已装载的磁盘映像",
@@ -428,7 +488,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "正在将下载项移到废纸篓…",
         preferencesTitle: "安装偏好设置",
         locationTitle: "安装位置",
-        locationCaption: "从磁盘映像拷贝的 App 存放的位置",
         locationSystem: "应用程序（/Applications）",
         locationUser: "用户应用程序（~/Applications）",
         trashTitle: "将下载项移到废纸篓",
@@ -442,7 +501,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG 已移到废纸篓",
         downloadKept: "DMG 已保留",
         reveal: "显示",
-        recentEmpty: "从磁盘映像安装的 App 会显示在这里。")
+        recentEmpty: "从磁盘映像安装的 App 会显示在这里。",
+        installManually: "手动安装",
+        replaceBodyFormat: "%1$@ 将替换 %2$@ 中的副本，并推出磁盘映像。",
+        openWithLattice: "用 Lattice 打开磁盘映像",
+        planReplaceFormat: "替换 %@ 中的副本并推出宗卷",
+        planReplaceTrashFormat: "替换 %@ 中的副本，推出宗卷，并将 .dmg 移到废纸篓",
+        updateChip: "更新")
 
     static let zhTW = AppInstallerTabStrings(
         watchingTitle: "正在監看已裝載的磁碟映像檔",
@@ -460,7 +525,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "正在將下載項目移到垃圾桶⋯",
         preferencesTitle: "安裝偏好設定",
         locationTitle: "安裝位置",
-        locationCaption: "從磁碟映像檔拷貝的 App 存放的位置",
         locationSystem: "應用程式（/Applications）",
         locationUser: "使用者應用程式（~/Applications）",
         trashTitle: "將下載項目移到垃圾桶",
@@ -474,7 +538,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG 已移到垃圾桶",
         downloadKept: "DMG 已保留",
         reveal: "顯示",
-        recentEmpty: "從磁碟映像檔安裝的 App 會顯示在這裡。")
+        recentEmpty: "從磁碟映像檔安裝的 App 會顯示在這裡。",
+        installManually: "手動安裝",
+        replaceBodyFormat: "%1$@ 將取代 %2$@ 中的副本，並退出磁碟映像檔。",
+        openWithLattice: "用 Lattice 打開磁碟映像檔",
+        planReplaceFormat: "取代 %@ 中的副本並退出卷宗",
+        planReplaceTrashFormat: "取代 %@ 中的副本、退出卷宗，並將 .dmg 移到垃圾桶",
+        updateChip: "更新")
 
     static let zhHK = AppInstallerTabStrings(
         watchingTitle: "正在監看已裝載的磁碟映像檔",
@@ -492,7 +562,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "正在將下載項目移到垃圾桶⋯",
         preferencesTitle: "安裝偏好設定",
         locationTitle: "安裝位置",
-        locationCaption: "從磁碟映像檔拷貝的 App 存放的位置",
         locationSystem: "應用程式（/Applications）",
         locationUser: "用戶應用程式（~/Applications）",
         trashTitle: "將下載項目移到垃圾桶",
@@ -506,7 +575,13 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG 已移到垃圾桶",
         downloadKept: "DMG 已保留",
         reveal: "顯示",
-        recentEmpty: "從磁碟映像檔安裝的 App 會顯示在這裡。")
+        recentEmpty: "從磁碟映像檔安裝的 App 會顯示在這裡。",
+        installManually: "手動安裝",
+        replaceBodyFormat: "%1$@ 將取代 %2$@ 中的副本，並退出磁碟映像檔。",
+        openWithLattice: "用 Lattice 打開磁碟映像檔",
+        planReplaceFormat: "取代 %@ 中的副本並退出卷宗",
+        planReplaceTrashFormat: "取代 %@ 中的副本、退出卷宗，並將 .dmg 移到垃圾桶",
+        updateChip: "更新")
 
     static let uk = AppInstallerTabStrings(
         watchingTitle: "Відстеження підключених образів дисків",
@@ -524,7 +599,6 @@ extension AppInstallerTabStrings {
         stepTrashing: "Переміщення завантаження у Смітник…",
         preferencesTitle: "Параметри встановлення",
         locationTitle: "Місце встановлення",
-        locationCaption: "Куди потрапляють програми з образів дисків",
         locationSystem: "Програми (/Applications)",
         locationUser: "Програми користувача (~/Applications)",
         trashTitle: "Переміщати завантаження у Смітник",
@@ -538,5 +612,11 @@ extension AppInstallerTabStrings {
         downloadTrashed: "DMG у Смітнику",
         downloadKept: "DMG збережено",
         reveal: "Показати",
-        recentEmpty: "Тут з’являться програми, встановлені з образів дисків.")
+        recentEmpty: "Тут з’являться програми, встановлені з образів дисків.",
+        installManually: "Встановити вручну",
+        replaceBodyFormat: "%1$@ замінить копію в %2$@, а образ диска буде вийнято.",
+        openWithLattice: "Відкривати образи дисків у Lattice",
+        planReplaceFormat: "Замінити копію в %@ і вийняти том",
+        planReplaceTrashFormat: "Замінити копію в %@, вийняти том і перемістити .dmg у Смітник",
+        updateChip: "Оновлення")
 }

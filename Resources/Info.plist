@@ -20,6 +20,12 @@
 			<key>LSHandlerRank</key><string>Alternate</string>
 			<key>LSItemContentTypes</key><array><string>public.movie</string><string>public.video</string></array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key><string>Disk Image</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+			<key>LSHandlerRank</key><string>Alternate</string>
+			<key>LSItemContentTypes</key><array><string>com.apple.disk-image-udif</string><string>com.apple.disk-image</string></array>
+		</dict>
 	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Lattice</string>
