@@ -43,7 +43,7 @@ extension AppUpdateStrings {
         openAppHint: "Ouvre l’app pour permettre à son propre outil de mise à jour de terminer",
         includeOnlineToggle: "Inclure les autres apps installées",
         includeOnlineCaption: "Consulte directement les développeurs lorsque c’est possible, puis complète la recherche avec un catalogue public. L’app installe elle-même la mise à jour.",
-        incompleteCheck: "Vérification incomplète",
+        incompleteCheck: "Ces apps n’ont pas pu être vérifiées",
         onlineUnavailable: "La vérification en ligne n’a pas pu aboutir. Les autres résultats restent affichés.",
         skipVersionFormat: "Ignorer la version %@",
         excludeApp: "Ne pas vérifier cette app",

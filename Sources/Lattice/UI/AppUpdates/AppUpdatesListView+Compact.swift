@@ -11,18 +11,17 @@ extension AppUpdatesListView {
         VStack(alignment: .leading, spacing: 8) {
             summaryRow
                 .panelCard()
-            // One line above the list rather than a card after it, so the
-            // panel stays one surface; the apps it means are in the tooltip.
-            if coverageIncomplete {
-                incompleteCheckLine
-            }
-
             if allSourcesOff {
                 compactNoSourcesState
             } else if updates.items.isEmpty {
                 compactEmptyState
             } else {
                 compactList
+            }
+            // One line after the list rather than a card, so the panel stays
+            // one surface; the apps it means are in the tooltip.
+            if coverageIncomplete {
+                incompleteCheckLine
             }
             if versionsUncompared {
                 uncomparableVersions

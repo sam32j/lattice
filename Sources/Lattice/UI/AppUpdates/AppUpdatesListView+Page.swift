@@ -18,11 +18,6 @@ extension AppUpdatesListView {
 
                 availableUpdatesHeader
 
-                if coverageIncomplete {
-                    pageIncompleteNote
-                        .transition(reduceMotion ? .identity : .opacity)
-                }
-
                 if allSourcesOff {
                     noSourcesCard
                         .transition(reduceMotion ? .identity : .opacity)
@@ -45,6 +40,12 @@ extension AppUpdatesListView {
                         caughtUpCard
                             .transition(reduceMotion ? .identity : .opacity)
                     }
+                }
+
+                // After the list, never sliding in over it: what the check
+                // could not reach is a footnote to what it found.
+                if coverageIncomplete {
+                    pageIncompleteNote
                 }
 
                 if let status = homebrew.operationStatus {
