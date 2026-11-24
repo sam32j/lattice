@@ -130,6 +130,11 @@ extension LatticeHubView {
                     }
                 }
             }
+            // The App Manager's tabs belong to the header, so scrolling the
+            // page below never takes them away.
+            if launcher.activeUtility == .appManager {
+                AppManagerPanelPicker()
+            }
         }
     }
 
