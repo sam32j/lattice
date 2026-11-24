@@ -2471,6 +2471,9 @@ final class NotchService: ObservableObject {
             showMetric(metric, toggle: true)
             return
         }
+        // A floating Hub left open would hide as the island takes focus and
+        // take the shared System state with it, so it goes first.
+        if launcher.isVisible { launcher.hide() }
         navigation.selectMetric(metric)
         launcher.opensUtilityDirectly = false
         launcher.activeUtility = .system
