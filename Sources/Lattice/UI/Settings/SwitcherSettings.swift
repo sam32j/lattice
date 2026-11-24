@@ -71,7 +71,6 @@ struct SwitcherSettingsSection: View {
         SettingsCard(symbol: "rectangle.on.rectangle",
                      title: l10n.s.switcherSection,
                      caption: switcherHeaderCaption,
-                     headerSpacing: 0,
                      headerAccessory: {
                          PermissionGatedToggle(l10n.s.switcherSection, isOn: Binding(
                              get: { switcherEngaged },
@@ -86,16 +85,17 @@ struct SwitcherSettingsSection: View {
                          ), requiring: [.accessibility, .screenRecording], feature: .switcher)
                          .labelsHidden()
                      }) {
-            VStack(alignment: .leading, spacing: 14) {
-                layoutAndShortcutsSection
-                Divider()
-                displayAndPreviewsSection
-                Divider()
-                windowsAndAppsSection
+            if switcherEngaged {
+                VStack(alignment: .leading, spacing: 14) {
+                    layoutAndShortcutsSection
+                    Divider()
+                    displayAndPreviewsSection
+                    Divider()
+                    windowsAndAppsSection
+                }
+                .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
-            .padding(.leading, settingsRowTextInset)
-            .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-            .settingsCollapsible(isExpanded: switcherEngaged)
         }
     }
 
@@ -125,17 +125,14 @@ struct SwitcherSettingsSection: View {
             ShortcutPreferenceRow(role: .switcher, label: copy.switchAppsShortcut) {
                 AppSwitcher.shared.syncWithPreferences()
             }
-            // A collapsed follow-up row still takes the stack's spacing, so each
-            // one carries its own gap inside the part that collapses.
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 17) {
                 ShortcutPreferenceRow(role: .switcherWindow, label: copy.switchWindowsShortcut) {
                     AppSwitcher.shared.syncWithPreferences()
                 }
-                VStack(alignment: .leading, spacing: 0) {
+                if showsSecureInputWarning {
                     SecureInputRow(blocking: .switcher)
-                        .padding(.top, 17)
+                        .transition(.settingsReveal)
                 }
-                .settingsCollapsible(isExpanded: showsSecureInputWarning)
             }
 
             SettingsControlRow(title: l10n.s.switcherAppearanceDelay) {
@@ -185,7 +182,7 @@ struct SwitcherSettingsSection: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 13) {
                         SettingsControlRow(title: l10n.s.minimalWindowPreviews) {
                             Toggle(l10n.s.minimalWindowPreviews, isOn: $minimalPreviews)
                                 .labelsHidden()
@@ -194,14 +191,13 @@ struct SwitcherSettingsSection: View {
                         // Only Window previews groups: Large icons always shows
                         // every window of the selected app, and the simple list is
                         // one icon per app already.
-                        VStack(alignment: .leading, spacing: 0) {
+                        if layout == .windows {
                             SettingsControlRow(title: l10n.s.switcherMergeTabs) {
                                 Toggle(l10n.s.switcherMergeTabs, isOn: $switcherMergeTabs)
                                     .labelsHidden()
                             }
-                            .padding(.top, 13)
+                            .transition(.settingsReveal)
                         }
-                        .settingsCollapsible(isExpanded: layout == .windows)
                     }
                 }
             }
@@ -242,7 +238,7 @@ struct SwitcherSettingsSection: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 13) {
                 SettingsControlRow(title: l10n.s.switcherWindowlessApps) {
                     Toggle(l10n.s.switcherWindowlessApps, isOn: hidesWindowlessAppsBinding)
                         .labelsHidden()
@@ -250,14 +246,13 @@ struct SwitcherSettingsSection: View {
 
                 // Finder runs with no window most of the time, so it can stay
                 // listed while other windowless apps are hidden.
-                VStack(alignment: .leading, spacing: 0) {
+                if windowlessMode != .all {
                     SettingsControlRow(title: l10n.s.switcherWindowlessAppsFinder) {
                         Toggle(l10n.s.switcherWindowlessAppsFinder, isOn: keepsWindowlessFinderBinding)
                             .labelsHidden()
                     }
-                    .padding(.top, 13)
+                    .transition(.settingsReveal)
                 }
-                .settingsCollapsible(isExpanded: windowlessMode != .all)
             }
 
             SwitcherAppRulesList()

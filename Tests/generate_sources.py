@@ -887,8 +887,7 @@ def main():
           + "}\nfinal class Panel: PanelFixture {\nvar monitorNeeds: SystemMonitorPanelNeeds { if let selectedMetric { return selectedMetric.monitorNeeds }; switch activeSection { case .system: return SystemMonitorPanelNeeds(system: true); case .network: return SystemMonitorPanelNeeds(network: true); case .disk: return SystemMonitorPanelNeeds(disk: true); case .power: return SystemMonitorPanelNeeds(power: true, powerCard: true); default: return .none } }\n}\n}\n")
     uninstall = "Sources/Lattice/Services/Uninstall/AppUninstaller.swift"
     bar = "Sources/Lattice/Services/CommandBar/CommandBarService.swift"
-    for host, path in [("Settings", "Sources/Lattice/UI/Settings/URLCleanerSettings.swift"),
-                       ("Panel", "Sources/Lattice/UI/MenuPanel/PanelURLCleanerView.swift")]:
+    for host, path in [("Panel", "Sources/Lattice/UI/MenuPanel/PanelURLCleanerView.swift")]:
         write(f"URLCleanerManual{host}.swift", "import Foundation\n"
               + f"extension RepositoryFeatureTests.URLCleanerManual{host} {{\n"
               + "".join(declaration(path, prefix).replace("private ", "", 1)
@@ -917,12 +916,6 @@ def main():
                                    "    static func plainText("])
           + "}\n}\nextension PastePlainTests.OriginalPasteHost {\n"
           + declaration("Sources/Lattice/Services/TransientPaste.swift", "    func pasteCurrentContents(")
-          + "}\n")
-    write("URLCleanerSiteSwitch.swift", "import Foundation\n"
-          + "extension RepositoryFeatureTests.URLCleanerSiteSwitchHost {\n"
-          + "".join(declaration("Sources/Lattice/UI/Settings/URLCleanerSettings.swift",
-                                prefix).replace("private ", "", 1)
-                    for prefix in ["    private func addSite(", "    private func setSite(", "    private func remove("])
           + "}\n")
     write("ClipboardSource.swift", "import Foundation\n"
           + "extension ClipboardFeatureTests.SourceHost {\n"
@@ -1636,6 +1629,9 @@ def main():
         "false"
     )
 
+    # The Hub restore after a menu bar reading reaches the shared Hub, which
+    # this island fixture does not model.
+    music_visibility = music_visibility.replace("        restoreHubAfterMenuBarReading()\n", "")
     music_visibility = music_visibility.replace("UserDefaults.standard", "ReviewDefaults.current!")
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
     music_visibility = music_visibility.replace("videoDownloader: hasVideoDownloadActivity", "videoDownloader: false")
@@ -1802,6 +1798,7 @@ def main():
     spacing = "Sources/Lattice/App/MenuBarSpacingSupport.swift"
     write("MenuBarBatteryWarning.swift", "import AppKit\nextension MenuBarBatteryWarningTests {\n"
           + declaration("Sources/Lattice/Services/SystemMonitor/SystemMonitor.swift", "enum MemoryPressure {")
+          + declaration("Sources/Lattice/Services/Metrics/MonitorLevel.swift", "enum MonitorLevel:")
           + declaration("Sources/Lattice/Services/Metrics/PowerSampler.swift", "struct PowerReading {")
           + declaration(renderer, "enum MenuBarSegment {")
           + declaration(renderer, "enum MenuBarBlockStyle {")
@@ -2002,7 +1999,7 @@ def main():
                     + declaration("Sources/Lattice/UI/Settings/NotchAgentsSettings.swift", prefix)
                     + "}\n" + (".padding(.leading, settingsRowTextInset)\n" if indented else "") + "}\n}\n"
                     for name, prefix, indented in [
-                        ("Readout", '                SettingsMenuRow(symbol: "camera.metering.center.weighted"', True),
+                        ("Readout", '                    SettingsMenuRow(symbol: "camera.metering.center.weighted"', True),
                         ("FinishAfter", '                SettingsMenuRow(symbol: "timer"', True),
                         ("LimitAt", '                SettingsMenuRow(symbol: "gauge.with.dots.needle.67percent"', True),
                         ("Budget", '            SettingsMenuRow(symbol: "dollarsign.circle"', False),
@@ -2601,10 +2598,9 @@ def main():
     keep_awake_methods = [
         "    func prepareForFeatureDisable()",
         "    func refreshPasswordlessStatus(",
-        "    static func rememberPick(",
         "    func activate(minutes:",
         "    func activate(until date:",
-        "    func startLastPick(",
+        "    func startDefault(",
         "    func resumeAfterSystemTeardown(",
         "    private func activate(end:",
         "    func deactivate(reason:",
@@ -2643,7 +2639,7 @@ def main():
           + "var recoveryCompleted = false\nvar screenLocked = false\nvar assertionsHeld = false\n"
           + "var defaultsObserver: Int?\nvar preferenceSyncScheduled = false\nfunc startPreferenceObservation() { defaultsObserver = 1 }\nfunc stopPreferenceObservation() { defaultsObserver = nil; preferenceSyncScheduled = false }\n"
           + "var automationSuppressedUntilConditionsClear = false\n"
-          + "var endTimer: Timer?\nvar endDate: Date?\nvar sessionTrigger: SessionTrigger?\nvar sessionMinutes: Int?\n"
+          + "var endTimer: Timer?\nvar endDate: Date?\nvar sessionTrigger: SessionTrigger?\nvar sessionMinutes: Int?\nvar sessionStartDate: Date?\n"
           + "var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()\n"
           + "var onSessionEnded: ((EndReason) -> Void)?\n"
           + "var lidDimmingNotificationPort: IONotificationPortRef?\nvar lidDimmingNotification: io_object_t = 0\n"
@@ -2651,8 +2647,7 @@ def main():
           + declaration(keep_awake, "    @Published private(set) var clamshellActive = false {")
                 .replace("@Published private(set) ", "", 1).replace("@Published ", "", 1)
           + declaration(keep_awake, "    @Published var clamshellPreferred:").replace("@Published ", "", 1)
-          + declaration(keep_awake, "    @Published var dimScreenOnLidClose: Bool {").replace("@Published ", "", 1)
-          + "init() { clamshellPreferred = true; dimScreenOnLidClose = false }\n"
+          + "init() { clamshellPreferred = true }\n"
           + "func syncScreenLockMonitoring() {}\nfunc applyAssertions() -> Bool { assertionsHeld = assertionsSucceed; assertionFailed = !assertionsSucceed; return assertionsSucceed }\n"
           + "func releaseAssertions() -> Bool { if releasesSucceed { assertionsHeld = false }; return releasesSucceed }\nfunc scheduleEnd(at date: Date) {}\n"
           + "func startBatteryWatch() {}\nfunc stopBatteryWatch() {}\nfunc syncMouseJiggleTimer() {}\n"

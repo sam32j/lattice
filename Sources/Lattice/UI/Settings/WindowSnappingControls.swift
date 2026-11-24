@@ -6,8 +6,8 @@ extension WindowLayoutSettings {
     }
 
     var edgeSnapControls: some View {
-        // Spacing lives inside each follow-up group so a collapsed group
-        // leaves no gap under the switch.
+        // The follow-up groups sit at different gaps under the switch, so
+        // each carries its own and rolls it up with itself.
         VStack(alignment: .leading, spacing: 0) {
             SettingsControlRow(title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
                 PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
@@ -17,32 +17,34 @@ extension WindowLayoutSettings {
                         WindowLayoutService.shared.syncWithPreferences()
                     }
             }
-            VStack(alignment: .leading, spacing: 8) {
-                // Reset sits under the switch: its top level with the
-                // zone picker's, its right edge with the switch's, at
-                // the regular size of the page's other buttons.
-                HStack(alignment: .top, spacing: 12) {
-                    WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
-                                             zoneActionsStorage: $edgeSnapZoneActions,
-                                             text: text,
-                                             resetTitle: l10n.s.shortcutReset)
-                        .onChange(of: edgeSnapDisabledZones) { _, _ in
+            if edgeSnapEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    // Reset sits under the switch: its top level with the
+                    // zone picker's, its right edge with the switch's, at
+                    // the regular size of the page's other buttons.
+                    HStack(alignment: .top, spacing: 12) {
+                        WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
+                                                 zoneActionsStorage: $edgeSnapZoneActions,
+                                                 text: text,
+                                                 resetTitle: l10n.s.shortcutReset)
+                            .onChange(of: edgeSnapDisabledZones) { _, _ in
+                                WindowLayoutService.shared.syncWithPreferences()
+                            }
+                        Spacer(minLength: 0)
+                        Button(l10n.s.shortcutReset) {
+                            edgeSnapDisabledZones = ""
+                            edgeSnapZoneActions = ""
                             WindowLayoutService.shared.syncWithPreferences()
                         }
-                    Spacer(minLength: 0)
-                    Button(l10n.s.shortcutReset) {
-                        edgeSnapDisabledZones = ""
-                        edgeSnapZoneActions = ""
-                        WindowLayoutService.shared.syncWithPreferences()
+                        .disabled(isEdgeSnapReset)
                     }
-                    .disabled(isEdgeSnapReset)
+                    Text(WindowLayoutFeatureStrings.edgeSnapCustomizeHint(l10n.language))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                Text(WindowLayoutFeatureStrings.edgeSnapCustomizeHint(l10n.language))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .padding(.top, 17)
+                .transition(.settingsReveal)
             }
-            .padding(.top, 17)
-            .settingsCollapsible(isExpanded: edgeSnapEnabled)
             if systemTilingEnabled {
                 VStack(alignment: .leading, spacing: 6) {
                     Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
@@ -52,6 +54,7 @@ extension WindowLayoutSettings {
                         Text(text.edgeSnapWaitingForSystem)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .transition(.settingsReveal)
                     }
                     Button(text.edgeSnapOpenSystemSettings) {
                         NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
@@ -59,6 +62,7 @@ extension WindowLayoutSettings {
                     .controlSize(.small)
                 }
                 .padding(.top, 13)
+                .transition(.settingsReveal)
             }
         }
     }
@@ -91,6 +95,7 @@ struct WindowLayoutShortcutsSettings: View {
                             Text(l10n.s.shortcutUnavailable)
                                 .font(.caption)
                                 .foregroundStyle(.orange)
+                                .transition(.settingsReveal)
                         }
 
                         placementSections
@@ -126,6 +131,7 @@ struct WindowLayoutShortcutsSettings: View {
                                 Text(l10n.s.shortcutUnavailable)
                                     .font(.caption)
                                     .foregroundStyle(.orange)
+                                    .transition(.settingsReveal)
                             }
                         }
 
@@ -154,6 +160,7 @@ struct WindowLayoutShortcutsSettings: View {
                                         .pickerStyle(.menu)
                                     }
                                     .padding(.leading, 18 + 8)
+                                    .transition(.settingsReveal)
                                 }
                             }
                             .settingsExpansionAnimation(value: holdToCycleDisplayEnabled)
@@ -171,6 +178,7 @@ struct WindowLayoutShortcutsSettings: View {
                                 Text(l10n.s.shortcutUnavailable)
                                     .font(.caption)
                                     .foregroundStyle(.orange)
+                                    .transition(.settingsReveal)
                             }
 
                             actionRow(.previousDisplay)
@@ -183,6 +191,7 @@ struct WindowLayoutShortcutsSettings: View {
 
                 if !permissions.accessibility {
                     SettingsCard(title: l10n.s.permissionRequired) { PermissionRow(kind: .accessibility) }
+                        .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)

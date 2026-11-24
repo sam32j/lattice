@@ -5,106 +5,25 @@ import Foundation
 import UniformTypeIdentifiers
 
 enum URLCleaning {
-    private static let trackedParameters: Set<String> = [
-        "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-        "utm_id", "utm_name", "utm_reader", "utm_viz_id", "utm_pubreferrer",
-        "fbclid", "gclid", "dclid", "gbraid", "wbraid", "msclkid", "yclid",
-        "mc_cid", "mc_eid", "igshid", "twclid", "ttclid", "li_fat_id",
-        "mkt_tok", "_hsenc", "_hsmi", "__twitter_impression",
-        "fb_action_ids", "fb_action_types", "fb_source", "mibextid",
-    ]
+    /// One parameter the rules took out, and which site's token did it.
+    struct Removal: Equatable {
+        /// As the link spelled it, decoded.
+        let name: String
+        let siteID: String
+        /// The token that matched, which for a wildcard is not the name.
+        let token: String
+    }
 
-    /// Trackers that only one site uses. A global list cannot hold these: `si`
-    /// is a share token on YouTube but a real parameter elsewhere, and `t` is a
-    /// tracker on X while it is the playback position on YouTube. Matching on
-    /// the host is what keeps removing one from breaking the other.
-    ///
-    /// Keys match the host itself or any subdomain of it.
-    private static let hostParameters: [String: Set<String>] = [
-        "youtube.com": ["si", "pp", "feature", "kw"],
-        "youtu.be": ["si", "pp", "feature", "kw"],
-        "twitter.com": ["s", "t", "cn", "src", "refsrc", "ref_src", "ref_url"],
-        "x.com": ["s", "t", "cn", "src", "refsrc", "ref_src", "ref_url"],
-        "instagram.com": ["igsh"],
-        "spotify.com": ["si"],
-        // Reddit's share sheet routes through branch.io, whose deep link fields
-        // start with a literal `$`. Links often carry them percent-encoded as
-        // `%24…`, but only the decoded spelling is listed: `decodedName` decodes
-        // the name half of each pair before the rules see it. ClearURLs lists
-        // both because it matches the raw query with regex.
-        "reddit.com": [
-            "correlation_id", "ref_campaign", "ref_source", "rdt", "share_id",
-            "_branch_match_id", "$deep_link", "$3p", "$original_url",
-        ],
-        "tiktok.com": [
-            "u_code", "preview_pb", "_d", "_t", "_r", "timestamp", "user_id",
-            "share_app_name", "share_iid",
-        ],
-        "bilibili.com": [
-            "spm_id_from", "from_spmid", "from_source", "share_source", "share_from",
-            "share_medium", "share_plat", "share_tag", "share_session_id", "msource",
-            "refer_from", "seid", "unique_k", "vd_source", "plat_id", "buvid", "bbid",
-            "up_id", "is_story_h5", "timestamp", "ts", "visit_id", "session_id",
-            "broadcast_type", "is_room_feed",
-        ],
-        "xiaohongshu.com": [
-            "xhsshare", "author_share", "xsec_source", "share_from_user_hidden",
-            "shareredid", "share_id", "exsource", "app_version", "app_platform",
-            "apptime", "appuid",
-        ],
-    ]
-
-    /// A cleaned link and the names taken out of it, so every surface that
-    /// cleans can say what it removed instead of only that something changed.
+    /// A cleaned link, the names taken out of it and the names left in, so
+    /// every surface that cleans can say what it removed and why.
     struct Result: Equatable {
         let url: String
-        let removed: [String]
-    }
+        /// One per name, in the order the link first carried each.
+        let removals: [Removal]
+        /// Names left in the link, one per name, in order.
+        let kept: [String]
 
-    /// What the user changed about the tables above: names they added, and
-    /// built-in names they switched off. Stored as a difference rather than a
-    /// copy of the tables, so names added in a later version of the app still
-    /// reach someone who has already edited their rules.
-    ///
-    /// Both maps are keyed the way `hostParameters` is, with `allSites` for
-    /// the rules that apply everywhere.
-    struct Rules: Equatable {
-        var added: [String: Set<String>] = [:]
-        var disabled: [String: Set<String>] = [:]
-
-        static let none = Rules()
-    }
-
-    /// One row of a site's rules, as Settings shows it.
-    struct RuleGroup: Identifiable, Equatable {
-        let site: String
-        let entries: [Entry]
-
-        var id: String { site }
-        var enabledCount: Int { entries.filter(\.isEnabled).count }
-
-        struct Entry: Identifiable, Equatable {
-            let name: String
-            let isBuiltIn: Bool
-            let isEnabled: Bool
-
-            var id: String { name }
-        }
-    }
-
-    /// The key the global rules live under. Empty so a stored token reads as
-    /// `|ref` for a global name and `youtube.com|si` for a site one.
-    static let allSites = ""
-
-    /// The single row standing for every `utm_` name. The cleaner matches the
-    /// prefix, so listing `utm_source` and its siblings separately would show
-    /// rows that cannot be switched off on their own.
-    static let utmWildcard = "utm_*"
-
-    /// The global list as Settings shows it: the wildcard row, then the names
-    /// the prefix does not already cover.
-    static var globalBuiltInNames: [String] {
-        [utmWildcard] + trackedParameters.filter { !$0.hasPrefix("utm_") }.sorted()
+        var removed: [String] { removals.map(\.name) }
     }
 
     /// What a surface says after cleaning. The choice lives here so the
@@ -124,17 +43,17 @@ enum URLCleaning {
         return result.url == trimmed ? .unchanged : .rewritten
     }
 
-    /// Reads the three stored strings into one value. The global additions
-    /// keep the plain comma-separated key they have always used, so nothing
-    /// has to be migrated when site rules arrive.
-    static func rules(globalNames: String?, siteNames: String?, disabledNames: String?) -> Rules {
-        var added = tokens(from: siteNames)
-        added[allSites] = customParameters(from: globalNames)
-        added = added.filter { !$0.value.isEmpty }
-        return Rules(added: added, disabled: tokens(from: disabledNames).filter { !$0.value.isEmpty })
-    }
-
-    static func clean(_ text: String, rules: Rules = .none) -> Result? {
+    /// The one cleaning function: the clipboard rewrite, the Settings test
+    /// card, the menu panel and the Command Bar all call it.
+    ///
+    /// A parameter the link's site lists, while that site is on, is settled
+    /// by the site: blocked goes, allowed stays even when All sites blocks
+    /// it. A parameter the site does not list goes when All sites is on and
+    /// blocks it, and stays otherwise. The query is
+    /// spliced out of the original text rather than rebuilt, so the encoding
+    /// of everything kept, the order of what stays and the fragment come back
+    /// exactly as they went in.
+    static func clean(_ text: String, rules: Rules = .builtIn) -> Result? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.contains(where: \.isWhitespace),
               let components = URLComponents(string: trimmed),
@@ -152,113 +71,43 @@ enum URLCleaning {
         let scalars = trimmed.unicodeScalars
         let fragmentStart = scalars.firstIndex(of: "#") ?? scalars.endIndex
         guard let queryStart = scalars[..<fragmentStart].firstIndex(of: "?") else {
-            return Result(url: trimmed, removed: [])
+            return Result(url: trimmed, removals: [], kept: [])
         }
         let query = scalars[scalars.index(after: queryStart)..<fragmentStart]
-        var removed: [String] = []
-        let matcher = Self.matcher(for: host, rules: rules)
-        let kept = query.split(separator: "&", omittingEmptySubsequences: false)
+        let site = rules.site(forHost: host).flatMap { $0.isOn ? $0 : nil }
+        let global = rules.global.isOn ? rules.global : nil
+        var removals: [Removal] = []
+        var kept: [String] = []
+        // Duplicate names are judged one pair at a time; the lists name
+        // each only once.
+        let keptPairs = query.split(separator: "&", omittingEmptySubsequences: false)
             .filter { pair in
                 let name = Self.decodedName(ofRawPair: pair)
-                guard matcher.matches(name) else { return true }
-                if !removed.contains(name) { removed.append(name) }
+                let parameter = name.lowercased()
+                let removal: Removal?
+                if let site, let token = site.decidingToken(for: parameter) {
+                    removal = token.isBlocked ? Removal(name: name, siteID: site.id, token: token.name) : nil
+                } else {
+                    removal = global.flatMap { global in
+                        global.blockingToken(for: parameter).map { Removal(name: name, siteID: global.id, token: $0.name) }
+                    }
+                }
+                guard let removal else {
+                    if !name.isEmpty, !kept.contains(where: { $0.lowercased() == parameter }) { kept.append(name) }
+                    return true
+                }
+                if !removals.contains(where: { $0.name.lowercased() == parameter }) { removals.append(removal) }
                 return false
             }
-        guard !removed.isEmpty else {
-            return Result(url: trimmed, removed: [])
+        guard !removals.isEmpty else {
+            return Result(url: trimmed, removals: [], kept: kept)
         }
 
-        let survivingQuery = kept.map { String($0) }.joined(separator: "&")
+        let survivingQuery = keptPairs.map { String($0) }.joined(separator: "&")
         let url = String(scalars[..<queryStart])
-            + (kept.isEmpty ? "" : "?" + survivingQuery)
+            + (keptPairs.isEmpty ? "" : "?" + survivingQuery)
             + String(scalars[fragmentStart...])
-        return Result(url: url, removed: removed)
-    }
-
-    static func ruleGroups(rules: Rules) -> [RuleGroup] {
-        let sites = Set(hostParameters.keys)
-            .union(rules.added.keys)
-            .union(rules.disabled.keys)
-            .subtracting([allSites])
-        let groups = [group(for: allSites, builtIn: globalBuiltInNames, rules: rules)]
-            + sites.sorted().map {
-                group(for: $0, builtIn: (hostParameters[$0] ?? []).sorted(), rules: rules)
-            }
-        return groups.filter { !$0.entries.isEmpty }
-    }
-
-    /// Comma-separated names, the format the global custom list has always
-    /// been stored in.
-    static func customParameters(from storedValue: String?) -> Set<String> {
-        Set(split(storedValue).map { $0.lowercased() })
-    }
-
-    static func storageValue(forNames names: Set<String>) -> String {
-        names.sorted().joined(separator: ", ")
-    }
-
-    /// `host|name` tokens, used by both the site additions and the switched
-    /// off built-ins.
-    static func tokens(from storedValue: String?) -> [String: Set<String>] {
-        var map: [String: Set<String>] = [:]
-        for token in split(storedValue) {
-            let parts = token.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false)
-            guard parts.count == 2 else { continue }
-            let name = String(parts[1]).lowercased()
-            guard !name.isEmpty else { continue }
-            map[String(parts[0]).lowercased(), default: []].insert(name)
-        }
-        return map
-    }
-
-    static func storageValue(forTokens map: [String: Set<String>]) -> String {
-        map.keys.sorted()
-            .flatMap { site in (map[site] ?? []).sorted().map { "\(site)|\($0)" } }
-            .joined(separator: ",")
-    }
-
-    /// Accepts what someone is likely to paste into the site field — a bare
-    /// host, a `www.` host or a whole link — and answers with the host key the
-    /// rules are stored under, or nil when it is not a host at all.
-    static func siteKey(from text: String) -> String? {
-        var value = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if let scheme = value.range(of: "://") {
-            value = String(value[scheme.upperBound...])
-        }
-        if let end = value.firstIndex(where: { $0 == "/" || $0 == "?" || $0 == "#" }) {
-            value = String(value[..<end])
-        }
-        // `URLComponents.host` carries neither a login nor a port, so a key
-        // that kept them would never match the link it was written for.
-        if let login = value.lastIndex(of: "@") {
-            value = String(value[value.index(after: login)...])
-        }
-        // Colons inside a bracketed IPv6 host belong to the address.
-        let portSearchStart = value.hasPrefix("[")
-            ? value.firstIndex(of: "]") ?? value.endIndex
-            : value.startIndex
-        if let port = value[portSearchStart...].firstIndex(of: ":") {
-            value = String(value[..<port])
-        }
-        if value.hasPrefix("www.") {
-            value = String(value.dropFirst(4))
-        }
-        guard value.contains("."), !value.hasPrefix("."), !value.hasSuffix("."),
-              value.allSatisfy({ !$0.isWhitespace && $0 != "|" && $0 != "," }) else {
-            return nil
-        }
-        return value
-    }
-
-    /// A name is a single query parameter, so anything a query cannot carry as
-    /// one name is rejected rather than silently stored.
-    static func parameterName(from text: String) -> String? {
-        let value = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !value.isEmpty,
-              value.allSatisfy({ !$0.isWhitespace && $0 != "|" && $0 != "," && $0 != "&" && $0 != "=" }) else {
-            return nil
-        }
-        return value
+        return Result(url: url, removals: removals, kept: kept)
     }
 
     /// The name half of one percent-encoded `name=value` pair, decoded so a
@@ -273,57 +122,6 @@ enum URLCleaning {
         let raw = String(pair.prefix { $0 != "=" })
         guard raw.contains("%") else { return raw }
         return raw.removingPercentEncoding ?? raw
-    }
-
-    private struct Matcher {
-        let names: Set<String>
-        let matchesUTMPrefix: Bool
-
-        func matches(_ name: String) -> Bool {
-            let normalized = name.lowercased()
-            return names.contains(normalized) || (matchesUTMPrefix && normalized.hasPrefix("utm_"))
-        }
-    }
-
-    private static func matcher(for host: String, rules: Rules) -> Matcher {
-        let disabledGlobally = rules.disabled[allSites] ?? []
-        var names = trackedParameters.filter {
-            !$0.hasPrefix("utm_") && !disabledGlobally.contains($0)
-        }
-        names.formUnion((rules.added[allSites] ?? []).subtracting(disabledGlobally))
-        for site in siteKeys(matching: host, rules: rules) {
-            let disabled = rules.disabled[site] ?? []
-            names.formUnion((hostParameters[site] ?? []).filter { !disabled.contains($0) })
-            names.formUnion((rules.added[site] ?? []).subtracting(disabled))
-        }
-        return Matcher(names: names, matchesUTMPrefix: !disabledGlobally.contains(utmWildcard))
-    }
-
-    /// Site rules are additive: `open.spotify.com` picks up the `spotify.com`
-    /// set, and a host that matches nothing keeps only the global rules.
-    private static func siteKeys(matching host: String, rules: Rules) -> [String] {
-        let normalized = host.lowercased()
-        return Set(hostParameters.keys).union(rules.added.keys).union(rules.disabled.keys)
-            .filter { !$0.isEmpty && (normalized == $0 || normalized.hasSuffix("." + $0)) }
-            .sorted()
-    }
-
-    private static func group(for site: String, builtIn: [String], rules: Rules) -> RuleGroup {
-        let disabled = rules.disabled[site] ?? []
-        let added = (rules.added[site] ?? []).subtracting(builtIn)
-        let entries = builtIn.map {
-            RuleGroup.Entry(name: $0, isBuiltIn: true, isEnabled: !disabled.contains($0))
-        } + added.sorted().map {
-            RuleGroup.Entry(name: $0, isBuiltIn: false, isEnabled: !disabled.contains($0))
-        }
-        return RuleGroup(site: site, entries: entries)
-    }
-
-    private static func split(_ storedValue: String?) -> [String] {
-        (storedValue ?? "")
-            .split(whereSeparator: { $0 == "," || $0.isNewline })
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
     }
 
     // MARK: - Automatic rewrite

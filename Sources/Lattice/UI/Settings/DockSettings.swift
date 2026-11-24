@@ -44,11 +44,13 @@ struct DockSettings: View {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
                     }
+                    .transition(.settingsReveal)
                 }
                 if dockPreviewEngaged || switcherEngaged, !permissions.screenRecording {
                     SettingsCard {
                         PermissionRow(kind: .screenRecording)
                     }
+                    .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)
@@ -142,6 +144,7 @@ struct DockSettings: View {
                                 readout: "\(dockPreviewBackgroundOpacityPercent)%", usesSystemAppearance: true)
                                 .frame(width: 140)
                         }
+                        .transition(.settingsReveal)
                     }
                     SettingsControlRow(title: l10n.s.dockPreviewKeepDockVisible,
                                        caption: l10n.s.dockPreviewKeepDockVisibleCaption) {

@@ -31,7 +31,7 @@ struct TextSnippetsSettings: View {
                 PermissionGatedToggle(SettingsOwnershipStrings.enable(text.pageTitle, l10n.language), isOn: $enabled)
                     .onChange(of: enabled) { _, _ in
                         FeatureRuntime.shared.sync([.textSnippets])
-                        FeatureRuntime.shared.finishAvailabilityChange()
+                        settingsFinishAvailabilityChange()
                     }
                 Text(text.enableCaption)
                     .font(.caption)
@@ -382,11 +382,13 @@ private struct SnippetEditor: View {
                 Text(text.triggerTooShort)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
             if duplicateTrigger {
                 Text(text.duplicateTrigger)
                     .font(.caption)
                     .foregroundStyle(.orange)
+                    .transition(.settingsReveal)
             }
             HStack {
                 if let delete {

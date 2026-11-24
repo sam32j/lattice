@@ -195,17 +195,20 @@ struct NotchMascotSettings: View {
     private var behavior: some View {
         SettingsCard(title: text.behavior) {
             if restsBesideCamera {
-                SettingsRow(symbol: "arrow.left.and.right", title: text.side) { EmptyView() }
-                HStack(spacing: 10) {
-                    ForEach(NotchMascotSide.allCases) { item in
-                        NotchMascotChoiceTile(title: text.side(item), selected: restingSide == item) {
-                            side = item.rawValue
-                        } preview: {
-                            NotchMascotSideSample(look: look, side: item)
+                VStack(alignment: .leading, spacing: 13) {
+                    SettingsRow(symbol: "arrow.left.and.right", title: text.side) { EmptyView() }
+                    HStack(spacing: 10) {
+                        ForEach(NotchMascotSide.allCases) { item in
+                            NotchMascotChoiceTile(title: text.side(item), selected: restingSide == item) {
+                                side = item.rawValue
+                            } preview: {
+                                NotchMascotSideSample(look: look, side: item)
+                            }
                         }
                     }
+                    .padding(.leading, settingsRowTextInset)
                 }
-                .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
             switchRow("eye.slash", text.hidesWhenIdle, caption: text.hidesWhenIdleHint, isOn: $hidesWhenIdle)
             switchRow("figure.walk", text.visits, caption: text.visitsHint, isOn: $visits)

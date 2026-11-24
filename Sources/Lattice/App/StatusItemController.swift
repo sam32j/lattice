@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import QuartzCore
 import Combine
 
 /// Owns the menu bar presence: the black hole glyph, the optional countdown
@@ -360,28 +361,15 @@ final class StatusItemController {
         } else {
             updateAvailable = false
         }
-        let optionEnabled = defaults.bool(forKey: DefaultsKey.menuBarHideIconWithMetrics)
-        let separateMetrics = defaults.bool(forKey: DefaultsKey.menuBarSeparateMetrics)
         let signal = updateAvailable
+        // Dynamic Island is the one thing that takes the glyph's place
+        // (General > Show menu bar icon); signals always bring it back.
         let islandHides = MenuBarSpacingSupport.islandHidesStatusIcon(
             in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal
-        let hidden = islandHides || MenuBarSpacingSupport.shouldHideStatusIcon(
-            optionEnabled: optionEnabled,
-            separateMetrics: separateMetrics,
-            metricsEnabled: MenuBarMetric.anyEnabled(in: defaults),
-            renderedTitleLength: button.attributedTitle.length,
-            mustShowForSignal: signal || keepAwakeSignal)
-        // In the separate-items mode the metrics are their own clickable
-        // items, so hiding means the whole main item steps aside instead of
-        // just its image (which is all that item has). With Dynamic Island
-        // standing in, the item goes whenever it has no text of its own.
-        let mainItemHidden = (islandHides && button.attributedTitle.length == 0)
-            || MenuBarSpacingSupport.shouldHideMainStatusItem(
-                optionEnabled: optionEnabled,
-                separateMetrics: separateMetrics,
-                metricItemsShown: renderedMetricItemCount,
-                renderedTitleLength: button.attributedTitle.length,
-                mustShowForSignal: signal || keepAwakeSignal)
+        let hidden = islandHides
+        // With Dynamic Island standing in, the item goes whenever it has no
+        // text of its own.
+        let mainItemHidden = islandHides && button.attributedTitle.length == 0
         mainItemHiddenByChoice = mainItemHidden
         let keepAwakeActive = KeepAwakeManager.shared.isActive
 
@@ -441,7 +429,43 @@ final class StatusItemController {
                 DispatchQueue.main.async { [weak self] in self?.refresh() }
             }
         }
-        performRefresh()
+        Self.disableStatusBarResizeAnimation(window: statusItem?.button?.window)
+        Self.withoutStatusBarAnimation { performRefresh() }
+    }
+
+    /// A reading that changes, appears or goes away replaces what was there
+    /// in place: the title, width and visibility changes of one refresh land
+    /// in a transaction with no duration and no implicit animation, so the
+    /// item does not slide.
+    static func withoutStatusBarAnimation(_ body: () -> Void) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            context.allowsImplicitAnimation = false
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            body()
+            CATransaction.commit()
+        }
+    }
+
+    private static var statusBarResizeAnimationDisabled = false
+
+    /// AppKit grows and shrinks a status item's window with an animated
+    /// frame change, timed by the window's `animationResizeTime(_:)`, which
+    /// is what made a reading slide in. That window class is AppKit's own and
+    /// has no setting for it, so this app's copy of the method answers zero:
+    /// a resize is then immediate. Only this process's status bar windows are
+    /// affected, and only once a status item window exists to name the class.
+    static func disableStatusBarResizeAnimation(window: NSWindow?) {
+        guard !statusBarResizeAnimationDisabled, let window else { return }
+        let windowClass: AnyClass = type(of: window)
+        guard NSStringFromClass(windowClass).contains("StatusBar") else { return }
+        let selector = #selector(NSWindow.animationResizeTime(_:))
+        let instant: @convention(block) (NSWindow, NSRect) -> TimeInterval = { _, _ in 0 }
+        guard let method = class_getInstanceMethod(windowClass, selector) else { return }
+        class_replaceMethod(windowClass, selector, imp_implementationWithBlock(instant),
+                            method_getTypeEncoding(method))
+        statusBarResizeAnimationDisabled = true
     }
 
     private func performRefresh() {
@@ -520,14 +544,8 @@ final class StatusItemController {
                 updateAvailable = false
             }
             let signal = updateAvailable
-            let glyphHidden = (MenuBarSpacingSupport.islandHidesStatusIcon(
-                in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal)
-                || MenuBarSpacingSupport.shouldHideStatusIcon(
-                    optionEnabled: defaults.bool(forKey: DefaultsKey.menuBarHideIconWithMetrics),
-                    separateMetrics: separateMetrics,
-                    metricsEnabled: !metrics.isEmpty,
-                    renderedTitleLength: 1,
-                    mustShowForSignal: signal || keepAwakeSignal)
+            let glyphHidden = MenuBarSpacingSupport.islandHidesStatusIcon(
+                in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal
             let full = NSMutableAttributedString(string: glyphHidden ? "" : " ")
             full.append(title)
             let stacked = full.string.contains("\n")
@@ -623,21 +641,30 @@ final class StatusItemController {
     /// How the enabled metrics split into separate items. Static so the
     /// Settings preview draws the same split the bar does.
     static func metricStatusGroups(for metrics: [MenuBarMetric], strings: Strings) -> [MetricStatusGroup] {
-        guard MenuBarMetricAppearance.current.allowsCombinedTemperatures,
-              UserDefaults.standard.bool(forKey: DefaultsKey.menuBarCombineTemperatures) else {
-            return metrics.map {
-                MetricStatusGroup(id: $0.rawValue, metrics: [$0], focusMetric: $0, title: $0.title(strings))
-            }
-        }
-
         let enabled = Set(metrics)
         var emittedIDs = Set<String>()
         var groups: [MetricStatusGroup] = []
+        let canCombine = MenuBarMetricAppearance.current.allowsCombinedTemperatures
 
+        func appendSingle(_ metric: MenuBarMetric) {
+            let id = metric.rawValue
+            guard emittedIDs.insert(id).inserted else { return }
+            groups.append(MetricStatusGroup(id: id, metrics: [metric], focusMetric: metric,
+                                            title: metric.title(strings)))
+        }
+
+        /// A component whose usage and temperature combine shares one item;
+        /// one that does not gives each reading its own.
         func appendComponentGroup(id: String,
                                   primary: MenuBarMetric,
                                   temperature: MenuBarMetric,
-                                  primaryTitle: String) {
+                                  primaryTitle: String,
+                                  combineKey: String,
+                                  current: MenuBarMetric) {
+            guard canCombine, UserDefaults.standard.bool(forKey: combineKey) else {
+                appendSingle(current)
+                return
+            }
             guard emittedIDs.insert(id).inserted else { return }
             var groupedMetrics: [MenuBarMetric] = []
             if enabled.contains(primary) { groupedMetrics.append(primary) }
@@ -656,25 +683,26 @@ final class StatusItemController {
                 appendComponentGroup(id: "cpu",
                                      primary: .cpu,
                                      temperature: .cpuTemperature,
-                                     primaryTitle: strings.monitorShowCPU)
+                                     primaryTitle: strings.monitorShowCPU,
+                                     combineKey: DefaultsKey.menuBarCombineCPU,
+                                     current: metric)
             case .gpu, .gpuTemperature:
                 appendComponentGroup(id: "gpu",
                                      primary: .gpu,
                                      temperature: .gpuTemperature,
-                                     primaryTitle: strings.monitorShowGPU)
+                                     primaryTitle: strings.monitorShowGPU,
+                                     combineKey: DefaultsKey.menuBarCombineGPU,
+                                     current: metric)
             case .battery, .batteryTemperature:
                 appendComponentGroup(id: "battery",
                                      primary: .battery,
                                      temperature: .batteryTemperature,
-                                     primaryTitle: strings.batteryLabel)
+                                     primaryTitle: strings.batteryLabel,
+                                     combineKey: DefaultsKey.menuBarCombineBattery,
+                                     current: metric)
             case .memory, .network, .diskUsage, .diskActivity, .batteryTime, .peripheralBattery, .power,
                  .fanSpeed, .connectedDevices:
-                let id = metric.rawValue
-                guard emittedIDs.insert(id).inserted else { continue }
-                groups.append(MetricStatusGroup(id: id,
-                                                metrics: [metric],
-                                                focusMetric: metric,
-                                                title: metric.title(strings)))
+                appendSingle(metric)
             }
         }
 

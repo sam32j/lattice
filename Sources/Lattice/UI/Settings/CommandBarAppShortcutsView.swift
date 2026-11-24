@@ -140,6 +140,7 @@ struct CommandBarAppShortcutsView: View {
                         self.pendingTakeOver = nil
                         report(String(format: l10n.s.shortcutConflictFormat, "macOS"), for: pendingTakeOver.entry)
                     })
+                    .transition(.settingsReveal)
             }
 
             HStack(alignment: .center, spacing: 16) {

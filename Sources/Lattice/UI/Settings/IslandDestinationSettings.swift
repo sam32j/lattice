@@ -53,21 +53,25 @@ struct IslandDestinationSettings: View {
                 isOn: alwaysFloating
             )
             if shown.wrappedValue {
-                if destination == .files {
-                    SettingsToggleRow(title: FeatureStrings.notch(l10n.language).dragReveal, isOn: $dragReveal)
-                        .onChange(of: dragReveal) { _, _ in sync() }
-                }
-                if destination == .clipboard {
-                    SettingsControlRow(title: styleTitle) {
-                        Picker(styleTitle, selection: $cardSize) {
-                            Text(SettingsOwnershipStrings.text(.compact, l10n.language)).tag(NotchClipboardCardSize.compact.rawValue)
-                            Text(SettingsOwnershipStrings.text(.regular, l10n.language)).tag(NotchClipboardCardSize.comfortable.rawValue)
-                        }.labelsHidden().pickerStyle(.menu)
+                VStack(alignment: .leading, spacing: 13) {
+                    if destination == .files {
+                        SettingsToggleRow(title: FeatureStrings.notch(l10n.language).dragReveal, isOn: $dragReveal)
+                            .onChange(of: dragReveal) { _, _ in sync() }
                     }
-                    .onChange(of: cardSize) { _, _ in sync() }
+                    if destination == .clipboard {
+                        SettingsControlRow(title: styleTitle) {
+                            Picker(styleTitle, selection: $cardSize) {
+                                Text(SettingsOwnershipStrings.text(.compact, l10n.language)).tag(NotchClipboardCardSize.compact.rawValue)
+                                Text(SettingsOwnershipStrings.text(.regular, l10n.language)).tag(NotchClipboardCardSize.comfortable.rawValue)
+                            }.labelsHidden().pickerStyle(.menu)
+                        }
+                        .onChange(of: cardSize) { _, _ in sync() }
+                    }
                 }
+                .transition(.settingsReveal)
             }
             }
+            .transition(.settingsReveal)
         }
     }
 

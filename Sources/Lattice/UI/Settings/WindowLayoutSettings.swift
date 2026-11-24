@@ -42,6 +42,7 @@ struct WindowLayoutSettings: View {
                 snappingCard
                 if !permissions.accessibility {
                     SettingsCard(title: l10n.s.permissionRequired) { PermissionRow(kind: .accessibility) }
+                        .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)
@@ -68,6 +69,7 @@ struct WindowLayoutSettings: View {
                         }
                         if maximizeEnabled {
                             WindowMaximizerExclusionsList()
+                                .transition(.settingsReveal)
                         }
                     }
                     .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
@@ -116,14 +118,16 @@ struct WindowLayoutSettings: View {
                     // off, its card is folded, so the list shows here.
                     if !windowLayoutInstalled {
                         WindowLayoutIgnoredAppsList()
+                            .transition(.settingsReveal)
                     }
                 }
+                .transition(.settingsReveal)
             }
         }
     }
 
     var snappingCard: some View {
-        SettingsCard(symbol: "rectangle.3.group", title: text.gestureSection, headerSpacing: windowLayoutInstalled ? 14 : 0, headerAccessory: {
+        SettingsCard(symbol: "rectangle.3.group", title: text.gestureSection, headerAccessory: {
             PermissionGatedToggle(text.gestureSection, isOn: Binding(
                 get: { windowLayoutInstalled },
                 set: { enabled in
@@ -134,38 +138,41 @@ struct WindowLayoutSettings: View {
             .labelsHidden()
         }) {
             if windowLayoutInstalled {
-                VStack(alignment: .leading, spacing: 16) {
-                    WindowLayoutIgnoredAppsList()
-                    gapPicker(text.windowGap, selection: $windowGap)
-                    gapPicker(text.screenGap, selection: $screenGap)
-                    SettingsToggleRow(title: stageManagerText.title,
-                                      caption: stageManagerText.caption,
-                                      isOn: $reserveStageManagerSpace)
-                    Divider()
-                    edgeSnapControls
-                }
-                .padding(.leading, settingsRowTextInset)
-                .toggleStyle(TrailingSwitchToggleStyle())
-
-                Divider()
-                    .padding(.leading, settingsRowTextInset)
-
-                Button {
-                    SettingsRouter.shared.request(FeatureSettingsDestination(.windowLayoutShortcuts))
-                } label: {
-                    HStack(spacing: 12) {
-                        Text(WindowLayoutFeatureStrings.manageShortcuts(l10n.language))
-                            .foregroundStyle(.primary)
-                        Spacer(minLength: 8)
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        WindowLayoutIgnoredAppsList()
+                        gapPicker(text.windowGap, selection: $windowGap)
+                        gapPicker(text.screenGap, selection: $screenGap)
+                        SettingsToggleRow(title: stageManagerText.title,
+                                          caption: stageManagerText.caption,
+                                          isOn: $reserveStageManagerSpace)
+                        Divider()
+                        edgeSnapControls
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+                    .padding(.leading, settingsRowTextInset)
+                    .toggleStyle(TrailingSwitchToggleStyle())
+
+                    Divider()
+                        .padding(.leading, settingsRowTextInset)
+
+                    Button {
+                        SettingsRouter.shared.request(FeatureSettingsDestination(.windowLayoutShortcuts))
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text(WindowLayoutFeatureStrings.manageShortcuts(l10n.language))
+                                .foregroundStyle(.primary)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, settingsRowTextInset)
                 }
-                .buttonStyle(.plain)
-                .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
         }
     }

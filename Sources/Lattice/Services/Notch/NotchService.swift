@@ -1778,6 +1778,9 @@ final class NotchService: ObservableObject {
         NotchNotificationService.shared.stop()
         settingsSignature = ""
         expanded = false
+        // Torn down without a collapse (the Mac locking, say), the island
+        // still hands the Hub back as a menu bar reading found it.
+        restoreHubAfterMenuBarReading()
         peeking = false
         dragPlaceholder = false
         endFileDrop()
@@ -2068,6 +2071,7 @@ final class NotchService: ObservableObject {
         // End the Hub paging session only when the whole island closes.
         // A subpage's Back button leaves this position untouched.
         LatticeHubService.shared.hubIslandPage = 0
+        restoreHubAfterMenuBarReading()
         if closesCommandBar { commandBarDidClose() }
         removeEventMonitors()
         syncVisibleConsumers()
@@ -2075,6 +2079,28 @@ final class NotchService: ObservableObject {
     }
 
     func toggle() { expanded ? collapse() : open() }
+
+    /// Closing the island after a menu bar reading puts the Hub back where it
+    /// was. A Hub the user moved on to another tool in the meantime is theirs
+    /// now and stays as they left it.
+    private func restoreHubAfterMenuBarReading() {
+        let launcher = LatticeHubService.shared
+        // A reading opened on the island's own System page leaves its
+        // selection behind; with System not open in the Hub, it is stale.
+        if launcher.activeUtility != .system, SystemNavigationState.shared.selectedMetric != nil {
+            SystemNavigationState.shared.reset()
+        }
+        guard let previous = hubStateBeforeMenuBarReading else { return }
+        hubStateBeforeMenuBarReading = nil
+        guard launcher.activeUtility == .system else { return }
+        SystemNavigationState.shared.reset()
+        launcher.activeUtility = previous.utility
+        if let recent = previous.recent {
+            UserDefaults.standard.set(recent, forKey: DefaultsKey.recentHubUtility)
+        } else {
+            UserDefaults.standard.removeObject(forKey: DefaultsKey.recentHubUtility)
+        }
+    }
 
     /// The island stays on screen, so only a manual resign takes its keyboard.
     /// While Lattice stays the active app (its Settings window is open, for
@@ -2451,6 +2477,43 @@ final class NotchService: ObservableObject {
         open(.system, metric: metric)
         // A metric opened from its menu bar item closes on Escape, like the popover.
         if toggle { detailHasPage = false }
+    }
+
+    /// A menu bar reading's click: the island opens on the Hub with System
+    /// at that reading, the same place stepping in through the Hub's System
+    /// tool reaches, so it is sized the same way. A second click on the same
+    /// reading closes it. Without the Hub in the island, the System page
+    /// shows the reading instead.
+    /// What the Hub showed, and remembered as its last tool, before a menu
+    /// bar reading took it over. Put back when the island closes, so a
+    /// reading's one-off view never becomes the Hub's last place.
+    private var hubStateBeforeMenuBarReading: (utility: LatticeHubItem?, recent: String?)?
+
+    func showMetricFromMenuBar(_ metric: MetricDetailKind) {
+        guard metricIsAvailable(metric) else { return }
+        let launcher = LatticeHubService.shared
+        let navigation = SystemNavigationState.shared
+        if expanded, selected == .hub, launcher.activeUtility == .system,
+           navigation.selectedMetric == metric, !showingCommandBar {
+            collapse()
+            return
+        }
+        guard modules.contains(.hub), LatticeHubItem.system.isAvailable() else {
+            showMetric(metric, toggle: true)
+            return
+        }
+        if hubStateBeforeMenuBarReading == nil {
+            hubStateBeforeMenuBarReading = (launcher.activeUtility,
+                                            UserDefaults.standard.string(forKey: DefaultsKey.recentHubUtility))
+        }
+        // A floating Hub left open would hide as the island takes focus and
+        // take the shared System state with it, so it goes first.
+        if launcher.isVisible { launcher.hide() }
+        navigation.selectMetric(metric)
+        launcher.opensUtilityDirectly = false
+        launcher.activeUtility = .system
+        open(.hub)
+        refreshPresentation(transitionContent: .page)
     }
 
     /// Fan Control is a single card, so its detail fits the card instead of
@@ -4276,11 +4339,18 @@ final class NotchService: ObservableObject {
             guard let self else { return }
             self.preferenceSyncWork = nil
             guard self.running else { return }
+            // A motion that started after this was scheduled finishes first.
+            if InterfaceMotionHold.remaining > 0 {
+                self.schedulePreferenceSync()
+                return
+            }
             self.syncWithPreferences()
         }
         preferenceSyncWork = work
-        // Past a settings switch's slide and the accordion it opens.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+        // Past a settings switch's slide and the accordion it opens, and past
+        // any frame-by-frame motion still running, such as the Stay Awake
+        // countdown, which a sync landing mid-slide froze and then jumped.
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.3, InterfaceMotionHold.remaining), execute: work)
     }
 
     private func applicationDidActivate() {

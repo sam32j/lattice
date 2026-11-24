@@ -214,16 +214,22 @@ extension SettingsDirectory {
                                                       FeatureStrings.wallpaper(language).enableManagement]),
                                         (.bluetoothSleep, [FeatureStrings.bluetoothSleep(language).pageTitle,
                                                            FeatureStrings.bluetoothSleep(language).enable]),
-                                        (.keepAwake, [s.keepAwakeTitle, s.clamshellTitle,
-                                                      s.defaultDurationLabel, s.showCountdown,
+                                        (.keepAwake, [s.keepAwakeTitle, FeatureStrings.stayAwakeSettings(language).durationTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).shortcutTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).autoTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).appsTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).whileAwakeTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).displaySleepTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).pointerTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).pauseLockedTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).lidBatteryTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).lidTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).batteryTitle,
+                                                      FeatureStrings.stayAwakeSettings(language).countdownTitle,
                                                       FeatureStrings.keepAwakeAutomation(language)
                                                         .externalDisplayToggle,
                                                       FeatureStrings.keepAwakeAutomation(language)
-                                                        .powerToggle,
-                                                      FeatureStrings.keepAwakeAutomation(language)
-                                                        .pauseWhenLockedToggle,
-                                                      FeatureStrings.keepAwakeDisplaySleep(language)
-                                                        .allowDisplaySleep]),
+                                                        .powerToggle]),
                                       ],
                                       followupKeywords: [
                                         (.brightness, DefaultsKey.brightnessControlEnabled,
@@ -239,14 +245,15 @@ extension SettingsDirectory {
             ]),
             (SettingsOwnershipStrings.text(.utilities, language), utilityPages(s, language: language) + [
                 SettingsDirectoryItem(page: .monitor, title: s.tabMonitor, icon: "cpu",
-                                      keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle,
+                                      keywords: [s.menuBarSpacingLabel,
                                                  s.monitorShowCPU, s.monitorShowGPU, s.monitorShowMemory,
                                                  s.monitorShowNetwork, s.diskStorageSettings, s.diskSection, s.powerSection,
                                                  FeatureStrings.connectedDevices(language).title,
-                                                 FeatureStrings.fanControl(language).title],
+                                                 FeatureStrings.fanControl(language).title,
+                                                 FeatureStrings.systemMonitorSettings(language).menuBarTitle,
+                                                 FeatureStrings.systemMonitorSettings(language).refreshTitle],
                                       featureKeywords: [
                                         (.monitorMemory, [s.monitorMemoryPressureDot]),
-                                        (.monitorNetwork, [FeatureStrings.monitorLayout(language).networkSpeedUnit]),
                                         (.fanControl, [FeatureStrings.fanControl(language).menuBarTitle]),
                                       ]),
                 SettingsDirectoryItem(page: .appUpdates,

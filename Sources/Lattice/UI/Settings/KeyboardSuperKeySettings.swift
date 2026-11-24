@@ -32,43 +32,46 @@ extension KeyboardSettings {
                         .labelsHidden()
                         .onChange(of: superKeyEnabled) { _, _ in
                             superKey.syncWithPreferences()
-                            features.finishAvailabilityChange()
+                            settingsFinishAvailabilityChange()
                         }
                 }
 
                 if superKeyEnabled {
-                    HStack(spacing: 6) {
-                        Text(InputSettingsStrings.text(.superKey, l10n.language))
-                        Spacer(minLength: 12)
-                        SettingsStatusDot(status: superKeyStatus)
-                        Picker(InputSettingsStrings.text(.superKey, l10n.language), selection: sourceBinding) {
-                            ForEach(SuperKeySource.allCases) { source in
-                                Text(text.sourceLabel(source)).tag(source)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 6) {
+                            Text(InputSettingsStrings.text(.superKey, l10n.language))
+                            Spacer(minLength: 12)
+                            SettingsStatusDot(status: superKeyStatus)
+                            Picker(InputSettingsStrings.text(.superKey, l10n.language), selection: sourceBinding) {
+                                ForEach(SuperKeySource.allCases) { source in
+                                    Text(text.sourceLabel(source)).tag(source)
+                                }
                             }
+                            .labelsHidden().pickerStyle(.menu)
+                            .fixedSize()
+                            .disabled(!superKeyEnabled)
                         }
-                        .labelsHidden().pickerStyle(.menu)
-                        .fixedSize()
-                        .disabled(!superKeyEnabled)
-                    }
 
-                    diagram
+                        diagram
 
-                    SettingsControlRow(title: text.soloSection) {
-                        Picker(text.soloSection, selection: soloBinding) {
-                            Text(text.soloNothing).tag(SuperKeySoloAction.none)
-                            Text(text.soloCapsLock).tag(SuperKeySoloAction.capsLock)
-                            Text(text.soloInputSource).tag(SuperKeySoloAction.inputSource)
-                            Text(text.soloEscape).tag(SuperKeySoloAction.escape)
+                        SettingsControlRow(title: text.soloSection) {
+                            Picker(text.soloSection, selection: soloBinding) {
+                                Text(text.soloNothing).tag(SuperKeySoloAction.none)
+                                Text(text.soloCapsLock).tag(SuperKeySoloAction.capsLock)
+                                Text(text.soloInputSource).tag(SuperKeySoloAction.inputSource)
+                                Text(text.soloEscape).tag(SuperKeySoloAction.escape)
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .frame(width: 220, alignment: .trailing)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                        .frame(width: 220, alignment: .trailing)
-                    }
-                    .help(text.soloCaption)
-                    .disabled(superKeyOptionsDisabled)
-
-                    MouseExceptionsList(scope: .superKey)
+                        .help(text.soloCaption)
                         .disabled(superKeyOptionsDisabled)
+
+                        MouseExceptionsList(scope: .superKey)
+                            .disabled(superKeyOptionsDisabled)
+                    }
+                    .transition(.settingsReveal)
                 }
             }
             .padding(.leading, settingsRowTextInset)

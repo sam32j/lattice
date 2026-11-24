@@ -4,250 +4,256 @@
 import AppKit
 import SwiftUI
 
-/// The "Monitor" settings page: pick what shows next to the menu bar icon, how
-/// it looks and how often it refreshes, which blocks appear in the panel, when
-/// to warn, and which metrics draw a history graph. Everything is opt-in or
-/// reversible, so users keep only what they find useful. The live menu bar
-/// preview stays pinned while the choices that change it scroll under it.
+/// The System Monitor page. The main switch and the module switches sit in
+/// the title bar; the page itself links to the menu bar readings and holds
+/// what every surface shares: how often readings refresh, and the alerts.
 struct MonitorSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
+    @AppStorage(DefaultsKey.monitorInterval) private var interval = MonitorRefreshRate.balanced.rawValue
+    // The alert switches, so an alert's limit unrolls with the page's
+    // managed reveal and the card and the rows below move in one transaction.
+    @AppStorage(DefaultsKey.monitorAlertCPU) private var alertCPU = false
+    @AppStorage(DefaultsKey.monitorAlertCPUTemperature) private var alertCPUTemperature = false
+    @AppStorage(DefaultsKey.monitorAlertBatteryTemperature) private var alertBatteryTemperature = false
+    @AppStorage(DefaultsKey.monitorAlertMemory) private var alertMemory = false
+    @AppStorage(DefaultsKey.monitorAlertDisk) private var alertDisk = false
+    @AppStorage(DefaultsKey.monitorAlertBattery) private var alertBattery = false
 
-    @AppStorage(DefaultsKey.menuBarCombineTemperatures) private var combineTemperatures = true
-    @AppStorage(DefaultsKey.menuBarSeparateMetrics) private var separateMetrics = false
-    @AppStorage(DefaultsKey.menuBarMetricSpacing) private var metricSpacing = "standard"
-    @AppStorage(DefaultsKey.menuBarMetricAppearance) private var metricAppearance = "values"
-    @AppStorage(DefaultsKey.menuBarHideIconWithMetrics) private var hideIconWithMetrics = false
-    @AppStorage(DefaultsKey.monitorInterval) private var interval = 2
-    @AppStorage(DefaultsKey.monitorGraphScale) private var graphScale = true
-    @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit = TemperatureUnit.celsius.rawValue
-    @AppStorage(DefaultsKey.networkSpeedUnit) private var networkSpeedUnit = NetworkSpeedUnit.bytes
-    @AppStorage(DefaultsKey.monitorMemoryMetric) private var memoryMetric = "used"
-    @AppStorage(DefaultsKey.panelShowFanControl) private var showFanControl = true
+    private var strings: SystemMonitorSettingsStrings { FeatureStrings.systemMonitorSettings(l10n.language) }
 
     var body: some View {
+        Group {
+            if MonitorModules.anyOn {
+                page
+            } else {
+                SettingsFeatureEmptyState(title: l10n.s.tabMonitor, symbol: "cpu",
+                                          description: strings.emptyDescription) {
+                    Button(SettingsOwnershipStrings.enable(l10n.s.tabMonitor, l10n.language)) {
+                        MonitorModules.setOn(true)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .toolbar {
+            SettingsTitleBarItem(id: "system-monitor-activation") { MonitorTitleBarControls() }
+        }
+        .settingsExpansionAnimation(value: MonitorModules.anyOn)
+        // A module switched in the title bar menu brings its alert rows in or
+        // takes them away in the same motion as the rest of the page.
+        .settingsExpansionAnimation(value: FeatureVisibilitySupport.monitorFeatures.map(\.isAvailable))
+        .settingsExpansionAnimation(value: [alertCPU, alertCPUTemperature, alertMemory, alertDisk,
+                                            alertBattery, alertBatteryTemperature])
+    }
+
+    private var page: some View {
         // A plain stack, not a lazy one: a lazy stack estimates the rows it
-        // has not built yet, and with the taller Bars options this page kept
-        // it re-measuring and re-anchoring without ever settling, which hung
-        // Settings on the first scroll. Pinned headers exist only on lazy
-        // stacks, so the preview sits above the scroll view instead, where it
-        // also stays in view for the shared units further down that change it.
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(l10n.s.monitorMenuBarPreview)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                MenuBarMetricsPreview()
+        // has not built yet and kept re-measuring this page without settling.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                SettingsCard {
+                    MonitorSubpageRow(symbol: "menubar.rectangle", title: strings.menuBarTitle,
+                                      caption: strings.menuBarCaption) {
+                        SettingsRouter.shared.request(FeatureSettingsDestination(.monitorMenuBar))
+                    }
+                    Divider()
+                    SettingsRow(symbol: "gauge.with.dots.needle.67percent", title: strings.refreshTitle,
+                                caption: refreshCaption) {
+                        Picker(strings.refreshTitle, selection: $interval) {
+                            ForEach(MonitorRefreshRate.allCases, id: \.self) { rate in
+                                Text(title(for: rate)).tag(rate.rawValue)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .fixedSize()
+                    }
+                }
+                SettingsCard(symbol: "bell.badge", title: FeatureStrings.monitorAlerts(l10n.language).section,
+                             caption: FeatureStrings.monitorAlerts(l10n.language).caption) {
+                    // Under the title text, past the header's icon, so the
+                    // alerts read as the card's contents.
+                    MonitorAlertsControls()
+                        .padding(.leading, MonitorSettings.cardTextInset)
+                }
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 10)
-            Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    MonitorModuleSettings()
-                    groupHeading(l10n.s.monitorMenuBarSection, symbol: "menubar.rectangle")
-                    if MenuBarMetric.order(in: .standard).contains(where: { $0.feature.isAvailable && $0.isAvailableOnCurrentHardware }) {
-                        menuBarCard
-                    }
-                    menuBarStyleCard
-                    groupHeading(l10n.s.monitorPanelSection, symbol: "macwindow")
-                    panelCard
-                    if AppFeature.fanControl.isPresentInControls() {
-                        fanControlCard
-                            .settingsSectionAnchor(.fanControl, cornerRadius: 16)
-                    }
-                    groupHeading(SettingsOrganizationStrings.text(.readings, l10n.language), symbol: "slider.horizontal.3")
-                    readingsCard
-                    alertsCard
-                }
-                .frame(maxWidth: 760)
-                .frame(maxWidth: .infinity)
-                .padding(22)
-            }
+            .padding(22)
         }
         .toggleStyle(.switch)
-        .onAppear {
-            interval = Defaults.sanitizedMonitorInterval(interval)
-            metricAppearance = Defaults.sanitizedMenuBarMetricAppearance(metricAppearance)
-            if TemperatureUnit(rawValue: temperatureUnit) == nil {
-                temperatureUnit = TemperatureUnit.celsius.rawValue
-            }
-            memoryMetric = Defaults.sanitizedMonitorMemoryMetric(memoryMetric)
-        }
-        .settingsExpansionAnimation(value: metricAppearance)
-        .settingsExpansionAnimation(value: FeatureVisibilitySupport.monitorFeatures.map(\.isAvailable))
+        .onAppear { interval = Defaults.sanitizedMonitorInterval(interval) }
     }
 
-    /// Splits the page into what the menu bar shows, what the panel shows,
-    /// and what both share, so an option is never read as the other's.
-    private func groupHeading(_ title: String, symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Divider()
-            Label(title, systemImage: symbol)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .accessibilityAddTraits(.isHeader)
-        }
-        .padding(.top, 8)
+    /// A card header's icon tile and the gap after it, where its title starts.
+    static let cardTextInset: CGFloat = 26 + 10
+
+    private var rate: MonitorRefreshRate {
+        MonitorRefreshRate(rawValue: Defaults.sanitizedMonitorInterval(interval)) ?? .balanced
     }
 
-    private var appearanceStrings: MenuBarAppearanceStrings {
-        FeatureStrings.menuBarAppearance(l10n.language)
-    }
-
-    private var appearance: MenuBarMetricAppearance {
-        MenuBarMetricAppearance(rawValue: Defaults.sanitizedMenuBarMetricAppearance(metricAppearance)) ?? .values
-    }
-
-    /// The readings that can sit in the menu bar, as tiles in the order they
-    /// appear there.
-    private var menuBarCard: some View {
-        SettingsCard {
-            MenuBarMetricTiles()
-            Text(FeatureStrings.notchEditor(l10n.language).reorderHint)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private func title(for rate: MonitorRefreshRate) -> String {
+        switch rate {
+        case .fast: return strings.refreshFast
+        case .balanced: return strings.refreshBalanced
+        case .energySaver: return strings.refreshSaver
         }
     }
 
-    private var menuBarStyleCard: some View {
-        SettingsCard(title: appearanceStrings.label) {
-            HStack(spacing: 10) {
-                MenuBarStyleChoice(appearance: .values, title: appearanceStrings.values,
-                                   selected: appearance == .values) { metricAppearance = "values" }
-                MenuBarStyleChoice(appearance: .bars, title: appearanceStrings.bars,
-                                   selected: appearance == .bars) { metricAppearance = "bars" }
-            }
-            if appearance == .bars {
-                MenuBarUsageBarSettings(strings: appearanceStrings)
-            } else {
-                SettingsRow(symbol: "thermometer.medium", title: l10n.s.monitorCombineTemperatures,
-                            caption: l10n.s.monitorCombineTemperaturesCaption) {
-                    Toggle(l10n.s.monitorCombineTemperatures, isOn: $combineTemperatures).labelsHidden()
-                }
-            }
-            Divider()
-            SettingsRow(symbol: "arrow.left.and.right", title: l10n.s.menuBarSpacingLabel) {
-                Picker(l10n.s.menuBarSpacingLabel, selection: $metricSpacing) {
-                    Text(l10n.s.menuBarSpacingStandard).tag("standard")
-                    Text(l10n.s.menuBarSpacingCompact).tag("compact")
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-            }
-            SettingsRow(symbol: "eye.slash", title: l10n.s.menuBarHideIconToggle,
-                        caption: l10n.s.menuBarHideIconCaption) {
-                Toggle(l10n.s.menuBarHideIconToggle, isOn: $hideIconWithMetrics).labelsHidden()
-            }
-            SettingsRow(symbol: "rectangle.split.3x1", title: l10n.s.monitorSeparateMenuBarMetrics,
-                        caption: appearance.allowsCombinedTemperatures
-                            ? l10n.s.monitorSeparateMenuBarMetricsCaption : nil) {
-                Toggle(l10n.s.monitorSeparateMenuBarMetrics, isOn: $separateMetrics).labelsHidden()
-            }
+    private var refreshCaption: String {
+        switch rate {
+        case .fast: return strings.refreshFastCaption
+        case .balanced: return strings.refreshBalancedCaption
+        case .energySaver: return strings.refreshSaverCaption
+        }
+    }
+}
+
+/// How often readings refresh, stored as the seconds between samples.
+enum MonitorRefreshRate: Int, CaseIterable {
+    case fast = 1
+    case balanced = 2
+    case energySaver = 5
+}
+
+/// The System Monitor's modules as one switch: off turns every module off
+/// and remembers which were on, so turning it back on restores the same set.
+@MainActor
+enum MonitorModules {
+    /// Modules this Mac can run; the rest never show.
+    static var supported: [AppFeature] {
+        FeatureVisibilitySupport.monitorFeatures.filter(\.isHardwareSupported)
+    }
+
+    static var anyOn: Bool { supported.contains(where: \.isAvailable) }
+
+    static func setOn(_ on: Bool) {
+        let defaults = UserDefaults.standard
+        if on {
+            let saved = Set(defaults.stringArray(forKey: DefaultsKey.monitorModulesBeforeOff) ?? [])
+            // Fan control is a beta, so it only comes back if it was on: the
+            // fallback, for nothing saved or nothing saved still supported,
+            // is every supported module but fan control.
+            let fallback = supported.filter { $0 != .fanControl }
+            let remembered = supported.filter { saved.contains($0.rawValue) }
+            let restore = remembered.isEmpty ? fallback : remembered
+            FeatureRuntime.shared.setAvailable(restore.isEmpty ? supported : restore, true)
+        } else {
+            let enabled = supported.filter(\.isAvailable)
+            defaults.set(enabled.map(\.rawValue), forKey: DefaultsKey.monitorModulesBeforeOff)
+            FeatureRuntime.shared.setAvailable(supported, false)
+        }
+        settingsFinishAvailabilityChange()
+    }
+}
+
+/// The module menu and the main switch, laid out like the other pages'
+/// title bar controls.
+private struct MonitorTitleBarControls: View {
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
+    @State private var showingMenu = false
+    /// A click on the menu button while the menu is open first closes it as
+    /// a click outside; this keeps that same click from opening it again.
+    @State private var menuClosedAt = Date.distantPast
+
+    var body: some View {
+        let isOn = MonitorModules.anyOn
+        HStack(spacing: 6) {
+            if isOn { menuButton }
+            SettingsTitleBarSwitch(title: l10n.s.tabMonitor, isOn: isOn) { MonitorModules.setOn($0) }
+        }
+        .padding(.horizontal, 8)
+        .onChange(of: isOn) { _, on in
+            if !on { showingMenu = false }
         }
     }
 
-    private var readingsCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: "timer", title: l10n.s.monitorIntervalLabel) {
-                HStack(spacing: 6) {
-                    intervalChip(1, title: l10n.s.monitorInterval1)
-                    intervalChip(2, title: l10n.s.monitorInterval2)
-                    intervalChip(5, title: l10n.s.monitorInterval5)
-                }
-            }
-            SettingsRow(symbol: "thermometer.medium", title: l10n.s.temperatures) {
-                Picker(l10n.s.temperatures, selection: $temperatureUnit) {
-                    Text("°C").tag(TemperatureUnit.celsius.rawValue)
-                    Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-            }
-            if AppFeature.monitorNetwork.isAvailable {
-                let title = FeatureStrings.monitorLayout(l10n.language).networkSpeedUnit
-                SettingsRow(symbol: "network", title: title) {
-                    Picker(title, selection: $networkSpeedUnit) {
-                        Text("MB/s").tag(NetworkSpeedUnit.bytes)
-                        Text("Mbps").tag(NetworkSpeedUnit.bits)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-            }
-            if AppFeature.monitorMemory.isAvailable {
-                SettingsRow(symbol: "memorychip", title: l10n.s.monitorMemoryMetricLabel) {
-                    Picker(l10n.s.monitorMemoryMetricLabel, selection: $memoryMetric) {
-                        Text(l10n.s.memoryMetricUsed).tag("used")
-                        Text(l10n.s.memoryMetricApp).tag("app")
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-            }
-        }
-    }
-
-    private func intervalChip(_ seconds: Int, title: String) -> some View {
-        let selected = interval == seconds
+    private var menuButton: some View {
+        let label = FeatureStrings.recorder(l10n.language).moreOptions
         return Button {
-            interval = seconds
+            guard Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
+            showingMenu.toggle()
         } label: {
-            Text(title)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(1)
-                .foregroundStyle(selected ? Color.accentColor : .primary)
-                .padding(.horizontal, 10)
-                .frame(height: 26)
-                .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
+            Image(systemName: "slider.horizontal.3")
+                .foregroundStyle(showingMenu ? Color.accentColor : Color.primary)
+        }
+        .buttonStyle(FlatSettingsOptionsButtonStyle())
+        // The page hands this button first focus as it opens; no ring for that.
+        .focusEffectDisabled()
+        .help(label)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(showingMenu ? .isSelected : [])
+        .popover(isPresented: $showingMenu, arrowEdge: .bottom) { MonitorModulesMenu() }
+        .onChange(of: showingMenu) { _, open in
+            if !open { menuClosedAt = Date() }
+        }
+    }
+}
+
+/// One switch per module this Mac supports, each with its line of help.
+private struct MonitorModulesMenu: View {
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
+
+    var body: some View {
+        let hub = FeatureStrings.hub(l10n.language)
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(MonitorModules.supported, id: \.self) { feature in
+                SettingsMenuToggleRow(title: title(feature, hub: hub), help: help(feature, hub: hub),
+                                      isOn: Binding(get: { feature.isAvailable }, set: { enabled in
+                    FeatureRuntime.shared.setAvailable([feature], enabled)
+                    settingsFinishAvailabilityChange()
+                }))
+            }
+        }
+        .padding(6)
+        .frame(width: 320)
+    }
+
+    private func title(_ feature: AppFeature, hub: FeatureHubStrings) -> String {
+        let title = feature.hubTitle(l10n.s, hub: hub)
+        return feature.isBeta ? "\(title) (\(l10n.s.betaBadge))" : title
+    }
+
+    private func help(_ feature: AppFeature, hub: FeatureHubStrings) -> String {
+        let description = feature.hubDescription(hub)
+        return feature.isBeta ? "\(description) \(l10n.s.betaFeatureWarning)" : description
+    }
+}
+
+/// A row that opens a subpage, with its chevron.
+struct MonitorSubpageRow: View {
+    let symbol: String
+    let title: String
+    let caption: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                LatticeSymbol(symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 26, height: 26)
+                    .background(Color.accentColor.opacity(0.12),
+                                in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .foregroundStyle(.primary)
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
-    private var alertsCard: some View {
-        SettingsCard(title: FeatureStrings.monitorAlerts(l10n.language).section) {
-            MonitorAlertsControls(compact: false)
-        }
-    }
-
-    private var panelCard: some View {
-        SettingsCard {
-            MonitorPanelConfig()
-            SettingsRow(symbol: "arrow.up.to.line", title: GraphScaleStrings.localized(l10n.language).title) {
-                Toggle(GraphScaleStrings.localized(l10n.language).title, isOn: $graphScale).labelsHidden()
-            }
-        }
-    }
-
-    private var fanControlCard: some View {
-        let fanStrings = FeatureStrings.fanControl(l10n.language)
-        return SettingsCard {
-            SettingsRow(symbol: "fanblades.fill", title: fanStrings.title, badge: l10n.s.betaBadge,
-                        caption: fanStrings.settingsCaption) {
-                Toggle(fanStrings.title, isOn: $showFanControl)
-                    .labelsHidden()
-                    .onChange(of: showFanControl) { _, _ in
-                        FeatureRuntime.shared.sync([.fanControl])
-                    }
-            }
-            Text(l10n.s.betaFeatureWarning)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.leading, settingsRowTextInset)
-        }
     }
 }

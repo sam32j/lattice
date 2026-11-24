@@ -27,10 +27,12 @@ extension MouseSettings {
                     SettingsToggleRow(title: l10n.s.focusFollowsMouseRaise, isOn: $focusFollowsMouseRaise)
                     if !focusFollowsMouseRaise {
                         SettingsToggleRow(title: l10n.s.focusFollowsMouseWaitForStop, isOn: $focusFollowsMouseWaitForStop)
+                            .transition(.settingsReveal)
                     }
                     MouseExceptionsList(scope: .focusFollowsMouse,
                                         title: InputSettingsStrings.focusFollowsMouseExceptionsTitle(l10n.language))
                 }
+                .transition(.settingsReveal)
             }
         }
     }
@@ -63,6 +65,7 @@ extension MouseSettings {
             }
             if mouseNavigationEnabled {
                 MouseExceptionsList(scope: .navigation)
+                    .transition(.settingsReveal)
             }
         }
     }
@@ -93,6 +96,7 @@ extension MouseSettings {
                     }
                     .help(mouseClickDebounceText.windowCaption)
                 }
+                .transition(.settingsReveal)
             }
         }
     }
@@ -169,9 +173,11 @@ extension MouseSettings {
                                 .font(.caption)
                                 .foregroundStyle(.orange)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .transition(.settingsReveal)
                         }
                         MouseExceptionsList(scope: .middleClick)
                     }
+                    .transition(.settingsReveal)
                 }
             }
             .padding(.leading, settingsRowTextInset)

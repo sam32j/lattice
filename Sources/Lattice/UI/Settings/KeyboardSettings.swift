@@ -25,6 +25,7 @@ struct KeyboardSettings: View {
     @ObservedObject var debounce = KeyboardDebounceService.shared
     @ObservedObject var superKey = SuperKeyService.shared
     @ObservedObject var musicBlocker = MusicLaunchBlocker.shared
+    @ObservedObject var brightness = BrightnessService.shared
 
     // MARK: - Quit & Close Protection State
     @AppStorage(DefaultsKey.quitProtectionQuitEnabled) var quitEnabled = false
@@ -44,6 +45,7 @@ struct KeyboardSettings: View {
     @AppStorage(DefaultsKey.quitProtectionCloseShowFeedback) var closeShowFeedback = true
 
     @AppStorage(DefaultsKey.musicBlockEnabled) var musicBlockEnabled = false
+    @AppStorage(DefaultsKey.keyboardBrightnessShortcutsEnabled) var keyboardLightShortcutsEnabled = false
 
     // MARK: - Keyboard Debounce State
     @AppStorage(DefaultsKey.keyboardDebounceEnabled) var debounceEnabled = false
@@ -88,6 +90,7 @@ struct KeyboardSettings: View {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
                     }
+                    .transition(.settingsReveal)
                 }
             }
             .frame(maxWidth: 760)
@@ -108,6 +111,9 @@ struct KeyboardSettings: View {
             musicBlockEnabled, musicBlocker.monitoringFailed, permissions.accessibility])
         .settingsExpansionAnimation(value: [quitMode, closeMode, quitScope, closeScope])
         .settingsExpansionAnimation(value: keyWindows.map(\.keyCode))
+        // The keyboard light card's slider and shortcut warning.
+        .settingsExpansionAnimation(value: [brightness.keyboardLightEnabled != nil,
+            keyboardLightShortcutsEnabled && brightness.keyboardBrightnessShortcutRegistrationFailed])
     }
 
 }

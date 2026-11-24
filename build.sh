@@ -306,6 +306,7 @@ if (( TEST )); then
         Sources/Lattice/Core/ShortcutConflictAlert.swift
         Sources/Lattice/Services/QuickTools/CaptureSaveNaming.swift
         Sources/Lattice/Services/QuickTools/CapturePresentationRouting.swift
+        Sources/Lattice/Services/SystemMonitor/SystemMonitorOpenRouting.swift
         Sources/Lattice/Core/Defaults.swift
         Sources/Lattice/Core/LauncherShortcutTarget.swift
         Sources/Lattice/Core/PermanentInputMigration.swift
@@ -479,8 +480,9 @@ if (( TEST )); then
         Sources/Lattice/Core/SettingsPageStrings.swift
         Sources/Lattice/Core/BatteryTimeStrings.swift
         Sources/Lattice/Core/CPUCoreStrings.swift
-        Sources/Lattice/Core/MonitorLayoutStrings.swift
         Sources/Lattice/Core/KeepAwakeStrings.swift
+        Sources/Lattice/Core/StayAwakeSettingsStrings.swift
+        Sources/Lattice/Core/SystemMonitorSettingsStrings.swift
         Sources/Lattice/Core/BluetoothSleepStrings.swift
         Sources/Lattice/Core/FanControlStrings.swift
         Sources/Lattice/Core/ConnectedDevicesStrings.swift
@@ -550,6 +552,9 @@ if (( TEST )); then
         Sources/Lattice/Core/ReleaseChangeAliases.swift
         Sources/Lattice/Core/WhatsNewStrings.swift
         Sources/Lattice/Core/URLCleaning.swift
+        Sources/Lattice/Core/URLSanitizerRules.swift
+        Sources/Lattice/Core/URLSanitizerSiteDraft.swift
+        Sources/Lattice/Core/URLSanitizerStrings.swift
         Sources/Lattice/Services/URLCleanerLinkMetadata.swift
         Sources/Lattice/Services/GeneralPasteboardAccess.swift
         Sources/Lattice/Services/Clipboard/ClipboardHistoryWrite.swift
@@ -692,7 +697,6 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/ScreenshotPinFilePromise.swift
         Sources/Lattice/Services/QuickTools/ScreenshotPinDragView.swift
         Sources/Lattice/Core/ScreenshotPinStrings.swift
-        Sources/Lattice/UI/Settings/MonitorToken.swift
         Sources/Lattice/Services/QuickTools/ScreenshotRenderer.swift
         Sources/Lattice/UI/Screenshot/ScreenshotEditorResizeCursor.swift
         Sources/Lattice/Services/QuickTools/RecentCaptureRetention.swift
@@ -731,6 +735,7 @@ if (( TEST )); then
         Sources/Lattice/Core/KeepAwakeHubStrings.swift
         Sources/Lattice/Core/HubCustomizationStrings.swift
         Sources/Lattice/Services/LatticeHub/KeepAwakeHubStatus.swift
+        Sources/Lattice/Services/StayAwakeSettingsSupport.swift
         Sources/Lattice/Core/KeepAwakeAppearance.swift
         Sources/Lattice/Services/KeepAwakeTimeFormat.swift
         Sources/Lattice/Services/KeepAwakeAssertions.swift
@@ -766,7 +771,6 @@ if (( TEST )); then
         Sources/Lattice/Services/WindowLayout/WindowGestureSupport.swift
         Sources/Lattice/Core/WindowDirectionalStrings.swift
         Sources/Lattice/Core/PointerDisplayStrings.swift
-        Sources/Lattice/Core/GraphScaleStrings.swift
         Sources/Lattice/Core/NotchLowBatteryStrings.swift
         Sources/Lattice/Services/CleaningMode/CleaningUnlockCounter.swift
         Sources/Lattice/Services/CleaningMode/CleaningMouseReleaseGate.swift

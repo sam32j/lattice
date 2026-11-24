@@ -38,6 +38,7 @@ extension MouseSettings {
             }
             if horizontalScrollEnabled {
                 modifierKeys
+                    .transition(.settingsReveal)
             }
         }
     }
@@ -75,23 +76,26 @@ extension MouseSettings {
                     }
             }
             if smoothScrollEnabled {
-                let presets = InputSettingsStrings.scrollPresets(l10n.language)
-                VStack(alignment: .leading, spacing: 10) {
-                    presetRow(l10n.s.smoothScrollStepLabel, value: $smoothScrollStep,
-                              stops: SmoothScrollSupport.stepPresets,
-                              names: [presets.slow, presets.normal, presets.fast, presets.faster],
-                              sanitize: SmoothScrollSupport.sanitizedStep)
-                    presetRow(l10n.s.smoothScrollResponseLabel, caption: presets.responseCaption,
-                              value: $smoothScrollResponse,
-                              stops: SmoothScrollSupport.responsePresets,
-                              names: [presets.snappy, presets.balanced, presets.silky],
-                              sanitize: SmoothScrollSupport.sanitizedResponse)
-                    presetRow(l10n.s.smoothScrollCoastLabel, caption: presets.coastCaption,
-                              value: $smoothScrollCoast,
-                              stops: SmoothScrollSupport.coastPresets,
-                              names: [presets.none, presets.short, presets.medium, presets.long],
-                              sanitize: SmoothScrollSupport.sanitizedCoast)
+                VStack(alignment: .leading, spacing: 12) {
+                    let presets = InputSettingsStrings.scrollPresets(l10n.language)
+                    VStack(alignment: .leading, spacing: 10) {
+                        presetRow(l10n.s.smoothScrollStepLabel, value: $smoothScrollStep,
+                                  stops: SmoothScrollSupport.stepPresets,
+                                  names: [presets.slow, presets.normal, presets.fast, presets.faster],
+                                  sanitize: SmoothScrollSupport.sanitizedStep)
+                        presetRow(l10n.s.smoothScrollResponseLabel, caption: presets.responseCaption,
+                                  value: $smoothScrollResponse,
+                                  stops: SmoothScrollSupport.responsePresets,
+                                  names: [presets.snappy, presets.balanced, presets.silky],
+                                  sanitize: SmoothScrollSupport.sanitizedResponse)
+                        presetRow(l10n.s.smoothScrollCoastLabel, caption: presets.coastCaption,
+                                  value: $smoothScrollCoast,
+                                  stops: SmoothScrollSupport.coastPresets,
+                                  names: [presets.none, presets.short, presets.medium, presets.long],
+                                  sanitize: SmoothScrollSupport.sanitizedCoast)
+                    }
                 }
+                .transition(.settingsReveal)
             }
         }
     }
@@ -142,6 +146,7 @@ extension MouseSettings {
                         }
                     }
                 }
+                .transition(.settingsReveal)
             }
         }
     }

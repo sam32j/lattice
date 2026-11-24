@@ -91,12 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             LatticeHubService.shared.toggle(forceFloating: true, anchoredBelow: anchorRect)
         }
         statusController.onRightClick = { [weak self] button in
-            if AppFeature.keepAwake.isAvailable
-                && UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeRightClickToggle) {
-                KeepAwakeManager.shared.toggle()
-            } else {
-                self?.showContextMenu(from: button)
-            }
+            self?.showContextMenu(from: button)
         }
         statusController.onMetricClick = { [weak self] metric, button in
             self?.showMetricPanel(for: metric, anchoredTo: button)
@@ -127,9 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         HotkeyManager.shared.syncWithPreferences()
         QuickTogglesService.shared.syncWithPreferences()
 
-        KeepAwakeManager.shared.recoverIfNeeded {
-            KeepAwakeManager.shared.activateOnLaunchIfNeeded()
-        }
+        KeepAwakeManager.shared.recoverIfNeeded()
         FanControlService.recoverIfNeeded()
         SpacesOrderHold.recoverIfNeeded()
         // One binding per feature: only available features are touched, so a
@@ -374,11 +367,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func showMetricPanel(for metric: MenuBarMetric, anchoredTo button: NSStatusBarButton) {
         let detailKind = metric.detailKind
-        if NotchService.shared.acceptsSystemFeedback {
-            NotchService.shared.showMetric(detailKind, toggle: true)
-        } else {
-            LatticeHubService.shared.toggle()
+        let destination = SystemMonitorOpenRouting.destination(
+            preference: SystemMonitorOpenRouting.preference(),
+            islandAvailable: NotchService.shared.acceptsSystemFeedback,
+            menuBarHidden: Self.menuBarHidden,
+            latticePreference: LauncherShortcutTarget.selected())
+        switch destination {
+        case .dynamicIsland:
+            NotchService.shared.showMetricFromMenuBar(detailKind)
+        case .floatingWindow:
+            // The HUD opens on the same reading, as stepping into it from
+            // the Hub's System tool would, sized for it.
+            LatticeHubService.shared.toggleSystemMetric(detailKind, anchoredBelow: button.window?.frame)
         }
+    }
+
+    /// Whether the menu bar hides itself: the person's own auto-hide
+    /// setting, or the front app's full screen or presentation options.
+    private static var menuBarHidden: Bool {
+        if !NSApp.currentSystemPresentationOptions.intersection([.autoHideMenuBar, .hideMenuBar]).isEmpty {
+            return true
+        }
+        return UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?["_HIHideMenuBar"] as? Bool == true
     }
 
     @objc private func appBecameActive() {
@@ -698,7 +708,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                   item.menu == nil, item.isVisible,
                   NSEvent.pressedMouseButtons == 0,
                   Date() < deadline,
-                  !UserDefaults.standard.bool(forKey: DefaultsKey.menuBarHideIconWithMetrics),
+                  // An icon the person chose to hide (General > Show menu bar
+                  // icon) is not one to recover.
+                  !UserDefaults.standard.bool(forKey: DefaultsKey.notchHidesMenuBarIcon),
                   NSScreen.screens.map(\.frame) == screenFrames,
                   NSMenu.menuBarVisible(),
                   NSApp.currentSystemPresentationOptions.intersection(

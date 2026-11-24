@@ -96,7 +96,7 @@ extension KeyboardSettings {
                     .labelsHidden()
                     .onChange(of: enabled.wrappedValue) { _, value in
                         quitService.syncWithPreferences()
-                        features.finishAvailabilityChange()
+                        settingsFinishAvailabilityChange()
                         guard value, !permissions.accessibility else { return }
                         permissions.requestAccessibility()
                     }
@@ -184,6 +184,7 @@ extension KeyboardSettings {
                 exceptionsSection(for: shortcut, scope: currentScope, enabled: enabled.wrappedValue)
 
                 }
+                .transition(.settingsReveal)
             }
         }
     }
@@ -202,6 +203,7 @@ extension KeyboardSettings {
                           onAdd: { quitService.addException($0, for: shortcut) },
                           onRemove: { quitService.removeException($0, for: shortcut) })
                 .disabled(!enabled)
+                .transition(.settingsReveal)
         }
     }
 

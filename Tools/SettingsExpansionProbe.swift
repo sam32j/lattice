@@ -45,8 +45,9 @@ private struct ExpansionProbeView: View {
                         MeasuredShape { measurements.recordControl($0) }
                             .fill(.red).frame(height: 40)
                         Color.green.frame(height: 40)
-                        if state.nested { Color.orange.frame(height: 40) }
+                        if state.nested { Color.orange.frame(height: 40).transition(.settingsReveal) }
                     }
+                    .transition(.settingsReveal)
                 }
             }
             .padding(16)

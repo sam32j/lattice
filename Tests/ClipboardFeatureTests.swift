@@ -80,9 +80,10 @@ enum ClipboardFeatureTests {
         struct PollResult {
             let changeCount: Int
             let cleaned: URLCleaning.Result?
+            var original: String? = nil
         }
         static let urlType = AppKit.NSPasteboard.PasteboardType("public.url")
-        static let rules = URLCleaning.Rules.none
+        static let rules = URLCleaning.Rules.builtIn
     }
 
     static func run(_ suite: TestSuite) {
@@ -193,6 +194,7 @@ enum ClipboardFeatureTests {
                      && cleanerBoard.string(forType: .source) == nil,
                      "a rewritten copy that named no app gains no mark, so the app that copied it is still credited")
         URLCleanerMetadataTests.run(suite)
+        URLSanitizerTests.run(suite)
         cleanerBoard.releaseGlobally()
         func expectEqual(_ actual: String, _ expected: String, _ label: String,
                          file: StaticString = #filePath, line: UInt = #line) {
@@ -993,8 +995,6 @@ enum ClipboardFeatureTests {
                    && !layoutStrings.edgeSnapWaitingForSystem.contains("—"),
                    "\(language.rawValue) window edge snap controls are localized")
             let alertStrings = FeatureStrings.monitorAlerts(language)
-            suite.expect(alertStrings.caption.contains("12"),
-                   "\(language.rawValue) monitor alert caption explains the sustained alert window")
             expectFormat(alertStrings.cpuBodyFormat, ["d"], "\(language.rawValue) CPU alert format")
             expectFormat(alertStrings.cpuTemperatureBodyFormat, ["@"],
                          "\(language.rawValue) CPU temperature alert format")
@@ -1003,9 +1003,9 @@ enum ClipboardFeatureTests {
             expectFormat(alertStrings.batteryTemperatureBodyFormat, ["@"],
                          "\(language.rawValue) battery temperature alert format")
         }
-        suite.expect(FeatureStrings.monitorAlerts(.enUS).cooldown == "Repeat the same alert after",
+        suite.expect(FeatureStrings.monitorAlerts(.enUS).cooldown == "Remind again after",
                "English monitor repeat control is explicit")
-        suite.expect(FeatureStrings.monitorAlerts(.ptBR).cooldown == "Repetir o mesmo alerta depois de",
+        suite.expect(FeatureStrings.monitorAlerts(.ptBR).cooldown == "Lembrar de novo após",
                "Portuguese monitor repeat control is explicit")
 
         // MARK: Settings search navigation

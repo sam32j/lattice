@@ -52,12 +52,13 @@ extension AppUpdatesListView {
                                                 onClear: homebrew.clearLog,
                                                 onOpenTerminal: homebrew.openTerminalFallback)
                         .padding(.top, 6)
+                        .transition(.settingsReveal)
                 }
             }
             .padding(18)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // The one driver for the notify row's accordion, whichever window or
+        // The one driver for the notify row's reveal, whichever window or
         // control changed the frequency.
         .settingsExpansionAnimation(value: showsNotifyRow)
         .sheet(isPresented: $showingALS) {

@@ -27,23 +27,25 @@ extension AppUpdatesListView {
 
                 // The page's settingsExpansionAnimation, keyed on the same
                 // condition, grows the card and moves the sections below.
-                VStack(alignment: .leading, spacing: 0) {
-                    preferenceDivider
-                    HStack(alignment: .center) {
-                        Text(text.notifyToggle)
-                            .font(.system(size: 13, weight: .regular))
-                        Spacer()
-                        Toggle(text.notifyToggle, isOn: notifyDisplayBinding)
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                            .disabled(isNotifyControlDisabled)
-                            .opacity(isNotifyControlDisabled ? 0.45 : 1.0)
+                if showsNotifyRow {
+                    VStack(alignment: .leading, spacing: 0) {
+                        preferenceDivider
+                        HStack(alignment: .center) {
+                            Text(text.notifyToggle)
+                                .font(.system(size: 13, weight: .regular))
+                            Spacer()
+                            Toggle(text.notifyToggle, isOn: notifyDisplayBinding)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
+                                .disabled(isNotifyControlDisabled)
+                                .opacity(isNotifyControlDisabled ? 0.45 : 1.0)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .transition(.settingsReveal)
                 }
-                .settingsCollapsible(isExpanded: showsNotifyRow)
 
                 preferenceDivider
 

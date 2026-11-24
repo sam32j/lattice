@@ -16,8 +16,16 @@ extension SettingsView {
         case .notchMascot: NotchMascotSettings()
         case .radialMenu: RadialMenuSettings()
         case .commandBar: FeatureConfigurationPage(feature: .commandBar) { CommandBarSettings() }
-        case .energy: DisplaySettings(focus: router.destination.sectionAnchor)
+        case .energy:
+            if router.destination.sectionAnchor == .keepAwake {
+                FeatureActivationPage(feature: .keepAwake, options: { AnyView(StayAwakeSettingsMenu()) }) {
+                    StayAwakeSettings()
+                }
+            } else {
+                DisplaySettings(focus: router.destination.sectionAnchor)
+            }
         case .monitor: MonitorSettings()
+        case .monitorMenuBar: MonitorMenuBarSettings()
         case .mouse: MouseSettings()
         case .dock: DockSettings()
         case .keyboard: KeyboardSettings()
@@ -28,7 +36,7 @@ extension SettingsView {
                                   accessory: { AnyView(KillProcessRefreshButton()) }) {
                 KillProcessView(surface: .settings)
             }
-        case .urlCleaner: URLCleanerSettings()
+        case .urlCleaner: URLSanitizerSettings()
         case .cleaner: FeatureActivationPage(feature: .cleaner) { CleanerView() }
         case .homebrew: FeatureActivationPage(feature: .homebrew) { HomebrewSettings() }
         case .appUpdates: FeatureActivationPage(feature: .appUpdates) { AppUpdatesSettings() }

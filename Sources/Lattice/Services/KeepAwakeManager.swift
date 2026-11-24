@@ -24,8 +24,13 @@ final class KeepAwakeManager: ObservableObject {
     @Published var sessionTrigger: SessionTrigger?
     /// The preset a manual session started from; nil for an end time or automation.
     @Published var sessionMinutes: Int?
+    /// When the running session started, for its share of time used.
+    @Published var sessionStartDate: Date?
     @Published var runningAppBundleIDs: [String] = []
     @Published var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()
+    /// The enabled conditions that hold right now, whether or not a session
+    /// runs, so Settings can mark each one Now or Not now.
+    @Published var liveAutomationConditions = Set<KeepAwakeAutomationCondition>()
     @Published var clamshellActive = false {
         didSet {
             guard clamshellActive != oldValue else { return }
@@ -54,18 +59,6 @@ final class KeepAwakeManager: ObservableObject {
                 clamshellSetupInProgress = false
                 clamshellSetupID = nil
             }
-        }
-    }
-
-    /// Persistent preference: dims the built-in display to zero while the
-    /// closed-lid mode is actually in effect, restoring the captured
-    /// brightness when the lid opens again.
-    @Published var dimScreenOnLidClose: Bool {
-        didSet {
-            guard dimScreenOnLidClose != oldValue else { return }
-            UserDefaults.standard.set(dimScreenOnLidClose, forKey: DefaultsKey.dimScreenOnLidClose)
-            if !dimScreenOnLidClose { applyDimmingAction(LidDimmingSupport.restoring(saved: savedDisplayBrightness)) }
-            syncLidDimmingObserver()
         }
     }
 
@@ -112,6 +105,5 @@ final class KeepAwakeManager: ObservableObject {
 
     private init() {
         clamshellPreferred = UserDefaults.standard.bool(forKey: DefaultsKey.clamshellPreferred)
-        dimScreenOnLidClose = UserDefaults.standard.bool(forKey: DefaultsKey.dimScreenOnLidClose)
     }
 }

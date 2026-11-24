@@ -208,22 +208,11 @@ struct Strings {
     let keepAwakeTitle: String
     let keepAwakeEndsIn: String        // + remaining
     let keepAwakeUntilDisabled: String
-    let keepAwakeNormalRules: String
     let keepAwakeUntilLabel: String
     let keepAwakeUntilStart: String
-    let keepAwakeOptions: String
-    let keepAwakeMouseJiggle: String
-    let keepAwakeMouseJiggleCaption: String
-    let keepAwakeMouseJiggleInterval: String
     let durationLabel: String
-    let clamshellTitle: String
-    let clamshellOnCaption: String
-    let clamshellNeedsSession: String
-    let clamshellReady: String
-    let clamshellNeedsPassword: String
 
     // MARK: Panel — system monitor
-    let systemSection: String
     let temperatures: String
     let cpuLabel: String
     let gpuLabel: String
@@ -290,25 +279,16 @@ struct Strings {
     let launchAtLogin: String
     let languageLabel: String
     let menuBarSection: String
-    let showCountdown: String
     let globalHotkeySection: String
     let hotkeyToggle: String
 
     // MARK: Settings — energy
     let sessionSection: String
-    let defaultDurationLabel: String
-    let keepAwakeAutoStart: String
-    let keepAwakeAutoStartCaption: String
     let batteryProtectionSection: String
-    let batteryDisableBelow: String
     let batteryNever: String
-    let batteryProtectionCaption: String
     let clamshellSection: String
     let configuring: String
     let sudoersFailed: String
-    let clamshellExplanation: String
-    let dimScreenOnLidCloseTitle: String
-    let dimScreenOnLidCloseCaption: String
 
     // MARK: Settings — mouse
     let scrollSection: String
@@ -479,8 +459,6 @@ struct Strings {
 
     // MARK: Feature — URL cleaner
     let urlCleanerName: String
-    let urlCleanerEnable: String
-    let urlCleanerEnableCaption: String
     let urlCleanerActiveNow: String
     let urlCleanerManualTitle: String
     let urlCleanerInputPlaceholder: String
@@ -492,7 +470,6 @@ struct Strings {
     let urlCleanerNoChange: String
     let urlCleanerCleaned: String
     let urlCleanerCopied: String
-    let urlCleanerLocalNote: String
 
     // MARK: Feature — Homebrew manager
     let homebrewName: String
@@ -787,7 +764,6 @@ struct Strings {
     let mixerVolumeKeyStepStandard: String
     let mixerVolumeKeyStepSmaller: String
     let mixerAppVolumesTitle: String
-    let mixerNoAppPlaying: String
     let mixerShowInactiveAppsFormat: String
     let mixerHideInactiveApps: String
     let mixerOutputFollowSystem: String
@@ -841,10 +817,7 @@ struct Strings {
 
     // MARK: Settings — monitor / menu bar metrics
     let tabMonitor: String
-    let monitorMenuBarSection: String
     let monitorMenuBarCaption: String
-    let monitorCombineTemperatures: String
-    let monitorCombineTemperaturesCaption: String
     let monitorSeparateMenuBarMetrics: String
     let monitorSeparateMenuBarMetricsCaption: String
     let monitorNetworkUploadFirst: String
@@ -852,11 +825,6 @@ struct Strings {
     let monitorShowMemory: String
     let monitorShowNetwork: String
     let monitorShowPowerLabel: String
-    let monitorIntervalLabel: String
-    let monitorInterval1: String
-    let monitorInterval2: String
-    let monitorInterval5: String
-    let monitorPanelSection: String
     let panelNavigationMode: String
     let panelNavigationCaption: String
     let panelFooterSections: String
@@ -866,7 +834,6 @@ struct Strings {
 
     // MARK: Panel — network
     let networkSection: String
-    let networkIPAddresses: String
     let networkLocalIP: String
     let networkDownload: String
     let networkUpload: String
@@ -913,9 +880,6 @@ struct Strings {
 
     // MARK: Panel — power
     let powerSection: String
-    let powerSystem: String
-    let powerAdapter: String
-    let powerBattery: String
     let powerCharging: String
     let powerOnBattery: String
     let powerPluggedIn: String
@@ -927,7 +891,6 @@ struct Strings {
     let monitorShowBatteryTemperature: String
     let monitorShowPeripheralBattery: String
     let peripheralBatteryNoDevices: String
-    let monitorGraphsSection: String
 
     // MARK: Update notification + menu bar setup
     let updateBannerTitle: String
@@ -938,8 +901,6 @@ struct Strings {
     let menuBarSpacingLabel: String
     let menuBarSpacingStandard: String
     let menuBarSpacingCompact: String
-    let menuBarHideIconToggle: String
-    let menuBarHideIconCaption: String
     let monitorLabelStyleLabel: String
     let menuBarLabelStyleCompact: String
     let menuBarLabelStyleClassic: String
@@ -950,8 +911,6 @@ struct Strings {
     let memoryStyleBoth: String
     // MARK: System uptime, battery health, speed test
     let systemUptime: String
-    let batteryCharge: String
-    let powerHealth: String
     let powerCycles: String
     let speedTestRun: String
     let speedTestAgain: String
@@ -965,15 +924,8 @@ struct Strings {
     let panelHideItem: String
     let panelShowItem: String
     let panelHiddenItem: String
-    let monitorItemUptime: String
-    let monitorItemNetSpeed: String
-    let monitorItemNetTotals: String
-    let monitorItemNetTest: String
     let monitorItemDiskUsage: String
     let monitorItemDiskActivity: String
-    let monitorItemDiskSMART: String
-    let monitorItemDiskProtection: String
-    let monitorItemDiskTools: String
     let monitorPanelConfigHint: String
     let monitorOrderHint: String
 
@@ -1121,24 +1073,6 @@ struct Strings {
     let monitorOpenActivityMonitor: String
     let dockClickHide: String
     let dockClickHideCaption: String
-    let monitorMemoryMetricLabel: String
-    let memoryMetricUsed: String
-    let memoryMetricApp: String
-    let keepAwakeRightClickToggle: String
-    let keepAwakeRightClickToggleCaption: String
-    let urlCleanerRulesTitle: String
-    let urlCleanerRulesCaption: String
-    let urlCleanerRulesCoverageCaption: String
-    let urlCleanerRulesAllSites: String
-    let urlCleanerRulesCountSingular: String
-    let urlCleanerRulesCountPluralFormat: String   // + count
-    let urlCleanerRulesAddSite: String
-    let urlCleanerRulesParameterPlaceholder: String
-    let urlCleanerRulesMatchCaption: String
-    let urlCleanerRulesAddButton: String
-    let urlCleanerRulesRemoveButton: String
-    let urlCleanerRulesRemoveSiteButton: String
-    let urlCleanerRulesRestoreSiteButton: String
     let urlCleanerRemovedFormat: String            // + comma separated names
     let switcherSearchPlaceholder: String
     let invertVerticalScroll: String
@@ -1236,21 +1170,10 @@ extension Strings {
         keepAwakeTitle: "Ficar acordado",
         keepAwakeEndsIn: "Termina em",
         keepAwakeUntilDisabled: "Ativo até você desativar",
-        keepAwakeNormalRules: "O Mac segue as regras normais de energia",
         keepAwakeUntilLabel: "Até",
         keepAwakeUntilStart: "Iniciar",
-        keepAwakeOptions: "Opções",
-        keepAwakeMouseJiggle: "Mover cursor levemente",
-        keepAwakeMouseJiggleCaption: "Durante uma sessão, move o cursor um pouco no intervalo escolhido.",
-        keepAwakeMouseJiggleInterval: "Intervalo",
         durationLabel: "Duração",
-        clamshellTitle: "Continuar com a tampa fechada",
-        clamshellOnCaption: "Suspensão totalmente desativada. Atenção à energia",
-        clamshellNeedsSession: "Será aplicada sempre que “Manter acordado” estiver ativo",
-        clamshellReady: "Pronto. Liga e desliga sem senha",
-        clamshellNeedsPassword: "Pedirá a senha de administrador uma vez",
 
-        systemSection: "Sistema",
         temperatures: "Temperaturas",
         cpuLabel: "CPU",
         gpuLabel: "GPU",
@@ -1310,24 +1233,15 @@ extension Strings {
         launchAtLogin: "Iniciar junto com o Mac",
         languageLabel: "Idioma",
         menuBarSection: "Barra de menus",
-        showCountdown: "Mostrar tempo restante ao lado do ícone",
         globalHotkeySection: "Atalho global",
         hotkeyToggle: "Ativar atalho para “Manter acordado”",
 
         sessionSection: "Sessão",
-        defaultDurationLabel: "Duração padrão",
-        keepAwakeAutoStart: "Manter acordado ao abrir o Lattice",
-        keepAwakeAutoStartCaption: "Inicia uma sessão com a duração padrão.",
         batteryProtectionSection: "Proteção de bateria",
-        batteryDisableBelow: "Desativar com bateria abaixo de",
         batteryNever: "Nunca",
-        batteryProtectionCaption: "Evita que uma sessão esquecida drene a bateria do MacBook.",
         clamshellSection: "Tampa fechada",
         configuring: "Configurando…",
         sudoersFailed: "Não foi possível ativar a tampa fechada. Tente de novo.",
-        clamshellExplanation: "“Continuar com a tampa fechada” desativa completamente a suspensão enquanto “Manter acordado” estiver ativo e é revertido automaticamente quando a sessão termina ou o app é encerrado. Prefira usá-lo conectado à energia.",
-        dimScreenOnLidCloseTitle: "Escurecer a tela completamente",
-        dimScreenOnLidCloseCaption: "Escurece a tela quando a tampa fecha e restaura o brilho quando ela abre.",
 
         scrollSection: "Rolagem",
         invertMouseScroll: "Inverter rolagem do mouse",
@@ -1491,9 +1405,7 @@ extension Strings {
         uninstallerCommandBarFinderTitle: "Desinstalar aplicativo selecionado no Finder",
         uninstallerSelectionUnavailable: "Selecione um aplicativo que possa ser removido no Finder ou escolha outro na lista.",
 
-        urlCleanerName: "Limpar URL",
-        urlCleanerEnable: "Limpar URLs ao copiar",
-        urlCleanerEnableCaption: "Remove os parâmetros de rastreamento de um link assim que ele chega à área de transferência.",
+        urlCleanerName: "Limpador de URL",
         urlCleanerActiveNow: "Ativo agora",
         urlCleanerManualTitle: "Limpar agora",
         urlCleanerInputPlaceholder: "Cole uma URL",
@@ -1505,7 +1417,6 @@ extension Strings {
         urlCleanerNoChange: "Nada para limpar.",
         urlCleanerCleaned: "URL limpa.",
         urlCleanerCopied: "Copiado.",
-        urlCleanerLocalNote: "Local. Sem rede.",
 
         homebrewName: "Homebrew",
         homebrewEnableCaption: "Pesquise, instale e remova fórmulas e casks.",
@@ -1788,7 +1699,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Padrão",
         mixerVolumeKeyStepSmaller: "Menor",
         mixerAppVolumesTitle: "Volume dos apps",
-        mixerNoAppPlaying: "Nenhum app tocando",
         mixerShowInactiveAppsFormat: "Mostrar apps inativos (%d)",
         mixerHideInactiveApps: "Ocultar apps inativos",
         mixerOutputFollowSystem: "Padrão (seguir o sistema)",
@@ -1834,22 +1744,14 @@ extension Strings {
         releaseNotesFallback: "Esta atualização inclui as correções e melhorias mais recentes.",
 
         tabMonitor: "Monitor do Sistema",
-        monitorMenuBarSection: "Na barra de menus",
         monitorMenuBarCaption: "Escolha o que aparece ao lado do ícone na barra de menus.",
-        monitorCombineTemperatures: "Combinar uso e temperatura",
-        monitorCombineTemperaturesCaption: "Quando uso e temperatura do mesmo item estiverem ativos, mostra tudo em um bloco só.",
-        monitorSeparateMenuBarMetrics: "Separar métricas em itens próprios",
+        monitorSeparateMenuBarMetrics: "Mostrar leituras separadas",
         monitorSeparateMenuBarMetricsCaption: "Separa os blocos ativos na barra de menus e mantém uso e temperatura juntos quando combinar estiver ativo.",
         monitorNetworkUploadFirst: "Upload acima do download",
         monitorShowCPU: "CPU",
         monitorShowMemory: "Memória",
         monitorShowNetwork: "Rede",
         monitorShowPowerLabel: "Energia",
-        monitorIntervalLabel: "Atualizar a cada",
-        monitorInterval1: "1 segundo",
-        monitorInterval2: "2 segundos",
-        monitorInterval5: "5 segundos",
-        monitorPanelSection: "No painel",
         panelNavigationMode: "Navegar por seções no painel",
         panelNavigationCaption: "Mostra uma seção por vez. Escolha Lista para ver tudo em uma rolagem contínua.",
         panelFooterSections: "Seções",
@@ -1858,7 +1760,6 @@ extension Strings {
         betaFeatureWarning: "Beta. Você pode encontrar alguns bugs.",
 
         networkSection: "Rede",
-        networkIPAddresses: "Endereços IP",
         networkLocalIP: "IPv4 local",
         networkDownload: "Download",
         networkUpload: "Upload",
@@ -1903,9 +1804,6 @@ extension Strings {
         diskNoDisks: "Nenhum disco montado encontrado.",
 
         powerSection: "Energia",
-        powerSystem: "Sistema",
-        powerAdapter: "Adaptador",
-        powerBattery: "Bateria",
         powerCharging: "Carregando",
         powerOnBattery: "Na bateria",
         powerPluggedIn: "Na tomada",
@@ -1917,7 +1815,6 @@ extension Strings {
         monitorShowBatteryTemperature: "Temperatura da bateria",
         monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .ptBR),
         peripheralBatteryNoDevices: "Nenhum periférico encontrado",
-        monitorGraphsSection: "Gráficos",
 
         updateBannerTitle: "Atualização disponível",
         updateBannerAction: "Atualizar",
@@ -1927,8 +1824,6 @@ extension Strings {
         menuBarSpacingLabel: "Espaçamento na barra",
         menuBarSpacingStandard: "Padrão",
         menuBarSpacingCompact: "Compacto",
-        menuBarHideIconToggle: "Ocultar o ícone do app enquanto houver métricas",
-        menuBarHideIconCaption: "O ícone volta sozinho quando as métricas saem da barra e quando há algo a avisar (atualização pronta, “Manter acordado” ativo ou microfone silenciado).",
         monitorLabelStyleLabel: "Rótulos",
         menuBarLabelStyleCompact: "Compactos",
         menuBarLabelStyleClassic: "Clássicos",
@@ -1938,8 +1833,6 @@ extension Strings {
         memoryStylePercent: "%",
         memoryStyleBoth: "Ambos",
         systemUptime: "Ativo há",
-        batteryCharge: "Carga",
-        powerHealth: "Saúde da bateria",
         powerCycles: "Ciclos",
         speedTestRun: "Testar velocidade",
         speedTestAgain: "Testar de novo",
@@ -1952,15 +1845,8 @@ extension Strings {
         panelHideItem: "Ocultar do painel",
         panelShowItem: "Mostrar no painel",
         panelHiddenItem: "Oculto",
-        monitorItemUptime: "Tempo ativo",
-        monitorItemNetSpeed: "Velocidade ao vivo",
-        monitorItemNetTotals: "Totais da sessão",
-        monitorItemNetTest: "Teste de velocidade",
         monitorItemDiskUsage: "Uso do disco",
         monitorItemDiskActivity: "Atividade ao vivo",
-        monitorItemDiskSMART: "SMART",
-        monitorItemDiskProtection: "Proteção externa",
-        monitorItemDiskTools: "Ferramentas",
         monitorPanelConfigHint: "Abra um bloco para escolher o que ele mostra.",
         monitorOrderHint: "Arraste para reordenar as seções do painel e use o olho para mostrar ou ocultar cada uma.",
 
@@ -2098,24 +1984,6 @@ extension Strings {
         monitorOpenActivityMonitor: "Abrir o Monitor de Atividade",
         dockClickHide: "Clicar no Dock oculta o app",
         dockClickHideCaption: "O app ativo é ocultado ao clicar no ícone dele no Dock. Clique de novo para trazê-lo de volta.",
-        monitorMemoryMetricLabel: "Medir memória como",
-        memoryMetricUsed: "Memória usada",
-        memoryMetricApp: "Memória de apps",
-        keepAwakeRightClickToggle: "Clique com o botão direito no ícone da barra de menus para alternar “Manter acordado”",
-        keepAwakeRightClickToggleCaption: "Substitui o menu de contexto do clique com o botão direito.",
-        urlCleanerRulesTitle: "Regras de limpeza",
-        urlCleanerRulesCaption: "Um site anexa estes parâmetros aos próprios links de compartilhamento para rastrear de onde o link veio. Ligado, o nome é removido ao limpar um link; desligado, ele permanece. Os nomes que você adicionar podem ser excluídos.",
-        urlCleanerRulesCoverageCaption: "A lista cobre os diferentes caminhos de compartilhamento de um site (a página, o app, uma sala ao vivo), por isso é longa; um link real costuma carregar apenas dois a quatro deles.",
-        urlCleanerRulesAllSites: "Todos os sites",
-        urlCleanerRulesCountSingular: "1 parâmetro",
-        urlCleanerRulesCountPluralFormat: "%d parâmetros",
-        urlCleanerRulesAddSite: "Adicionar site",
-        urlCleanerRulesParameterPlaceholder: "Nome do parâmetro",
-        urlCleanerRulesMatchCaption: "Escreva o nome à esquerda do = , como utm_source. Um nome que corresponde tira aquele parâmetro do link e deixa o resto como está.",
-        urlCleanerRulesAddButton: "Adicionar",
-        urlCleanerRulesRemoveButton: "Excluir nome",
-        urlCleanerRulesRemoveSiteButton: "Desativar todas as regras deste site",
-        urlCleanerRulesRestoreSiteButton: "Ativar todas as regras deste site",
         urlCleanerRemovedFormat: "Removidos %@",
         switcherSearchPlaceholder: "Buscar",
         invertVerticalScroll: "Inverter rolagem vertical",
@@ -2214,21 +2082,10 @@ extension Strings {
         keepAwakeTitle: "Stay Awake",
         keepAwakeEndsIn: "Ends in",
         keepAwakeUntilDisabled: "Active until you turn it off",
-        keepAwakeNormalRules: "The Mac follows its normal energy rules",
         keepAwakeUntilLabel: "Until",
         keepAwakeUntilStart: "Start",
-        keepAwakeOptions: "Options",
-        keepAwakeMouseJiggle: "Move pointer slightly",
-        keepAwakeMouseJiggleCaption: "During a session, moves the pointer a little at the chosen interval.",
-        keepAwakeMouseJiggleInterval: "Interval",
         durationLabel: "Duration",
-        clamshellTitle: "Keep going with the lid closed",
-        clamshellOnCaption: "Sleep fully disabled. Mind the power",
-        clamshellNeedsSession: "Applied whenever “Keep awake” is active",
-        clamshellReady: "Ready. Toggles without a password",
-        clamshellNeedsPassword: "Will ask for the administrator password once",
 
-        systemSection: "System",
         temperatures: "Temperatures",
         cpuLabel: "CPU",
         gpuLabel: "GPU",
@@ -2288,24 +2145,15 @@ extension Strings {
         launchAtLogin: "Launch at login",
         languageLabel: "Language",
         menuBarSection: "Menu Bar",
-        showCountdown: "Show remaining time next to the icon",
         globalHotkeySection: "Global shortcut",
         hotkeyToggle: "Enable shortcut for “Keep awake”",
 
         sessionSection: "Session",
-        defaultDurationLabel: "Default duration",
-        keepAwakeAutoStart: "Keep Awake when Lattice opens",
-        keepAwakeAutoStartCaption: "Starts a session with the default duration.",
         batteryProtectionSection: "Battery protection",
-        batteryDisableBelow: "Disable when battery drops below",
         batteryNever: "Never",
-        batteryProtectionCaption: "Keeps a forgotten session from draining the MacBook battery.",
         clamshellSection: "Closed lid",
         configuring: "Configuring…",
         sudoersFailed: "Couldn’t turn on closed-lid mode. Try again.",
-        clamshellExplanation: "“Keep going with the lid closed” fully disables sleep while “Keep awake” is active and is reverted automatically when the session ends or the app quits. Prefer using it plugged in.",
-        dimScreenOnLidCloseTitle: "Dim the display to zero",
-        dimScreenOnLidCloseCaption: "Dims the display when the lid closes and brings the brightness back when it opens.",
 
         scrollSection: "Scrolling",
         invertMouseScroll: "Invert mouse scrolling",
@@ -2469,9 +2317,7 @@ extension Strings {
         uninstallerCommandBarFinderTitle: "Uninstall app selected in Finder",
         uninstallerSelectionUnavailable: "Select an app that can be removed in Finder, or choose another from the list.",
 
-        urlCleanerName: "Clean URL",
-        urlCleanerEnable: "Clean URLs as you copy them",
-        urlCleanerEnableCaption: "Removes tracking parameters from a link the moment it reaches the clipboard.",
+        urlCleanerName: "URL Sanitizer",
         urlCleanerActiveNow: "Active now",
         urlCleanerManualTitle: "Clean now",
         urlCleanerInputPlaceholder: "Paste a URL",
@@ -2483,7 +2329,6 @@ extension Strings {
         urlCleanerNoChange: "Nothing to clean.",
         urlCleanerCleaned: "URL cleaned.",
         urlCleanerCopied: "Copied.",
-        urlCleanerLocalNote: "Local. No network.",
 
         homebrewName: "Homebrew",
         homebrewEnableCaption: "Search, install and remove formulae and casks.",
@@ -2766,7 +2611,6 @@ extension Strings {
         mixerVolumeKeyStepStandard: "Standard",
         mixerVolumeKeyStepSmaller: "Smaller",
         mixerAppVolumesTitle: "App Volumes",
-        mixerNoAppPlaying: "No app playing",
         mixerShowInactiveAppsFormat: "Show inactive apps (%d)",
         mixerHideInactiveApps: "Hide inactive apps",
         mixerOutputFollowSystem: "Default (Follow System)",
@@ -2812,22 +2656,14 @@ extension Strings {
         releaseNotesFallback: "This update includes the latest fixes and improvements.",
 
         tabMonitor: "System Monitor",
-        monitorMenuBarSection: "In the menu bar",
         monitorMenuBarCaption: "Choose what appears next to the icon in the menu bar.",
-        monitorCombineTemperatures: "Combine usage and temperature",
-        monitorCombineTemperaturesCaption: "When usage and temperature for the same item are enabled, show them in one block.",
-        monitorSeparateMenuBarMetrics: "Separate metrics into their own items",
+        monitorSeparateMenuBarMetrics: "Show readings separately",
         monitorSeparateMenuBarMetricsCaption: "Separates active blocks in the menu bar and keeps usage and temperature together when combine is on.",
         monitorNetworkUploadFirst: "Upload above download",
         monitorShowCPU: "CPU",
         monitorShowMemory: "Memory",
         monitorShowNetwork: "Network",
         monitorShowPowerLabel: "Power",
-        monitorIntervalLabel: "Update every",
-        monitorInterval1: "1 second",
-        monitorInterval2: "2 seconds",
-        monitorInterval5: "5 seconds",
-        monitorPanelSection: "In the panel",
         panelNavigationMode: "Navigate panel by sections",
         panelNavigationCaption: "Shows one section at a time. Choose List to see everything in one continuous scroll.",
         panelFooterSections: "Sections",
@@ -2836,7 +2672,6 @@ extension Strings {
         betaFeatureWarning: "Beta. You may run into some bugs.",
 
         networkSection: "Network",
-        networkIPAddresses: "IP addresses",
         networkLocalIP: "Local IPv4",
         networkDownload: "Download",
         networkUpload: "Upload",
@@ -2881,9 +2716,6 @@ extension Strings {
         diskNoDisks: "No mounted disks found.",
 
         powerSection: "Power",
-        powerSystem: "System",
-        powerAdapter: "Adapter",
-        powerBattery: "Battery",
         powerCharging: "Charging",
         powerOnBattery: "On battery",
         powerPluggedIn: "Plugged in",
@@ -2895,7 +2727,6 @@ extension Strings {
         monitorShowBatteryTemperature: "Battery temperature",
         monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .enUS),
         peripheralBatteryNoDevices: "No devices found",
-        monitorGraphsSection: "Graphs",
 
         updateBannerTitle: "Update available",
         updateBannerAction: "Update",
@@ -2905,8 +2736,6 @@ extension Strings {
         menuBarSpacingLabel: "Menu bar spacing",
         menuBarSpacingStandard: "Standard",
         menuBarSpacingCompact: "Compact",
-        menuBarHideIconToggle: "Hide the app icon while metrics are shown",
-        menuBarHideIconCaption: "The icon returns by itself when metrics leave the bar and when there is something to signal (an update ready, “Keep awake” running or the microphone muted).",
         monitorLabelStyleLabel: "Labels",
         menuBarLabelStyleCompact: "Compact",
         menuBarLabelStyleClassic: "Classic",
@@ -2916,8 +2745,6 @@ extension Strings {
         memoryStylePercent: "%",
         memoryStyleBoth: "Both",
         systemUptime: "Up for",
-        batteryCharge: "Charge",
-        powerHealth: "Battery health",
         powerCycles: "Cycles",
         speedTestRun: "Speed test",
         speedTestAgain: "Test again",
@@ -2930,15 +2757,8 @@ extension Strings {
         panelHideItem: "Hide from panel",
         panelShowItem: "Show in panel",
         panelHiddenItem: "Hidden",
-        monitorItemUptime: "Uptime",
-        monitorItemNetSpeed: "Live speed",
-        monitorItemNetTotals: "Session totals",
-        monitorItemNetTest: "Speed test",
         monitorItemDiskUsage: "Disk usage",
         monitorItemDiskActivity: "Live activity",
-        monitorItemDiskSMART: "SMART",
-        monitorItemDiskProtection: "External protection",
-        monitorItemDiskTools: "Tools",
         monitorPanelConfigHint: "Open a block to choose what it shows.",
         monitorOrderHint: "Drag to reorder the panel sections and use the eye to show or hide each one.",
 
@@ -3076,24 +2896,6 @@ extension Strings {
         monitorOpenActivityMonitor: "Open Activity Monitor",
         dockClickHide: "Click the dock tile to hide the app",
         dockClickHideCaption: "The active app hides when you click its dock tile. Click again to bring it back.",
-        monitorMemoryMetricLabel: "Measure memory as",
-        memoryMetricUsed: "Memory Used",
-        memoryMetricApp: "App Memory",
-        keepAwakeRightClickToggle: "Right-click the menu bar icon to toggle Keep Awake",
-        keepAwakeRightClickToggleCaption: "Replaces the right-click context menu.",
-        urlCleanerRulesTitle: "Cleaning rules",
-        urlCleanerRulesCaption: "A site attaches these parameters to its own share links to track where the link came from. Switched on, a name is removed when a link is cleaned; switched off, it stays. Names you add can be deleted.",
-        urlCleanerRulesCoverageCaption: "The list covers a site’s different share paths (the web page, the app, a live room), which is why it is long; a real link usually carries only two to four of them.",
-        urlCleanerRulesAllSites: "All sites",
-        urlCleanerRulesCountSingular: "1 parameter",
-        urlCleanerRulesCountPluralFormat: "%d parameters",
-        urlCleanerRulesAddSite: "Add a site",
-        urlCleanerRulesParameterPlaceholder: "Parameter name",
-        urlCleanerRulesMatchCaption: "Write the name to the left of the = , like utm_source. A name that matches takes that one parameter out of the link and leaves the rest as it was.",
-        urlCleanerRulesAddButton: "Add",
-        urlCleanerRulesRemoveButton: "Delete name",
-        urlCleanerRulesRemoveSiteButton: "Turn off every rule for this site",
-        urlCleanerRulesRestoreSiteButton: "Turn on every rule for this site",
         urlCleanerRemovedFormat: "Removed %@",
         switcherSearchPlaceholder: "Search",
         invertVerticalScroll: "Invert vertical scrolling",
@@ -3151,24 +2953,6 @@ extension Strings {
     var uninstallerRefusedUnidentifiedFormat: String { "%@ can’t be uninstalled because it can’t be identified as an app." }
     var uninstallerPickerHiddenNote: String { "Apps that are part of macOS or made by Apple aren’t listed." }
 
-    var monitorMenuBarPreview: String {
-        switch L10n.shared.language {
-        case .ptBR: return "Prévia da barra de menus"
-        case .zhHans: return "菜单栏预览"
-        case .zhHK, .zhTW: return "選單列預覽"
-        case .fr: return "Aperçu de la barre des menus"
-        case .de: return "Vorschau der Menüleiste"
-        case .it: return "Anteprima della barra dei menu"
-        case .ja: return "メニューバーのプレビュー"
-        case .ko: return "메뉴 막대 미리보기"
-        case .ru: return "Предпросмотр строки меню"
-        case .sk: return "Náhľad lišty s ponukami"
-        case .es: return "Vista previa de la barra de menús"
-        case .tr: return "Menü çubuğu önizlemesi"
-        case .uk: return "Попередній перегляд смуги меню"
-        case .enUS: return "Menu bar preview"
-        }
-    }
 
     var secureInputSwitcherHeldFormat: String {
         switch L10n.shared.language {

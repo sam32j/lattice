@@ -80,8 +80,8 @@ final class CameraPreviewService: ObservableObject {
             || permissionResolvedAt.map { Date().timeIntervalSince($0) < 1 } == true)
     }
 
-    /// The notch calls this only from its explicit camera button. Ownership
-    /// transfers from the floating mirror; the two never capture together.
+    /// The notch's camera page calls this as it appears. Ownership transfers
+    /// from the floating preview; the two never capture together.
     func showEmbedded() {
         let notch = NotchService.shared
         guard SessionActivity.shared.isActive,
@@ -99,7 +99,12 @@ final class CameraPreviewService: ObservableObject {
 
     func toggle(fromNotch: Bool = false) {
         if isPresented {
+            let wasEmbedded = isEmbeddedPresented
             hide()
+            // Stopping from the shortcut leaves the island's camera page too,
+            // as the floating window closes, so the page never sits on a
+            // stopped preview.
+            if wasEmbedded { NotchService.shared.collapse() }
         } else {
             show(fromNotch: fromNotch)
         }

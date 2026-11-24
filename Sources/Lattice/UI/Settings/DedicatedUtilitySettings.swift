@@ -48,20 +48,23 @@ struct DedicatedUtilitySettings: View {
                         .toggleStyle(.switch)
                         .onChange(of: enabled) { _, _ in
                             FeatureRuntime.shared.sync([feature])
-                            FeatureRuntime.shared.finishAvailabilityChange()
+                            settingsFinishAvailabilityChange()
                         }
                 }
                 if childrenEnabled {
-                    if let shortcut {
-                        ShortcutPreferenceRow(role: shortcut, label: feature == .cameraPreview ? FeatureStrings.cameraPreview(l10n.language).openWithShortcut : UtilitySettingsCopy.open(title, l10n.language)) {
-                            FeatureRuntime.shared.sync([feature])
-                        }
-                        .padding(.leading, settingsRowTextInset)
-                    }
-                    if let destination {
-                        IslandDestinationSettings(destination: destination)
+                    VStack(alignment: .leading, spacing: 13) {
+                        if let shortcut {
+                            ShortcutPreferenceRow(role: shortcut, label: feature == .cameraPreview ? FeatureStrings.cameraPreview(l10n.language).openWithShortcut : UtilitySettingsCopy.open(title, l10n.language)) {
+                                FeatureRuntime.shared.sync([feature])
+                            }
                             .padding(.leading, settingsRowTextInset)
+                        }
+                        if let destination {
+                            IslandDestinationSettings(destination: destination)
+                                .padding(.leading, settingsRowTextInset)
+                        }
                     }
+                    .transition(.settingsReveal)
                 }
             }
             .padding(22)

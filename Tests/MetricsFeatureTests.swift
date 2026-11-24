@@ -46,7 +46,7 @@ enum MetricsFeatureTests {
         // written with a comma, and the panel wrote a point at everyone.
         MetricFormat.locale = Locale(identifier: "pt_BR")
         expectEqual(MetricFormat.bytes(1536), "1,5 KB", "a comma region reads its own decimal")
-        expectEqual(MetricFormat.temperature(21.4, unit: .celsius), "21 °C",
+        expectEqual(MetricFormat.temperature(21.4), "21 °C",
                     "a whole number is untouched by the region")
         MetricFormat.locale = Locale(identifier: "en_US_POSIX")
         expectEqual(MetricFormat.bytes(10 * 1024), "10 KB", "bytes 10K drops decimal")
@@ -90,67 +90,23 @@ enum MetricsFeatureTests {
         expectEqual(MetricFormat.bytesPerSecCompact(1023.6 * 1024), "1.0M", "compact promotes rounded megabyte edge")
         expectEqual(MetricFormat.bytesPerSecCompact(9.96 * 1024 * 1024), "10M", "compact drops redundant decimal at 10M")
 
-        expectEqual(MetricFormat.bitsPerSec(0), "0 bps", "bit rate zero")
-        expectEqual(MetricFormat.bitsPerSec(100), "800 bps", "bit rate sub-kilobit")
-        expectEqual(MetricFormat.bitsPerSec(1_500), "12 Kbps", "bit rate 12 Kbps")
-        expectEqual(MetricFormat.bitsPerSec(1_200_000), "9.6 Mbps", "bit rate 9.6 Mbps")
-        expectEqual(MetricFormat.bitsPerSec(125_000_000), "1.0 Gbps", "bit rate gigabit")
-        expectEqual(MetricFormat.bitsPerSec(124.9), "999 bps", "bit rate keeps 999 bps")
-        expectEqual(MetricFormat.bitsPerSec(124.95), "1.0 Kbps", "bit rate promotes the rounded kilobit edge")
-        expectEqual(MetricFormat.bitsPerSec(124_950), "1.0 Mbps", "bit rate promotes the rounded megabit edge")
-        expectEqual(MetricFormat.bitsPerSec(.infinity), "0 bps", "bit rate non-finite")
-
-        expectEqual(MetricFormat.networkRate(1_500, inBits: true), "12 Kbps", "network rate in bits")
-        expectEqual(MetricFormat.networkRate(1_500 * 1024, inBits: false), "1.5 MB/s", "network rate in bytes")
-        expectEqual(MetricFormat.networkRateCompact(40_000, inBits: true), "320Kb", "compact network rate in bits")
-        expectEqual(MetricFormat.networkRateCompact(320 * 1024, inBits: false), "320K", "compact network rate in bytes")
-
-        // Someone who never picked a unit keeps the bytes they always saw,
-        // and a stray value does not switch them to bits either.
-        let savedSpeedUnit = UserDefaults.standard.object(forKey: DefaultsKey.networkSpeedUnit)
-        UserDefaults.standard.removeObject(forKey: DefaultsKey.networkSpeedUnit)
-        expectEqual(MetricFormat.networkRateCompact(320 * 1024), "320K", "network rate keeps bytes with no unit saved")
-        UserDefaults.standard.set("bit", forKey: DefaultsKey.networkSpeedUnit)
-        expectEqual(MetricFormat.networkRate(1_500 * 1024), "1.5 MB/s", "an unknown network unit reads as bytes")
-        UserDefaults.standard.set(NetworkSpeedUnit.bits.rawValue, forKey: DefaultsKey.networkSpeedUnit)
-        expectEqual(MetricFormat.networkRateCompact(40_000), "320Kb", "network rate follows a saved choice of bits")
-        if let savedSpeedUnit {
-            UserDefaults.standard.set(savedSpeedUnit, forKey: DefaultsKey.networkSpeedUnit)
-        } else {
-            UserDefaults.standard.removeObject(forKey: DefaultsKey.networkSpeedUnit)
-        }
+        expectEqual(MetricFormat.networkRate(1_500 * 1024), "1.5 MB/s", "network rates read in bytes")
+        expectEqual(MetricFormat.networkRateCompact(320 * 1024), "320K", "compact network rates read in bytes")
 
         // The menu bar sizes the rate block from five monospaced characters
-        // after the arrow, the same in both units, so no compact rate may
-        // print longer in either one.
+        // after the arrow, so no compact rate may print longer.
         var widestRate = ""
         var sweptRate = 0.1
         while sweptRate < 1e14 {
-            for inBits in [false, true] {
-                let text = MetricFormat.networkRateCompact(sweptRate, inBits: inBits)
-                if text.count > widestRate.count { widestRate = text }
-            }
+            let text = MetricFormat.networkRateCompact(sweptRate)
+            if text.count > widestRate.count { widestRate = text }
             sweptRate *= 1.01
         }
         suite.expect(widestRate.count == 5, "compact network rates fit the reserved menu bar block, widest \(widestRate)")
 
-        let bitsCeiling = MetricFormat.networkGraphCeiling(2_000, inBits: true)
-        suite.expect(bitsCeiling == 2_500, "bit graph ceiling rounds in bits and plots in bytes")
-        expectEqual(MetricFormat.networkRate(bitsCeiling, inBits: true), "20 Kbps", "bit graph ceiling label")
-        let bytesCeiling = MetricFormat.networkGraphCeiling(1_500, inBits: false)
-        suite.expect(bytesCeiling == 2_048, "byte graph ceiling keeps the 1024 steps")
-        expectEqual(MetricFormat.networkRate(bytesCeiling, inBits: false), "2.0 KB/s", "byte graph ceiling label")
-
-        expectEqual(MetricFormat.bitsPerSecCompact(0), "0b", "bits zero")
-        expectEqual(MetricFormat.bitsPerSecCompact(.nan), "0b", "bits non-finite")
-        expectEqual(MetricFormat.bitsPerSecCompact(100), "800b", "bits sub-kilobit")
-        expectEqual(MetricFormat.bitsPerSecCompact(124.9), "999b", "bits keeps 999b")
-        expectEqual(MetricFormat.bitsPerSecCompact(124.95), "1.0Kb", "bits promotes rounded kilobit edge")
-        expectEqual(MetricFormat.bitsPerSecCompact(40_000), "320Kb", "bits 320Kb")
-        expectEqual(MetricFormat.bitsPerSecCompact(1_200_000), "9.6Mb", "bits 9.6Mb")
-        expectEqual(MetricFormat.bitsPerSecCompact(1_245_000), "10Mb", "bits drops redundant decimal at 10Mb")
-        expectEqual(MetricFormat.bitsPerSecCompact(124_950), "1.0Mb", "bits promotes rounded megabit edge")
-        expectEqual(MetricFormat.bitsPerSecCompact(1_000_000_000), "8.0Gb", "bits gigabit")
+        let bytesCeiling = MetricFormat.networkGraphCeiling(1_500)
+        suite.expect(bytesCeiling == 2_048, "the network graph ceiling keeps the 1024 steps")
+        expectEqual(MetricFormat.networkRate(bytesCeiling), "2.0 KB/s", "network graph ceiling label")
 
         // MARK: Disk helpers
 
@@ -631,23 +587,33 @@ enum MetricsFeatureTests {
                     "GPU usage readout falls quickly after transient load")
         suite.expectClose(MetricFormat.stabilizedGPUUsage(previous: nil, current: 1.4), 1.0,
                     "GPU usage readout clamps first sample")
-        expectEqual(MetricFormat.temperature(0, unit: .celsius), "0 °C", "celsius freezing")
-        expectEqual(MetricFormat.temperature(0, unit: .fahrenheit), "32 °F", "fahrenheit freezing")
-        expectEqual(MetricFormat.temperature(41, unit: .fahrenheit), "106 °F", "fahrenheit rounds")
-        expectEqual(MetricFormat.temperatureCompact(49.6, unit: .celsius), "50°", "compact celsius rounds")
-        expectEqual(MetricFormat.temperatureCompact(49.6, unit: .fahrenheit), "121°", "compact fahrenheit rounds")
-        expectEqual(MetricFormat.temperatureUnitSuffix(.celsius), "°C", "celsius suffix is explicit")
-        expectEqual(MetricFormat.temperatureUnitSuffix(.fahrenheit), "°F", "fahrenheit suffix is explicit")
+        expectEqual(MetricFormat.temperature(0), "0 °C", "temperatures read in Celsius")
+        expectEqual(MetricFormat.temperatureCompact(49.6), "50°", "compact temperatures round")
+        expectEqual(MetricFormat.temperatureUnitSuffix, "°C", "the Celsius suffix is explicit")
         let alertStrings = FeatureStrings.monitorAlerts(.enUS)
-        expectEqual(String(format: alertStrings.cpuTemperatureBodyFormat,
-                           MetricFormat.temperature(90, unit: .fahrenheit)),
-                    "CPU reached 194 °F.", "CPU temperature alert uses the selected unit")
-        expectEqual(String(format: alertStrings.batteryTemperatureBodyFormat,
-                           MetricFormat.temperature(40, unit: .fahrenheit)),
-                    "Battery reached 104 °F.", "battery temperature alert uses the selected unit")
-        expectEqual(String(format: alertStrings.cpuTemperatureBodyFormat,
-                           MetricFormat.temperature(90, unit: .celsius)),
-                    "CPU reached 90 °C.", "CPU temperature alert still supports Celsius")
+        expectEqual(String(format: alertStrings.cpuTemperatureBodyFormat, MetricFormat.temperature(90)),
+                    "CPU reached 90 °C.", "CPU temperature alerts read in Celsius")
+        expectEqual(String(format: alertStrings.batteryTemperatureBodyFormat, MetricFormat.temperature(40)),
+                    "Battery reached 40 °C.", "battery temperature alerts read in Celsius")
+
+        // Where a menu bar reading opens System Monitor.
+        typealias Route = SystemMonitorOpenRouting
+        suite.expect(Route.destination(preference: .dynamicIsland, islandAvailable: false, menuBarHidden: false,
+                                       latticePreference: .automatic) == .floatingWindow,
+                     "without the Dynamic Island every choice opens the floating window")
+        suite.expect(Route.destination(preference: .dynamicIsland, islandAvailable: true, menuBarHidden: true,
+                                       latticePreference: .floatingWindow) == .dynamicIsland
+                        && Route.destination(preference: .floatingWindow, islandAvailable: true, menuBarHidden: false,
+                                             latticePreference: .automatic) == .floatingWindow,
+                     "a fixed choice opens where it says")
+        suite.expect(Route.destination(preference: .automatic, islandAvailable: true, menuBarHidden: false,
+                                       latticePreference: .automatic) == .dynamicIsland
+                        && Route.destination(preference: .automatic, islandAvailable: true, menuBarHidden: false,
+                                             latticePreference: .floatingWindow) == .floatingWindow,
+                     "Automatic follows Prefer Lattice opens at")
+        suite.expect(Route.destination(preference: .automatic, islandAvailable: true, menuBarHidden: true,
+                                       latticePreference: .automatic) == .floatingWindow,
+                     "Automatic opens the floating window while the menu bar hides itself")
 
         // MARK: Temperature sensor selection
 
@@ -1221,10 +1187,6 @@ enum MetricsFeatureTests {
         suite.expect(MetricFormat.appMemory(totalBytes: 16 * 1024, pageSize: 0,
                                       internalPages: 10, purgeablePages: 0) == 0,
                "app memory is zero when page size is zero")
-        suite.expect(MetricFormat.selectedMemory(used: 12, app: 7, metric: "app") == 7,
-               "the shared memory selector returns app memory")
-        suite.expect(MetricFormat.selectedMemory(used: 12, app: 7, metric: "unknown") == 12,
-               "an unknown shared memory selector falls back to used memory")
 
         suite.expect(MetricFormat.compressedMemory(totalBytes: 16 * 1024, pageSize: 1024, compressorPages: 5)
                == 5 * 1024,

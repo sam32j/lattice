@@ -11,10 +11,6 @@ struct SettingsCard<Content: View>: View {
     let title: String?
     let caption: String?
     let headerAccessory: AnyView?
-    /// Gap between the heading and the content. A card whose content
-    /// collapses with `settingsCollapsible` passes 0 and pads the content
-    /// itself, so the gap folds away with it.
-    let headerSpacing: CGFloat
     let content: Content
 
     init(symbol: String? = nil, title: String? = nil, caption: String? = nil, @ViewBuilder content: () -> Content) {
@@ -22,25 +18,22 @@ struct SettingsCard<Content: View>: View {
         self.title = title
         self.caption = caption
         self.headerAccessory = nil
-        self.headerSpacing = Self.defaultHeaderSpacing
         self.content = content()
     }
 
     init<Accessory: View>(symbol: String? = nil, title: String, caption: String? = nil,
-                          headerSpacing: CGFloat = SettingsCard.defaultHeaderSpacing,
                           @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) {
         self.symbol = symbol
         self.title = title
         self.caption = caption
         self.headerAccessory = AnyView(headerAccessory())
-        self.headerSpacing = headerSpacing
         self.content = content()
     }
 
-    static var defaultHeaderSpacing: CGFloat { 13 }
+    static var headerSpacing: CGFloat { 13 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: headerSpacing) {
+        VStack(alignment: .leading, spacing: Self.headerSpacing) {
             if let title {
                 HStack(alignment: .center, spacing: 10) {
                     if let symbol {
@@ -71,6 +64,7 @@ struct SettingsCard<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .settingsClipsWhileResizing(to: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

@@ -101,7 +101,7 @@ struct GeneralSettings: View {
                 .labelsHidden()
             }
             Divider()
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: SettingsCard<EmptyView>.headerSpacing) {
                 SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
                     Toggle(SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
                            isOn: Binding(
@@ -118,10 +118,11 @@ struct GeneralSettings: View {
                            ))
                         .labelsHidden().toggleStyle(.switch)
                 }
-                MenuBarIconPickerRow()
-                    .padding(.leading, settingsRowTextInset)
-                    .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-                    .settingsCollapsible(isExpanded: !hideMenuIcon)
+                if !hideMenuIcon {
+                    MenuBarIconPickerRow()
+                        .padding(.leading, settingsRowTextInset)
+                        .transition(.settingsReveal)
+                }
             }
 
             Divider()
@@ -134,22 +135,25 @@ struct GeneralSettings: View {
             }
 
             if islandEnabled && features.isAvailable(.notch) {
-                Divider()
-                SettingsRow(symbol: "bookmark", title: SettingsFollowupStrings.text(.preferOpensAt, l10n.language)) {
-                    let selectionBinding = Binding(
-                        get: { LauncherShortcutTarget(rawValue: preferredTarget)?.rawValue ?? LauncherShortcutTarget.automatic.rawValue },
-                        set: { preferredTarget = $0 }
-                    )
-                    Picker(SettingsFollowupStrings.text(.preferOpensAt, l10n.language), selection: selectionBinding) {
-                        Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language))
-                            .tag(LauncherShortcutTarget.floatingWindow.rawValue)
-                        Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language))
-                            .tag(LauncherShortcutTarget.automatic.rawValue)
+                VStack(alignment: .leading, spacing: 13) {
+                    Divider()
+                    SettingsRow(symbol: "bookmark", title: SettingsFollowupStrings.text(.preferOpensAt, l10n.language)) {
+                        let selectionBinding = Binding(
+                            get: { LauncherShortcutTarget(rawValue: preferredTarget)?.rawValue ?? LauncherShortcutTarget.automatic.rawValue },
+                            set: { preferredTarget = $0 }
+                        )
+                        Picker(SettingsFollowupStrings.text(.preferOpensAt, l10n.language), selection: selectionBinding) {
+                            Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language))
+                                .tag(LauncherShortcutTarget.floatingWindow.rawValue)
+                            Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language))
+                                .tag(LauncherShortcutTarget.automatic.rawValue)
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .frame(width: 140, alignment: .trailing)
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 140, alignment: .trailing)
                 }
+                .transition(.settingsReveal)
             }
         }
     }
@@ -182,7 +186,7 @@ struct GeneralSettings: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: SettingsCard<EmptyView>.headerSpacing) {
                 SettingsRow(symbol: AppFeature.cameraPreview.symbolName,
                             title: cameraPreviewTitle) {
                     PermissionGatedToggle(cameraPreviewTitle,
@@ -192,16 +196,17 @@ struct GeneralSettings: View {
                         .onChange(of: cameraPreviewEnabled) { _, enabled in
                             settingsApplyFeatureSwitch(enabled: enabled) {
                                 FeatureRuntime.shared.sync([.cameraPreview])
-                                FeatureRuntime.shared.finishAvailabilityChange()
+                                settingsFinishAvailabilityChange()
                             }
                         }
                 }
-                ShortcutPreferenceRow(role: .cameraPreview, label: FeatureStrings.cameraPreview(l10n.language).openWithShortcut) {
-                    FeatureRuntime.shared.sync([.cameraPreview])
+                if cameraChildrenEnabled {
+                    ShortcutPreferenceRow(role: .cameraPreview, label: FeatureStrings.cameraPreview(l10n.language).openWithShortcut) {
+                        FeatureRuntime.shared.sync([.cameraPreview])
+                    }
+                    .padding(.leading, settingsRowTextInset)
+                    .transition(.settingsReveal)
                 }
-                .padding(.leading, settingsRowTextInset)
-                .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-                .settingsCollapsible(isExpanded: cameraChildrenEnabled)
             }
             .settingsSectionAnchor(.cameraPreview, cornerRadius: 12)
 

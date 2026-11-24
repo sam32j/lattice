@@ -85,6 +85,7 @@ struct CentralWindowLayoutShortcutRow: View {
                         errorText = nil
                     }
                 )
+                .transition(.settingsReveal)
             }
         }
         .shortcutConflictAlert($conflictAlert)

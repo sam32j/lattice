@@ -75,6 +75,7 @@ struct NotchAgentsSettingsControls: View {
             if codex, cardBinding(.resets).wrappedValue {
                 Text(text.resetsHelp).font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .transition(.settingsReveal)
             }
             SettingsChoiceRow(symbol: NotchAgentCard.limits.symbol, title: text.limitsAs, selection: $limitDisplay) {
                 Text(text.remaining).tag(NotchAgentLimitDisplay.remaining.rawValue)
@@ -92,17 +93,20 @@ struct NotchAgentsSettingsControls: View {
             Text(text.liveTitle).font(.subheadline.weight(.medium))
             switchRow("waveform.path.ecg", text.liveActivity, isOn: $liveActivity.animation(reduceMotion ? nil : .settingsExpansion))
             if liveActivity {
-                SettingsMenuRow(symbol: "camera.metering.center.weighted", title: text.readout, selection: $readout) {
-                    ForEach(NotchAgentReadout.allCases) { option in
-                        Text(text.readout(option)).tag(option.rawValue)
+                VStack(alignment: .leading, spacing: 14) {
+                    SettingsMenuRow(symbol: "camera.metering.center.weighted", title: text.readout, selection: $readout) {
+                        ForEach(NotchAgentReadout.allCases) { option in
+                            Text(text.readout(option)).tag(option.rawValue)
+                        }
                     }
-                }
-                .padding(.leading, settingsRowTextInset)
-                NotchAgentStripSample(readout: NotchAgentReadout(rawValue: readout) ?? .elapsed,
-                                      display: NotchAgentLimitDisplay(rawValue: limitDisplay) ?? .remaining,
-                                      focus: NotchAgentLimitFocus(rawValue: limitFocus) ?? .mostUsed,
-                                      provider: claude ? .claude : codex ? .codex : opencode ? .opencode : .copilot)
                     .padding(.leading, settingsRowTextInset)
+                    NotchAgentStripSample(readout: NotchAgentReadout(rawValue: readout) ?? .elapsed,
+                                          display: NotchAgentLimitDisplay(rawValue: limitDisplay) ?? .remaining,
+                                          focus: NotchAgentLimitFocus(rawValue: limitFocus) ?? .mostUsed,
+                                          provider: claude ? .claude : codex ? .codex : opencode ? .opencode : .copilot)
+                        .padding(.leading, settingsRowTextInset)
+                }
+                .transition(.settingsReveal)
             }
 
             Divider()
@@ -116,6 +120,7 @@ struct NotchAgentsSettingsControls: View {
                     }
                 }
                 .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
             switchRow("exclamationmark.triangle", text.limitAlert, isOn: $limitAlert.animation(reduceMotion ? nil : .settingsExpansion))
             if limitAlert {
@@ -125,6 +130,7 @@ struct NotchAgentsSettingsControls: View {
                     }
                 }
                 .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
             SettingsMenuRow(symbol: "dollarsign.circle", title: text.budget, selection: $dailyBudget) {
                 ForEach(NotchAgentSupport.budgets, id: \.self) { value in
@@ -138,16 +144,20 @@ struct NotchAgentsSettingsControls: View {
             }
 
             if claude {
-                Divider()
-                Text(text.claudeLimitsTitle).font(.subheadline.weight(.medium))
-                TimelineView(.periodic(from: .now, by: 30)) { context in
-                    claudeLimitsStatus(now: context.date)
+                VStack(alignment: .leading, spacing: 14) {
+                    Divider()
+                    Text(text.claudeLimitsTitle).font(.subheadline.weight(.medium))
+                    TimelineView(.periodic(from: .now, by: 30)) { context in
+                        claudeLimitsStatus(now: context.date)
+                    }
+                    if usage.claudeAccountChecking { ProgressView().controlSize(.small) }
+                    if claudeProfile.isEmpty {
+                        Text(text.claudeLimitsPrivacy).font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .transition(.settingsReveal)
+                    }
                 }
-                if usage.claudeAccountChecking { ProgressView().controlSize(.small) }
-                if claudeProfile.isEmpty {
-                    Text(text.claudeLimitsPrivacy).font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                .transition(.settingsReveal)
             }
         }
         .toggleStyle(.switch)

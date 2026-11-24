@@ -35,6 +35,7 @@ struct MusicBlockingSettings: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
+                    .transition(.settingsReveal)
             }
         }
     }

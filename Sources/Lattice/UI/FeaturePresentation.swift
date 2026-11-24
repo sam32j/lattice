@@ -113,6 +113,16 @@ extension AppFeature {
         }
     }
 
+    /// The line under the title on a feature's off page. Most pages reuse
+    /// the hub's description; a page whose description lists its actions
+    /// says what it is for instead.
+    func emptyStateDescription(_ hub: FeatureHubStrings) -> String {
+        switch self {
+        case .killProcess: return FeatureStrings.killProcess(L10n.shared.language).emptyStateDescription
+        default: return hubDescription(hub)
+        }
+    }
+
     func hubDescription(_ hub: FeatureHubStrings) -> String {
         switch self {
         case .switcher: return hub.descSwitcher

@@ -74,7 +74,8 @@ struct MenuBarStyleChoice: View {
                 RoundedRectangle(cornerRadius: 2.2, style: .continuous)
                     .stroke(Color.white, lineWidth: 1.15)
                 RoundedRectangle(cornerRadius: 1.2, style: .continuous)
-                    .fill(Color(red: 0.39, green: 0.82, blue: 1.0))
+                    // A normal reading fills with the bar's own color, as in the menu bar.
+                    .fill(Color.white)
                     .frame(width: 4.8, height: 13.8 * fraction)
                     .padding(.bottom, 2.1)
             }
@@ -84,106 +85,349 @@ struct MenuBarStyleChoice: View {
     }
 }
 
-/// The menu bar readings as tiles: drag to put them in order, click the
-/// checkmark to show or hide one. The order stays independent from which
-/// metrics are visible, so toggles do not reshuffle it.
-struct MenuBarMetricTiles: View {
+/// The readings a component offers, shown and ordered together: CPU usage
+/// and temperature sit under CPU, each with its own switch, and move as one.
+enum MenuBarReadingGroup: String, CaseIterable, PanelOrderItem {
+    case cpu, gpu, memory, network, disk, battery, power, peripheralBattery, fanSpeed, connectedDevices
+
+    var members: [MenuBarMetric] {
+        switch self {
+        case .cpu: return [.cpu, .cpuTemperature]
+        case .gpu: return [.gpu, .gpuTemperature]
+        case .memory: return [.memory]
+        case .network: return [.network]
+        case .disk: return [.diskUsage, .diskActivity]
+        case .battery: return [.battery, .batteryTime, .batteryTemperature]
+        case .power: return [.power]
+        case .peripheralBattery: return [.peripheralBattery]
+        case .fanSpeed: return [.fanSpeed]
+        case .connectedDevices: return [.connectedDevices]
+        }
+    }
+
+    static func group(of metric: MenuBarMetric) -> MenuBarReadingGroup {
+        allCases.first { $0.members.contains(metric) } ?? .memory
+    }
+
+    /// Where usage and temperature can share one block, its own setting.
+    var combineKey: String? {
+        switch self {
+        case .cpu: return DefaultsKey.menuBarCombineCPU
+        case .gpu: return DefaultsKey.menuBarCombineGPU
+        case .battery: return DefaultsKey.menuBarCombineBattery
+        default: return nil
+        }
+    }
+
+    var symbolName: String { members[0].symbolName }
+
+    func title(_ s: Strings) -> String {
+        switch self {
+        case .cpu: return s.cpuLabel
+        case .gpu: return s.gpuLabel
+        case .disk: return s.diskStorageSettings
+        case .battery: return s.batteryLabel
+        default: return members[0].title(s)
+        }
+    }
+
+    /// The groups in the order their first reading sits in `order`.
+    static func order(from metrics: [MenuBarMetric]) -> [MenuBarReadingGroup] {
+        var seen = Set<MenuBarReadingGroup>()
+        var groups = metrics.map(group(of:)).filter { seen.insert($0).inserted }
+        groups += allCases.filter { !seen.contains($0) }
+        return groups
+    }
+
+    /// The flat reading order for these groups, keeping each group's
+    /// readings in the order they already had.
+    static func metrics(for groups: [MenuBarReadingGroup], current: [MenuBarMetric]) -> [MenuBarMetric] {
+        groups.flatMap { group in
+            let ordered = current.filter { group.members.contains($0) }
+            return ordered + group.members.filter { !ordered.contains($0) }
+        }
+    }
+}
+
+/// The menu bar readings as a list of components: drag a component to put
+/// it in order, and switch each of its readings on or off. The order stays
+/// independent from which readings are visible, so switches do not reshuffle it.
+struct MenuBarReadingsList: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.menuBarMetricOrder) private var metricOrder = ""
-    @State private var order: [MenuBarMetric] = MenuBarMetric.order(in: .standard)
-    @State private var dragging: MenuBarMetric?
+    @State private var order: [MenuBarReadingGroup] = MenuBarReadingGroup.order(from: MenuBarMetric.order(in: .standard))
+    /// The row being dragged, the visible slot it started from, and how far
+    /// the pointer has moved, measured in the list's own space. The order
+    /// itself stays put until the row is let go.
+    @State private var dragging: MenuBarReadingGroup?
+    @State private var dragStartIndex = 0
+    @State private var dragTranslation: CGFloat = 0
+    /// A released row is settling into its slot; a new drag waits for it,
+    /// so every released drag commits its own move.
+    @State private var settling = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Every row is one line, so a drag moves one slot per row height.
+    static let rowHeight: CGFloat = 40
+    private static let space = "menuBarReadings"
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: monitorTokenColumns, spacing: 8) {
-                ForEach(visibleOrder) { metric in
-                    // Dragging moves within the full saved order, so metrics
-                    // hidden by the hub keep their slot for their return.
-                    PanelReorderableItem(item: metric, order: $order, dragging: $dragging) {
-                        MenuBarMetricTile(metric: metric)
+        let groups = visibleGroups
+        let target = proposedIndex(count: groups.count)
+        VStack(spacing: 0) {
+            ForEach(Array(groups.enumerated()), id: \.element) { index, group in
+                let isDragged = dragging == group
+                MenuBarReadingRow(group: group, members: visibleMembers(of: group))
+                    .frame(height: Self.rowHeight)
+                    .overlay(alignment: .bottom) {
+                        if index < groups.count - 1, dragging == nil {
+                            Divider().padding(.leading, 52)
+                        }
                     }
-                }
+                    .background {
+                        // The lifted row reads as picked up.
+                        if isDragged {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color(nsColor: .windowBackgroundColor))
+                                .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+                                .padding(.horizontal, -8)
+                        }
+                    }
+                    // The dragged row tracks the pointer exactly; the rows it
+                    // passes slide aside by one slot.
+                    .offset(y: isDragged ? dragTranslation : shift(for: index, target: target))
+                    .animation(isDragged || reduceMotion ? nil : .easeInOut(duration: 0.15), value: target)
+                    .zIndex(isDragged ? 1 : 0)
+                    .gesture(reorderGesture(for: group, index: index, count: groups.count))
+                    .transition(.settingsReveal)
             }
-            .monitorTokenGroup()
         }
-        .onAppear { order = MenuBarMetric.order(in: .standard) }
-        .onChange(of: order) { _, order in
-            // Only a drag writes; reloading the saved order must not.
-            if order != MenuBarMetric.order(in: .standard) { MenuBarMetric.setOrder(order) }
+        .coordinateSpace(name: Self.space)
+        .onAppear { reload() }
+        .onChange(of: metricOrder) { _, _ in
+            if dragging == nil { reload() }
         }
-        .onChange(of: metricOrder) { _, _ in order = MenuBarMetric.order(in: .standard) }
     }
 
-    /// Metrics whose family left the hub keep their saved slot but stay out
-    /// of the editor until they return.
-    private var visibleOrder: [MenuBarMetric] {
-        order.filter { $0.feature.isAvailable && $0.isAvailableOnCurrentHardware }
+    /// The visible slot the dragged row would land in now.
+    private func proposedIndex(count: Int) -> Int? {
+        guard dragging != nil, count > 0 else { return nil }
+        let steps = Int((dragTranslation / Self.rowHeight).rounded())
+        return min(max(dragStartIndex + steps, 0), count - 1)
+    }
+
+    /// How far a row that is not dragged moves aside for the dragged one.
+    private func shift(for index: Int, target: Int?) -> CGFloat {
+        guard let target, index != dragStartIndex else { return 0 }
+        if dragStartIndex < target, (dragStartIndex + 1...target).contains(index) { return -Self.rowHeight }
+        if target < dragStartIndex, (target...dragStartIndex - 1).contains(index) { return Self.rowHeight }
+        return 0
+    }
+
+    private func reorderGesture(for group: MenuBarReadingGroup, index: Int, count: Int) -> some Gesture {
+        DragGesture(minimumDistance: 3, coordinateSpace: .named(Self.space))
+            .onChanged { value in
+                guard !settling else { return }
+                if dragging != group {
+                    dragging = group
+                    dragStartIndex = index
+                }
+                dragTranslation = value.translation.height
+            }
+            .onEnded { _ in
+                guard !settling, dragging == group, let target = proposedIndex(count: count) else { return }
+                settling = true
+                let settle = CGFloat(target - dragStartIndex) * Self.rowHeight
+                // Settle into the slot first, then commit the order with no
+                // animation: every row is already where the new order puts it.
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) { dragTranslation = settle }
+                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : 0.12)) {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        move(group, toVisibleIndex: target)
+                        if dragging == group {
+                            dragging = nil
+                            dragTranslation = 0
+                        }
+                        settling = false
+                    }
+                    save()
+                }
+            }
+    }
+
+    /// Moves within the full saved order, so components hidden by a module
+    /// keep their slot for their return.
+    private func move(_ group: MenuBarReadingGroup, toVisibleIndex index: Int) {
+        let visible = visibleGroups
+        guard let current = visible.firstIndex(of: group), index != current, visible.indices.contains(index) else { return }
+        let target = visible[index]
+        var next = order.filter { $0 != group }
+        guard let targetIndex = next.firstIndex(of: target) else { return }
+        next.insert(group, at: index > current ? targetIndex + 1 : targetIndex)
+        order = next
+    }
+
+    private func save() {
+        let saved = MenuBarMetric.order(in: .standard)
+        let next = MenuBarReadingGroup.metrics(for: order, current: saved)
+        if next != saved { MenuBarMetric.setOrder(next) }
+    }
+
+    private func reload() {
+        order = MenuBarReadingGroup.order(from: MenuBarMetric.order(in: .standard))
+    }
+
+    private func visibleMembers(of group: MenuBarReadingGroup) -> [MenuBarMetric] {
+        group.members.filter { $0.feature.isAvailable && $0.isAvailableOnCurrentHardware }
+    }
+
+    /// Components whose module is off keep their saved slot but stay out of
+    /// the list until it returns.
+    private var visibleGroups: [MenuBarReadingGroup] {
+        order.filter { !visibleMembers(of: $0).isEmpty }
     }
 }
 
 extension MenuBarMetric: PanelOrderItem {}
 
-/// One reading, backed by its own key so the preview above updates the
-/// moment it is ticked. A reading with its own option carries it in its card.
-struct MenuBarMetricTile: View {
+/// One component in one row: a grip, its icon and name, and a menu that
+/// both shows what it puts in the menu bar and changes it. The menu lists
+/// the component's readings as checkmarks, then its own options.
+struct MenuBarReadingRow: View {
     @ObservedObject private var l10n = L10n.shared
-    @Environment(\.colorScheme) private var colorScheme
-    let metric: MenuBarMetric
+    @AppStorage(DefaultsKey.menuBarMetricAppearance) private var metricAppearance = "values"
+    /// Bumped whenever a preference changes, so the summary follows a
+    /// checkmark picked in the menu.
+    @State private var revision = 0
+    let group: MenuBarReadingGroup
+    let members: [MenuBarMetric]
+
+    private var strings: SystemMonitorSettingsStrings { FeatureStrings.systemMonitorSettings(l10n.language) }
+
+    var body: some View {
+        let title = group.title(l10n.s)
+        HStack(spacing: 10) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.quaternary)
+                .frame(width: 12)
+                .accessibilityHidden(true)
+            LatticeSymbol(group.symbolName)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            Text(title)
+                .lineLimit(1)
+            Spacer(minLength: 12)
+            Menu {
+                Group {
+                    if members.count == 1, let only = members.first {
+                        MenuBarReadingToggle(metric: only, title: strings.showInMenuBar)
+                    } else {
+                        ForEach(members) { MenuBarReadingToggle(metric: $0, title: memberTitle($0)) }
+                    }
+                    if let key = group.combineKey, metricAppearance == "values", members.count > 1 {
+                        Divider()
+                        MenuBarDefaultsToggle(title: strings.combineTitle, key: key)
+                    }
+                    ForEach(members) { metric in
+                        MenuBarReadingOptions(metric: metric)
+                    }
+                }
+                // The page draws its toggles as switches, which a menu cannot
+                // show; without this every item reads disabled.
+                .toggleStyle(.automatic)
+            } label: {
+                Text(summary)
+            }
+            .fixedSize()
+            .accessibilityLabel(title)
+            .accessibilityValue(summary)
+        }
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            revision &+= 1
+        }
+    }
+
+    /// "Usage, Temperature", "On" for a single reading, or "Off".
+    private var summary: String {
+        _ = revision
+        let shown = members.filter { UserDefaults.standard.bool(forKey: $0.defaultsKey) }
+        if shown.isEmpty { return strings.offOption }
+        if members.count == 1 { return strings.onOption }
+        return shown.map(memberTitle).joined(separator: ", ")
+    }
+
+    private func memberTitle(_ metric: MenuBarMetric) -> String {
+        switch metric {
+        case .cpu, .gpu, .diskUsage: return strings.memberUsage
+        case .cpuTemperature, .gpuTemperature, .batteryTemperature: return strings.memberTemperature
+        case .diskActivity: return strings.memberActivity
+        case .battery: return strings.memberCharge
+        case .batteryTime: return strings.memberTimeLeft
+        default: return metric.title(l10n.s)
+        }
+    }
+}
+
+/// A reading's checkmark in its component's menu.
+private struct MenuBarReadingToggle: View {
+    let title: String
     @AppStorage private var shown: Bool
+
+    init(metric: MenuBarMetric, title: String) {
+        self.title = title
+        _shown = AppStorage(wrappedValue: false, metric.defaultsKey)
+    }
+
+    var body: some View { Toggle(title, isOn: $shown) }
+}
+
+/// A checkmark backed by any Bool preference.
+private struct MenuBarDefaultsToggle: View {
+    let title: String
+    @AppStorage private var isOn: Bool
+
+    init(title: String, key: String) {
+        self.title = title
+        _isOn = AppStorage(wrappedValue: true, key)
+    }
+
+    var body: some View { Toggle(title, isOn: $isOn) }
+}
+
+/// A reading's own choices, after a divider in its component's menu.
+private struct MenuBarReadingOptions: View {
+    @ObservedObject private var l10n = L10n.shared
+    let metric: MenuBarMetric
     @AppStorage(DefaultsKey.menuBarMemoryStyle) private var memoryStyle = "percent"
     @AppStorage(DefaultsKey.menuBarNetworkUploadFirst) private var uploadFirst = false
     @AppStorage(DiskMenuBarStyle.defaultsKey) private var diskStyle = DiskMenuBarStyle.percent
 
-    init(metric: MenuBarMetric) {
-        self.metric = metric
-        _shown = AppStorage(wrappedValue: false, metric.defaultsKey)
-    }
-
     var body: some View {
-        MonitorToken(symbol: metric.symbolName, title: metric.title(l10n.s), included: $shown,
-                     options: options, optionsSummary: optionsSummary)
-    }
-
-    /// What the reading's option makes the menu bar show, in its own terms.
-    private var optionsSummary: String {
         switch metric {
         case .memory:
-            return Defaults.sanitizedMenuBarMemoryStyle(memoryStyle) != "percent"
-                ? l10n.s.monitorMemoryPressureDot : FeatureStrings.mouseClickDebounce(l10n.language).moreOptions
-        case .network: return uploadFirst ? "↑ ↓" : "↓ ↑"
-        case .diskUsage:
-            switch diskStyle {
-            case DiskMenuBarStyle.free: return l10n.s.diskMenuBarAvailableSpace
-            case DiskMenuBarStyle.used: return l10n.s.diskMenuBarUsedSpace
-            default: return l10n.s.diskMenuBarUsedPercentage
-            }
-        default: return ""
-        }
-    }
-
-    private var options: AnyView? {
-        switch metric {
-        case .memory:
-            return AnyView(MonitorTokenOption(
-                symbol: "circle.fill",
-                title: l10n.s.monitorMemoryPressureDot,
-                tint: PanelMetricColor.green(for: colorScheme),
-                isOn: Binding(get: { Defaults.sanitizedMenuBarMemoryStyle(memoryStyle) != "percent" },
-                              set: { memoryStyle = $0 ? "both" : "percent" })))
+            Divider()
+            Toggle(l10n.s.monitorMemoryPressureDot, isOn: Binding(
+                get: { Defaults.sanitizedMenuBarMemoryStyle(memoryStyle) != "percent" },
+                set: { memoryStyle = $0 ? "both" : "percent" }))
         case .network:
-            return AnyView(MonitorTokenOption(symbol: "arrow.up.arrow.down",
-                                                 title: l10n.s.monitorNetworkUploadFirst,
-                                                 isOn: $uploadFirst))
+            Divider()
+            Toggle(l10n.s.monitorNetworkUploadFirst, isOn: $uploadFirst)
         case .diskUsage:
-            return AnyView(Picker(l10n.s.diskMenuBarStyleLabel, selection: $diskStyle) {
+            Divider()
+            Picker(l10n.s.diskMenuBarStyleLabel, selection: $diskStyle) {
                 Text(l10n.s.diskMenuBarUsedPercentage).tag(DiskMenuBarStyle.percent)
                 Text(l10n.s.diskMenuBarAvailableSpace).tag(DiskMenuBarStyle.free)
                 Text(l10n.s.diskMenuBarUsedSpace).tag(DiskMenuBarStyle.used)
             }
-            .pickerStyle(.menu))
         default:
-            return nil
+            EmptyView()
         }
     }
 }

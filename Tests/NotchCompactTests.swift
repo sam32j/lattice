@@ -276,10 +276,8 @@ enum NotchCompactTests {
         defer { window.contentView = nil; service.isEmbeddedPresented = false }
         host.frame = NSRect(x: 0, y: 0, width: 424, height: 180)
         settle(host)
-        service.showEmbedded()
-        settle(host)
         suite.expect(service.isEmbeddedPresented && service.stops == 0,
-                     "starting the embedded camera does not dismiss it when the start card disappears")
+                     "showing the camera page starts the camera, with no closed state to open it from")
         suite.expect(service.previewMenu == true,
                      "the island's preview overlays its camera selector on the image just as the floating window does")
         // The page has no Stop of its own: leaving it is what stops the camera.

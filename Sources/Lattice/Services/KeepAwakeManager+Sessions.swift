@@ -72,7 +72,7 @@ extension KeepAwakeManager {
             }
             deactivate(reason: .manual)
         } else {
-            startLastPick()
+            startDefault()
         }
     }
 
@@ -116,22 +116,6 @@ extension KeepAwakeManager {
         syncWithPreferences()
     }
 
-    /// Writes a remembered pick only when it changes. Every write announces
-    /// a defaults change app-wide, and the island answers with a full
-    /// preference sync 0.3 s later on the main thread; restarting the same
-    /// pick from the Hub froze the Stay Awake toggle's slide partway through.
-    static func rememberPick(_ value: Any, forKey key: String) {
-        let defaults = UserDefaults.standard
-        if let current = defaults.object(forKey: key) as? NSObject, let new = value as? NSObject,
-           current.isEqual(new) { return }
-        switch value {
-        case let flag as Bool: defaults.set(flag, forKey: key)
-        case let number as Int: defaults.set(number, forKey: key)
-        case let number as Double: defaults.set(number, forKey: key)
-        default: assertionFailure("rememberPick stores only Bool, Int and Double")
-        }
-    }
-
     /// `minutes <= 0` activates indefinitely.
     func activate(minutes: Int) {
         automationSuppressedUntilConditionsClear = false
@@ -139,10 +123,6 @@ extension KeepAwakeManager {
         let end = minutes > 0 ? Date().addingTimeInterval(TimeInterval(minutes) * 60) : nil
         activate(end: end, trigger: .manual)
         sessionMinutes = isActive ? minutes : nil
-        guard isActive else { return }
-        // Every entry point records the pick, so each switch restarts the same session.
-        Self.rememberPick(minutes, forKey: DefaultsKey.defaultDuration)
-        Self.rememberPick(false, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
     }
 
     func activate(until date: Date) {
@@ -151,22 +131,14 @@ extension KeepAwakeManager {
         activate(end: date, trigger: .manual)
         // An end time replaces any running preset, so no duration chip stays selected.
         sessionMinutes = nil
-        guard isActive else { return }
-        Self.rememberPick(true, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
-        Self.rememberPick(date.timeIntervalSinceReferenceDate, forKey: DefaultsKey.keepAwakeUntilTime)
     }
 
-    /// Restarts the last pick: the saved end time while it is still ahead,
-    /// otherwise the saved duration. A passed end time never rolls to
-    /// tomorrow here, which would silently start a session of almost a day.
-    func startLastPick() {
-        let defaults = UserDefaults.standard
-        let end = Date(timeIntervalSinceReferenceDate: defaults.double(forKey: DefaultsKey.keepAwakeUntilTime))
-        if defaults.bool(forKey: DefaultsKey.keepAwakeSwitchUsesUntil), end > Date() {
-            activate(until: end)
-        } else {
-            activate(minutes: Defaults.sanitizedDefaultDuration(defaults.integer(forKey: DefaultsKey.defaultDuration)))
-        }
+    /// Starts the default duration, the one setting the shortcut, the menu
+    /// bar icon and `toggle()` share. Starting a session anywhere else never
+    /// changes it, so the Default duration menu always shows what was chosen.
+    func startDefault() {
+        activate(minutes: Defaults.sanitizedDefaultDuration(
+            UserDefaults.standard.integer(forKey: DefaultsKey.defaultDuration)))
     }
 
     func activate(end: Date?, trigger: SessionTrigger) {
@@ -196,6 +168,9 @@ extension KeepAwakeManager {
             activeAutomationConditions.removeAll()
         }
         isActive = true
+        // The ring's whole: a new session starts it over, and extending one
+        // moves only its end, so the total grows with it.
+        sessionStartDate = Date()
         if let end {
             endDate = end
             scheduleEnd(at: end)
@@ -207,14 +182,6 @@ extension KeepAwakeManager {
         if clamshellPreferred, !sessionPausedForScreenLock {
             applyClamshellPreference()
         }
-    }
-
-    func activateOnLaunchIfNeeded() {
-        guard AppFeature.keepAwake.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeAutoStart),
-              !isActive else { return }
-        activate(minutes: Defaults.sanitizedDefaultDuration(
-            UserDefaults.standard.integer(forKey: DefaultsKey.defaultDuration)))
     }
 
     func extend(minutes: Int) {
@@ -242,6 +209,7 @@ extension KeepAwakeManager {
         endDate = nil
         sessionTrigger = nil
         sessionMinutes = nil
+        sessionStartDate = nil
         activeAutomationConditions.removeAll()
         isActive = stoppingSession
         sessionPausedForScreenLock = false

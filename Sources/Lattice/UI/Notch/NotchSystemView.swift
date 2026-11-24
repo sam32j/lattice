@@ -9,7 +9,6 @@ struct NotchSystemView: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.notchSettingsPreview) private var isSettingsPreview
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(DefaultsKey.networkSpeedUnit) private var networkSpeedUnit = NetworkSpeedUnit.bytes
     @AppStorage(DefaultsKey.monitorInterval) private var monitorInterval = 2
     @State private var topApps: [MetricDetailKind: String] = [:]
     @State private var lastAppRefresh: Date = .distantPast
@@ -70,17 +69,10 @@ struct NotchSystemView: View {
         return (nil, false)
     }
 
+    /// The shared `MonitorLevel`, so a ring, the menu bar and the detail
+    /// view always agree on how worrying a reading is.
     private func severity(for fraction: Double, inverted: Bool = false) -> Int {
-        guard fraction.isFinite else { return 0 }
-        if inverted {
-            if fraction <= 0.10 { return 2 }
-            if fraction <= 0.20 { return 1 }
-            return 0
-        } else {
-            if fraction >= 0.90 { return 2 }
-            if fraction >= 0.70 { return 1 }
-            return 0
-        }
+        (inverted ? MonitorLevel.remaining(fraction) : MonitorLevel.usage(fraction)).rawValue
     }
 
     private func tiles(in snapshot: SystemSnapshot) -> [TileMetric] {
@@ -126,7 +118,8 @@ struct NotchSystemView: View {
             }
             let (ratio, isStale) = resolvedPercent(for: .memory, current: currentRatio)
             let val = ratio ?? 0
-            let s = isStale ? 0 : severity(for: val)
+            // Memory follows macOS memory pressure, like the detail view's chip.
+            let s = isStale ? 0 : MonitorLevel.memory(pressure: snapshot.memoryPressure, fraction: val).rawValue
             let hint = s > 0 ? (topApps[.memory] ?? ProcessUsageService.shared.cachedTop(.memory, limit: 1)?.first?.name) : nil
             items.append(TileMetric(
                 kind: .memory,
@@ -444,11 +437,8 @@ private struct SystemMetricRing: View {
                 : Color.primary.opacity(0.22)
         }
         switch severity {
-        case 2: return Color(red: 1.0, green: 0.27, blue: 0.23) // #ff453a
-        case 1:
-            return colorScheme == .dark
-                ? Color(red: 1.0, green: 0.62, blue: 0.04) // #ff9f0a
-                : Color(red: 0.88, green: 0.48, blue: 0.0)
+        case 2: return Color(nsColor: MonitorLevel.critical.fillColor)
+        case 1: return Color(nsColor: MonitorLevel.elevated.fillColor)
         default:
             return colorScheme == .dark
                 ? Color(red: 0.91, green: 0.91, blue: 0.93) // #e8e8ee
@@ -589,7 +579,8 @@ private struct SystemTileButton: View {
                     .lineLimit(1)
                 Text(tile.hint ?? "")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(tile.severity == 0 ? Color.secondary : tile.severity == 2 ? Color(red: 1.0, green: 0.27, blue: 0.23) : (colorScheme == .dark ? Color(red: 1.0, green: 0.62, blue: 0.04) : Color(red: 0.85, green: 0.45, blue: 0.0)))
+                    .foregroundStyle(tile.severity == 0 ? Color.secondary
+                                     : Color(nsColor: (MonitorLevel(rawValue: tile.severity) ?? .normal).fillColor))
                     .lineLimit(1)
                     .frame(height: 14)
             }

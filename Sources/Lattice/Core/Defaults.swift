@@ -10,14 +10,11 @@ enum DefaultsKey {
     static let language = "appLanguage"                   // AppLanguage.rawValue
     static let appearance = "appAppearance"               // AppAppearance.rawValue
     static let clamshellPreferred = "clamshellPreferred"  // apply closed-lid mode to every session
-    static let dimScreenOnLidClose = "dimScreenOnLidClose" // dim the built-in display to zero while the lid is closed
     static let lastLaunchedVersion = "lastUpdateIntroVersion"
     static let featureHubKeptFeatures = "featureHubKeptFeatures" // comma-joined AppFeature raw values
     static let pendingPermissionActivation = "pendingPermissionActivation"
     static let defaultDuration = "defaultDurationMinutes" // 0 = indefinite
     static let batteryLimit = "batteryLimitPercent"       // 0 = never
-    static let keepAwakeAutoStart = "keepAwakeAutoStart"  // start Keep Awake when the app launches
-    static let keepAwakeRightClickToggle = "keepAwakeRightClickToggle"
     static let keepAwakeAllowDisplaySleep = "keepAwakeAllowDisplaySleep"
     static let keepAwakeExternalDisplay = "keepAwakeExternalDisplay"
     static let keepAwakeConnectedToPower = "keepAwakeConnectedToPower"
@@ -28,8 +25,6 @@ enum DefaultsKey {
     // to match, and losing one ends the session). Issue #1587.
     static let keepAwakeAutomationRequireAll = "keepAwakeAutomationRequireAll"
     static let keepAwakePauseWhenLocked = "keepAwakePauseWhenLocked"
-    static let keepAwakeSwitchUsesUntil = "keepAwakeSwitchUsesUntil" // panel switch restarts the Until chip
-    static let keepAwakeUntilTime = "keepAwakeUntilTime"  // last picked end time; 0 = none yet
     static let keepAwakeMouseJiggleEnabled = "keepAwakeMouseJiggleEnabled"
     static let keepAwakeMouseJiggleInterval = "keepAwakeMouseJiggleIntervalMinutes"
     static let hotkeyEnabled = "hotkeyEnabled"
@@ -241,7 +236,10 @@ enum DefaultsKey {
     static let cleanerScreenshotAgeDays = "cleanerScreenshotAgeDays"    // Int, 0 = off
     static let settingsWindowHeight = "settingsWindowHeight"
     static let shelfItems = "shelfItems"                  // Data: [ShelfPersistedItem] JSON
-    static let urlCleanerEnabled = "urlCleanerEnabled"
+    static let urlCleanerEnabled = "urlCleanerEnabled"                     // URL Sanitizer main switch
+    static let urlSanitizerAutoRemove = "urlSanitizerAutoRemove"           // rewrite copied links automatically
+    static let urlSanitizerSites = "urlSanitizerSites"                     // JSON [URLCleaning.Site]; "" = built-ins
+    // Clean URL's lists, read once by migrateURLCleanerRules and then removed.
     static let urlCleanerCustomParameters = "urlCleanerCustomParameters"
     static let urlCleanerSiteParameters = "urlCleanerSiteParameters"       // host|name pairs added to one site
     static let urlCleanerDisabledParameters = "urlCleanerDisabledParameters" // built-in host|name pairs switched off
@@ -278,11 +276,6 @@ enum DefaultsKey {
     // Findings already announced once, so a pending update nobody installs
     // does not speak up again after every relaunch.
     static let appUpdatesNotifiedIDs = "appUpdatesNotifiedIDs"
-    // Show/hide whole panel sections that have no monitorShow* key of their own.
-    static let panelShowKeepAwake = "panelShowKeepAwake"
-    static let panelShowBrightness = "panelShowBrightness"
-    static let panelShowToggles = "panelShowToggles"
-    static let panelShowWallpaper = "panelShowWallpaper"
 
     // System monitor — live metrics shown next to the menu bar icon (opt-in).
     static let menuBarCPU = "menuBarCPU"
@@ -304,29 +297,22 @@ enum DefaultsKey {
     static let menuBarPreset = "menuBarPreset"           // dense
     static let menuBarMetricSpacing = "menuBarMetricSpacing" // standard | compact
     static let menuBarMetricAppearance = "menuBarMetricAppearance" // values | bars
-    static let menuBarUsageBarNormalColor = "menuBarUsageBarNormalColor" // #RRGGBB
-    static let menuBarUsageBarElevatedColor = "menuBarUsageBarElevatedColor" // #RRGGBB
-    static let menuBarUsageBarCriticalColor = "menuBarUsageBarCriticalColor" // #RRGGBB
-    static let menuBarUsageBarMediumThreshold = "menuBarUsageBarMediumThreshold" // percent
-    static let menuBarUsageBarHighThreshold = "menuBarUsageBarHighThreshold" // percent
-    static let menuBarHideIconWithMetrics = "menuBarHideIconWithMetrics" // glyph hides while metrics render in the main item
     static let menuBarIconSymbol = "menuBarIconSymbol" // system symbol name drawn instead of the glyph; empty keeps the glyph
     static let menuBarMetricOrder = "menuBarMetricOrder" // comma-separated MenuBarMetric raw values
-    static let menuBarCombineTemperatures = "menuBarCombineTemperatures" // usage/charge + temperature in one block when possible
+    // Usage (or charge) and temperature of one component in one block, each
+    // component on its own; only Values can combine.
+    static let menuBarCombineCPU = "menuBarCombineCPU"
+    static let menuBarCombineGPU = "menuBarCombineGPU"
+    static let menuBarCombineBattery = "menuBarCombineBattery"
     static let menuBarSeparateMetrics = "menuBarSeparateMetrics" // one status item per active metric
     static let menuBarNetworkUploadFirst = "menuBarNetworkUploadFirst" // network menu bar block shows upload above download
     static let menuBarLabelStyle = "menuBarLabelStyle"     // compact | classic
     static let menuBarMemoryStyle = "menuBarMemoryStyle"   // dot | percent | both
     static let menuBarDiskStyle = "menuBarDiskStyle"       // percent | free | used
-    static let monitorMemoryMetric = "monitorMemoryMetric" // used | app
     static let monitorInterval = "monitorIntervalSeconds"  // sampling cadence: 1/2/5
-    static let temperatureUnit = "temperatureUnit"          // celsius | fahrenheit
-    // System monitor — which blocks appear in the panel.
-    static let monitorShowSystem = "monitorShowSystem"
-    static let monitorShowNetwork = "monitorShowNetwork"
-    static let monitorShowDisk = "monitorShowDisk"
-    static let monitorShowPower = "monitorShowPower"
-    static let monitorShowMixer = "monitorShowMixer"
+    // The modules that were on when the System Monitor switch turned them all
+    // off, so turning it back on restores the same set.
+    static let monitorModulesBeforeOff = "monitorModulesBeforeOff"
     static let panelShowFanControl = "panelShowFanControl"
     static let fanControlMode = "fanControlMode"
     static let fanControlCoolingLevel = "fanControlCoolingLevel"
@@ -342,42 +328,7 @@ enum DefaultsKey {
     // automatic fan control before this marker can be cleared.
     static let fanControlRecoveryNeeded = "fanControlRecoveryNeeded"
     static let fanControlHelperVersion = "fanControlHelperVersion"
-    // System monitor — per-metric history graphs (each independently toggleable).
-    static let monitorGraphCPU = "monitorGraphCPU"
-    static let monitorGraphGPU = "monitorGraphGPU"
-    static let monitorGraphMemory = "monitorGraphMemory"
-    static let monitorGraphNetwork = "monitorGraphNetwork"
-    static let monitorGraphDisk = "monitorGraphDisk"
-    static let monitorGraphPower = "monitorGraphPower"
-    static let monitorGraphBattery = "monitorGraphBattery"
-    static let monitorGraphScale = "monitorGraphScale"
-    // System monitor — per-item visibility inside each panel section.
-    static let monitorSysTemps = "monitorSysTemps"
-    static let monitorSysCPU = "monitorSysCPU"
-    static let monitorSysCPUCores = "monitorSysCPUCores"
-    static let monitorSysGPU = "monitorSysGPU"
-    static let monitorSysBattery = "monitorSysBattery"
-    static let monitorSysMemory = "monitorSysMemory"
-    static let monitorSysAlerts = "monitorSysAlerts"
-    static let monitorSysUptime = "monitorSysUptime"
-    static let monitorSysConnectedDevices = "monitorSysConnectedDevices"
-    static let monitorNetSpeed = "monitorNetSpeed"
-    static let monitorNetApps = "monitorNetApps"
-    static let monitorNetTotals = "monitorNetTotals"
-    static let monitorNetAddresses = "monitorNetAddresses"
-    static let monitorNetTest = "monitorNetTest"
-    static let networkSpeedUnit = "networkSpeedUnit" // bytes | bits, for every live network speed readout
-    static let monitorDiskUsage = "monitorDiskUsage"
-    static let monitorDiskActivity = "monitorDiskActivity"
-    static let monitorDiskSMART = "monitorDiskSMART"
-    static let monitorDiskProtection = "monitorDiskProtection"
-    static let monitorDiskTools = "monitorDiskTools"
-    static let monitorPwrTemperature = "monitorPwrTemperature"
-    static let monitorPwrSystem = "monitorPwrSystem"
-    static let monitorPwrAdapter = "monitorPwrAdapter"
-    static let monitorPwrBattery = "monitorPwrBattery"
-    static let monitorPwrTimeRemaining = "monitorPwrTimeRemaining"
-    static let monitorPwrHealth = "monitorPwrHealth"
+    // Peripheral batteries in the Power views; also gates Bluetooth use.
     static let monitorPwrPeripherals = "monitorPwrPeripherals"
     // System monitor — optional notifications for sustained or actionable conditions.
     static let monitorAlertCPU = "monitorAlertCPU"
@@ -392,15 +343,6 @@ enum DefaultsKey {
     static let monitorAlertDiskFreePercent = "monitorAlertDiskFreePercent"
     static let monitorAlertBatteryPercent = "monitorAlertBatteryPercent"
     static let monitorAlertCooldownMinutes = "monitorAlertCooldownMinutes"
-    // Menu panel layout — the order the major sections appear in and which are
-    // collapsed, both comma-joined section ids (see PanelSectionID). Absent keys
-    // mean the canonical order and nothing collapsed, so no defaults registration.
-    static let panelSectionOrder = "panelSectionOrder"
-    static let panelSystemOrder = "panelSystemOrder"
-    static let panelNetworkOrder = "panelNetworkOrder"
-    static let panelDiskOrder = "panelDiskOrder"
-    static let panelPowerOrder = "panelPowerOrder"
-    static let panelNavigationEnabled = "panelNavigationEnabled" // legacy: the panel always navigates by sections since 3.1.8
     static let updateLastInstallFailure = "updateLastInstallFailure" // last installer step that failed (fail-copy etc.)
     static let windowLayoutHiddenActions = "windowLayoutHiddenActions" // comma-separated action ids hidden from the grid
     static let windowLayoutWindowGap = "windowLayoutWindowGap" // px between adjacent snapped windows
@@ -614,6 +556,8 @@ enum DefaultsKey {
     static let screenshotAddToShelf = "screenshotAddToShelf"
     static let screenshotPreviewPosition = "screenshotPreviewPosition"
     static let capturePresentationDestination = "capturePresentationDestination"
+    // Where a menu bar reading opens System Monitor: automatic | floatingWindow | dynamicIsland.
+    static let systemMonitorOpenAt = "systemMonitorOpenAt"
     static let screenshotPreviewTakesFocus = "screenshotPreviewTakesFocus"
     static let capturePreviewCloseAfter = "capturePreviewCloseAfter"
     static let screenshotUploadDuration = "screenshotUploadDuration"
@@ -953,7 +897,6 @@ enum Defaults {
     ]
     static let allowedMenuBarLabelStyles = ["compact", "classic"]
     static let allowedMenuBarMemoryStyles = ["dot", "percent", "both"]
-    static let allowedMonitorMemoryMetrics = ["used", "app"]
     static let allowedPreviewSizes = ["small", "normal", "large", "xlarge"]
     static let allowedClipboardHistoryLimits = [20, 50, 100, 250, 500, 1_000, 10_000, 0]
     static let allowedClipboardHistoryRetentionDays = [1, 7, 30, 90, 365, 0]
@@ -968,11 +911,8 @@ enum Defaults {
         DefaultsKey.notchVideoDownloader: true,
         DefaultsKey.appearance: AppAppearance.fallback.rawValue,
         DefaultsKey.clamshellPreferred: false,
-        DefaultsKey.dimScreenOnLidClose: false,
         DefaultsKey.defaultDuration: 0,
         DefaultsKey.batteryLimit: 10,
-        DefaultsKey.keepAwakeAutoStart: false,
-        DefaultsKey.keepAwakeRightClickToggle: false,
         DefaultsKey.keepAwakeAllowDisplaySleep: false,
         DefaultsKey.keepAwakeExternalDisplay: false,
         DefaultsKey.keepAwakeConnectedToPower: false,
@@ -980,8 +920,6 @@ enum Defaults {
         DefaultsKey.keepAwakeRunningAppBundleIDs: [String](),
         DefaultsKey.keepAwakeAutomationRequireAll: false,
         DefaultsKey.keepAwakePauseWhenLocked: false,
-        DefaultsKey.keepAwakeSwitchUsesUntil: false,
-        DefaultsKey.keepAwakeUntilTime: 0.0,
         DefaultsKey.keepAwakeMouseJiggleEnabled: false,
         DefaultsKey.keepAwakeMouseJiggleInterval: 5,
         DefaultsKey.hotkeyEnabled: true,
@@ -1142,9 +1080,8 @@ enum Defaults {
         DefaultsKey.cleanerLastAutoFailed: 0,
         DefaultsKey.cleanerScreenshotAgeDays: CleanerPolicy.defaultScreenshotAgeDays,
         DefaultsKey.urlCleanerEnabled: false,
-        DefaultsKey.urlCleanerCustomParameters: "",
-        DefaultsKey.urlCleanerSiteParameters: "",
-        DefaultsKey.urlCleanerDisabledParameters: "",
+        DefaultsKey.urlSanitizerAutoRemove: true,
+        DefaultsKey.urlSanitizerSites: "",
         DefaultsKey.textSnippetsEnabled: false,
         DefaultsKey.snippetLibraryEnabled: false,
         DefaultsKey.snippetLibraryShortcut: GlobalShortcut.snippetLibraryDefault.storageValue,
@@ -1309,15 +1246,10 @@ enum Defaults {
         DefaultsKey.appUpdatesLastCheck: 0.0,
         DefaultsKey.appUpdatesLastCount: 0,
         DefaultsKey.appUpdatesNotifiedIDs: [String](),
-        DefaultsKey.panelShowKeepAwake: true,
-        DefaultsKey.panelShowBrightness: true,
-        DefaultsKey.panelShowToggles: true,
-        DefaultsKey.panelShowWallpaper: true,
         // Menu bar metrics start off (the icon stays clean) and are opt-in.
         // The panel shows every monitoring block by default; users hide what
         // they don't want.
         DefaultsKey.monitorInterval: 2,
-        DefaultsKey.temperatureUnit: TemperatureUnit.celsius.rawValue,
         DefaultsKey.menuBarCPUTemperature: false,
         DefaultsKey.menuBarGPUTemperature: false,
         DefaultsKey.menuBarBatteryTemperature: false,
@@ -1330,12 +1262,6 @@ enum Defaults {
         DefaultsKey.menuBarPreset: "dense",
         DefaultsKey.menuBarMetricSpacing: "compact",  // owner's call: compact by default in 3.1.8
         DefaultsKey.menuBarMetricAppearance: "values",
-        DefaultsKey.menuBarUsageBarNormalColor: "#64D2FF",
-        DefaultsKey.menuBarUsageBarElevatedColor: "#FFD60A",
-        DefaultsKey.menuBarUsageBarCriticalColor: "#FF453A",
-        DefaultsKey.menuBarUsageBarMediumThreshold: 70,
-        DefaultsKey.menuBarUsageBarHighThreshold: 90,
-        DefaultsKey.menuBarHideIconWithMetrics: false,
         DefaultsKey.menuBarIconSymbol: "",
         DefaultsKey.windowLayoutHiddenActions: "",
         DefaultsKey.windowLayoutWindowGap: 0,
@@ -1343,18 +1269,14 @@ enum Defaults {
         DefaultsKey.windowReserveStageManagerSpace: false,
         DefaultsKey.windowLayoutSideRepeatCyclesThirds: false,
         DefaultsKey.menuBarMetricOrder: defaultMenuBarMetricOrder.joined(separator: ","),
-        DefaultsKey.menuBarCombineTemperatures: true,
+        DefaultsKey.menuBarCombineCPU: true,
+        DefaultsKey.menuBarCombineGPU: true,
+        DefaultsKey.menuBarCombineBattery: true,
         DefaultsKey.menuBarSeparateMetrics: false,
         DefaultsKey.menuBarNetworkUploadFirst: false,
         DefaultsKey.menuBarLabelStyle: "compact",
         DefaultsKey.menuBarMemoryStyle: "percent",
         DefaultsKey.menuBarDiskStyle: "percent",
-        DefaultsKey.monitorMemoryMetric: "used",
-        DefaultsKey.monitorShowSystem: true,
-        DefaultsKey.monitorShowNetwork: true,
-        DefaultsKey.monitorShowDisk: true,
-        DefaultsKey.monitorShowPower: true,
-        DefaultsKey.monitorShowMixer: true,
         DefaultsKey.panelShowFanControl: true,
         DefaultsKey.fanControlMode: FanControlMode.system.rawValue,
         DefaultsKey.fanControlCoolingLevel: FanControlPolicy.defaultCoolingLevel,
@@ -1363,42 +1285,7 @@ enum Defaults {
         DefaultsKey.fanControlResumeConfiguration: "",
         DefaultsKey.fanControlRecoveryNeeded: false,
         DefaultsKey.fanControlHelperVersion: "",
-        DefaultsKey.panelNavigationEnabled: true,
-        DefaultsKey.monitorGraphCPU: true,
-        DefaultsKey.monitorGraphGPU: true,
-        DefaultsKey.monitorGraphMemory: true,
-        DefaultsKey.monitorGraphNetwork: true,
-        DefaultsKey.monitorGraphDisk: true,
-        DefaultsKey.monitorGraphPower: true,
-        DefaultsKey.monitorGraphBattery: true,
-        DefaultsKey.monitorGraphScale: true,
         // Every per-item block shows by default; users hide what they don't want.
-        DefaultsKey.monitorSysTemps: true,
-        DefaultsKey.monitorSysCPU: true,
-        DefaultsKey.monitorSysCPUCores: true,
-        DefaultsKey.monitorSysGPU: true,
-        DefaultsKey.monitorSysBattery: true,
-        DefaultsKey.monitorSysMemory: true,
-        DefaultsKey.monitorSysAlerts: true,
-        DefaultsKey.monitorSysUptime: true,
-        DefaultsKey.monitorSysConnectedDevices: true,
-        DefaultsKey.monitorNetSpeed: true,
-        DefaultsKey.monitorNetApps: true,
-        DefaultsKey.monitorNetTotals: true,
-        DefaultsKey.monitorNetAddresses: true,
-        DefaultsKey.monitorNetTest: true,
-        DefaultsKey.networkSpeedUnit: NetworkSpeedUnit.bytes.rawValue,
-        DefaultsKey.monitorDiskUsage: true,
-        DefaultsKey.monitorDiskActivity: true,
-        DefaultsKey.monitorDiskSMART: true,
-        DefaultsKey.monitorDiskProtection: true,
-        DefaultsKey.monitorDiskTools: true,
-        DefaultsKey.monitorPwrTemperature: true,
-        DefaultsKey.monitorPwrSystem: true,
-        DefaultsKey.monitorPwrAdapter: true,
-        DefaultsKey.monitorPwrBattery: true,
-        DefaultsKey.monitorPwrTimeRemaining: true,
-        DefaultsKey.monitorPwrHealth: true,
         DefaultsKey.monitorPwrPeripherals: false,
         DefaultsKey.monitorAlertCPU: false,
         DefaultsKey.monitorAlertCPUTemperature: false,
@@ -1603,6 +1490,7 @@ enum Defaults {
         DefaultsKey.screenshotAddToShelf: false,
         DefaultsKey.screenshotPreviewPosition: ScreenshotSupport.QuickPreviewPosition.automatic.rawValue,
         DefaultsKey.capturePresentationDestination: CapturePresentationRouting.Preference.automatic.rawValue,
+        DefaultsKey.systemMonitorOpenAt: SystemMonitorOpenRouting.Preference.automatic.rawValue,
         DefaultsKey.screenshotPreviewTakesFocus: true,
         DefaultsKey.capturePreviewCloseAfter: CapturePreviewClosePolicy.focusLost.rawValue,
         DefaultsKey.screenshotUploadDuration: ScreenshotShareDuration.oneHour.rawValue,
@@ -1674,7 +1562,6 @@ enum Defaults {
         migrateScrollInverterAxes(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
         migrateRemovedScrollExceptions(in: defaults)
-        migrateBatteryTemperatureVisibility(in: defaults)
         migratePowerPeripheralsVisibility(in: defaults)
         migrateSwitcherPreviewSize(in: defaults)
         migrateNotchWatchAvailability(in: defaults)
@@ -1683,6 +1570,9 @@ enum Defaults {
         migratePageOwnedControls(in: defaults)
         migrateAudioControls(in: defaults)
         migrateFullscreenActivityVisibility(in: defaults)
+        migrateURLCleanerRules(in: defaults)
+        retireKeepAwakeLastPick(in: defaults)
+        retireKeepAwakeLaunchAndRightClick(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         defaults.register(defaults: ["NSInitialToolTipDelay": 300])
@@ -1713,6 +1603,40 @@ enum Defaults {
     /// the restore relaunches, and an old file carries no version.
     static func migrateRadialMenuTriggers(defaults: UserDefaults) {
         RadialMenuTriggerMigration.run(in: defaults)
+    }
+
+    /// Stay Awake's switch restarted the last pick, an end time or a preset.
+    /// It now starts the default duration, which only its own setting
+    /// changes, so the remembered end time goes.
+    static func retireKeepAwakeLastPick(in defaults: UserDefaults) {
+        for key in ["keepAwakeSwitchUsesUntil", "keepAwakeUntilTime"] where defaults.object(forKey: key) != nil {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    /// Stay Awake no longer starts when Lattice opens or toggles on a right
+    /// click of the menu bar icon; the icon's right click always shows its
+    /// menu. Their saved switches go, and with them out of the registered
+    /// defaults, backups neither export nor restore them.
+    static func retireKeepAwakeLaunchAndRightClick(in defaults: UserDefaults) {
+        for key in ["keepAwakeAutoStart", "keepAwakeRightClickToggle"] where defaults.object(forKey: key) != nil {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    /// Clean URL kept three lists: names added everywhere, names added to one
+    /// host, and built-in names switched off. URL Sanitizer keeps one list of
+    /// sites. Moves an edited setup over once, then drops the old keys; an
+    /// untouched one stays unset and reads as the built-in sites.
+    static func migrateURLCleanerRules(in defaults: UserDefaults) {
+        let legacyKeys = [DefaultsKey.urlCleanerCustomParameters, DefaultsKey.urlCleanerSiteParameters,
+                          DefaultsKey.urlCleanerDisabledParameters]
+        let legacy = legacyKeys.map { defaults.string(forKey: $0) ?? "" }
+        defer { legacyKeys.forEach(defaults.removeObject(forKey:)) }
+        guard defaults.object(forKey: DefaultsKey.urlSanitizerSites) == nil,
+              legacy.contains(where: { !$0.isEmpty }) else { return }
+        let sites = URLCleaning.migratedSites(globalNames: legacy[0], siteNames: legacy[1], disabledNames: legacy[2])
+        defaults.set(URLCleaning.Rules(sites: sites).storageValue, forKey: DefaultsKey.urlSanitizerSites)
     }
 
     /// Start text filtering off for existing installations as well. A distinct
@@ -1836,12 +1760,6 @@ enum Defaults {
         guard defaults.object(forKey: DefaultsKey.switcherPreviewSize) == nil else { return }
         defaults.set(defaults.string(forKey: DefaultsKey.previewSize) ?? "normal",
                      forKey: DefaultsKey.switcherPreviewSize)
-    }
-
-    static func migrateBatteryTemperatureVisibility(in defaults: UserDefaults) {
-        guard defaults.object(forKey: DefaultsKey.monitorPwrTemperature) == nil else { return }
-        defaults.set(defaults.object(forKey: DefaultsKey.monitorSysTemps) as? Bool ?? true,
-                     forKey: DefaultsKey.monitorPwrTemperature)
     }
 
     /// The Power card listed peripheral batteries only while the menu bar
@@ -2263,9 +2181,6 @@ enum Defaults {
         allowedMenuBarMemoryStyles.contains(style) ? style : "percent"
     }
 
-    static func sanitizedMonitorMemoryMetric(_ metric: String) -> String {
-        allowedMonitorMemoryMetrics.contains(metric) ? metric : "used"
-    }
 
     static func sanitizedClipboardHistoryLimit(_ value: Int) -> Int {
         allowedClipboardHistoryLimits.contains(value) ? value : 50

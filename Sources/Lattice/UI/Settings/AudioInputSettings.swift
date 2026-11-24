@@ -28,7 +28,7 @@ struct AudioInputSettings: View {
     }
 
     private var microphoneCard: some View {
-        SettingsCard(symbol: "mic", title: l10n.s.microphoneControlEnable, headerSpacing: 0, headerAccessory: {
+        SettingsCard(symbol: "mic", title: l10n.s.microphoneControlEnable, headerAccessory: {
             Toggle(l10n.s.microphoneControlEnable, isOn: $microphoneControlEnabled)
                 .labelsHidden()
                 .toggleStyle(.switch)
@@ -43,31 +43,31 @@ struct AudioInputSettings: View {
                     }
                 }
         }) {
-            // Stays laid out and unrolls as a clipped accordion; the rows are
-            // passive readouts, so keeping them while folded costs nothing.
-            VStack(alignment: .leading, spacing: 14) {
-                AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel,
-                                         levelTitle: SettingsOwnershipStrings.audioInput(l10n.language).level,
-                                         sliderWidth: 140,
-                                         showsUnavailableLabel: false,
-                                         showsIcons: false)
+            if microphoneControlEnabled {
+                VStack(alignment: .leading, spacing: 14) {
+                    AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel,
+                                             levelTitle: SettingsOwnershipStrings.audioInput(l10n.language).level,
+                                             sliderWidth: 140,
+                                             showsUnavailableLabel: false,
+                                             showsIcons: false)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    ShortcutPreferenceRow(role: .micMute, alignment: .center) {
-                        MicMuteService.shared.syncWithPreferences()
+                    VStack(alignment: .leading, spacing: 4) {
+                        ShortcutPreferenceRow(role: .micMute, alignment: .center) {
+                            MicMuteService.shared.syncWithPreferences()
+                        }
+                        if micShortcutEnabled, micMute.shortcutRegistrationFailed {
+                            Text(l10n.s.shortcutUnavailable)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                                .transition(.settingsReveal)
+                        }
                     }
-                    if micShortcutEnabled, micMute.shortcutRegistrationFailed {
-                        Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
+
+                    SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
                 }
-
-                SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
+                .padding(.leading, settingsRowTextInset)
+                .transition(.settingsReveal)
             }
-            .padding(.leading, settingsRowTextInset)
-            .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
-            .settingsCollapsible(isExpanded: microphoneControlEnabled)
         }
     }
 

@@ -63,6 +63,37 @@ extension LatticeHubService {
         }
     }
 
+    /// A menu bar reading's click when the island is not used: the floating
+    /// Hub opens straight on System at that reading, below the reading, and
+    /// a second click on the same reading closes it, as the island does.
+    func toggleSystemMetric(_ kind: MetricDetailKind, anchoredBelow anchor: NSRect?) {
+        let navigation = SystemNavigationState.shared
+        if isVisible, activeUtility == .system, navigation.selectedMetric == kind {
+            hide()
+            systemMetricFromMenuBar = nil
+            return
+        }
+        // An unpinned Hub hides on the mouse-down of a click outside it, so
+        // a second click on the reading it shows arrives with it already
+        // hidden. That click only closed it; a click on another reading
+        // still opens the Hub on that one.
+        let justDismissed = ProcessInfo.processInfo.systemUptime - lastDismissedTime < 0.35
+        if !isVisible, justDismissed, systemMetricFromMenuBar == kind {
+            systemMetricFromMenuBar = nil
+            return
+        }
+        guard LatticeHubItem.system.isAvailable() else { return }
+        systemMetricFromMenuBar = kind
+        navigation.selectMetric(kind)
+        if isVisible {
+            opensUtilityDirectly = true
+            activeUtility = .system
+            panel?.makeKey()
+            return
+        }
+        show(forceFloating: true, anchoredBelow: anchor, initialUtility: .system)
+    }
+
     /// Dedicated Recent Captures shortcut: use the existing floating
     /// Hub utility without showing/animating through its home page.
     /// Re-entering an already visible Hub switches pages immediately.
@@ -146,6 +177,11 @@ extension LatticeHubService {
         opensUtilityDirectly = false
         panelResizer.cancel()
         lastDismissedTime = ProcessInfo.processInfo.systemUptime
+        // Only a Hub still showing a reading can have been closed by that
+        // reading's click; after any other utility, the next click opens it.
+        if activeUtility != .system || SystemNavigationState.shared.selectedMetric != systemMetricFromMenuBar {
+            systemMetricFromMenuBar = nil
+        }
         stayAwakeOptionsPresented = false
         removeMonitors()
         isEditing = false

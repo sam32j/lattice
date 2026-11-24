@@ -162,95 +162,104 @@ struct NotchSettings: View {
                                 .labelsHidden().toggleStyle(.switch)
                         }
                         if enabled {
-                            let labels = FeatureStrings.notchLiveActivitySettings(l10n.language)
-                            ShortcutPreferenceRow(role: .notch, label: labels.openWithShortcut, symbolName: nil) {
-                                NotchService.shared.syncWithPreferences()
-                            }
-                            .padding(.leading, settingsRowTextInset)
-                            .disabled(!enabled)
-                            if notch.shortcutRegistrationFailed {
-                                Text(l10n.s.shortcutUnavailable)
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                                    .padding(.leading, settingsRowTextInset)
-                            }
-                            SettingsControlRow(title: labels.showOn) {
-                                Picker(labels.showOn, selection: $display) {
-                                    Text(text.automatic).tag(NotchDisplay.automatic.rawValue)
-                                    if PowerSampler.hasInternalBattery {
-                                        Text(text.builtIn).tag(NotchDisplay.builtIn.rawValue)
-                                    }
-                                    Text(text.mainDisplay).tag(NotchDisplay.main.rawValue)
-                                    Text(text.followPointer).tag(NotchDisplay.pointer.rawValue)
-                                    Text(text.allDisplays).tag(NotchDisplay.all.rawValue)
+                            VStack(alignment: .leading, spacing: 13) {
+                                let labels = FeatureStrings.notchLiveActivitySettings(l10n.language)
+                                ShortcutPreferenceRow(role: .notch, label: labels.openWithShortcut, symbolName: nil) {
+                                    NotchService.shared.syncWithPreferences()
                                 }
-                                .pickerStyle(.menu)
-                                .labelsHidden()
-                            }
-                            .padding(.leading, settingsRowTextInset)
-                            .disabled(!enabled)
-                            let opening = FeatureStrings.notchOpening(l10n.language)
-                            SettingsControlRow(title: opening.defaultPage) {
-                                NotchDefaultPagePicker(
-                                    title: opening.defaultPage,
-                                    selection: defaultPageBinding,
-                                    lastPageTitle: editor.lastPage,
-                                    hubTitle: SettingsFollowupStrings.text(.allTools, l10n.language),
-                                    modules: defaultPageModules.map { (id: $0.rawValue, title: $0.title(l10n.language)) }
-                                )
-                            }
-                            .padding(.leading, settingsRowTextInset)
-                            .disabled(!enabled)
-                            SettingsRow(symbol: "arrow.down.backward.and.arrow.up.forward.rectangle", title: labels.dynamicIslandSize) {
-                                Picker(labels.dynamicIslandSize, selection: Binding(get: {
-                                    size == NotchSize.compact.rawValue ? NotchSize.compact.rawValue : NotchSize.spacious.rawValue
-                                }, set: { size = $0 })) {
-                                    Text(text.compact).tag(NotchSize.compact.rawValue)
-                                    Text(text.spacious).tag(NotchSize.spacious.rawValue)
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-                                .fixedSize()
-                            }
-                            .disabled(!enabled)
-                            switchRow("hand.draw", labels.useScrollGestures,
-                                      isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
+                                .padding(.leading, settingsRowTextInset)
                                 .disabled(!enabled)
-                            if gesturesEnabled {
-                                SettingsToggleRow(title: labels.turnOnHapticFeedback, isOn: $hapticFeedback)
-                                    .padding(.leading, settingsRowTextInset)
+                                if notch.shortcutRegistrationFailed {
+                                    Text(l10n.s.shortcutUnavailable)
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                        .padding(.leading, settingsRowTextInset)
+                                        .transition(.settingsReveal)
+                                }
+                                SettingsControlRow(title: labels.showOn) {
+                                    Picker(labels.showOn, selection: $display) {
+                                        Text(text.automatic).tag(NotchDisplay.automatic.rawValue)
+                                        if PowerSampler.hasInternalBattery {
+                                            Text(text.builtIn).tag(NotchDisplay.builtIn.rawValue)
+                                        }
+                                        Text(text.mainDisplay).tag(NotchDisplay.main.rawValue)
+                                        Text(text.followPointer).tag(NotchDisplay.pointer.rawValue)
+                                        Text(text.allDisplays).tag(NotchDisplay.all.rawValue)
+                                    }
+                                    .pickerStyle(.menu)
+                                    .labelsHidden()
+                                }
+                                .padding(.leading, settingsRowTextInset)
+                                .disabled(!enabled)
+                                let opening = FeatureStrings.notchOpening(l10n.language)
+                                SettingsControlRow(title: opening.defaultPage) {
+                                    NotchDefaultPagePicker(
+                                        title: opening.defaultPage,
+                                        selection: defaultPageBinding,
+                                        lastPageTitle: editor.lastPage,
+                                        hubTitle: SettingsFollowupStrings.text(.allTools, l10n.language),
+                                        modules: defaultPageModules.map { (id: $0.rawValue, title: $0.title(l10n.language)) }
+                                    )
+                                }
+                                .padding(.leading, settingsRowTextInset)
+                                .disabled(!enabled)
+                                SettingsRow(symbol: "arrow.down.backward.and.arrow.up.forward.rectangle", title: labels.dynamicIslandSize) {
+                                    Picker(labels.dynamicIslandSize, selection: Binding(get: {
+                                        size == NotchSize.compact.rawValue ? NotchSize.compact.rawValue : NotchSize.spacious.rawValue
+                                    }, set: { size = $0 })) {
+                                        Text(text.compact).tag(NotchSize.compact.rawValue)
+                                        Text(text.spacious).tag(NotchSize.spacious.rawValue)
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.menu)
+                                    .fixedSize()
+                                }
+                                .disabled(!enabled)
+                                switchRow("hand.draw", labels.useScrollGestures,
+                                          isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
+                                    .disabled(!enabled)
+                                if gesturesEnabled {
+                                    SettingsToggleRow(title: labels.turnOnHapticFeedback, isOn: $hapticFeedback)
+                                        .padding(.leading, settingsRowTextInset)
+                                        .disabled(!enabled)
+                                        .transition(.settingsReveal)
+                                }
+                                switchRow("camera.viewfinder", labels.showInScreenshots, isOn: $showInCaptures)
                                     .disabled(!enabled)
                             }
-                            switchRow("camera.viewfinder", labels.showInScreenshots, isOn: $showInCaptures)
-                                .disabled(!enabled)
+                            .transition(.settingsReveal)
                         }
                     }
                     if enabled {
-                        if AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(text.menuBarAccessHint)
-                                    .font(.callout).foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                PermissionRow(kind: .accessibility)
+                        VStack(alignment: .leading, spacing: 20) {
+                            if AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(text.menuBarAccessHint)
+                                        .font(.callout).foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    PermissionRow(kind: .accessibility)
+                                }
+                                .transition(.settingsReveal)
                             }
+
+                            openingCard
+                                .id("behavior")
+                                .disabled(!enabled)
+                                .opacity(enabled ? 1.0 : 0.5)
+
+                            Divider()
+
+                            sectionList
+                                .id("content")
+                                .disabled(!enabled)
+                                .opacity(enabled ? 1.0 : 0.5)
+
+                            activityPage
+                            .id("activity")
+                            .disabled(!enabled)
+                            .opacity(enabled ? 1.0 : 0.5)
                         }
-
-                        openingCard
-                            .id("behavior")
-                            .disabled(!enabled)
-                            .opacity(enabled ? 1.0 : 0.5)
-
-                        Divider()
-
-                        sectionList
-                            .id("content")
-                            .disabled(!enabled)
-                            .opacity(enabled ? 1.0 : 0.5)
-
-                        activityPage
-                        .id("activity")
-                        .disabled(!enabled)
-                        .opacity(enabled ? 1.0 : 0.5)
+                        .transition(.settingsReveal)
                     }
                 }
                 .frame(maxWidth: 760)

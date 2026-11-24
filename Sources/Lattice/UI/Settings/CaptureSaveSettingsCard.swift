@@ -51,12 +51,14 @@ struct CaptureSaveSettingsCard: View {
                                 allowsCounter: false, datesOnly: true)
                 if CaptureSaveNaming.counterCount(subfolders) > 0 {
                     validation(strings.subfolderCounter)
+                        .transition(.settingsReveal)
                 }
                 saveTemplateRow(title: strings.fileName, text: $nameTemplate,
                                 placeholder: CaptureSaveNaming.defaultTemplate,
                                 insertion: fileInsertion, allowsCounter: true)
                 if CaptureSaveNaming.counterCount(nameTemplate) > 1 {
                     validation(strings.oneCounter)
+                        .transition(.settingsReveal)
                 }
 
                 // Reserve the footnote's full height before the debounced

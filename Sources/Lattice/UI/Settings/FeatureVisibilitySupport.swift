@@ -10,7 +10,7 @@ enum SettingsPage: Hashable {
     case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
     case mouse, keyboard, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audio, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, notch, notchMascot, notchWidget(NotchModule), notchCompanion
     case shortcuts, dataPermissions, about, videoDownloader
-    case captureScreenshotOptions, windowLayoutShortcuts
+    case captureScreenshotOptions, windowLayoutShortcuts, monitorMenuBar
 }
 
 /// Stable, non-localized identities for destinations inside shared Settings
@@ -51,12 +51,10 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case cleaningMode
     case soundOutputSwitcher
     case keyboardBrightnessShortcuts
-    case fanControl
     case windowMaximizer
     case quitProtection
     case keyboardDebounce
     case superKey
-    case power
 
     var page: SettingsPage {
         switch self {
@@ -81,7 +79,6 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
             return .screenshot
         case .screenRecorder:
             return .screenRecorder
-        case .fanControl, .power: return .monitor
         case .windowMaximizer, .spacesOrder: return .windowLayout
         }
     }
@@ -236,12 +233,10 @@ extension AppFeature {
         case .screenRecorder:
             return FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)
 
-        case .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .connectedDevices:
+        // Every module is a switch in the page's title bar menu.
+        case .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .monitorPower,
+             .connectedDevices, .fanControl:
             return FeatureSettingsDestination(.monitor)
-        case .monitorPower:
-            return FeatureSettingsDestination(.monitor, sectionAnchor: .power)
-        case .fanControl:
-            return FeatureSettingsDestination(.monitor, sectionAnchor: .fanControl)
         }
     }
 }
@@ -258,7 +253,7 @@ enum FeatureVisibilitySupport {
     static func features(for page: SettingsPage) -> [AppFeature] {
         switch page {
         case .energy: return [.keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper]
-        case .monitor: return monitorFeatures
+        case .monitor, .monitorMenuBar: return monitorFeatures
         case .dock: return [.dockPreview, .dockClick, .switcher]
         case .windowLayout: return [.windowLayout, .windowMaximizer, .autoQuit, .spacesOrder]
         case .windowLayoutShortcuts: return [.windowLayout]
