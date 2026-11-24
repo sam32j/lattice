@@ -13,7 +13,6 @@ struct AppUninstallerTab: View {
     @ObservedObject private var homebrew = HomebrewManager.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var catalog = AppUninstallerCatalog.shared
-    @AppStorage(DefaultsKey.uninstallerCommandBarEnabled) private var commandBarEnabled = false
     @State private var query = ""
     @State private var scope = AppUninstallerCatalog.Scope.all
     @State private var armed = false
@@ -61,7 +60,7 @@ struct AppUninstallerTab: View {
                                         uninstaller.select(appURL: app)
                                     }
                                 }) {
-                Button(s.uninstallerChoose, action: choose)
+                Button(strings.uninstallButton, action: choose)
             }
             if let refusal = uninstaller.refusal {
                 UninstallRefusalNote(refusal: refusal)
@@ -76,10 +75,14 @@ struct AppUninstallerTab: View {
                 let apps = catalog.filtered(query: query, scope: scope)
                 AppManagerSectionHeader(title: strings.applicationsTitle,
                                         meta: String(format: strings.appCountFormat, apps.count)) {
-                    Text(AppManagerFormat.bytes(apps.compactMap(\.size).reduce(0, +)))
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
+                    // Only once sizes have come in; none read yet is not zero.
+                    let sizes = apps.compactMap(\.size)
+                    if !sizes.isEmpty {
+                        Text(AppManagerFormat.bytes(sizes.reduce(0, +)))
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
                 }
                 SettingsCard {
                     if catalog.isLoading {
@@ -104,12 +107,6 @@ struct AppUninstallerTab: View {
                     }
                 }
             }
-            SettingsCard {
-                SettingsControlRow(title: s.uninstallerCommandBarToggle, caption: s.uninstallerCommandBarCaption) {
-                    Toggle(s.uninstallerCommandBarToggle, isOn: $commandBarEnabled).labelsHidden()
-                }
-            }
-            .toggleStyle(.switch)
         }
     }
 
@@ -349,7 +346,7 @@ struct AppUninstallerTab: View {
                 } else {
                     Image(systemName: "app.dashed").font(.system(size: 52)).foregroundStyle(.secondary)
                 }
-                Image(systemName: failed.isEmpty ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                Image(systemName: UninstallerSupport.doneSymbol(hasLeftovers: !failed.isEmpty))
                     .font(.system(size: 22))
                     .foregroundStyle(.white, failed.isEmpty ? Color.green : Color.orange)
                     .background(Circle().fill(Color(nsColor: .windowBackgroundColor)).padding(-2))

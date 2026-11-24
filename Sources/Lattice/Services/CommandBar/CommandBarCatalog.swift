@@ -727,32 +727,30 @@ enum CommandBarCatalog {
                 subtitle: area(.uninstaller, under: s.uninstallerName),
                 icon: .symbol("externaldrive.badge.minus"),
                 run: { _ in openSettings(at: AppFeature.uninstaller.settingsDestination) }))
-            if UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled) {
-                entries.append(CommandBarEntry(
-                    id: "uninstall.browse",
-                    title: s.uninstallerCommandBarBrowseTitle,
-                    subtitle: s.uninstallerName,
-                    icon: .symbol("externaldrive.badge.minus"),
-                    // A habit boost on this row could otherwise outweigh the
-                    // Finder selection's fixed rank bias after enough clicks,
-                    // putting the wrong "Uninstall" row first; a plain
-                    // navigation entry has no business competing on habit.
-                    countsUsage: false,
-                    keepsBarOpen: true,
-                    run: { _ in
-                        let service = CommandBarService.shared
-                        service.query = ""
-                        service.setCategory(.uninstallApps)
-                    }))
-                entries.append(CommandBarEntry(
-                    id: "uninstall.finder",
-                    title: s.uninstallerCommandBarFinderTitle,
-                    subtitle: s.uninstallerName,
-                    icon: .symbol("app.badge"),
-                    countsUsage: false,
-                    keepsBarOpen: true,
-                    run: { _ in CommandBarService.shared.uninstallFinderSelection() }))
-            }
+            entries.append(CommandBarEntry(
+                id: "uninstall.browse",
+                title: s.uninstallerCommandBarBrowseTitle,
+                subtitle: s.uninstallerName,
+                icon: .symbol("externaldrive.badge.minus"),
+                // A habit boost on this row could otherwise outweigh the
+                // Finder selection's fixed rank bias after enough clicks,
+                // putting the wrong "Uninstall" row first; a plain
+                // navigation entry has no business competing on habit.
+                countsUsage: false,
+                keepsBarOpen: true,
+                run: { _ in
+                    let service = CommandBarService.shared
+                    service.query = ""
+                    service.setCategory(.uninstallApps)
+                }))
+            entries.append(CommandBarEntry(
+                id: "uninstall.finder",
+                title: s.uninstallerCommandBarFinderTitle,
+                subtitle: s.uninstallerName,
+                icon: .symbol("app.badge"),
+                countsUsage: false,
+                keepsBarOpen: true,
+                run: { _ in CommandBarService.shared.uninstallFinderSelection() }))
         }
         if AppFeature.quickLauncher.isAvailable {
             entries.append(CommandBarEntry(
@@ -1079,9 +1077,7 @@ enum CommandBarCatalog {
     static func uninstallEntries(_ apps: [InstalledApps.InstalledApp],
                                  uninstallable: Set<String>,
                                  bar: CommandBarFeatureStrings) -> [CommandBarEntry] {
-        guard AppFeature.uninstaller.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled)
-        else { return [] }
+        guard AppFeature.uninstaller.isAvailable else { return [] }
         let ownBundleID = Bundle.main.bundleIdentifier
         return apps.filter {
             !$0.isSystem && $0.bundleID != ownBundleID && uninstallable.contains($0.id)
@@ -1104,7 +1100,6 @@ enum CommandBarCatalog {
     /// An app the uninstaller would refuse gets no row.
     static func uninstallSelectionEntries(urls: [URL], automationDenied: Bool) -> [CommandBarEntry] {
         guard AppFeature.uninstaller.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled),
               urls.count == 1, let url = urls.first,
               url.pathExtension.lowercased() == "app",
               InstalledApps.isInApplicationsFolder(url),

@@ -259,7 +259,6 @@ enum DefaultsKey {
     static let ejectDisksShortcut = "ejectDisksShortcut"
     static let ejectDisksShortcutEnabled = "ejectDisksShortcutEnabled"
     static let desktopCurtainActive = "desktopCurtainActive"
-    static let uninstallerCommandBarEnabled = "uninstallerCommandBarEnabled"
     static let killProcessSortBy = "killProcessSortBy" // cpu | memory | name | pid
     static let killProcessSortAscending = "killProcessSortAscending"
     // Kill Process's scope (apps | background | system | everything), one per surface.
@@ -1231,7 +1230,6 @@ enum Defaults {
         DefaultsKey.darkModeShortcut: GlobalShortcut.darkModeDefault.storageValue,
         DefaultsKey.ejectDisksShortcutEnabled: false,
         DefaultsKey.ejectDisksShortcut: GlobalShortcut.ejectDisksDefault.storageValue,
-        DefaultsKey.uninstallerCommandBarEnabled: false,
         DefaultsKey.killProcessSortBy: "cpu",
         DefaultsKey.killProcessSortAscending: false,
         DefaultsKey.killProcessScopeSettings: KillProcessScope.everything.rawValue,

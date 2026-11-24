@@ -496,8 +496,17 @@ enum AppManagementFeatureTests {
                "an app is named from the file manager's name without its .app")
         suite.expect(InstalledApps.name(for: "com.example.not-installed.app") == "com.example.not-installed.app",
                "an identifier that names no installed app is shown as it is, even when it ends in .app")
-        for path in ["Sources/Lattice/UI/Uninstall/UninstallerView.swift",
-                     "Sources/Lattice/UI/MenuPanel/PanelUninstallerView.swift"] {
+        // The App Manager tab lists apps through its catalog, which takes the
+        // same shared check, and says why a selection was refused.
+        let tabSource = (try? String(contentsOfFile: "Sources/Lattice/UI/Settings/AppUninstallerTab.swift",
+                                     encoding: .utf8)) ?? ""
+        let catalogSource = (try? String(contentsOfFile: "Sources/Lattice/UI/Settings/AppUninstallerCatalog.swift",
+                                         encoding: .utf8)) ?? ""
+        suite.expect(catalogSource.contains("UninstallerSupport.offeredApplications()")
+                && tabSource.contains("UninstallRefusalNote(refusal: refusal")
+                && tabSource.components(separatedBy: "uninstaller.clearRefusal()").count == 3,
+               "the App Uninstaller tab offers only accepted apps and explains a refused one")
+        for path in ["Sources/Lattice/UI/MenuPanel/PanelUninstallerView.swift"] {
             let pickerSource = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
             suite.expect(pickerSource.contains("UninstallerSupport.offeredApplications()"),
                    "\(path) offers only the apps the shared selection checks accept")
