@@ -124,10 +124,12 @@ enum MonitorModules {
         let defaults = UserDefaults.standard
         if on {
             let saved = Set(defaults.stringArray(forKey: DefaultsKey.monitorModulesBeforeOff) ?? [])
-            // Fan control is a beta, so it only comes back if it was on.
-            let restore = saved.isEmpty
-                ? supported.filter { $0 != .fanControl }
-                : supported.filter { saved.contains($0.rawValue) }
+            // Fan control is a beta, so it only comes back if it was on: the
+            // fallback, for nothing saved or nothing saved still supported,
+            // is every supported module but fan control.
+            let fallback = supported.filter { $0 != .fanControl }
+            let remembered = supported.filter { saved.contains($0.rawValue) }
+            let restore = remembered.isEmpty ? fallback : remembered
             FeatureRuntime.shared.setAvailable(restore.isEmpty ? supported : restore, true)
         } else {
             let enabled = supported.filter(\.isAvailable)
