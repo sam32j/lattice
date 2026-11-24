@@ -8,6 +8,7 @@
 # The bundle is staged in a temporary directory outside ~/Documents: folders synced
 # by File Provider gain xattrs (com.apple.provenance etc.) that invalidate codesign.
 set -euo pipefail
+unsetopt BG_NICE
 cd "$(dirname "$0")"
 unset TZ
 
@@ -18,12 +19,14 @@ if [[ "$COMPILER_JOBS" != <1-> ]]; then
     exit 2
 fi
 
-# The icon catalog and the bundle are staged in temp dirs; sweep both however
-# the script ends.
+# Temp dirs used for parallel build logs, the icon catalog and the staged
+# bundle; sweep all of them however the script ends.
+BUILD_LOG_TMP=""
 ICON_TMP=""
 STAGE_TMP=""
 
 cleanup() {
+    [[ -n "$BUILD_LOG_TMP" ]] && rm -rf "$BUILD_LOG_TMP"
     [[ -n "$ICON_TMP" ]] && rm -rf "$ICON_TMP"
     [[ -n "$STAGE_TMP" ]] && rm -rf "$STAGE_TMP"
     return 0
@@ -136,10 +139,22 @@ if (( DEV || INSTALL )) && [[ -z "$(resolved_signing_identity || true)" ]]; then
     fi
 fi
 
+# Suppress codesign's routine 'replacing existing signature' notice while
+# keeping any real error output intact.
+codesign_quiet() {
+    local output rc=0
+    output="$(/usr/bin/codesign "$@" 2>&1)" || rc=$?
+    if [[ -n "$output" ]]; then
+        output="$(print -r -- "$output" | grep -v ': replacing existing signature$' || true)"
+        [[ -n "$output" ]] && print -u2 -r -- "$output"
+    fi
+    return "$rc"
+}
+
 codesign_with_timestamp_retry() {
     local attempt
     for attempt in 1 2 3; do
-        if /usr/bin/codesign "$@"; then
+        if codesign_quiet "$@"; then
             return 0
         fi
         if (( attempt < 3 )); then
@@ -174,6 +189,17 @@ write_swift_output_file_map() {
     } > "$output_file"
 }
 
+compute_build_stamp() {
+    local config="$1"
+    shift
+    {
+        print -r -- "$config"
+        if (( $# > 0 )); then
+            LC_ALL=C /usr/bin/shasum -a 256 "$@"
+        fi
+    } | /usr/bin/shasum -a 256 | /usr/bin/awk '{print $1}'
+}
+
 finalize_installed_bundle_after_child() {
     local bundle="$1"
     local helper="$bundle/Contents/Library/LaunchServices/$FAN_HELPER_ID"
@@ -185,11 +211,11 @@ finalize_installed_bundle_after_child() {
     sleep 3
     if [[ -n "$identity" ]]; then
         if [[ "$identity" == "$LEGACY_IDENTITY" ]]; then
-            [[ -f "$helper" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
+            [[ -f "$helper" ]] && codesign_quiet --force --strip-disallowed-xattrs \
                 --identifier "$FAN_HELPER_ID" --sign "$identity" "$helper"
-            [[ -f "$adapter" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
+            [[ -f "$adapter" ]] && codesign_quiet --force --strip-disallowed-xattrs \
                 --identifier "$NOW_PLAYING_ADAPTER_ID" --sign "$identity" "$adapter"
-            /usr/bin/codesign --force --strip-disallowed-xattrs --sign "$identity" "$bundle"
+            codesign_quiet --force --strip-disallowed-xattrs --sign "$identity" "$bundle"
         else
             [[ -f "$helper" ]] && codesign_with_timestamp_retry --force --strip-disallowed-xattrs \
                 --options runtime --timestamp --identifier "$FAN_HELPER_ID" --sign "$identity" "$helper"
@@ -199,11 +225,11 @@ finalize_installed_bundle_after_child() {
                 --entitlements "$ENTITLEMENTS" --sign "$identity" "$bundle"
         fi
     else
-        [[ -f "$helper" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
+        [[ -f "$helper" ]] && codesign_quiet --force --strip-disallowed-xattrs \
             --identifier "$FAN_HELPER_ID" --sign - "$helper"
-        [[ -f "$adapter" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
+        [[ -f "$adapter" ]] && codesign_quiet --force --strip-disallowed-xattrs \
             --identifier "$NOW_PLAYING_ADAPTER_ID" --sign - "$adapter"
-        /usr/bin/codesign --force --strip-disallowed-xattrs --sign - "$bundle"
+        codesign_quiet --force --strip-disallowed-xattrs --sign - "$bundle"
     fi
     [[ -f "$helper" ]] && /usr/bin/codesign --verify --strict "$helper"
     [[ -f "$adapter" ]] && /usr/bin/codesign --verify --strict "$adapter"
@@ -799,7 +825,6 @@ if (( TEST )); then
     exit $test_status
 fi
 
-echo "▸ Compiling ($BUILD_CONFIGURATION) against $(basename "$SDK")…"
 APP_SOURCES=(Sources/Lattice/**/*.swift)
 if (( ! DEV )); then
     # A release starts from an empty build directory, so nothing an earlier
@@ -812,77 +837,180 @@ APP_OBJECT_DIR="build/objects/$EXECUTABLE"
 mkdir -p build "$APP_OBJECT_DIR"
 APP_OUTPUT_FILE_MAP="$APP_OBJECT_DIR/output-file-map.json"
 write_swift_output_file_map "$APP_OUTPUT_FILE_MAP" "$APP_OBJECT_DIR" "${APP_SOURCES[@]}"
+
+FAN_HELPER_SOURCES=(
+    Sources/Lattice/Core/DownstreamIdentity.swift
+    Sources/Lattice/Services/FanControl/FanControlSupport.swift
+    Sources/Lattice/Services/FanControl/FanControlXPC.swift
+    Sources/Lattice/Services/SystemMonitor/SMCClient.swift
+    Sources/Lattice/Services/Metrics/TemperatureSensorSelector.swift
+    Sources/Lattice/Services/FanControl/FanControlHardware.swift
+    Sources/FanControlHelper/main.swift
+)
+FAN_HELPER_STAMP_FILE="build/.stamp-fan-helper-$FAN_HELPER_ID"
+FAN_HELPER_STAMP="$(compute_build_stamp \
+    "fan-helper|target=$TARGET|sdk=$SDK|compat=${SDK_COMPAT_FLAGS[*]}|variant=${BUILD_VARIANT_FLAGS[*]}|linker=${LINKER_FLAGS[*]}|id=$FAN_HELPER_ID" \
+    "${FAN_HELPER_SOURCES[@]}")"
+NEED_FAN_HELPER=1
+if [[ -x "build/$FAN_HELPER_ID" && -f "$FAN_HELPER_STAMP_FILE" && "$(<"$FAN_HELPER_STAMP_FILE")" == "$FAN_HELPER_STAMP" ]]; then
+    NEED_FAN_HELPER=0
+fi
+
+NOW_PLAYING_SOURCES=(
+    Sources/NowPlayingAdapter/NowPlayingAdapter.swift
+    Sources/NowPlayingAdapter/NowPlayingQueue.swift
+    Sources/NowPlayingAdapter/NowPlayingSelection.swift
+    Sources/Lattice/Services/Notch/NotchPlaybackSource.swift
+    Sources/Lattice/Services/Notch/NotchPlaybackCommand.swift
+)
+NOW_PLAYING_STAMP_FILE="build/.stamp-now-playing"
+NOW_PLAYING_STAMP="$(compute_build_stamp \
+    "now-playing|target=$TARGET|sdk=$SDK|compat=${SDK_COMPAT_FLAGS[*]}|linker=${LINKER_FLAGS[*]}|out=$NOW_PLAYING_ADAPTER" \
+    "${NOW_PLAYING_SOURCES[@]}")"
+NEED_NOW_PLAYING=1
+if [[ -f "build/$NOW_PLAYING_ADAPTER" && -f "$NOW_PLAYING_STAMP_FILE" && "$(<"$NOW_PLAYING_STAMP_FILE")" == "$NOW_PLAYING_STAMP" ]]; then
+    NEED_NOW_PLAYING=0
+fi
+
+ACTOOL_BIN="$(xcrun --find actool 2>/dev/null || true)"
+ICON_SOURCE="Resources/Brand/Lattice.icon"
+ICON_INPUTS=(Tools/MakeLatticeIcon.swift Resources/Brand/Lattice.icns)
+[[ -f Resources/Brand/Lattice-Dark.icns ]] && ICON_INPUTS+=(Resources/Brand/Lattice-Dark.icns)
+if (( DEV )); then
+    ICON_INPUTS+=(Resources/Brand/MenuBarIcon-Dev.svg)
+else
+    ICON_INPUTS+=(Resources/Brand/MenuBarIcon.svg)
+fi
+for icon_file in "$ICON_SOURCE"/**/*(.N); do
+    ICON_INPUTS+=("$icon_file")
+done
+ICON_STAMP_FILE="build/.stamp-icons"
+ICON_STAMP="$(compute_build_stamp "icons|dev=$DEV|actool=$ACTOOL_BIN" "${ICON_INPUTS[@]}")"
+NEED_ICONS=1
+if [[ -f "$ICON_STAMP_FILE" && "$(<"$ICON_STAMP_FILE")" == "$ICON_STAMP" \
+    && -s build/AppIcon.icns && -s build/MenuBarIcon.png && -s build/MenuBarIcon@2x.png && -s build/BrandMark.png \
+    && ( ! -f Resources/Brand/Lattice-Dark.icns || -s build/AppIcon-Dark.icns ) \
+    && ( -z "$ACTOOL_BIN" || -s build/Assets.car ) ]]; then
+    NEED_ICONS=0
+fi
+
+PARALLEL_BUILDING=()
+PARALLEL_SKIPPED=()
+(( NEED_FAN_HELPER )) && PARALLEL_BUILDING+=("fan helper") || PARALLEL_SKIPPED+=("fan helper")
+(( NEED_NOW_PLAYING )) && PARALLEL_BUILDING+=("Now Playing adapter") || PARALLEL_SKIPPED+=("Now Playing adapter")
+(( NEED_ICONS )) && PARALLEL_BUILDING+=("app icon") || PARALLEL_SKIPPED+=("app icon")
+
+echo "▸ Compiling ($BUILD_CONFIGURATION) against $(basename "$SDK")…"
+if (( ${#PARALLEL_BUILDING[@]} > 0 )); then
+    echo "  in parallel: ${(j:, :)PARALLEL_BUILDING}"
+fi
+if (( ${#PARALLEL_SKIPPED[@]} > 0 )); then
+    echo "  unchanged (skipped): ${(j:, :)PARALLEL_SKIPPED}"
+fi
+
+FAN_PID=""
+NP_PID=""
+ICON_PID=""
+if (( NEED_FAN_HELPER || NEED_NOW_PLAYING || NEED_ICONS )); then
+    BUILD_LOG_TMP="$(mktemp -d)"
+fi
+
+if (( NEED_FAN_HELPER )); then
+    (
+        swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" "${LINKER_FLAGS[@]}" \
+            "${FAN_HELPER_SOURCES[@]}" -o "build/$FAN_HELPER_ID"
+        "build/$FAN_HELPER_ID" --selftest
+        print -r -- "$FAN_HELPER_STAMP" > "$FAN_HELPER_STAMP_FILE"
+    ) >"$BUILD_LOG_TMP/fan.log" 2>&1 &
+    FAN_PID=$!
+fi
+
+if (( NEED_NOW_PLAYING )); then
+    (
+        swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${LINKER_FLAGS[@]}" -emit-library \
+            -module-name LatticeNowPlaying \
+            "${NOW_PLAYING_SOURCES[@]}" -o "build/$NOW_PLAYING_ADAPTER"
+        print -r -- "$NOW_PLAYING_STAMP" > "$NOW_PLAYING_STAMP_FILE"
+    ) >"$BUILD_LOG_TMP/now-playing.log" 2>&1 &
+    NP_PID=$!
+fi
+
+if (( NEED_ICONS )); then
+    ICON_TMP="$(mktemp -d)"
+    (
+        ICON_FLAGS=()
+        (( DEV )) && ICON_FLAGS+=(--dev)
+        swift Tools/MakeLatticeIcon.swift build "${ICON_FLAGS[@]}"
+        xattr -c -r build/AppIcon.icns build/AppIcon-Dark.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
+        ADAPTIVE_SKIP=""
+        if [[ -z "$ACTOOL_BIN" ]]; then
+            ADAPTIVE_SKIP="actool not found (adaptive icons need Xcode 26+)"
+        else
+            # actool crashes on File Provider-synced paths, so compile a local copy.
+            ditto "$ICON_SOURCE" "$ICON_TMP/AppIcon.icon"
+            # Xcode 27 beta actool requires the --compile target directory to already exist.
+            mkdir -p "$ICON_TMP/catalog"
+            if "$ACTOOL_BIN" "$ICON_TMP/AppIcon.icon" \
+                    --compile "$ICON_TMP/catalog" \
+                    --app-icon AppIcon \
+                    --platform macosx \
+                    --target-device mac \
+                    --minimum-deployment-target 14.0 \
+                    --enable-on-demand-resources NO \
+                    --output-partial-info-plist "$ICON_TMP/partial-info.plist" \
+                    >"$ICON_TMP/actool.log" 2>&1 && [[ -s "$ICON_TMP/catalog/Assets.car" && -s "$ICON_TMP/catalog/AppIcon.icns" ]]; then
+                mv "$ICON_TMP/catalog/Assets.car" build/Assets.car
+                cp "$ICON_TMP/catalog/AppIcon.icns" build/AppIcon.icns
+            else
+                ADAPTIVE_SKIP="actool could not compile the catalog"
+            fi
+        fi
+        if [[ -n "$ADAPTIVE_SKIP" ]]; then
+            # Never package a stale catalog that disagrees with the current fallback.
+            rm -f build/Assets.car
+            cp "$ICON_TMP/actool.log" build/actool-failure.log 2>/dev/null || true
+            echo "  adaptive icon skipped: $ADAPTIVE_SKIP (Dock falls back to AppIcon.icns)"
+        fi
+        if [[ -z "$ADAPTIVE_SKIP" || -z "$ACTOOL_BIN" ]]; then
+            print -r -- "$ICON_STAMP" > "$ICON_STAMP_FILE"
+        fi
+    ) >"$BUILD_LOG_TMP/icons.log" 2>&1 &
+    ICON_PID=$!
+fi
+
 # Without -j the driver compiles one file at a time, and without batch mode
 # each file's compiler parses the whole module again: a clean release took a
 # quarter of an hour. Batches share that work and run on every core, and the
 # optimization stays per file, as before.
+APP_STATUS=0
 swiftc "${APP_OPTIMIZATION_FLAGS[@]}" "${LINKER_FLAGS[@]}" -incremental -enable-batch-mode -j "$COMPILER_JOBS" \
     -output-file-map "$APP_OUTPUT_FILE_MAP" \
     -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${HID_EVENT_SYSTEM_FLAGS[@]}" \
     "${BUILD_VARIANT_FLAGS[@]}" \
-    "${APP_SOURCES[@]}" -o "build/$EXECUTABLE"
+    "${APP_SOURCES[@]}" -o "build/$EXECUTABLE" || APP_STATUS=$?
 
-echo "▸ Compiling protected fan helper…"
-swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" "${LINKER_FLAGS[@]}" \
-    Sources/Lattice/Core/DownstreamIdentity.swift \
-    Sources/Lattice/Services/FanControl/FanControlSupport.swift \
-    Sources/Lattice/Services/FanControl/FanControlXPC.swift \
-    Sources/Lattice/Services/SystemMonitor/SMCClient.swift \
-    Sources/Lattice/Services/Metrics/TemperatureSensorSelector.swift \
-    Sources/Lattice/Services/FanControl/FanControlHardware.swift \
-    Sources/FanControlHelper/main.swift \
-    -o "build/$FAN_HELPER_ID"
-"build/$FAN_HELPER_ID" --selftest
+PARALLEL_STATUS=0
+if [[ -n "$FAN_PID" ]]; then
+    wait "$FAN_PID" || PARALLEL_STATUS=1
+    [[ -s "$BUILD_LOG_TMP/fan.log" ]] && cat "$BUILD_LOG_TMP/fan.log"
+fi
+if [[ -n "$NP_PID" ]]; then
+    wait "$NP_PID" || PARALLEL_STATUS=1
+    [[ -s "$BUILD_LOG_TMP/now-playing.log" ]] && cat "$BUILD_LOG_TMP/now-playing.log"
+fi
+if [[ -n "$ICON_PID" ]]; then
+    wait "$ICON_PID" || PARALLEL_STATUS=1
+    [[ -s "$BUILD_LOG_TMP/icons.log" ]] && cat "$BUILD_LOG_TMP/icons.log"
+fi
+if (( APP_STATUS != 0 || PARALLEL_STATUS != 0 )); then
+    exit 1
+fi
 
-echo "▸ Compiling Now Playing adapter…"
-swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${LINKER_FLAGS[@]}" -emit-library \
-    -module-name LatticeNowPlaying \
-    Sources/NowPlayingAdapter/NowPlayingAdapter.swift \
-    Sources/NowPlayingAdapter/NowPlayingQueue.swift \
-    Sources/NowPlayingAdapter/NowPlayingSelection.swift \
-    Sources/Lattice/Services/Notch/NotchPlaybackSource.swift \
-    Sources/Lattice/Services/Notch/NotchPlaybackCommand.swift \
-    -o "build/$NOW_PLAYING_ADAPTER"
-
-echo "▸ Generating app icon…"
-ICON_FLAGS=()
-(( DEV )) && ICON_FLAGS+=(--dev)
-swift Tools/MakeLatticeIcon.swift build "${ICON_FLAGS[@]}"
-xattr -c -r build/AppIcon.icns build/AppIcon-Dark.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
-ACTOOL_BIN="$(xcrun --find actool 2>/dev/null || true)"
-ICON_TMP="$(mktemp -d)"
-ADAPTIVE_SKIP=""
-ICON_SOURCE="Resources/Brand/Lattice.icon"
-if [[ -z "$ACTOOL_BIN" ]]; then
-    ADAPTIVE_SKIP="actool not found (adaptive icons need Xcode 26+)"
+if (( DEV && INSTALL )); then
+    echo "▸ Assembling bundle…"
 else
-    echo "▸ Compiling adaptive icon catalog…"
-    # actool crashes on File Provider-synced paths, so compile a local copy.
-    ditto "$ICON_SOURCE" "$ICON_TMP/AppIcon.icon"
-    # Xcode 27 beta actool requires the --compile target directory to already exist.
-    mkdir -p "$ICON_TMP/catalog"
-    if "$ACTOOL_BIN" "$ICON_TMP/AppIcon.icon" \
-            --compile "$ICON_TMP/catalog" \
-            --app-icon AppIcon \
-            --platform macosx \
-            --target-device mac \
-            --minimum-deployment-target 14.0 \
-            --enable-on-demand-resources NO \
-            --output-partial-info-plist "$ICON_TMP/partial-info.plist" \
-            >"$ICON_TMP/actool.log" 2>&1 && [[ -s "$ICON_TMP/catalog/Assets.car" && -s "$ICON_TMP/catalog/AppIcon.icns" ]]; then
-        mv "$ICON_TMP/catalog/Assets.car" build/Assets.car
-        cp "$ICON_TMP/catalog/AppIcon.icns" build/AppIcon.icns
-    else
-        ADAPTIVE_SKIP="actool could not compile the catalog"
-    fi
+    echo "▸ Assembling and signing bundle…"
 fi
-if [[ -n "$ADAPTIVE_SKIP" ]]; then
-    # Never package a stale catalog that disagrees with the current fallback.
-    rm -f build/Assets.car
-    cp "$ICON_TMP/actool.log" build/actool-failure.log 2>/dev/null || true
-    echo "  adaptive icon skipped: $ADAPTIVE_SKIP (Dock falls back to AppIcon.icns)"
-fi
-echo "▸ Assembling and signing bundle…"
 STAGE_TMP="$(mktemp -d)"
 STAGE="$STAGE_TMP/$APP_NAME.app"
 mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources" \
@@ -931,7 +1059,11 @@ if true; then
     SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
     [[ -n "$(git status --porcelain 2>/dev/null)" ]] && SHA="$SHA-dirty"
     /usr/libexec/PlistBuddy -c "Add :LatticeBuildCommit string '$SHA · $(date '+%Y-%m-%d %H:%M')'" "$STAGE/Contents/Info.plist"
-    echo "  stamped dev build: $SHA"
+    if (( DEV )); then
+        echo "  stamped dev build: $SHA"
+    else
+        echo "  stamped release build: $SHA"
+    fi
 fi
 FAN_HELPER_VERSION="$(
     export LC_ALL=C
@@ -978,15 +1110,15 @@ sign_target() {
     local id_arg="${2:-}"
     if [[ -n "$SIGN_IDENTITY" ]]; then
         if [[ "$SIGN_IDENTITY" == "$LEGACY_IDENTITY" ]]; then
-            /usr/bin/codesign --force --strip-disallowed-xattrs ${=id_arg} --sign "$SIGN_IDENTITY" "$target"
+            codesign_quiet --force --strip-disallowed-xattrs ${=id_arg} --sign "$SIGN_IDENTITY" "$target"
         else
             codesign_with_timestamp_retry --force --strip-disallowed-xattrs --options runtime --timestamp \
                 ${=id_arg} --sign "$SIGN_IDENTITY" "$target" 2>/dev/null \
-                || /usr/bin/codesign --force --strip-disallowed-xattrs --options runtime \
+                || codesign_quiet --force --strip-disallowed-xattrs --options runtime \
                     ${=id_arg} --sign "$SIGN_IDENTITY" "$target"
         fi
     else
-        /usr/bin/codesign --force --strip-disallowed-xattrs ${=id_arg} --sign - "$target"
+        codesign_quiet --force --strip-disallowed-xattrs ${=id_arg} --sign - "$target"
     fi
 }
 
@@ -1044,7 +1176,9 @@ sign_installed_bundle() {
     sign_bundle "$bundle"
 }
 
-sign_bundle "$STAGE"
+if (( !DEV || !INSTALL )); then
+    sign_bundle "$STAGE"
+fi
 
 process_is_running() {
     local proc="$1"
