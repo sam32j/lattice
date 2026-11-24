@@ -357,20 +357,23 @@ final class DiskImageInstallerService: ObservableObject {
                     self.record(candidate, version: version, destination: destination, downloadTrashed: false)
                 }
                 self.detected = nil
-                self.present(result: result, candidate: candidate) { [weak self] in
-                    if revealsApp, result.outcome.isInstalled, let destinationURL = result.destinationURL {
-                        NSWorkspace.shared.activateFileViewerSelecting([destinationURL])
-                    }
-                    guard !verified, result.outcome.isInstalled, let destinationURL = result.destinationURL,
-                          UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOffersUnverifiedOpen),
-                          Self.isQuarantined(destinationURL) else {
-                        self?.finishCurrentCandidate()
-                        return
-                    }
-                    self?.offerToAllow(destinationURL, name: candidate.displayName) {
+                let announce: () -> Void = { [weak self] in
+                    self?.present(result: result, candidate: candidate) { [weak self] in
+                        if revealsApp, result.outcome.isInstalled, let destinationURL = result.destinationURL {
+                            NSWorkspace.shared.activateFileViewerSelecting([destinationURL])
+                        }
                         self?.finishCurrentCandidate()
                     }
                 }
+                // An unverified app is settled first, so the result that
+                // follows describes an app that opens, or one still blocked.
+                guard !verified, result.outcome.isInstalled, let destinationURL = result.destinationURL,
+                      UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOffersUnverifiedOpen),
+                      Self.isQuarantined(destinationURL) else {
+                    announce()
+                    return
+                }
+                self.offerToAllow(destinationURL, name: candidate.displayName, completion: announce)
             }
         }
     }
