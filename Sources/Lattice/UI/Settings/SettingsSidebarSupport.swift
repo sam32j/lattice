@@ -34,7 +34,7 @@ enum SettingsSidebarSupport {
         let pageItem = SettingsSidebarItem(id: .page(page),
                                            destination: FeatureSettingsDestination(page),
                                            title: title, icon: icon)
-        if page == .general || page == .monitor || page == .dock || page == .windowLayout || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audio || page == .scratchpad {
+        if page == .general || page == .monitor || page == .dock || page == .windowLayout || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audio || page == .scratchpad || page == .appManager {
             return [pageItem]
         }
         var rows = includePage ? [pageItem] : []

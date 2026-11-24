@@ -74,11 +74,16 @@ enum SettingsRefactorProbe {
                            output: output, failures: &failures, colorScheme: scheme)
                 }
             }
-            render("app-manager-glyphs", view: AnyView(HStack(spacing: 24) {
-                       ForEach([LatticeSymbol.appManagerSymbol, LatticeSymbol.videoDownloaderSymbol, "shippingbox"],
-                               id: \.self) { LatticeSymbol($0).font(.system(size: 48)) }
+            render("app-manager-glyphs", view: AnyView(VStack(spacing: 18) {
+                       ForEach([20.0, 48.0], id: \.self) { size in
+                           HStack(spacing: size) {
+                               ForEach(["tray", LatticeSymbol.videoDownloaderSymbol, "play.rectangle", "text.append",
+                                        "waveform.path.ecg", LatticeSymbol.appManagerSymbol, "cpu"],
+                                       id: \.self) { LatticeSymbol($0).font(.system(size: size, weight: .medium)) }
+                           }
+                       }
                    }.padding(20)),
-                   size: CGSize(width: 260, height: 100), output: output, failures: &failures, colorScheme: .light)
+                   size: CGSize(width: 700, height: 160), output: output, failures: &failures, colorScheme: .light)
             render("app-manager-panel", view: AnyView(PanelAppManagerView().frame(width: 380, height: 300).padding(12)),
                    size: CGSize(width: 404, height: 324), output: output, failures: &failures, colorScheme: .light)
             defaults.removePersistentDomain(forName: identity)
