@@ -235,6 +235,10 @@ struct FeatureActivationControl: View {
 /// One option in a page's title bar menu: a title, a line of help and a
 /// switch, clickable anywhere on the row.
 struct SettingsMenuToggleRow: View {
+    /// A title bar popover's corner radius (about 16pt) less the 6pt inset
+    /// every title bar menu puts around its rows.
+    static let highlightRadius: CGFloat = 10
+
     let title: String
     let help: String
     @Binding var isOn: Bool
@@ -261,8 +265,10 @@ struct SettingsMenuToggleRow: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
+            // Concentric with the popover: its corner radius less the menu's
+            // 6pt inset, so the highlight follows the outer curve.
             .background(hovered ? Color.primary.opacity(0.06) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: Self.highlightRadius, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
