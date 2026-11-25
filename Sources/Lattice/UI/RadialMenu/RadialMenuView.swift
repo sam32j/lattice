@@ -381,7 +381,7 @@ struct RadialChipFace: View {
                 .interpolation(.high)
                 .frame(width: iconSize, height: iconSize)
         } else {
-            Image(systemName: item.effectiveSymbolName)
+            LatticeSymbol(item.effectiveSymbolName)
                 .font(.system(size: symbolSize, weight: .semibold))
                 .foregroundStyle(symbolStyle)
         }

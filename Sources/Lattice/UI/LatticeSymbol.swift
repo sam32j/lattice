@@ -24,9 +24,10 @@ struct LatticeSymbol: View {
     static let appManagerSymbol = "lattice.app.manager"
     static let videoDownloaderSymbol = "lattice.video.downloader"
     static let mediaSymbol = "lattice.media"
+    static let cleanerSymbol = "lattice.cleaner"
 
     static func isCustom(_ name: String) -> Bool {
-        [bluetoothSymbol, appManagerSymbol, videoDownloaderSymbol, mediaSymbol].contains(name)
+        [bluetoothSymbol, appManagerSymbol, videoDownloaderSymbol, mediaSymbol, cleanerSymbol].contains(name)
     }
 
     var body: some View {
@@ -39,6 +40,8 @@ struct LatticeSymbol: View {
             glyph { VideoDownloaderGlyph() }
         case Self.mediaSymbol:
             glyph { MediaCompressionGlyph() }
+        case Self.cleanerSymbol:
+            glyph { CleanerGlyph() }
         default:
             Image(systemName: name)
         }
@@ -289,6 +292,81 @@ struct BluetoothRune: Shape {
         path.addLine(to: point(0.50, 0.08))
         path.addLine(to: point(0.73, 0.30))
         path.addLine(to: point(0.27, 0.70))
+        return path
+    }
+}
+
+/// The Cleaner utility's mark: a diagonal broom with two four-point sparkles,
+/// drawn on a 100-point grid in the current foreground style.
+struct CleanerGlyph: View {
+    var body: some View {
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+            let scale = side / 100
+            ZStack {
+                CleanerBroomBody()
+                    .stroke(.foreground, style: StrokeStyle(lineWidth: 6.4 * scale, lineCap: .round, lineJoin: .round))
+                CleanerCollar()
+                    .stroke(.foreground, style: StrokeStyle(lineWidth: 11.0 * scale, lineCap: .round, lineJoin: .round))
+                CleanerSparkles()
+                    .fill(.foreground)
+            }
+            .frame(width: side, height: side)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .scaleEffect(1.22)
+    }
+}
+
+struct CleanerBroomBody: Shape {
+    func path(in rect: CGRect) -> Path {
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { gridPoint(x, y, in: rect) }
+        var path = Path()
+        // Handle
+        path.move(to: p(77.5, 22.5))
+        path.addLine(to: p(55.5, 44.5))
+        // Flared broom head outline
+        path.move(to: p(44.5, 40.0))
+        path.addQuadCurve(to: p(13.0, 56.5), control: p(31.5, 49.5))
+        path.addQuadCurve(to: p(12.5, 61.5), control: p(9.5, 58.5))
+        path.addLine(to: p(38.5, 87.5))
+        path.addQuadCurve(to: p(43.5, 87.0), control: p(41.5, 90.5))
+        path.addQuadCurve(to: p(60.0, 55.5), control: p(50.5, 68.5))
+        // Inner bristle strokes
+        path.move(to: p(21.5, 70.5))
+        path.addLine(to: p(33.5, 59.5))
+        path.move(to: p(29.5, 78.5))
+        path.addLine(to: p(39.0, 69.0))
+        return path
+    }
+}
+
+struct CleanerCollar: Shape {
+    func path(in rect: CGRect) -> Path {
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { gridPoint(x, y, in: rect) }
+        var path = Path()
+        path.move(to: p(45.5, 40.5))
+        path.addLine(to: p(59.5, 54.5))
+        return path
+    }
+}
+
+struct CleanerSparkles: Shape {
+    func path(in rect: CGRect) -> Path {
+        func addStar(cx: CGFloat, cy: CGFloat, r: CGFloat, to path: inout Path) {
+            func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { gridPoint(x, y, in: rect) }
+            let c = p(cx, cy)
+            path.move(to: p(cx, cy - r))
+            path.addQuadCurve(to: p(cx + r, cy), control: c)
+            path.addQuadCurve(to: p(cx, cy + r), control: c)
+            path.addQuadCurve(to: p(cx - r, cy), control: c)
+            path.addQuadCurve(to: p(cx, cy - r), control: c)
+            path.closeSubpath()
+        }
+        var path = Path()
+        addStar(cx: 25.0, cy: 25.0, r: 9.0, to: &path)
+        addStar(cx: 77.0, cy: 74.5, r: 7.5, to: &path)
         return path
     }
 }

@@ -67,19 +67,22 @@ struct CleanerView: View {
         }
     }
 
-    /// The cleaner's waiting face: the sparkles glyph twinkling layer by
-    /// layer through the system symbol effect. Simple, native, and still
-    /// while nothing is happening.
+    /// The cleaner's waiting face: the broom-and-sparkles mark, gently pulsing
+    /// while scanning or cleaning and still while idle.
     private struct SparkleGlyph: View {
         var animating = false
         var size: CGFloat = 44
+        @State private var pulse = false
 
         var body: some View {
-            Image(systemName: "sparkles")
+            LatticeSymbol(LatticeSymbol.cleanerSymbol)
                 .font(.system(size: size, weight: .light))
                 .foregroundStyle(.secondary)
-                .symbolEffect(.variableColor.iterative.reversing,
-                              options: .repeating, isActive: animating)
+                .opacity(animating && pulse ? 0.45 : 1)
+                .animation(animating ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default,
+                           value: pulse)
+                .onAppear { if animating { pulse = true } }
+                .onChange(of: animating) { _, active in pulse = active }
         }
     }
 
@@ -816,7 +819,7 @@ struct PanelCleanerView: View {
         VStack(alignment: .leading, spacing: 10) {
             if showHeader {
                 HStack(spacing: 8) {
-                    Image(systemName: "sparkle")
+                    LatticeSymbol(LatticeSymbol.cleanerSymbol)
                         .font(.system(size: 13, weight: .semibold))
                     Text(l10n.s.cleanerName)
                         .font(.system(size: 13, weight: .semibold))
