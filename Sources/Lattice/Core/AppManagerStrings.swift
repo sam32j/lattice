@@ -48,7 +48,7 @@ extension AppManagerStrings {
     static let enUS = AppManagerStrings(
         title: "App Manager",
         hubDescription: "Install, update and remove apps, and manage Homebrew.",
-        emptyDescription: "Install disk images automatically, check for app updates, remove apps with their leftovers, and manage Homebrew packages in one place.",
+        emptyDescription: "Install, update, and uninstall apps, and manage Homebrew.",
         tabInstaller: "App Installer",
         tabUpdates: "App Updates",
         tabUninstaller: "App Uninstaller",
@@ -63,7 +63,7 @@ extension AppManagerStrings {
     static let ptBR = AppManagerStrings(
         title: "Gerenciador de Apps",
         hubDescription: "Instale, atualize e remova apps e gerencie o Homebrew.",
-        emptyDescription: "Instale imagens de disco automaticamente, procure atualizações de apps, remova apps com seus restos e gerencie pacotes do Homebrew em um só lugar.",
+        emptyDescription: "Instale, atualize e desinstale apps, e gerencie o Homebrew.",
         tabInstaller: "Instalador de Apps",
         tabUpdates: "Atualizações de Apps",
         tabUninstaller: "Desinstalador de Apps",
@@ -78,7 +78,7 @@ extension AppManagerStrings {
     static let tr = AppManagerStrings(
         title: "Uygulama Yöneticisi",
         hubDescription: "Uygulamaları yükleyin, güncelleyin, kaldırın ve Homebrew’u yönetin.",
-        emptyDescription: "Disk görüntülerini otomatik yükleyin, uygulama güncellemelerini denetleyin, uygulamaları artıklarıyla kaldırın ve Homebrew paketlerini tek yerden yönetin.",
+        emptyDescription: "Uygulamaları yükleyin, güncelleyin, kaldırın ve Homebrew'u yönetin.",
         tabInstaller: "Uygulama Yükleyici",
         tabUpdates: "Uygulama Güncellemeleri",
         tabUninstaller: "Uygulama Kaldırıcı",
@@ -93,7 +93,7 @@ extension AppManagerStrings {
     static let ru = AppManagerStrings(
         title: "Менеджер приложений",
         hubDescription: "Устанавливайте, обновляйте и удаляйте приложения, управляйте Homebrew.",
-        emptyDescription: "Автоматически устанавливайте образы дисков, проверяйте обновления, удаляйте приложения вместе с остатками и управляйте пакетами Homebrew в одном месте.",
+        emptyDescription: "Устанавливайте, обновляйте и удаляйте приложения, и управляйте Homebrew.",
         tabInstaller: "Установщик",
         tabUpdates: "Обновления",
         tabUninstaller: "Удаление",
@@ -108,7 +108,7 @@ extension AppManagerStrings {
     static let es = AppManagerStrings(
         title: "Gestor de apps",
         hubDescription: "Instala, actualiza y elimina apps, y gestiona Homebrew.",
-        emptyDescription: "Instala imágenes de disco automáticamente, busca actualizaciones de apps, elimina apps con sus restos y gestiona paquetes de Homebrew en un solo lugar.",
+        emptyDescription: "Instala, actualiza y desinstala apps, y gestiona Homebrew.",
         tabInstaller: "Instalador de apps",
         tabUpdates: "Actualizaciones de apps",
         tabUninstaller: "Desinstalador de apps",
@@ -123,7 +123,7 @@ extension AppManagerStrings {
     static let sk = AppManagerStrings(
         title: "Správca aplikácií",
         hubDescription: "Inštalujte, aktualizujte a odstraňujte aplikácie a spravujte Homebrew.",
-        emptyDescription: "Automaticky inštalujte obrazy diskov, kontrolujte aktualizácie aplikácií, odstraňujte aplikácie aj so zvyškami a spravujte balíky Homebrew na jednom mieste.",
+        emptyDescription: "Inštalujte, aktualizujte a odinštalujte aplikácie a spravujte Homebrew.",
         tabInstaller: "Inštalátor aplikácií",
         tabUpdates: "Aktualizácie aplikácií",
         tabUninstaller: "Odinštalátor aplikácií",
@@ -138,7 +138,7 @@ extension AppManagerStrings {
     static let de = AppManagerStrings(
         title: "App-Verwaltung",
         hubDescription: "Apps installieren, aktualisieren und entfernen sowie Homebrew verwalten.",
-        emptyDescription: "Disk-Images automatisch installieren, nach App-Updates suchen, Apps samt Resten entfernen und Homebrew-Pakete an einem Ort verwalten.",
+        emptyDescription: "Apps installieren, aktualisieren, deinstallieren und Homebrew verwalten.",
         tabInstaller: "App-Installer",
         tabUpdates: "App-Updates",
         tabUninstaller: "App-Deinstallation",
@@ -153,7 +153,7 @@ extension AppManagerStrings {
     static let fr = AppManagerStrings(
         title: "Gestionnaire d’apps",
         hubDescription: "Installez, mettez à jour et supprimez des apps, et gérez Homebrew.",
-        emptyDescription: "Installez automatiquement les images disque, recherchez les mises à jour des apps, supprimez les apps avec leurs restes et gérez les paquets Homebrew au même endroit.",
+        emptyDescription: "Installez, mettez à jour et désinstallez des apps, et gérez Homebrew.",
         tabInstaller: "Installation d’apps",
         tabUpdates: "Mises à jour d’apps",
         tabUninstaller: "Désinstallation d’apps",
@@ -168,7 +168,7 @@ extension AppManagerStrings {
     static let it = AppManagerStrings(
         title: "Gestione app",
         hubDescription: "Installa, aggiorna e rimuovi app e gestisci Homebrew.",
-        emptyDescription: "Installa automaticamente le immagini disco, cerca aggiornamenti delle app, rimuovi le app con i loro residui e gestisci i pacchetti Homebrew in un unico posto.",
+        emptyDescription: "Installa, aggiorna e disinstalla app, e gestisci Homebrew.",
         tabInstaller: "Installazione app",
         tabUpdates: "Aggiornamenti app",
         tabUninstaller: "Disinstallazione app",
@@ -183,7 +183,7 @@ extension AppManagerStrings {
     static let ja = AppManagerStrings(
         title: "Appマネージャ",
         hubDescription: "Appのインストール、アップデート、削除とHomebrewの管理を行います。",
-        emptyDescription: "ディスクイメージの自動インストール、Appのアップデート確認、残りファイルを含めたAppの削除、Homebrewパッケージの管理を1か所で行えます。",
+        emptyDescription: "Appのインストール・アップデート・削除とHomebrew管理を1か所で。",
         tabInstaller: "Appインストーラ",
         tabUpdates: "Appアップデート",
         tabUninstaller: "Appアンインストーラ",
@@ -198,7 +198,7 @@ extension AppManagerStrings {
     static let ko = AppManagerStrings(
         title: "앱 관리자",
         hubDescription: "앱을 설치, 업데이트, 제거하고 Homebrew를 관리합니다.",
-        emptyDescription: "디스크 이미지를 자동으로 설치하고, 앱 업데이트를 확인하고, 남은 파일까지 앱을 제거하고, Homebrew 패키지를 한곳에서 관리하세요.",
+        emptyDescription: "앱 설치·업데이트·제거와 Homebrew 관리를 한곳에서.",
         tabInstaller: "앱 설치",
         tabUpdates: "앱 업데이트",
         tabUninstaller: "앱 제거",
@@ -213,7 +213,7 @@ extension AppManagerStrings {
     static let zhHans = AppManagerStrings(
         title: "App 管理器",
         hubDescription: "安装、更新和移除 App，并管理 Homebrew。",
-        emptyDescription: "在一个地方自动安装磁盘映像、检查 App 更新、连同残留文件移除 App，并管理 Homebrew 软件包。",
+        emptyDescription: "一站式安装、更新、卸载 App 并管理 Homebrew。",
         tabInstaller: "App 安装器",
         tabUpdates: "App 更新",
         tabUninstaller: "App 卸载器",
@@ -228,7 +228,7 @@ extension AppManagerStrings {
     static let zhTW = AppManagerStrings(
         title: "App 管理器",
         hubDescription: "安裝、更新和移除 App，並管理 Homebrew。",
-        emptyDescription: "在同一處自動安裝磁碟映像檔、檢查 App 更新、連同殘留檔案移除 App，並管理 Homebrew 套件。",
+        emptyDescription: "一站式安裝、更新、解除安裝 App 並管理 Homebrew。",
         tabInstaller: "App 安裝器",
         tabUpdates: "App 更新",
         tabUninstaller: "App 解除安裝器",
@@ -243,7 +243,7 @@ extension AppManagerStrings {
     static let zhHK = AppManagerStrings(
         title: "App 管理器",
         hubDescription: "安裝、更新和移除 App，並管理 Homebrew。",
-        emptyDescription: "在同一處自動安裝磁碟映像檔、檢查 App 更新、連同殘留檔案移除 App，並管理 Homebrew 套件。",
+        emptyDescription: "一站式安裝、更新、解除安裝 App 並管理 Homebrew。",
         tabInstaller: "App 安裝器",
         tabUpdates: "App 更新",
         tabUninstaller: "App 解除安裝器",
@@ -258,7 +258,7 @@ extension AppManagerStrings {
     static let uk = AppManagerStrings(
         title: "Менеджер програм",
         hubDescription: "Встановлюйте, оновлюйте й видаляйте програми та керуйте Homebrew.",
-        emptyDescription: "Автоматично встановлюйте образи дисків, перевіряйте оновлення, видаляйте програми разом із залишками та керуйте пакетами Homebrew в одному місці.",
+        emptyDescription: "Встановлюйте, оновлюйте й видаляйте програми та керуйте Homebrew.",
         tabInstaller: "Встановлення",
         tabUpdates: "Оновлення",
         tabUninstaller: "Видалення",

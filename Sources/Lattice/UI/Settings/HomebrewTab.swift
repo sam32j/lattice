@@ -10,6 +10,7 @@ import SwiftUI
 /// the list for a running operation or a newer Homebrew.
 struct HomebrewTab: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var homebrew = HomebrewManager.shared
     @ObservedObject private var catalog = HomebrewOnlineCatalog.shared
     @AppStorage(DefaultsKey.homebrewGroupDependencies) private var groupDependencies = true
@@ -65,6 +66,14 @@ struct HomebrewTab: View {
             }
             if !visibleFilters.contains(filter) { filter = .all }
         }
+        .onChange(of: AppFeature.homebrew.isAvailable) { _, available in
+            guard available, !HomebrewSimulator.shared.isSimulating else { return }
+            if homebrew.installed.isEmpty && !homebrew.isLoadingInstalled {
+                homebrew.refreshInstalled()
+            }
+            catalog.checkVersion()
+            homebrew.refreshCleanupEstimate()
+        }
         .onChange(of: query) { _, _ in runSearch() }
         .onChange(of: filter) { _, _ in runSearch() }
         .onChange(of: homebrew.installed) { _, _ in
@@ -79,7 +88,8 @@ struct HomebrewTab: View {
         .animation(.easeInOut(duration: 0.2), value: activeOrHomebrewStatus?.targetID)
         .animation(.easeInOut(duration: 0.2), value: activeOrHomebrewStatus?.result)
         .animation(.easeInOut(duration: 0.2), value: showsCleanupButton)
-        .animation(.easeInOut(duration: 0.2), value: showsCacheCleanedButton)
+        .animation(.easeInOut(duration: 0.2), value: showsCheckingButton)
+        .animation(.easeInOut(duration: 0.2), value: showsCheckNowButton)
         .animation(.easeInOut(duration: 0.2), value: catalog.selfUpdateAvailable)
         .animation(.easeInOut(duration: 0.22), value: homebrew.isOperationDetailsExpanded)
     }
@@ -105,13 +115,30 @@ struct HomebrewTab: View {
         return !homebrew.isCheckingCleanup
     }
 
-    private var showsCacheCleanedButton: Bool {
-        outdated.isEmpty && homebrew.cleanupEstimate?.isEmpty == true
+    private var isCheckingStatus: Bool {
+        homebrew.isLoadingInstalled || homebrew.isLoadingOutdated || homebrew.isCheckingCleanup
     }
 
-    /// How many updates, with the refresh arrow right beside it (turning
-    /// while Homebrew is read) and Homebrew version below, compounded in one
-    /// top container with Clean Up (left of Update All) when applicable.
+    private var showsCheckingButton: Bool {
+        outdated.isEmpty && !showsCleanupButton && isCheckingStatus
+    }
+
+    private var showsCheckNowButton: Bool {
+        outdated.isEmpty && !isCheckingStatus && homebrew.cleanupEstimate?.isEmpty == true
+    }
+
+    private func refreshAll() {
+        if HomebrewSimulator.shared.isSimulating {
+            HomebrewSimulator.shared.refreshCurrent()
+        } else {
+            homebrew.refreshInstalled()
+            catalog.checkVersion(force: true)
+            homebrew.refreshCleanupEstimate(force: true)
+        }
+    }
+
+    /// How many updates and Homebrew version on the left, with Clean Up /
+    /// Update All (or Check Now when up to date and cache is clean) on the right.
     @ViewBuilder
     private var statusCard: some View {
         let refreshing = homebrew.isLoadingInstalled
@@ -120,30 +147,9 @@ struct HomebrewTab: View {
         } else {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 5) {
-                        Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
-                            .font(.system(size: 13, weight: .semibold))
-                            .lineLimit(1)
-                        Button {
-                            if HomebrewSimulator.shared.isSimulating {
-                                HomebrewSimulator.shared.refreshCurrent()
-                            } else {
-                                homebrew.refreshInstalled()
-                                catalog.checkVersion(force: true)
-                                homebrew.refreshCleanupEstimate(force: true)
-                            }
-                        } label: {
-                            RefreshArrow(isSpinning: refreshing)
-                                .font(.system(size: 10.5, weight: .medium))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 16, height: 14)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(homebrew.isBusy || refreshing)
-                        .help(s.homebrewRefresh)
-                        .accessibilityLabel(s.homebrewRefresh)
-                    }
+                    Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
                     if let version = catalog.installedVersion {
                         Text(String(format: strings.versionFormat, version))
                             .font(.caption)
@@ -152,17 +158,23 @@ struct HomebrewTab: View {
                     }
                 }
                 Spacer(minLength: 8)
-                if showsCleanupButton || showsCacheCleanedButton || !outdated.isEmpty {
+                if showsCleanupButton || showsCheckingButton || showsCheckNowButton || !outdated.isEmpty {
                     HStack(spacing: 8) {
                         if showsCleanupButton {
                             cleanupButton
                                 .fixedSize()
-                        } else if showsCacheCleanedButton {
-                            Button(strings.cleanupCleanedUpButton) {}
+                        } else if showsCheckingButton {
+                            Button(FeatureStrings.appUpdates(l10n.language).checking + "…") {}
                                 .buttonStyle(.appManager(.neutral))
                                 .disabled(true)
-                                .help(cleanupDetail)
                                 .fixedSize()
+                        } else if showsCheckNowButton {
+                            Button(FeatureStrings.appUpdates(l10n.language).checkNow) {
+                                refreshAll()
+                            }
+                            .buttonStyle(.appManager(.neutral))
+                            .disabled(homebrew.isBusy || refreshing)
+                            .fixedSize()
                         }
                         if !outdated.isEmpty {
                             Button(s.homebrewUpgradeAll) { homebrew.upgradeAll() }
