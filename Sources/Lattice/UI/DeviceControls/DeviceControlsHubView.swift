@@ -8,6 +8,7 @@ import SwiftUI
 struct DeviceControlsHubView: View {
     @ObservedObject private var navigation = DeviceControlsNavigationState.shared
     @AppStorage(DefaultsKey.volumeMixerEnabled) private var volumeMixerEnabled = true
+    @State private var measuredAppVolumesContentHeight: CGFloat = 0
     var onClose: () -> Void
     var notchSize: CGSize? = nil
     /// The height the host shows, when it is less than the content: the
@@ -17,7 +18,8 @@ struct DeviceControlsHubView: View {
     /// App Volumes taller than the height it is given.
     private var appVolumesOverflow: Bool {
         let available = notchSize?.height ?? viewportHeight ?? navigation.contentHeight
-        return navigation.measuredAppVolumesHeight > available + 1
+        let measured = max(measuredAppVolumesContentHeight, navigation.measuredAppVolumesHeight)
+        return measured > available + 1
     }
 
     var body: some View {
@@ -30,6 +32,7 @@ struct DeviceControlsHubView: View {
                         .padding(.horizontal, 2)
                         .padding(.vertical, HubScrollEdge.inset)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                            measuredAppVolumesContentHeight = height
                             navigation.updateMeasuredAppVolumesHeight(height)
                         }
                 }

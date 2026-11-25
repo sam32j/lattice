@@ -10,7 +10,9 @@ extension AppUpdatesListView {
     /// Shaped like an update row: the heading above already says there is
     /// nothing to update, so this is one quiet line.
     var caughtUpCard: some View {
-        emptyRow(symbol: "checkmark.circle.fill", tint: .green, title: text.emptyUpToDate)
+        emptyRow(symbol: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle",
+                 tint: successfulEmptyCheck ? .green : .secondary,
+                 title: successfulEmptyCheck ? text.emptyUpToDate : statusHeadline)
     }
 
     var noSourcesCard: some View {
