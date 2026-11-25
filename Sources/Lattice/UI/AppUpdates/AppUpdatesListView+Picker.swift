@@ -21,38 +21,31 @@ extension AppUpdatesListView {
         rows
     }
 
-    static let incompleteLineHeight: CGFloat = 20
     static let headerLineHeight: CGFloat = 32
-
-    /// Whether the last check left apps out, as the panel's note reports it.
-    @MainActor
-    static var coverageWasIncomplete: Bool {
-        let service = AppUpdatesService.shared
-        let defaults = UserDefaults.standard
-        guard service.hasCheckedThisSession, !service.isChecking else { return false }
-        return (defaults.bool(forKey: DefaultsKey.appUpdatesIncludeAppStore) && !service.appStoreAvailable)
-            || (defaults.bool(forKey: DefaultsKey.appUpdatesIncludeOnlineCatalog) && !service.onlineCatalogAvailable)
-            || !service.uncheckedAppNames.isEmpty
-    }
+    static let compactLoaderHeight: CGFloat = 120
 
     static let compactRowHeight: CGFloat = 40
     static let compactRowSpacing: CGFloat = 5
-    /// The panel grows with the list up to this many apps; past it the
-    /// panel's own scroll view takes over.
-    static let compactVisibleRows = 10
 
-    static func compactHeight(rowCount: Int) -> CGFloat {
-        let visible = min(max(rowCount, 1), compactVisibleRows)
+    static func compactHeight(rowCount: Int, maxRows: Int) -> CGFloat {
+        let visible = min(max(rowCount, 1), maxRows)
         return CGFloat(visible) * compactRowHeight
             + CGFloat(visible - 1) * compactRowSpacing
     }
 
+    /// The list's viewport: its rows, up to `maxRows`, and the room its soft
+    /// edges take at rest.
+    static func compactListViewport(rowCount: Int, maxRows: Int) -> CGFloat {
+        compactHeight(rowCount: rowCount, maxRows: maxRows) + HubScrollEdge.inset * 2
+    }
+
+    /// A first guess at the panel's height, before the panel has measured
+    /// what it shows.
     @MainActor
-    static func compactUtilityHeight(itemCount: Int) -> CGFloat {
-        let note = coverageWasIncomplete ? incompleteLineHeight + 8 : 0
-        // The heading is two short lines of text, not the card it was.
-        if itemCount == 0 { return 136 + note }
-        return 73 + compactHeight(rowCount: itemCount) + note
+    static func compactUtilityHeight(itemCount: Int, maxRows: Int) -> CGFloat {
+        if AppUpdatesService.shared.isChecking { return compactLoaderHeight }
+        if itemCount == 0 { return headerLineHeight + 8 + 80 }
+        return headerLineHeight + 8 + compactListViewport(rowCount: itemCount, maxRows: maxRows)
     }
 }
 
@@ -66,6 +59,10 @@ struct UpdatesHeading: View {
     let isChecking: Bool
     let disabled: Bool
     var compact = false
+    /// What a check could not read, shown as a small mark that opens the
+    /// list of them; nil when it read everything.
+    var uncheckedNote: String? = nil
+    var onShowUnchecked: () -> Void = {}
     let onCheck: () -> Void
 
     var body: some View {
@@ -76,13 +73,14 @@ struct UpdatesHeading: View {
                         .font(.system(size: compact ? 12 : 13, weight: .semibold))
                         .lineLimit(1)
                     if count > 0 {
+                        // White on the accent reads in light and dark alike.
                         Text("\(count)")
-                            .font(.system(size: compact ? 9.5 : 10.5, weight: .semibold))
+                            .font(.system(size: compact ? 9.5 : 10.5, weight: .bold))
                             .monospacedDigit()
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(.white)
                             .padding(.horizontal, 6)
-                            .padding(.vertical, 1)
-                            .background(Color.accentColor.opacity(0.16), in: Capsule())
+                            .padding(.vertical, 1.5)
+                            .background(Color.accentColor, in: Capsule())
                     }
                 }
                 Text(isChecking ? text.checking + "…" : lastCheck)
@@ -91,6 +89,18 @@ struct UpdatesHeading: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
+            if let uncheckedNote {
+                Button(action: onShowUnchecked) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: compact ? 11 : 12))
+                        .foregroundStyle(.orange)
+                        .frame(width: compact ? 24 : 28, height: compact ? 24 : 28)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(uncheckedNote)
+                .accessibilityLabel(uncheckedNote)
+            }
             Button(action: onCheck) {
                 RefreshArrow(isSpinning: isChecking)
                     .font(.system(size: compact ? 11 : 12, weight: .medium))

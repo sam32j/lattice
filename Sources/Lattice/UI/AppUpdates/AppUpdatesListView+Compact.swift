@@ -7,52 +7,94 @@ import UniformTypeIdentifiers
 
 
 extension AppUpdatesListView {
+    /// The Hub and island's updates: one loader while a check runs, then
+    /// the heading, fixed, over a list as tall as its rows up to five in the
+    /// island and eight in the floating Hub, scrolling past that.
     var compactBody: some View {
         VStack(alignment: .leading, spacing: 8) {
-            compactHeader
-            if allSourcesOff {
-                compactNoSourcesState
-            } else if updates.items.isEmpty {
-                compactEmptyState
+            if updates.isChecking {
+                compactLoader
             } else {
-                compactList
-            }
-            // One line after the list, at its trailing edge, rather than a
-            // card; the apps it means are in the tooltip and in Settings.
-            if coverageIncomplete {
-                incompleteCheckLine
-            }
-            if versionsUncompared {
-                uncomparableVersions
-                    .panelCard()
-            }
-            if let status = appUpdatesOperationStatus {
-                HomebrewOperationStatusView(status: status,
-                                            log: homebrew.log,
-                                            terminalFallbackCommand: homebrew.terminalFallbackCommand,
-                                            compact: true,
-                                            showDetails: $showOperationDetails,
-                                            onCancel: homebrew.cancelOperation,
-                                            onClear: homebrew.clearLog,
-                                            onOpenTerminal: homebrew.openTerminalFallback)
-            }
-            if let error = updates.lastError, !error.isEmpty {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.orange)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .panelCard()
+                compactHeader
+                if allSourcesOff {
+                    compactNoSourcesState
+                } else if updates.items.isEmpty {
+                    compactEmptyState
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        compactList
+                    }
+                    .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
+                    .hubScrollEdgeFade()
+                    .frame(height: Self.compactListViewport(rowCount: updates.items.count,
+                                                            maxRows: inNotch ? 5 : 8))
+                }
+                if versionsUncompared {
+                    uncomparableVersions
+                        .panelCard()
+                }
+                if let status = appUpdatesOperationStatus {
+                    HomebrewOperationStatusView(status: status,
+                                                log: homebrew.log,
+                                                terminalFallbackCommand: homebrew.terminalFallbackCommand,
+                                                compact: true,
+                                                showDetails: $showOperationDetails,
+                                                onCancel: homebrew.cancelOperation,
+                                                onClear: homebrew.clearLog,
+                                                onOpenTerminal: homebrew.openTerminalFallback)
+                }
+                if let error = updates.lastError, !error.isEmpty {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .panelCard()
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        // The surface is sized to what this shows, nothing more.
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            AppManagerPanelState.shared.setUpdatesHeight(height)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    /// The list's heading, as in Settings.
+    /// The one loader while a check runs; the heading and list wait for
+    /// its answer.
+    var compactLoader: some View {
+        VStack(spacing: 8) {
+            if reduceMotion {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.secondary)
+            } else {
+                ProgressView().controlSize(.small)
+            }
+            Text(text.checking + "…")
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: Self.compactLoaderHeight)
+    }
+
+    /// The list's heading, as in Settings. Apps the check could not read
+    /// are a small mark beside the refresh button, opening Settings, which
+    /// names them; the tooltip names them too.
     var compactHeader: some View {
         UpdatesHeading(text: text, count: updates.items.count, lastCheck: lastCheckLine,
                        isChecking: updates.isChecking, disabled: isBusy || allSourcesOff,
-                       compact: true) { updates.check() }
+                       compact: true,
+                       uncheckedNote: coverageIncomplete
+                           ? [text.someAppsUnchecked, incompleteCheckDetail].filter { !$0.isEmpty }
+                               .joined(separator: "\n")
+                           : nil,
+                       onShowUnchecked: {
+                           SettingsRouter.shared.request(AppFeature.appUpdates.settingsDestination)
+                           (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+                       }) { updates.check() }
             .frame(height: Self.headerLineHeight)
             .padding(.horizontal, 4)
     }
@@ -64,43 +106,24 @@ extension AppUpdatesListView {
                       lastCheckRelativeText)
     }
 
-    @ViewBuilder
     var compactEmptyState: some View {
-        if updates.isChecking {
-            VStack(spacing: inNotch ? 3 : 6) {
-                if reduceMotion {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: inNotch ? 15 : 20))
-                        .foregroundStyle(.secondary)
-                } else {
-                    ProgressView()
-                        .controlSize(inNotch ? .mini : .small)
-                }
-                Text(text.checking)
-                    .font(.system(size: inNotch ? 11 : 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+        VStack(spacing: inNotch ? 3 : 6) {
+            Image(systemName: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
+                .font(.system(size: inNotch ? 18 : 24))
+                .foregroundStyle(successfulEmptyCheck ? Color.green : Color.secondary)
+            Label(statusHeadline,
+                  systemImage: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
+                .labelStyle(.titleOnly)
+                .font(.system(size: inNotch ? 11.5 : 13, weight: .medium))
+                .foregroundStyle(.secondary)
+            if successfulEmptyCheck {
+                Text(text.upToDate)
+                    .font(.system(size: inNotch ? 9.5 : 11))
+                    .foregroundStyle(.tertiary)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, inNotch ? 6 : 20)
-        } else {
-            VStack(spacing: inNotch ? 3 : 6) {
-                Image(systemName: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
-                    .font(.system(size: inNotch ? 18 : 24))
-                    .foregroundStyle(successfulEmptyCheck ? Color.green : Color.secondary)
-                Label(statusHeadline,
-                      systemImage: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
-                    .labelStyle(.titleOnly)
-                    .font(.system(size: inNotch ? 11.5 : 13, weight: .medium))
-                    .foregroundStyle(.secondary)
-                if successfulEmptyCheck {
-                    Text(text.upToDate)
-                        .font(.system(size: inNotch ? 9.5 : 11))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, inNotch ? 6 : 20)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, inNotch ? 6 : 20)
     }
 
     var compactNoSourcesState: some View {
@@ -115,38 +138,6 @@ extension AppUpdatesListView {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, inNotch ? 6 : 20)
-    }
-
-    /// Opens the App Updates settings, which list the apps it means.
-    var incompleteCheckLine: some View {
-        HStack(spacing: 6) {
-            // At the bottom right, after the list it qualifies.
-            Spacer(minLength: 4)
-            if storeCoverageIncomplete {
-                Button(text.openAppStore) { updates.openAppStoreUpdates() }
-                    .buttonStyle(.link)
-                    .font(.system(size: 10))
-            }
-            Button {
-                SettingsRouter.shared.request(AppFeature.appUpdates.settingsDestination)
-                (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
-            } label: {
-                HStack(spacing: 4) {
-                    Label(text.someAppsUnchecked, systemImage: "exclamationmark.triangle.fill")
-                        .lineLimit(1)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .bold))
-                }
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundStyle(.orange)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(height: Self.incompleteLineHeight)
-        .padding(.horizontal, 4)
-        .contentShape(Rectangle())
-        .help(incompleteCheckDetail)
     }
 
     var incompleteCheckDetail: String {
