@@ -9,8 +9,7 @@ import UniformTypeIdentifiers
 extension AppUpdatesListView {
     var compactBody: some View {
         VStack(alignment: .leading, spacing: 8) {
-            summaryRow
-                .panelCard()
+            compactHeader
             if allSourcesOff {
                 compactNoSourcesState
             } else if updates.items.isEmpty {
@@ -18,8 +17,8 @@ extension AppUpdatesListView {
             } else {
                 compactList
             }
-            // One line after the list rather than a card, so the panel stays
-            // one surface; the apps it means are in the tooltip.
+            // One line after the list, at its trailing edge, rather than a
+            // card; the apps it means are in the tooltip and in Settings.
             if coverageIncomplete {
                 incompleteCheckLine
             }
@@ -49,30 +48,20 @@ extension AppUpdatesListView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    var summaryRow: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Text(lastCheckLine)
-                .font(.system(size: 10.5))
+    /// The list's heading, with when it was last checked and the way to
+    /// check again in plain text beside it.
+    var compactHeader: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(text.availableUpdatesTitle)
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-            Button {
-                updates.check()
-            } label: {
-                if updates.isChecking {
-                    HStack(spacing: 5) {
-                        ProgressView().controlSize(.mini)
-                        Text(text.checking)
-                    }
-                    .font(.system(size: 10.5, weight: .medium))
-                } else {
-                    Label(text.checkNow, systemImage: "arrow.clockwise")
-                        .font(.system(size: 10.5, weight: .medium))
-                }
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .disabled(isBusy || allSourcesOff)
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            UpdatesCheckLine(text: text, lastCheck: lastCheckLine, isChecking: updates.isChecking,
+                             disabled: isBusy || allSourcesOff, size: 10.5) { updates.check() }
         }
+        .frame(height: Self.headerLineHeight)
+        .padding(.horizontal, 4)
     }
 
     var lastCheckLine: String {
@@ -138,6 +127,13 @@ extension AppUpdatesListView {
     /// Opens the App Updates settings, which list the apps it means.
     var incompleteCheckLine: some View {
         HStack(spacing: 6) {
+            // At the bottom right, after the list it qualifies.
+            Spacer(minLength: 4)
+            if storeCoverageIncomplete {
+                Button(text.openAppStore) { updates.openAppStoreUpdates() }
+                    .buttonStyle(.link)
+                    .font(.system(size: 10))
+            }
             Button {
                 SettingsRouter.shared.request(AppFeature.appUpdates.settingsDestination)
                 (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
@@ -153,12 +149,6 @@ extension AppUpdatesListView {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            Spacer(minLength: 4)
-            if storeCoverageIncomplete {
-                Button(text.openAppStore) { updates.openAppStoreUpdates() }
-                    .buttonStyle(.link)
-                    .font(.system(size: 10))
-            }
         }
         .frame(height: Self.incompleteLineHeight)
         .padding(.horizontal, 4)

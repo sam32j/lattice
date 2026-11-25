@@ -382,13 +382,21 @@ enum ShelfDropRoutingTests {
         // A single app or disk image dragged in offers Uninstall or Install
         // beside the Shelf; the drop hands it over instead of shelving it.
         do {
-            let folder = FileManager.default.temporaryDirectory
+            // Resolved, so the app is not reached through /var's link.
+            let folder = FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
                 .appendingPathComponent("vorss-app-drop-\(UUID())", isDirectory: true)
             defer { try? FileManager.default.removeItem(at: folder) }
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let app = folder.appendingPathComponent("Editor.app", isDirectory: true)
             let image = folder.appendingPathComponent("Editor.dmg")
-            try FileManager.default.createDirectory(at: app, withIntermediateDirectories: true)
+            let contents = app.appendingPathComponent("Contents", isDirectory: true)
+            try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
+            try PropertyListSerialization.data(fromPropertyList: ["CFBundleIdentifier": "com.example.editor",
+                                                                 "CFBundlePackageType": "APPL"],
+                                               format: .xml, options: 0)
+                .write(to: contents.appendingPathComponent("Info.plist"))
+            let broken = folder.appendingPathComponent("Broken.app", isDirectory: true)
+            try FileManager.default.createDirectory(at: broken, withIntermediateDirectories: true)
             try Data([0]).write(to: image)
             Context.AppFeature.shelf.isAvailable = true
             Context.UserDefaults.standard.enabled = true
@@ -413,6 +421,12 @@ enum ShelfDropRoutingTests {
                              && Context.ShelfService.shared.ordinaryAccepts == 0 && notch.appDrop == nil,
                              "dropping there hands the \(url.pathExtension) over instead of shelving it")
             }
+            board.clearContents()
+            board.writeObjects([broken as NSURL])
+            let refused = Context.Notch()
+            refused.beginFileDrop(board)
+            suite.expect(refused.appDrop == nil && !refused.choosingFileDropDestination,
+                         "an app the uninstaller refuses offers no Uninstall zone")
         } catch {
             suite.expect(false, "app drop fixture failed: \(error)")
         }

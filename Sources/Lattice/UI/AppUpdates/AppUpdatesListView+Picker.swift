@@ -22,6 +22,7 @@ extension AppUpdatesListView {
     }
 
     static let incompleteLineHeight: CGFloat = 20
+    static let headerLineHeight: CGFloat = 18
 
     /// Whether the last check left apps out, as the panel's note reports it.
     @MainActor
@@ -49,7 +50,40 @@ extension AppUpdatesListView {
     @MainActor
     static func compactUtilityHeight(itemCount: Int) -> CGFloat {
         let note = coverageWasIncomplete ? incompleteLineHeight + 8 : 0
-        if itemCount == 0 { return 148 + note }
-        return 85 + compactHeight(rowCount: itemCount) + note
+        // The heading is one line of text now, not the card it was (about
+        // 26pt shorter).
+        if itemCount == 0 { return 122 + note }
+        return 59 + compactHeight(rowCount: itemCount) + note
+    }
+}
+
+/// "Last checked 5 min ago · Check Now" in text: the check's state and the
+/// way to run it again, beside the list's heading in Settings and the Hub.
+struct UpdatesCheckLine: View {
+    let text: AppUpdateStrings
+    let lastCheck: String
+    let isChecking: Bool
+    let disabled: Bool
+    let size: CGFloat
+    let onCheck: () -> Void
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(isChecking ? text.checking + "…" : lastCheck)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Button(action: onCheck) {
+                HStack(spacing: 3) {
+                    RefreshArrow(isSpinning: isChecking)
+                    Text(text.checkNow)
+                }
+                .foregroundStyle(disabled || isChecking ? Color.secondary.opacity(0.5) : Color.accentColor)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(disabled || isChecking)
+            .accessibilityLabel(isChecking ? text.checking : text.checkNow)
+        }
+        .font(.system(size: size))
     }
 }

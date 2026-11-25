@@ -13,9 +13,16 @@ enum NotchAppDrop: Equatable {
         guard urls.count == 1, let url = urls.first, url.isFileURL else { return nil }
         switch url.pathExtension.lowercased() {
         case "dmg" where AppFeature.diskImageInstaller.isAvailable: self = .install(url)
-        case "app" where AppFeature.uninstaller.isAvailable: self = .uninstall(url)
+        // Only an app the uninstaller accepts: a system app, a helper inside
+        // another app or Lattice itself offers no zone at all.
+        case "app" where AppFeature.uninstaller.isAvailable && Self.canUninstall(url): self = .uninstall(url)
         default: return nil
         }
+    }
+
+    static func canUninstall(_ url: URL) -> Bool {
+        if case .success = UninstallerSupport.evaluate(url) { return true }
+        return false
     }
 
     var isInstall: Bool {
