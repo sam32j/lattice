@@ -252,7 +252,8 @@ struct SettingsMenuToggleRow: View {
             guard lockedLabel == nil else { return }
             isOn.toggle()
         } label: {
-            HStack(alignment: help == nil ? .center : .top, spacing: 12) {
+            // The switch or chip sits centered on the title and its help together.
+            HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                     if let help {

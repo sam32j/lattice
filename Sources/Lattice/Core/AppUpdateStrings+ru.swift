@@ -48,7 +48,6 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "Доступно обновлений: %d",
         noUpdatesAvailable: "Нет доступных обновлений",
         emptyUpToDate: "Все приложения обновлены",
-        emptyPartialUpToDate: "Проверенные приложения обновлены",
         totalAppsFormat: "Всего приложений: %d",
         someAppsUnchecked: "Некоторые приложения не удалось проверить",
         onlineUnavailable: "Онлайн-проверку не удалось завершить. Остальные результаты по-прежнему показаны.",

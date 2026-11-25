@@ -114,10 +114,10 @@ extension AppUpdatesListView {
 
     var compactEmptyState: some View {
         VStack(spacing: inNotch ? 3 : 6) {
-            Image(systemName: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
+            Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: inNotch ? 18 : 24))
-                .foregroundStyle(successfulEmptyCheck ? Color.green : Color.secondary)
-            Label(coveragePartial ? text.emptyPartialUpToDate : text.emptyUpToDate,
+                .foregroundStyle(Color.green)
+            Label(text.emptyUpToDate,
                   systemImage: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
                 .labelStyle(.titleOnly)
                 .font(.system(size: inNotch ? 11.5 : 13, weight: .medium))
@@ -166,11 +166,6 @@ extension AppUpdatesListView {
                     .font(.system(size: 9.5))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-            if storeCoverageIncomplete {
-                Button(text.openAppStore) { updates.openAppStoreUpdates() }
-                    .buttonStyle(.link)
-                    .font(.system(size: 10))
             }
         }
     }

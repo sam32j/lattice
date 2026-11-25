@@ -172,10 +172,6 @@ struct AppInstallerTab: View {
                 SettingsControlRow(title: strings.revealTitle, caption: strings.revealCaption) {
                     Toggle(strings.revealTitle, isOn: $revealsApp).labelsHidden()
                 }
-                Divider()
-                SettingsControlRow(title: strings.ignoreHomebrewTitle, caption: strings.ignoreHomebrewCaption) {
-                    AppManagerChip(text: FeatureStrings.appManager(l10n.language).alwaysOn)
-                }
             }
             .toggleStyle(.switch)
         }

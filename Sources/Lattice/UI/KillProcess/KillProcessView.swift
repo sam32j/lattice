@@ -175,7 +175,7 @@ struct KillProcessView: View {
         }
         .font(.system(size: compact ? 12 : 13))
         .padding(.leading, 10)
-        .frame(minHeight: compact ? 28 : 32)
+        .frame(minHeight: compact ? 28 : 37)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
             .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))

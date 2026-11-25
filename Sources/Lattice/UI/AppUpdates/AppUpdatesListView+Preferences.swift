@@ -29,22 +29,6 @@ extension AppUpdatesListView {
                     }
                     .transition(.settingsReveal)
                 }
-                Divider()
-                SettingsControlRow(title: text.excludedAppsTitle, caption: excludedSummaryText) {
-                    Button {
-                        showingALS = true
-                    } label: {
-                        HStack(spacing: 3) {
-                            Text(text.manage)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 9, weight: .semibold))
-                        }
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(text.manageExcludedApps)
-                }
             }
             .toggleStyle(.switch)
         }
