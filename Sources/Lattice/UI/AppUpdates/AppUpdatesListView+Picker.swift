@@ -65,23 +65,31 @@ struct UpdatesHeading: View {
     var onShowUnchecked: () -> Void = {}
     let onCheck: () -> Void
 
+    private var title: String {
+        count == 0 ? text.noUpdatesAvailable
+            : count == 1 ? text.oneUpdateAvailable : String(format: text.updatesAvailableFormat, count)
+    }
+
+    /// "N Updates Available" with the refresh arrow beside it, as the
+    /// Homebrew card's title has it, and when it was last checked below.
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(text.availableUpdatesTitle)
+                    Text(title)
                         .font(.system(size: compact ? 12 : 13, weight: .semibold))
                         .lineLimit(1)
-                    if count > 0 {
-                        // White on the accent reads in light and dark alike.
-                        Text("\(count)")
-                            .font(.system(size: compact ? 9.5 : 10.5, weight: .bold))
-                            .monospacedDigit()
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 1.5)
-                            .background(Color.accentColor, in: Capsule())
+                    Button(action: onCheck) {
+                        RefreshArrow(isSpinning: isChecking)
+                            .font(.system(size: compact ? 11 : 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 18, height: 16)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .disabled(disabled || isChecking)
+                    .help(text.checkNow)
+                    .accessibilityLabel(isChecking ? text.checking : text.checkNow)
                 }
                 Text(isChecking ? text.checking + "…" : lastCheck)
                     .font(.system(size: compact ? 10 : 11))
@@ -94,25 +102,13 @@ struct UpdatesHeading: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: compact ? 11 : 12))
                         .foregroundStyle(.orange)
-                        .frame(width: compact ? 24 : 28, height: compact ? 24 : 28)
-                        .contentShape(Circle())
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help(uncheckedNote)
                 .accessibilityLabel(uncheckedNote)
             }
-            Button(action: onCheck) {
-                RefreshArrow(isSpinning: isChecking)
-                    .font(.system(size: compact ? 11 : 12, weight: .medium))
-                    .frame(width: compact ? 24 : 28, height: compact ? 24 : 28)
-                    .background(Color.primary.opacity(0.07), in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(disabled || isChecking ? Color.secondary.opacity(0.5) : Color.primary.opacity(0.8))
-            .disabled(disabled || isChecking)
-            .help(text.checkNow)
-            .accessibilityLabel(isChecking ? text.checking : text.checkNow)
         }
     }
 }

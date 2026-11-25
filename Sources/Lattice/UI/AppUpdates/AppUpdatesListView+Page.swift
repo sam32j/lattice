@@ -36,6 +36,9 @@ extension AppUpdatesListView {
                         .transition(.settingsReveal)
                 }
             }
+            // One animation for the column, so the notice under the list
+            // moves with the rows when one leaves.
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: updates.items)
             // The App Manager's tabs share one column width and margins.
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
@@ -105,7 +108,6 @@ extension AppUpdatesListView {
                         .transition(reduceMotion ? .identity : .opacity)
                 }
             }
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: updates.items)
         } else {
             if let error = updates.lastError, !error.isEmpty {
                 errorCard
