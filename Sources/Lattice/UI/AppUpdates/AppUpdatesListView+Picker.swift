@@ -27,26 +27,6 @@ extension AppUpdatesListView {
     static let compactRowHeight: CGFloat = 40
     static let compactRowSpacing: CGFloat = 5
 
-    static func compactHeight(rowCount: Int, maxRows: Int) -> CGFloat {
-        let visible = min(max(rowCount, 1), maxRows)
-        return CGFloat(visible) * compactRowHeight
-            + CGFloat(visible - 1) * compactRowSpacing
-    }
-
-    /// The list's viewport: its rows, up to `maxRows`, and the room its soft
-    /// edges take at rest.
-    static func compactListViewport(rowCount: Int, maxRows: Int) -> CGFloat {
-        compactHeight(rowCount: rowCount, maxRows: maxRows) + HubScrollEdge.inset * 2
-    }
-
-    /// A first guess at the panel's height, before the panel has measured
-    /// what it shows.
-    @MainActor
-    static func compactUtilityHeight(itemCount: Int, maxRows: Int) -> CGFloat {
-        if AppUpdatesService.shared.isChecking { return compactLoaderHeight }
-        if itemCount == 0 { return headerLineHeight + 8 + 80 }
-        return headerLineHeight + 8 + compactListViewport(rowCount: itemCount, maxRows: maxRows)
-    }
 }
 
 /// The update list's heading: its title and how many, with the refresh

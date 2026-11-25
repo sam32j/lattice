@@ -85,8 +85,9 @@ extension AppUpdatesListView {
                     }
                     .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
                     .hubScrollEdgeFade()
-                    .frame(height: Self.compactListViewport(rowCount: updates.items.count,
-                                                            maxRows: inNotch ? 5 : 8))
+                    // The floating Hub keeps the All Tools height; the list
+                    // takes what the heading leaves.
+                    .frame(maxHeight: .infinity, alignment: .top)
                 }
                 if versionsUncompared {
                     uncomparableVersions
@@ -113,10 +114,6 @@ extension AppUpdatesListView {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        // The surface is sized to what this shows, nothing more.
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-            AppManagerPanelState.shared.setUpdatesHeight(height)
-        }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 

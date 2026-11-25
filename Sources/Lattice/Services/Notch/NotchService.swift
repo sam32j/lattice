@@ -1291,11 +1291,8 @@ final class NotchService: ObservableObject {
         guard let utility else { return nil }
         switch utility {
         case .appManager:
-            return MainActor.assumeIsolated {
-                // The island shows App Updates as one state at a fixed size.
-                let state = AppManagerPanelState.shared
-                return state.shownTab == .updates ? AppManagerPanelState.islandUpdatesHeight : state.contentHeight
-            }
+            // Every App Manager tab has the same fixed height in the island.
+            return MainActor.assumeIsolated { AppManagerPanelState.islandHeight }
         case .videoDownloader:
             return 172
         case .deviceControls:
@@ -5081,29 +5078,6 @@ final class NotchService: ObservableObject {
                     !self.showingSections,
                     [.hub, .controls].contains(self.selected),
                     LatticeHubService.shared.activeUtility == .wallpaper
-                else {
-                    return
-                }
-
-                self.refreshPresentation()
-            }
-            .store(in: &subscriptions)
-
-        // The App Manager is as tall as its tab shows: the updates list
-        // measures itself, and a tab switch changes the height too.
-        let appManager = MainActor.assumeIsolated { AppManagerPanelState.shared }
-        MainActor.assumeIsolated {
-            Publishers.Merge(appManager.$updatesHeight.map { _ in () },
-                             appManager.$tab.map { _ in () })
-        }
-            .dropFirst(2)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self,
-                    self.expanded,
-                    !self.showingSections,
-                    [.hub, .controls].contains(self.selected),
-                    LatticeHubService.shared.activeUtility == .appManager
                 else {
                     return
                 }
