@@ -2,6 +2,212 @@
 
 ## [Unreleased]
 
+## [3.4.3-d.3] - 2026-11-25
+
+### Added
+- **Radial Menu**: A profile tab's context menu holds its actions
+- **Monitor**: Icons for the page's rows and Alerts, alerts indented
+- **Monitor**: Open System Monitor at, for menu bar readings
+- **Monitor**: A short slider under the switch, the reminder as a footnote
+  - An alert that is on shows its limit as a caption under its name (Above 65%) and a short slider under its switch, without tick marks; it still lands on the limit's steps.
+  - Remind again after leaves the header, where it squeezed the caption onto two lines, and becomes a small footnote under the list in caption type.
+- **Monitor**: Put the repeat interval in the Alerts header
+- **Monitor**: Set an alert's limit with a stepped slider
+- **Monitor**: Module rows slide in and out with their switch
+- **Monitor**: Alerts as switches, with the limit shown once on
+- **Monitor**: One row and one menu per reading and per alert
+  - Menu Bar Readings: each component is a single row (grip, icon, name) with a menu whose label says what it shows (Usage, Temperature, On, Off). The menu holds the component's readings as checkmarks, Show as one item where it applies, and the reading's own options. The nested sub-rows and repeated switches are gone.
+  - Alerts: each alert is its name and one menu that is both its switch and its limit (Off, Above 90%, Below 10%, When critical). No icons, no dimmed controls.
+  - The memory alert is called Memory pressure, and the Alerts caption is just "Get a notification when a reading passes its limit."
+- **Monitor**: Group readings, one level scheme, enabled reading menus
+  - Readings are grouped by component: CPU and GPU show Usage and Temperature, Storage shows Usage and Activity, Battery shows Charge, Time remaining and Temperature, each with its own switch. A group drags as one.
+  - Combining usage and temperature is now a Show as one item switch inside the CPU, GPU and Battery groups, one setting each, in place of the global row. Values only, as before.
+  - The ... menus on readings stopped showing their items as disabled: the page's switch style no longer reaches the menu's toggles.
+  - One level for every surface (MonitorLevel): usage turns elevated at 70% and critical at 90%, battery at 20% and 10% left, and memory follows the pressure macOS reports. The menu bar bars and dot, the island's System widget rings and the memory detail's chip all use it, in green, orange and red; a normal fill uses the text color. The chip used to judge memory by how much was in use at different cutoffs, so it could disagree with the ring.
+  - Bars no longer have their own colors and limits; that customization, its saved settings and strings are removed.
+- **Monitor**: Alerts as rows with a limit menu and a switch
+  - Each alert is one row: its icon and name, the limit it fires at as a menu (Above 90%, Below 10%, Above 90 °C), and a switch. The limit stays in place, dimmed, while the alert is off.
+  - Names say what is watched: CPU usage, CPU temperature, Critical memory pressure, Free disk space, Battery level, Battery temperature. Repeat the same alert after becomes Repeat after.
+  - The explanation moves under the Alerts title and reads "Get a notification when a reading passes its limit. CPU spikes under 12 seconds don't count."
+  - The panel's compact checklist, the chip view it shared with the old readings picker, and the separate limit labels are removed.
+- **Monitor**: Readings as a list, a lighter Appearance card, a clearer subpage name
+  - The readings are a list of rows in one card: a grip to drag, the reading's icon and name, a ... menu for its own options (pressure dot, upload first, disk display), and a switch. The nested chips and their container are gone.
+  - Usage display becomes Appearance. Its switches are one line each, with the longer explanations moved to tooltips; the bar colors sit side by side in one row and the two limits are compact steppers.
+  - The subpage is now Menu Bar Readings, in all 15 languages.
+  - The Usage display label, its caption and the Customize heading, no longer shown, are removed.
+- **Monitor**: Rebuild the System Monitor page around the title bar
+  - The main switch sits in the title bar. Off turns every module off and remembers which were on; on restores them. While off, the page shows the same empty state as the other features.
+  - The module switches move into the title bar menu, one row each with its description. Modules this Mac can't run never show.
+  - The menu bar preview is gone. The readings and their style move to a Menu Bar subpage, opened from a row with a chevron.
+  - Update every becomes Refresh rate, a menu of Fast, Balanced and Energy saver, with a caption that says what the choice means.
+  - The panel, fan control and readings cards leave the page; fan control is a module in the menu, marked Beta with its warning.
+  - Every monitor module now opens this page without a section anchor.
+- **Stay Awake**: A red Stop Session button with a stop icon
+- **Stay Awake**: Always turn the display off behind a closed lid
+- **Stay Awake**: Plainer copy and consistent controls
+  - The idle status reads Off, with "Your Mac sleeps on its usual schedule."
+  - The duration row is "Duration for shortcut and menu bar" and the shortcut row "Toggle with shortcut", both without icons or help lines.
+  - Until a time is a plain settings row with a time field and Start, in place of the tinted box.
+  - The apps row reads "No apps selected" with one short caption, and its regular-size Edit… opens the shared app list sheet.
+  - While awake, Laptop (was Lid & battery) and their rows get shorter, Mac-style titles and captions; the lid help moves into this page's strings, and the display-off row loses its icon.
+  - The pointer interval is a menu of localized durations instead of a segmented control.
+  - All 15 languages are updated, and the shared strings only the old copy used are removed.
+- **Settings**: Let the app list sheet row show a summary
+- **Video Downloader**: Move the browser session into a title bar menu
+- **Video Downloader**: Drop the heading, pin the browser session to the bottom
+- **Url Sanitizer**: Call the test card Clean a URL
+- **Stay Awake**: Rebuild the page around a title bar switch and four cards
+  - The main switch and a menu with the menu bar countdown sit in the
+  - Session: a ring with the time left and Stop, start chips that extend
+  - Start automatically: condition tiles that say Now or Not now, Any/All
+  - While awake: display sleep, the pointer nudge with its interval as
+  - Lid & battery, on Macs with a battery: the lid switch with a caption
+- **Stay Awake**: Add the redesigned page's strings and status logic
+- **Stay Awake**: Drop the right-click toggle and start at launch
+  - A right click on the menu bar icon always opens its menu; the Hub or
+  - Stay Awake no longer starts when Lattice opens; Start automatically
+- **Video Downloader**: Main switch in the title bar, session as the footer
+  - The enablement card goes: the switch sits in the title bar, and off,
+  - Always open in floating window goes. The downloader opens where it
+  - The browser session row moves to the foot of the page under a rule.
+- **Url Sanitizer**: Reveal the Cleaned row once a link is typed
+- **Url Sanitizer**: Show an off page while URL Sanitizer is off
+- **Settings**: Share the off page and word Process Manager's for what it is for
+- **Audio**: Let inactive apps follow App volumes when nothing plays
+- **Notch**: Show the camera as soon as its page opens
+- **Url Sanitizer**: Let a site's Allowed override All sites
+- **Settings**: Add a reveal transition for conditional rows
+- **Settings**: Clip cards to their shape while they resize
+- **Settings**: Move URL Sanitizer's switch into the title bar and let title bar switches settle
+- **Url Sanitizer**: Rename Clean URL to URL Sanitizer everywhere
+- **Url Sanitizer**: Rebuild Clean URL as URL Sanitizer with site rules
+- **Radial Menu**: List quick controls alphabetically under one name
+- **Radial Menu**: Tidy the triggers, editor and action dialog
+  - Rows read Assign trackpad gesture and Assign mouse button; Set button…
+  - The editor counts x/12 slots used and keeps Add action visible,
+  - The primary profile's tab shows its star without a dot; in the live
+  - The action dialog lists Open utilities apart from the quick controls,
+- **Radial Menu**: Refine the settings page and the action editor
+  - The feature switch leads the first card, Dynamic Island style, with the
+  - The mouse button is a Set… button that listens, then its name with
+  - The editor wheel keeps the live menu's positions; hovering or focusing
+  - The + menu leads with New Blank Profile… above the preset profiles;
+  - The action editor uses the same cards and rows, fetches a link's icon
+  - Middle Click drops the Open Radial Menu button for a one-line note.
+- **Radial Menu**: Bend the profile tabs to the wheel's rim
+- **Radial Menu**: Rebuild the settings page around cards and the editor
+- **Radial Menu**: Draw profile tabs and gradients in the live menu
+- **Middle Click**: Yield the four-finger gesture to the Radial Menu
+- **Radial Menu**: Open the menu with one menu-wide trigger set
+
+### Changed
+- **Build**: Parallelize side targets, skip unchanged builds, and quiet codesign
+- **Monitor**: Drop Hide the Lattice icon from Menu Bar Readings
+- **Monitor**: Retire the panel settings, unit choices and memory choice
+- **Camera**: Call it Camera Preview everywhere
+- **Stay Awake**: Drop strings the old page used
+- **Stay Awake**: Share the session button with the Hub popover
+- **Settings**: Share the title bar menu toggle row
+- **Stay Awake**: Record session picks only from the default duration
+- **Mouse Buttons**: Open the capture slot with the reveal
+- **Settings**: Retire settingsCollapsible for the reveal transition
+- **Settings**: Reveal follow-up rows on capture, media and utility pages
+- **Audio**: Reveal the mixer and input warnings and inactive apps
+- **Settings**: Reveal follow-up rows on Dynamic Island, Agents and System Monitor
+- **Settings**: Reveal follow-up rows on General, Window Management, Dock and Display & Energy
+- **Settings**: Reveal follow-up rows on Keyboard and Mouse & Trackpad
+- **Settings**: Collapse bursts of switch flips into one sync
+- **Radial Menu**: Drop the submenu row from the action dialog
+- **Shortcuts**: Explain refused shortcuts in a dialog everywhere
+
+### Fixed
+- **Island**: Fade after the Mission Control shrink settles, into the camera
+- **Island**: Fade only once the Mission Control shrink has closed
+- **Island**: Shrink into the notch when Mission Control opens
+- **Radial Menu**: A released tab keeps the slot it was let go over
+- **Radial Menu**: Drag profile tabs in place, without the system's copy
+- **Radial Menu**: Address the second CodeRabbit review
+  - A queued trackpad tap or click only toggles the wheel while the menu
+  - The Radial Menu's button stays suppressed during a Middle Click hold
+  - Removing the mouse tap mid-hold closes the wheel instead of leaving it
+  - A Carbon press queued before its hotkey was unregistered is dropped
+  - The tab map is reported again on a profile switch; the live wheel shows
+  - Custom icons are cached against their data, so a draft favicon never
+  - A favicon failure is ignored once a symbol is picked
+  - The profile name placeholder shows the name a blank entry saves
+  - A drag that comes back to its start does not open the action
+  - The probe renders Middle Click in both appearances
+- **Monitor**: Restore the Hub when the island is torn down too
+- **Hub**: The System tile stays System after a menu bar reading
+- **Monitor**: A menu bar reading leaves the Hub where it was
+- **Monitor**: Hide a floating Hub before opening a reading in the island
+- **Hub**: Forget the opening reading once the Hub left it
+- **Monitor**: Remind again after back at the bottom left
+- **Monitor**: Open menu bar readings where stepping in lands
+- **Monitor**: Never drop a readings drag during a settle
+- **Notch**: Keep the camera's restart button from restarting itself
+- **Hub**: A second click on a reading leaves the HUD closed
+- **Monitor**: Keep fan control out of the restore fallback
+- **Monitor**: Size a reading opened from the menu bar to fit
+  - Island: the detail's height grows as its readings arrive, and opened straight from the menu bar they arrive after it opens. The detail now asks the island to resize whenever its layout height changes, so it ends up the size it has when entered step by step.
+  - HUD: a reading's click only toggled the Hub on its home page. It now opens the floating Hub straight on System at that reading, below the menu bar item, and a second click on the same reading closes it.
+- **Monitor**: Alerts card and rows reveal together
+- **Settings**: Match title bar menu highlights to the popover's corners
+- **Monitor**: Reveal an alert's limit with the managed accordion
+- **Monitor**: Open menu bar readings in the System widget design
+- **Monitor**: Smooth readings drag
+- **Monitor**: Reorder readings by dragging the row itself
+- **Monitor**: Keep Remind again after on one line
+- **Settings**: Drop a reordered row in place
+- **Menu Bar**: Resize status items instantly
+- **Notch**: Leave the camera page when the shortcut stops it
+- **Menu Bar**: Replace readings in place instead of sliding
+- **Video Downloader**: Show the profile path as a tooltip
+- **Video Downloader**: Keep the browser session menu on one line
+- **Settings**: No focus ring on title bar popover rows
+- **Settings**: No focus ring on the title bar options button
+- **Url Sanitizer**: Draw the Sites add button as a whole plus
+- **Url Sanitizer**: Say a site can allow what All sites blocks
+- **Url Sanitizer**: Tie the menu panel to the main switch and history
+  - The panel's automatic removal checkbox reads unchecked and greyed
+  - Copying a cleaned link from the panel adds it to Recently cleaned, as
+- **Url Sanitizer**: Keep the site sheet open over a rejected token
+- **Url Sanitizer**: Strip every stacked host prefix
+- **Keyboard**: Animate the keyboard light card's revealed rows
+- **Settings**: Give each settling switch its own burst
+- **Hub**: Time the motion hold on system uptime
+- **Hub**: Hold the island's settings sync until the Stay Awake slide lands
+- **Settings**: Tighten radial editor and shortcut recorder behavior from review
+  - A refused Command Bar alias is shown in a dialog of its own, even after
+  - The screenshot recorder stops listening before its refusal dialog
+  - Changing a link drops the old site's icon at once and ends a stale
+  - Return, Space and the accessibility action on a profile tab leave a
+  - Dragging an action swaps only when released over the wheel, and a
+  - The probe renders new App and File actions in Add mode and fails if
+- **Radial Menu**: Draw joining scripts whole and respect Reduce Motion on the tab arc
+- **Radial Menu**: Close trigger, migration and input edge cases from review
+  - Migration pairs each profile with its own record's triggers, so an
+  - A backup's settings version is restored only as an integer
+  - The menu's shortcut makes no macOS take-over claim, and role conflicts
+  - Middle Click's radial press latch remembers its button and clears when
+  - A mouse hold ends on the release of the button that opened it, a profile
+- **Radial Menu**: A tapped chord key keeps the wheel open
+- **Radial Menu**: Name and draw app and file actions with nothing chosen
+- **Radial Menu**: Keep the mouse button control one height
+- **Radial Menu**: Drop the info icons from the trigger rows
+- **Radial Menu**: Drop the mouse button row's info icon and fixed width
+- **Radial Menu**: Align the action dialog and tidy the trigger card
+  - Every menu in the action dialog is the shared pop-up at exactly the
+  - The developer preview toggle for the mouse button row moves out of
+  - The back and forward buttons' note moves into the Active tooltip
+- **Radial Menu**: Refuse shortcuts in a dialog and bend the tab text
+  - A conflicting radial shortcut opens the shared conflict dialog (another
+  - The profile tabs' star, dot and name follow the arc, glyph by glyph.
+  - Rows read Open radial menu with shortcut, trackpad and mouse button;
+  - The shortcut field, trackpad menu and Set… button share one 140 pt
+  - Selecting a tab scrolls only the tab strip, not the page.
+- **Radial Menu**: Keep a held chord alive while its key is down
+
 ### Removed
 - **Stay Awake**: Start when Lattice opens. Use Start automatically with Power to keep the Mac awake whenever it is plugged in.
 - **Stay Awake**: Toggle with a right click on the menu bar icon. Use the Hub or the shortcut; a right click always opens the menu.
