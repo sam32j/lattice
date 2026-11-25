@@ -135,11 +135,10 @@ final class NotchLockHandoff {
         let started = CACurrentMediaTime()
         let preparation = started - (unlockStarted ?? started)
         logger.debug("Desktop prepared behind lock backdrop in \(preparation, privacy: .public)s")
-        morph(to: retractionFrame ?? frame)
-        let token = generation
-        let duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.32
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self, weak desktop] in
-            guard let self, self.generation == token, self.unlocking else { return }
+        let morphDuration: CFTimeInterval = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.32
+        let remaining = max(0, morphDuration - preparation)
+        let finalize: () -> Void = { [weak self, weak desktop] in
+            guard let self, self.unlocking else { return }
             desktop?.contentView?.layoutSubtreeIfNeeded()
             desktop?.displayIfNeeded()
             desktop?.alphaValue = 1
@@ -147,6 +146,16 @@ final class NotchLockHandoff {
             self.close()
             self.logger.debug("Unlock handoff completed in \(CACurrentMediaTime() - started, privacy: .public)s")
             completion()
+        }
+        if remaining <= 0.01 {
+            finalize()
+            return
+        }
+        morph(to: retractionFrame ?? frame)
+        let token = generation
+        DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
+            guard let self, self.generation == token else { return }
+            finalize()
         }
     }
 

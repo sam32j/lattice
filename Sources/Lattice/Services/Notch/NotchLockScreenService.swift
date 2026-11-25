@@ -31,6 +31,7 @@ final class NotchLockScreenService {
     private var playbackSubscription: AnyCancellable?
     private var screenObserver: NSObjectProtocol?
     private var padlockWork: DispatchWorkItem?
+    private var pendingShowWork: DispatchWorkItem?
     private var shownFrames = Frames()
     private var wasLocked = false
     private var handoff: NotchLockHandoff?
@@ -70,10 +71,29 @@ final class NotchLockScreenService {
         wasLocked = session.locked
         if !session.locked { model.playedWhileLocked = false }
         if session.showsLockScreen, NotchLockScreenSupport.isEnabled() {
-            // Locked at the Mac, the padlock is seen closing; back from a
-            // dark display it is simply closed.
-            show(closingPadlock: locking)
+            if locking {
+                // Locked at the Mac, the padlock is seen closing right away.
+                pendingShowWork?.cancel()
+                pendingShowWork = nil
+                show(closingPadlock: true)
+            } else if space == nil, pendingShowWork == nil {
+                // Returning from a screensaver or dark display: Touch ID / Apple Watch
+                // unlock fires `screensaver.didstop` / `screensDidWake` moments before
+                // `screenIsUnlocked`. Wait briefly before creating a lock-screen
+                // SkyLight Space so direct unlocks don't trigger a duplicate WindowServer
+                // desktop scale-in glitch.
+                let work = DispatchWorkItem { [weak self] in
+                    guard let self else { return }
+                    self.pendingShowWork = nil
+                    guard self.wasLocked, NotchLockScreenSupport.isEnabled() else { return }
+                    self.show(closingPadlock: false)
+                }
+                pendingShowWork = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
+            }
         } else {
+            pendingShowWork?.cancel()
+            pendingShowWork = nil
             // Unlocked, the island owns the sources again; otherwise nothing
             // shows them until the lock screen returns.
             hide(unlocking: !session.locked && session.canPresent, stopsSources: !session.canPresent)
@@ -82,6 +102,8 @@ final class NotchLockScreenService {
 
     /// The island is off: nothing it started keeps running.
     func close() {
+        pendingShowWork?.cancel()
+        pendingShowWork = nil
         handoff?.close()
         handoff = nil
         wasLocked = false

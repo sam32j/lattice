@@ -156,6 +156,9 @@ enum NotchDestinationContract {
         var handoffCompletions: [Int] = []
         func prepareLockHandoff() { handoffPreparations.append(presentationTearDowns) }
         func finishLockHandoff() { handoffCompletions.append(presentationSyncs) }
+        func scheduleSessionPresentationResume(fromUnlock: Bool, fromScreenSaver: Bool, _ work: @escaping () -> Void) { work() }
+        func cancelSessionPresentationResume() {}
+        func reactMascot(_ reaction: NotchMascotReaction) {}
     }
 
     static func run(_ suite: TestSuite) {
