@@ -93,10 +93,15 @@ struct PanelUninstallerView: View {
 
     /// Typing searches at once, with no click into the field first; in the
     /// island that means taking the keys, which hovering it open does not.
+    /// Asked again for a moment: when the Hub or island opens straight onto
+    /// this list, the page is still sliding in and the first ask is lost.
     private func focusSearch() {
-        DispatchQueue.main.async {
-            if inNotch { NotchService.shared.takeKeyboardFocus() }
-            searchFocused = true
+        for delay in [0.0, 0.12, 0.3, 0.6] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                guard uninstaller.phase == .empty, !searchFocused else { return }
+                if inNotch { NotchService.shared.takeKeyboardFocus() }
+                searchFocused = true
+            }
         }
     }
 
@@ -109,6 +114,7 @@ struct PanelUninstallerView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
                 .focused($searchFocused)
+                .defaultFocus($searchFocused, true)
             if !query.isEmpty {
                 Button { query = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
