@@ -129,21 +129,46 @@ enum HubScrollEdge {
 
 extension View {
     /// Fades the top and bottom `HubScrollEdge.inset` of a scrolling area and
-    /// rounds its corners; the content needs that much room at rest.
+    /// rounds its corners; the content needs that much room at rest. The fade
+    /// only shows while the content is taller than the area: a page that
+    /// fits, as most island pages do, keeps every row at full strength.
     func hubScrollEdgeFade(_ isActive: Bool = true) -> some View {
-        mask {
-            if isActive {
-                VStack(spacing: 0) {
-                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                        .frame(height: HubScrollEdge.inset)
-                    Rectangle()
-                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                        .frame(height: HubScrollEdge.inset)
+        modifier(HubScrollEdgeFade(isActive: isActive))
+    }
+}
+
+private struct HubScrollEdgeFade: ViewModifier {
+    let isActive: Bool
+    @State private var overflows = true
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) {
+            content
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.contentSize.height + geometry.contentInsets.top + geometry.contentInsets.bottom
+                        > geometry.containerSize.height + 1
+                } action: { _, value in
+                    overflows = value
                 }
-                .clipShape(RoundedRectangle(cornerRadius: HubScrollEdge.cornerRadius, style: .continuous))
-            } else {
+                .mask { mask(fading: isActive && overflows) }
+        } else {
+            content.mask { mask(fading: isActive) }
+        }
+    }
+
+    @ViewBuilder
+    private func mask(fading: Bool) -> some View {
+        if fading {
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                    .frame(height: HubScrollEdge.inset)
                 Rectangle()
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: HubScrollEdge.inset)
             }
+            .clipShape(RoundedRectangle(cornerRadius: HubScrollEdge.cornerRadius, style: .continuous))
+        } else {
+            Rectangle()
         }
     }
 }
