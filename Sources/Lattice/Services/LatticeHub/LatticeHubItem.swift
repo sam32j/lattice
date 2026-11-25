@@ -29,7 +29,9 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
                 $0.isAvailable(in: defaults)
             }
         case .appManager:
-            return ([.diskImageInstaller, .appUpdates, .uninstaller, .homebrew] as [AppFeature]).contains {
+            // The App Installer has no panel of its own: disk images are
+            // dropped on the island or opened, so it alone shows no tile.
+            return ([.appUpdates, .uninstaller, .homebrew] as [AppFeature]).contains {
                 $0.isAvailable(in: defaults)
             }
         case .deviceControls:

@@ -81,6 +81,9 @@ final class AppUpdatesService: ObservableObject {
     /// Alive only while an upgrade this service started is running, so the
     /// list refreshes itself even when no window is on screen to notice.
     var upgradeObserver: AnyCancellable?
+    /// Keeps the list in step with the Homebrew tab: a cask it upgrades or
+    /// removes leaves this list as well.
+    var homebrewSync: AnyCancellable?
 
     private init() {
         let stamp = UserDefaults.standard.double(forKey: DefaultsKey.appUpdatesLastCheck)
@@ -89,6 +92,13 @@ final class AppUpdatesService: ObservableObject {
             UserDefaults.standard.string(forKey: DefaultsKey.appUpdatesRules))
         let savedTotal = UserDefaults.standard.integer(forKey: "appUpdatesTotalAppsCount")
         totalAppsCount = savedTotal > 0 ? savedTotal : 0
+        homebrewSync = HomebrewManager.shared.$operationStatus
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let status, status.result != .running,
+                      HomebrewManager.shared.operationOwner != .appUpdates else { return }
+                self?.dropFinishedCasks()
+            }
     }
 
 }

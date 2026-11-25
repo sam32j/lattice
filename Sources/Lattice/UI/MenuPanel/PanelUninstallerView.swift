@@ -3,346 +3,464 @@
 
 import SwiftUI
 
-/// Compact uninstaller flow for the menu panel. It reuses AppUninstaller so the
-/// scan and removal rules stay identical to the larger Settings page.
+/// The uninstaller in the Hub and the island. It reuses AppUninstaller so the
+/// scan and removal rules stay identical to the Settings tab, and fills the
+/// space it is given: the app list first, then the scan, then the leftovers
+/// with the button that removes them pinned under the list.
 struct PanelUninstallerView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var uninstaller = AppUninstaller.shared
     @ObservedObject private var homebrew = HomebrewManager.shared
     @Environment(\.notchPresentation) private var inNotch
-    @State private var dropTargeted = false
-    @State private var showingAppPicker = false
+    @State private var query = ""
+    @State private var apps: [InstalledApps.InstalledApp] = []
+    @State private var loadingApps = false
+    @State private var hoveredApp: URL?
+    @State private var hoveredLeftover: UUID?
     @State private var pendingHomebrewRemoval: AppUninstaller.HomebrewRemovalConfirmation?
     @State private var showHomebrewDetails = false
 
-    var showHeader: Bool = true
     var onClose: () -> Void = {}
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if showHeader { header }
-            content
-        }
-        .dropDestination(for: URL.self) { urls, _ in
-            let selected = selectFirstApp(from: urls)
-            // The empty state explains a refusal, so the list gives way to it too.
-            if selected || uninstaller.refusal != nil {
-                showingAppPicker = false
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            // An app dropped on the panel is taken as chosen; there is no
+            // zone for it here, the island offers one while dragging.
+            .dropDestination(for: URL.self) { urls, _ in
+                selectFirstApp(from: urls)
             }
-            return selected
-        } isTargeted: { dropTargeted = $0 }
-        .onAppear {
-            PanelInteractionState.shared.viewKeepsPopoverOpen = true
-            uninstaller.clearRefusal()
-        }
-        .onDisappear {
-            PanelInteractionState.shared.viewKeepsPopoverOpen = false
-            dismissHomebrewRemovalConfirmation()
-            uninstaller.clearRefusal()
-        }
-        .alert(l10n.s.homebrewConfirmUninstallTitle,
-               isPresented: homebrewRemovalConfirmationPresented,
-               presenting: pendingHomebrewRemoval) { confirmation in
-            Button(l10n.s.uninstallerCancel, role: .cancel) {
+            .onAppear {
+                PanelInteractionState.shared.viewKeepsPopoverOpen = true
+                uninstaller.clearRefusal()
+            }
+            .onDisappear {
+                PanelInteractionState.shared.viewKeepsPopoverOpen = false
                 dismissHomebrewRemovalConfirmation()
+                uninstaller.clearRefusal()
             }
-            Button(l10n.s.homebrewUninstall, role: .destructive) {
-                uninstaller.removeSelectedWithHomebrew(confirmation: confirmation)
-                dismissHomebrewRemovalConfirmation()
+            .alert(l10n.s.homebrewConfirmUninstallTitle,
+                   isPresented: homebrewRemovalConfirmationPresented,
+                   presenting: pendingHomebrewRemoval) { confirmation in
+                Button(l10n.s.uninstallerCancel, role: .cancel) {
+                    dismissHomebrewRemovalConfirmation()
+                }
+                Button(l10n.s.homebrewUninstall, role: .destructive) {
+                    uninstaller.removeSelectedWithHomebrew(confirmation: confirmation)
+                    dismissHomebrewRemovalConfirmation()
+                }
+            } message: { confirmation in
+                Text(String(format: l10n.s.homebrewConfirmUninstallBodyFormat, confirmation.package.displayName))
             }
-        } message: { confirmation in
-            Text(String(format: l10n.s.homebrewConfirmUninstallBodyFormat, confirmation.package.displayName))
-        }
     }
 
     @ViewBuilder
     private var content: some View {
         switch uninstaller.phase {
-        case .empty:
-            if showingAppPicker {
-                appPickerState
-            } else {
-                emptyState
-            }
-        case .scanning: busyState(l10n.s.uninstallerScanning)
-        case .results: resultsState
-        case .removing: busyState(l10n.s.uninstallerRemoving)
+        case .empty: appChooser
+        case .scanning: progress(l10n.s.uninstallerScanning, cancellable: true)
+        case .results: results
+        case .removing: progress(l10n.s.uninstallerRemoving, cancellable: false)
         case let .done(freed, failed): doneState(freed: freed, failed: failed)
         }
     }
 
-    private var header: some View {
-        HStack(spacing: 8) {
-            Label(l10n.s.uninstallerName, systemImage: "externaldrive.badge.minus")
-                .font(.system(size: 12, weight: .semibold))
-            Spacer()
-            Button {
-                // Closing means cancel: a scan left running would come back
-                // on the next open. A removal in progress is left alone.
-                if uninstaller.phase == .scanning { uninstaller.reset() }
-                onClose()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22, height: 22)
-            }
-            .buttonStyle(.plain)
-            .help(l10n.s.uninstallerCancel)
-        }
-    }
+    // MARK: Choosing an app
 
-    private var emptyState: some View {
-        VStack(spacing: 10) {
-            dropZone
-
+    private var appChooser: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            searchField
             if let refusal = uninstaller.refusal {
                 UninstallRefusalNote(refusal: refusal, compact: true)
             }
-
-            Button {
-                choose()
-            } label: {
-                Label(l10n.s.uninstallerChoose, systemImage: "plus.app")
-                    .font(.system(size: 11.5, weight: .medium))
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-
-            Text(l10n.s.uninstallerEmptyNote)
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
+            appList
             if !permissions.fullDiskAccess {
                 FullDiskAccessNote(compact: true)
             }
         }
-        .panelCard()
+        .onAppear(perform: loadAppsIfNeeded)
     }
 
-    private var appPickerState: some View {
-        AppPickerView(compact: true, emptyNote: l10n.s.uninstallerPickerHiddenNote) {
-            showingAppPicker = false
-        } onSelect: { url in
-            showingAppPicker = false
-            uninstaller.select(appURL: url)
-        } loadApps: { UninstallerSupport.offeredApplications() }
-        .panelCard()
-    }
-
-    private var dropZone: some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
-            .foregroundStyle(dropTargeted ? Color.accentColor : Color.secondary.opacity(0.35))
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(dropTargeted ? Color.accentColor.opacity(0.08) : Color.primary.opacity(0.025))
-            )
-            .frame(height: 108)
-            .overlay(
-                VStack(spacing: 6) {
-                    Image(systemName: "arrow.down.app")
-                        .font(.system(size: 28, weight: .light))
-                        .foregroundStyle(dropTargeted ? Color.accentColor : .secondary)
-                    Text(l10n.s.uninstallerDropTitle)
-                        .font(.system(size: 12, weight: .semibold))
-                    Text(l10n.s.uninstallerDropSubtitle)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, 12)
-            )
-            .animation(.easeOut(duration: 0.15), value: dropTargeted)
-    }
-
-    private func busyState(_ message: String) -> some View {
-        VStack(spacing: 10) {
-            ProgressView()
-                .controlSize(.small)
-            Text(message)
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-            if let target = uninstaller.target {
-                HStack(spacing: 7) {
-                    Image(nsImage: target.icon)
-                        .resizable()
-                        .frame(width: 18, height: 18)
-                    Text(target.name)
-                        .font(.system(size: 11.5, weight: .medium))
-                        .lineLimit(1)
+            TextField(l10n.s.uninstallerPickerSearch, text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+            if !query.isEmpty {
+                Button { query = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 9)
+        .frame(height: 28)
+        .background(Color.primary.opacity(inNotch ? 0.1 : 0.06),
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var filteredApps: [InstalledApps.InstalledApp] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return apps }
+        return apps.filter {
+            $0.name.localizedCaseInsensitiveContains(trimmed)
+                || ($0.bundleID?.localizedCaseInsensitiveContains(trimmed) ?? false)
+        }
+    }
+
+    @ViewBuilder
+    private var appList: some View {
+        let shown = filteredApps
+        if loadingApps {
+            ProgressView()
+                .controlSize(.small)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if shown.isEmpty {
+            VStack(spacing: 6) {
+                Image(systemName: "app.dashed")
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundStyle(.secondary)
+                Text(l10n.s.uninstallerPickerEmpty)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                Text(l10n.s.uninstallerPickerHiddenNote)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 12)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ScrollView(showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: 1) {
+                    ForEach(shown) { app in
+                        appRow(app)
+                    }
                 }
             }
-            if uninstaller.phase == .scanning {
+            .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
+            .hubScrollEdgeFade()
+        }
+    }
+
+    private func appRow(_ app: InstalledApps.InstalledApp) -> some View {
+        let hovered = hoveredApp == app.url
+        return Button {
+            selectApp(app.url)
+        } label: {
+            HStack(spacing: 9) {
+                Image(nsImage: app.icon)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(app.name)
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
+                    let location = app.identity.flatMap(InstalledApps.location(for:))
+                    Text(location ?? app.bundleID ?? app.url.path)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(location == nil ? .middle : .head)
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .opacity(hovered ? 1 : 0)
+            }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 5)
+            .background(Color.primary.opacity(hovered ? (inNotch ? 0.12 : 0.07) : 0),
+                        in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hoveredApp = $0 ? app.url : (hoveredApp == app.url ? nil : hoveredApp) }
+    }
+
+    // MARK: Scanning and removing
+
+    private func progress(_ message: String, cancellable: Bool) -> some View {
+        VStack(spacing: 10) {
+            Spacer(minLength: 0)
+            if let target = uninstaller.target {
+                Image(nsImage: target.icon)
+                    .resizable()
+                    .frame(width: 52, height: 52)
+                Text(target.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+            }
+            HStack(spacing: 7) {
+                ProgressView().controlSize(.small)
+                Text(message)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            if cancellable {
                 Button(l10n.s.uninstallerCancel) { uninstaller.reset() }
                     .controlSize(.small)
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 118)
-        .panelCard()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, 6)
     }
 
-    private var resultsState: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            targetHeader
-            Divider()
-            leftoverList
-            Divider()
-            homebrewStatus
-            footer
-        }
-        .panelCard()
-    }
+    // MARK: Results
 
-    private var targetHeader: some View {
-        HStack(spacing: 9) {
-            if let target = uninstaller.target {
-                Image(nsImage: target.icon)
-                    .resizable()
-                    .frame(width: 28, height: 28)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(target.name)
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .lineLimit(1)
-                    Text(target.bundleID ?? target.url.path)
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+    private var results: some View {
+        VStack(spacing: 0) {
+            resultsHeader
+                .padding(.bottom, 4)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(AppUninstaller.Category.allCases, id: \.self) { category in
+                        let group = uninstaller.items.filter { $0.category == category }
+                        if !group.isEmpty {
+                            categorySection(group, category: category)
+                        }
+                    }
                 }
             }
-            Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: 1) {
-                Text(Self.byteString(uninstaller.totalSize))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                Text(l10n.s.uninstallerFoundTitle)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-            }
+            // Each scan's list opens at its top, not where the last one was.
+            .defaultScrollAnchor(.top)
+            .id(uninstaller.target?.url)
+            .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
+            .hubScrollEdgeFade()
+            homebrewStatus
+            footer
+                .padding(.top, 6)
+        }
+    }
+
+    /// The way back to the app list is the header's one control: no second
+    /// close or cancel elsewhere on the page.
+    private var resultsHeader: some View {
+        HStack(spacing: 9) {
             Button { uninstaller.reset() } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 24, height: 24)
+                    .background(Color.primary.opacity(inNotch ? 0.12 : 0.07), in: Circle())
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .disabled(uninstaller.isRemovingWithHomebrew)
-        }
-    }
-
-    private var leftoverList: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(AppUninstaller.Category.allCases, id: \.self) { category in
-                let group = uninstaller.items.filter { $0.category == category }
-                if !group.isEmpty {
-                    categoryGroup(group, category: category)
+            .help(l10n.s.uninstallerCancel)
+            .accessibilityLabel(l10n.s.uninstallerCancel)
+            if let target = uninstaller.target {
+                Image(nsImage: target.icon)
+                    .resizable()
+                    .frame(width: 30, height: 30)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(target.name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                    Text("\(Self.byteString(uninstaller.totalSize)) \(l10n.s.uninstallerFoundTitle)")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
             }
+            Spacer(minLength: 0)
         }
     }
 
-    private func categoryGroup(_ group: [AppUninstaller.Leftover],
-                               category: AppUninstaller.Category) -> some View {
+    private func categorySection(_ group: [AppUninstaller.Leftover],
+                                 category: AppUninstaller.Category) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label(for: category).uppercased())
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.tertiary)
-            ForEach(group) { item in
-                row(item)
+            HStack {
+                Text(label(for: category).uppercased())
+                Spacer()
+                Text(Self.byteString(group.reduce(0) { $0 + $1.size }))
+                    .monospacedDigit()
             }
+            .font(.system(size: 9.5, weight: .semibold))
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 4)
+            VStack(spacing: 0) {
+                ForEach(Array(group.enumerated()), id: \.element.id) { index, item in
+                    if index > 0 { Divider().padding(.leading, 34) }
+                    leftoverRow(item)
+                }
+            }
+            .background(Color.primary.opacity(inNotch ? 0.07 : 0.035),
+                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
     }
 
-    private func row(_ item: AppUninstaller.Leftover) -> some View {
-        HStack(spacing: 7) {
-            Toggle("", isOn: includeBinding(item))
+    /// The whole row toggles; Show in Finder appears on hover.
+    private func leftoverRow(_ item: AppUninstaller.Leftover) -> some View {
+        let included = includeBinding(item)
+        let hovered = hoveredLeftover == item.id
+        return HStack(spacing: 8) {
+            Toggle("", isOn: included)
                 .labelsHidden()
                 .toggleStyle(.checkbox)
+                .controlSize(.small)
             Image(nsImage: NSWorkspace.shared.icon(forFile: item.url.path))
                 .resizable()
-                .frame(width: 17, height: 17)
+                .frame(width: 18, height: 18)
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.name)
-                    .font(.system(size: 11))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
                 HStack(spacing: 4) {
+                    Text(item.name)
+                        .font(.system(size: 11.5))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                     if item.confidence == .related {
                         Image(systemName: "questionmark.circle")
+                            .font(.system(size: 9.5))
                             .foregroundStyle(.orange)
                             .help(l10n.s.cleanerOptionalSection)
                             .accessibilityLabel(l10n.s.cleanerOptionalSection)
                     }
-                    Text(prettyPath(item.url))
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.head)
                 }
-                .font(.system(size: 9.5))
+                Text(prettyPath(item.url))
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.head)
             }
-            Spacer(minLength: 0)
-            Button {
-                NSWorkspace.shared.activateFileViewerSelecting([item.url])
-            } label: {
-                Image(systemName: "folder")
+            Spacer(minLength: 4)
+            if hovered {
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([item.url])
+                } label: {
+                    Image(systemName: "magnifyingglass.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(l10n.s.cleanerRevealInFinder)
+                .accessibilityLabel(l10n.s.cleanerRevealInFinder)
             }
-            .buttonStyle(.plain)
-            .help(l10n.s.cleanerRevealInFinder)
-            .accessibilityLabel(l10n.s.cleanerRevealInFinder)
             Text(Self.byteString(item.size))
-                .font(.system(size: 10))
+                .font(.system(size: 10.5))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
         }
-        .frame(minHeight: 24)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .opacity(included.wrappedValue ? 1 : 0.55)
+        .contentShape(Rectangle())
+        .onTapGesture { included.wrappedValue.toggle() }
+        .onHover { hoveredLeftover = $0 ? item.id : (hoveredLeftover == item.id ? nil : hoveredLeftover) }
+        .contextMenu {
+            Button(l10n.s.cleanerRevealInFinder) {
+                NSWorkspace.shared.activateFileViewerSelecting([item.url])
+            }
+        }
     }
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(String(format: l10n.s.uninstallerSelectedFormat,
                             uninstaller.items.filter(\.include).count, uninstaller.items.count))
                     .font(.system(size: 11, weight: .medium))
-                Spacer()
                 Text(Self.byteString(uninstaller.selectedSize))
                     .font(.system(size: 10))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
-            HStack {
-                Button(l10n.s.uninstallerCancel) {
-                    uninstaller.reset()
+            Spacer(minLength: 0)
+            Button {
+                if let confirmation = uninstaller.homebrewRemovalConfirmation {
+                    presentHomebrewRemovalConfirmation(confirmation)
+                } else {
+                    uninstaller.removeSelected()
                 }
-                .controlSize(.small)
-                .disabled(uninstaller.isRemovingWithHomebrew)
-                Spacer()
-                Button {
-                    if let confirmation = uninstaller.homebrewRemovalConfirmation {
-                        presentHomebrewRemovalConfirmation(confirmation)
-                    } else {
-                        uninstaller.removeSelected()
-                    }
-                } label: {
-                    Label(removeButtonTitle, systemImage: "trash")
-                        .font(.system(size: 11, weight: .semibold))
-                        .lineLimit(1)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .tint(.red)
-                .disabled(!uninstaller.canRemoveSelected
-                          || (uninstaller.selectedHomebrewPackage != nil && homebrew.isBusy))
+            } label: {
+                Label(removeButtonTitle, systemImage: "trash")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .lineLimit(1)
+                    .padding(.horizontal, 4)
             }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .disabled(!uninstaller.canRemoveSelected
+                      || (uninstaller.selectedHomebrewPackage != nil && homebrew.isBusy))
         }
     }
 
     private var removeButtonTitle: String {
         uninstaller.selectedHomebrewPackage == nil ? l10n.s.uninstallerRemove : l10n.s.homebrewUninstall
     }
+
+    @ViewBuilder
+    private var homebrewStatus: some View {
+        if uninstaller.homebrewCheckFailed {
+            UninstallerHomebrewFailureNote(onRetry: uninstaller.retryHomebrewCheck)
+                .padding(.top, 6)
+        } else if let package = uninstaller.selectedHomebrewPackage {
+            VStack(alignment: .leading, spacing: 6) {
+                if let status = homebrew.operationStatus,
+                   status.action == .uninstall,
+                   status.package?.id == package.id {
+                    HomebrewOperationStatusView(status: status,
+                                                log: homebrew.log,
+                                                terminalFallbackCommand: homebrew.terminalFallbackCommand,
+                                                compact: true,
+                                                showDetails: $showHomebrewDetails,
+                                                onCancel: homebrew.cancelOperation,
+                                                onClear: homebrew.clearLog,
+                                                onOpenTerminal: homebrew.openTerminalFallback)
+                    if let tap = homebrew.untrustedTap {
+                        HomebrewTrustCard(tap: tap, compact: true)
+                    }
+                    if let error = homebrew.errorMessage, !error.isEmpty {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9.5))
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else {
+                    Label(String(format: l10n.s.uninstallerHomebrewPackageFormat, package.displayName),
+                          systemImage: "shippingbox")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.top, 6)
+        }
+    }
+
+    // MARK: Done
+
+    private func doneState(freed: Int64, failed: [AppUninstaller.Leftover]) -> some View {
+        VStack(spacing: 10) {
+            Spacer(minLength: 0)
+            Image(systemName: UninstallerSupport.doneSymbol(hasLeftovers: !failed.isEmpty))
+                .font(.system(size: 34))
+                .foregroundStyle(failed.isEmpty ? .green : .orange)
+            Text(l10n.s.uninstallerDoneTitle)
+                .font(.system(size: 14, weight: .bold))
+            Text(String(format: l10n.s.uninstallerFreedFormat, Self.byteString(freed)))
+                .font(.system(size: 11.5))
+                .foregroundStyle(.secondary)
+            if !failed.isEmpty {
+                UninstallFailureNote(items: failed, compact: true)
+            }
+            Spacer(minLength: 0)
+            Button(l10n.s.uninstallerAnother) {
+                uninstaller.reset()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: Helpers
 
     private var homebrewRemovalConfirmationPresented: Binding<Bool> {
         Binding {
@@ -374,70 +492,15 @@ struct PanelUninstallerView: View {
         PanelInteractionState.shared.isPresentingPopoverModal = false
     }
 
-    @ViewBuilder
-    private var homebrewStatus: some View {
-        if uninstaller.homebrewCheckFailed {
-            UninstallerHomebrewFailureNote(onRetry: uninstaller.retryHomebrewCheck)
-        } else if let package = uninstaller.selectedHomebrewPackage {
-            if let status = homebrew.operationStatus,
-               status.action == .uninstall,
-               status.package?.id == package.id {
-                HomebrewOperationStatusView(status: status,
-                                            log: homebrew.log,
-                                            terminalFallbackCommand: homebrew.terminalFallbackCommand,
-                                            compact: true,
-                                            showDetails: $showHomebrewDetails,
-                                            onCancel: homebrew.cancelOperation,
-                                            onClear: homebrew.clearLog,
-                                            onOpenTerminal: homebrew.openTerminalFallback)
-                if let tap = homebrew.untrustedTap {
-                    HomebrewTrustCard(tap: tap, compact: true)
-                }
-                if let error = homebrew.errorMessage, !error.isEmpty {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            } else {
-                Label(String(format: l10n.s.uninstallerHomebrewPackageFormat, package.displayName),
-                      systemImage: "shippingbox")
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Divider()
-        }
-    }
-
-    private func doneState(freed: Int64, failed: [AppUninstaller.Leftover]) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: UninstallerSupport.doneSymbol(hasLeftovers: !failed.isEmpty))
-                .font(.system(size: 32))
-                .foregroundStyle(failed.isEmpty ? .green : .orange)
-            Text(l10n.s.uninstallerDoneTitle)
-                .font(.system(size: 14, weight: .bold))
-            Text(String(format: l10n.s.uninstallerFreedFormat, Self.byteString(freed)))
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-            if !failed.isEmpty {
-                UninstallFailureNote(items: failed, compact: true)
-            }
-            Button(l10n.s.uninstallerAnother) {
-                uninstaller.reset()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-        }
-        .frame(maxWidth: .infinity)
-        .panelCard()
-    }
-
     private func includeBinding(_ item: AppUninstaller.Leftover) -> Binding<Bool> {
         Binding(
             get: { uninstaller.items.first(where: { $0.id == item.id })?.include ?? false },
             set: { uninstaller.setInclude($0, for: item.id) }
         )
+    }
+
+    private func selectApp(_ url: URL) {
+        uninstaller.select(appURL: url)
     }
 
     private func selectFirstApp(from urls: [URL]) -> Bool {
@@ -447,8 +510,16 @@ struct PanelUninstallerView: View {
         return uninstaller.select(appURL: app)
     }
 
-    private func choose() {
-        showingAppPicker = true
+    private func loadAppsIfNeeded() {
+        guard apps.isEmpty, !loadingApps else { return }
+        loadingApps = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let loaded = UninstallerSupport.offeredApplications()
+            DispatchQueue.main.async {
+                apps = loaded
+                loadingApps = false
+            }
+        }
     }
 
     private func prettyPath(_ url: URL) -> String {

@@ -1876,6 +1876,7 @@ def main():
     write("ShelfDropRouting.swift", "import AppKit\n\nextension ShelfDropRoutingContract {\n"
           + declaration(canvas, "struct NotchFileDropActions {")
           + declaration("Sources/Lattice/Services/Notch/NotchFileToolsService.swift", "struct NotchMediaSession:")
+          + declaration("Sources/Lattice/Services/Notch/NotchAppDrop.swift", "enum NotchAppDrop:")
           + "final class ShelfService: ShelfState {\nstatic var shared = ShelfService()\n"
           + declaration(shelf, "    func acceptDrop(pasteboard:")
           + declaration(shelf, "    func accept(draggingInfo:")

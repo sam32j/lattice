@@ -44,6 +44,7 @@ extension AppUpdateStrings {
         includeOnlineToggle: "Include other installed apps",
         includeOnlineCaption: "Checks directly with app developers when supported, then uses a public catalog. The app’s own updater installs the update.",
         incompleteCheck: "These apps couldn’t be checked",
+        someAppsUnchecked: "Some apps couldn’t be checked",
         onlineUnavailable: "The online check could not be completed. Other results are still shown.",
         skipVersionFormat: "Skip version %@",
         excludeApp: "Don’t check this app",

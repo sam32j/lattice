@@ -27,7 +27,7 @@ extension AppUpdatesListView {
                 uncomparableVersions
                     .panelCard()
             }
-            if let status = homebrew.operationStatus {
+            if let status = appUpdatesOperationStatus {
                 HomebrewOperationStatusView(status: status,
                                             log: homebrew.log,
                                             terminalFallbackCommand: homebrew.terminalFallbackCommand,
@@ -135,12 +135,24 @@ extension AppUpdatesListView {
         .padding(.vertical, inNotch ? 6 : 20)
     }
 
+    /// Opens the App Updates settings, which list the apps it means.
     var incompleteCheckLine: some View {
         HStack(spacing: 6) {
-            Label(text.incompleteCheck, systemImage: "exclamationmark.triangle.fill")
+            Button {
+                SettingsRouter.shared.request(AppFeature.appUpdates.settingsDestination)
+                (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+            } label: {
+                HStack(spacing: 4) {
+                    Label(text.someAppsUnchecked, systemImage: "exclamationmark.triangle.fill")
+                        .lineLimit(1)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                }
                 .font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(.orange)
-                .lineLimit(1)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
             Spacer(minLength: 4)
             if storeCoverageIncomplete {
                 Button(text.openAppStore) { updates.openAppStoreUpdates() }

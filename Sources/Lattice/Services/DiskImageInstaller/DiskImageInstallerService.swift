@@ -87,7 +87,7 @@ final class DiskImageInstallerService: ObservableObject {
     private func stop() {
         isRunning = false
         pending.removeAll()
-        installPrompt?.dismiss(with: .alertSecondButtonReturn)
+        installPrompt?.dismiss(with: .alertThirdButtonReturn)
         detected = nil
     }
 
@@ -101,7 +101,7 @@ final class DiskImageInstallerService: ObservableObject {
 
     /// Leaves the waiting image mounted, as the prompt's Cancel does.
     func skipDetected() {
-        installPrompt?.dismiss(with: .alertSecondButtonReturn)
+        installPrompt?.dismiss(with: .alertThirdButtonReturn)
     }
 
     /// Opens a disk image handed to Lattice (double-clicked while Lattice
@@ -113,6 +113,9 @@ final class DiskImageInstallerService: ObservableObject {
     func open(diskImage url: URL, fromFinder: Bool = false) {
         guard url.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame else { return }
         let declined = fromFinder && !UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages)
+        // A double-click that launches Lattice arrives before the features
+        // start at launch; the App Installer starts for it.
+        if !isRunning, AppFeature.diskImageInstaller.isAvailable { start() }
         guard isRunning, !declined else {
             DiskImageOpenHandler.openWithDiskImageMounter(url)
             return

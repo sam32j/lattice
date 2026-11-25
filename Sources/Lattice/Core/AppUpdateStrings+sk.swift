@@ -44,6 +44,7 @@ extension AppUpdateStrings {
         includeOnlineToggle: "Zahrnúť ostatné nainštalované aplikácie",
         includeOnlineCaption: "Pri podpore kontroluje priamo u vývojárov a dopĺňa to verejným katalógom. Aktualizáciu inštaluje samotná aplikácia.",
         incompleteCheck: "Tieto aplikácie sa nepodarilo skontrolovať",
+        someAppsUnchecked: "Niektoré aplikácie sa nepodarilo skontrolovať",
         onlineUnavailable: "Online kontrolu sa nepodarilo dokončiť. Ostatné výsledky sa aj tak zobrazujú.",
         skipVersionFormat: "Preskočiť verziu %@",
         excludeApp: "Nekontrolovať túto aplikáciu",
