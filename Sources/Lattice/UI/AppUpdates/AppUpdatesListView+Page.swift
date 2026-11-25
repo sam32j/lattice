@@ -74,9 +74,6 @@ extension AppUpdatesListView {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
-            if storeCoverageIncomplete {
-                Button(text.openAppStore) { updates.openAppStoreUpdates() }
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

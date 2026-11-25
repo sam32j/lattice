@@ -48,7 +48,6 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "업데이트 %d개 있음",
         noUpdatesAvailable: "업데이트 없음",
         emptyUpToDate: "모든 앱이 최신 상태입니다",
-        emptyPartialUpToDate: "확인한 앱은 최신 상태입니다",
         totalAppsFormat: "총 %d개 앱",
         someAppsUnchecked: "일부 앱을 확인할 수 없었습니다",
         onlineUnavailable: "온라인 확인을 완료하지 못했습니다. 다른 결과는 계속 표시됩니다.",

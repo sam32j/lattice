@@ -48,7 +48,6 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "%d atualizações disponíveis",
         noUpdatesAvailable: "Nenhuma atualização disponível",
         emptyUpToDate: "Todos os seus apps estão atualizados",
-        emptyPartialUpToDate: "Os apps verificados estão atualizados",
         totalAppsFormat: "%d apps no total",
         someAppsUnchecked: "Não foi possível verificar alguns apps",
         onlineUnavailable: "A verificação online não pôde ser concluída. Os demais resultados continuam visíveis.",

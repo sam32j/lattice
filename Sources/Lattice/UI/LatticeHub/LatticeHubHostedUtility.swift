@@ -262,15 +262,15 @@ private struct LatticeHubSystemUtility: View {
 }
 
 /// The room System's island pages add for their soft edges. The grid has
-/// 8pt above its tiles and its footer below, so it needs only the rest of
-/// the top fade; a detail page gets the full room at both ends.
+/// 8pt above its tiles, so it needs only the rest of the top fade; below,
+/// its uptime pill sits at the very bottom, so the fade gets room of its own.
 enum SystemIslandEdges {
     static func top(metric: MetricDetailKind?) -> CGFloat {
         metric == nil ? HubScrollEdge.inset - SystemWidgetLayout.summaryTopInset : HubScrollEdge.inset
     }
 
     static func bottom(metric: MetricDetailKind?) -> CGFloat {
-        metric == nil ? 0 : HubScrollEdge.inset
+        HubScrollEdge.inset
     }
 
     static func extraHeight(metric: MetricDetailKind?) -> CGFloat {

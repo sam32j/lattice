@@ -15,28 +15,27 @@ struct DeviceControlsHubView: View {
     var viewportHeight: CGFloat? = nil
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
-                    DeviceControlsAppVolumesView()
-                } else {
-                    DeviceControlsMainView()
-                }
+        // Never scrolls: the island and the floating Hub are sized to all
+        // of it, measured here with its margins.
+        VStack(alignment: .leading, spacing: 0) {
+            if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
+                DeviceControlsAppVolumesView()
+            } else {
+                DeviceControlsMainView()
             }
-            .padding(.horizontal, 2)
-            // Room for the soft edges at rest; measured with the content, so
-            // the island and the floating Hub are sized to include it.
-            .padding(.vertical, HubScrollEdge.inset)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
-                    navigation.updateMeasuredAppVolumesHeight(height)
-                } else {
-                    navigation.updateMeasuredMainHeight(height)
-                }
+        }
+        .padding(.horizontal, 2)
+        .padding(.top, 4)
+        .padding(.bottom, 14)
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
+                navigation.updateMeasuredAppVolumesHeight(height)
+            } else {
+                navigation.updateMeasuredMainHeight(height)
             }
         }
         .frame(height: notchSize?.height ?? viewportHeight ?? navigation.contentHeight, alignment: .top)
-        .hubScrollEdgeFade()
         .onAppear {
             if !volumeMixerEnabled, navigation.currentSubpage == .appVolumes {
                 navigation.resetSubpage()

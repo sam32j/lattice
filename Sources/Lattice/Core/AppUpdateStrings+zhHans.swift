@@ -48,7 +48,6 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "有 %d 个更新",
         noUpdatesAvailable: "没有可用更新",
         emptyUpToDate: "所有 App 都是最新的",
-        emptyPartialUpToDate: "已检查的 App 都是最新的",
         totalAppsFormat: "共 %d 个 App",
         someAppsUnchecked: "部分 App 无法检查",
         onlineUnavailable: "无法完成在线检查。其他结果仍会显示。",
