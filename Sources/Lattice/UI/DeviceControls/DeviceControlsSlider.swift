@@ -107,13 +107,15 @@ struct DeviceControlsSlider: View {
             hovering = isHovered
         }
         .frame(height: 22)
-        // The wheel and a two-finger swipe adjust the level, as on the island's sliders.
+        // A sideways swipe adjusts the level; scrolling up and down goes on
+        // to the page, so passing over a slider never changes it.
         .overlay(
             SliderScrollArea(
                 value: scrollBinding,
                 range: range,
                 step: step > 0 ? step : (range.upperBound - range.lowerBound) * 0.01,
-                onEditingChanged: onEditingChanged
+                onEditingChanged: onEditingChanged,
+                horizontalOnly: true
             )
         )
         .overlay {

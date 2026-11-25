@@ -56,12 +56,24 @@ struct DeviceControlsAppVolumesView: View {
         orderedApps.count
     }
 
+    /// The order rows were first shown in. An app starting or stopping
+    /// playback, or the mixer listing apps afresh, never moves a row under
+    /// the pointer or a slider being dragged; new apps join at the end.
+    @State private var shownOrder: [String] = []
+
     private var displayedApps: [MixerApp] {
-        if navigation.showInactiveApps {
-            return activeApps + inactiveApps
-        } else {
-            return activeApps
-        }
+        let listed = navigation.showInactiveApps ? activeApps + inactiveApps : activeApps
+        let rank = Dictionary(shownOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        return listed.enumerated().sorted { lhs, rhs in
+            let left = rank[lhs.element.id] ?? Int.max, right = rank[rhs.element.id] ?? Int.max
+            return left == right ? lhs.offset < rhs.offset : left < right
+        }.map(\.element)
+    }
+
+    private func rememberOrder(_ apps: [MixerApp]) {
+        let known = Set(shownOrder)
+        let added = apps.map(\.id).filter { !known.contains($0) }
+        if !added.isEmpty { shownOrder += added }
     }
 
     var body: some View {
@@ -84,6 +96,10 @@ struct DeviceControlsAppVolumesView: View {
             if mixer.apps.isEmpty {
                 mixer.refreshApps()
             }
+            rememberOrder(navigation.showInactiveApps ? activeApps + inactiveApps : activeApps)
+        }
+        .onChange(of: displayedApps.map(\.id)) { _, _ in
+            rememberOrder(navigation.showInactiveApps ? activeApps + inactiveApps : activeApps)
         }
     }
 

@@ -15,24 +15,30 @@ struct DeviceControlsHubView: View {
     var viewportHeight: CGFloat? = nil
 
     var body: some View {
-        // Never scrolls: the island and the floating Hub are sized to all
-        // of it, measured here with its margins.
-        VStack(alignment: .leading, spacing: 0) {
+        Group {
             if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
-                DeviceControlsAppVolumesView()
+                // App Volumes can outgrow the space: it scrolls under soft
+                // edges, with room for them at rest.
+                ScrollView(showsIndicators: false) {
+                    DeviceControlsAppVolumesView()
+                        .padding(.horizontal, 2)
+                        .padding(.vertical, HubScrollEdge.inset)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                            navigation.updateMeasuredAppVolumesHeight(height)
+                        }
+                }
+                .hubScrollEdgeFade()
             } else {
+                // Device Controls never scrolls and keeps hard edges: the
+                // island and the floating Hub are sized to all of it.
                 DeviceControlsMainView()
-            }
-        }
-        .padding(.horizontal, 2)
-        .padding(.top, 4)
-        .padding(.bottom, 14)
-        .fixedSize(horizontal: false, vertical: true)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-            if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
-                navigation.updateMeasuredAppVolumesHeight(height)
-            } else {
-                navigation.updateMeasuredMainHeight(height)
+                    .padding(.horizontal, 2)
+                    .padding(.top, 4)
+                    .padding(.bottom, 14)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        navigation.updateMeasuredMainHeight(height)
+                    }
             }
         }
         .frame(height: notchSize?.height ?? viewportHeight ?? navigation.contentHeight, alignment: .top)

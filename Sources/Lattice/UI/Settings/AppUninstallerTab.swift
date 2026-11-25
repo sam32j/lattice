@@ -90,8 +90,9 @@ struct AppUninstallerTab: View {
                         .buttonStyle(.appManager())
                 }
             }
-            VStack(alignment: .leading, spacing: 10) {
-                searchBar
+            // On its own, so it sits as far above the heading as Homebrew's.
+            searchBar
+            VStack(alignment: .leading, spacing: 8) {
                 let apps = catalog.filtered(query: query, scope: scope)
                 AppManagerSectionHeader(title: strings.applicationsTitle,
                                         meta: String(format: strings.appCountFormat, apps.count)) {

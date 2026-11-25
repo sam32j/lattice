@@ -41,11 +41,14 @@ struct SliderScrollArea: NSViewRepresentable {
     /// Told when a wheel or trackpad change begins and ends, as a native
     /// slider drag would be, so a control can keep what it held before.
     var onEditingChanged: ((Bool) -> Void)? = nil
+    /// Sideways scrolling only, so a list of sliders scrolls past them.
+    var horizontalOnly = false
 
     func makeNSView(context: Context) -> AreaView { AreaView() }
 
     func updateNSView(_ view: AreaView, context: Context) {
         view.area = self
+        view.horizontalOnly = horizontalOnly
         view.isEnabled = context.environment.isEnabled
         if !view.isEnabled { view.endEditing() }
     }
@@ -60,6 +63,7 @@ struct SliderScrollArea: NSViewRepresentable {
         var acceptsSliderScroll: Bool { isEnabled && area != nil }
         private var scroll = SliderScroll()
         private var editing = false
+        var horizontalOnly = false { didSet { scroll.horizontalOnly = horizontalOnly } }
 
         /// Balanced: every begin gets one end, including on removal.
         func endEditing() { setEditing(false) }
