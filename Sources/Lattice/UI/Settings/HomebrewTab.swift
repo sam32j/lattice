@@ -84,7 +84,10 @@ struct HomebrewTab: View {
         var detail = String(format: strings.summaryFormat, homebrew.installed.count, casks, formulae)
         if let version = catalog.installedVersion { detail += " · " + String(format: strings.versionFormat, version) }
         let refreshing = homebrew.isLoadingInstalled
-        return HStack(spacing: 12) {
+        if firstLoad {
+            return AnyView(statusSkeleton)
+        }
+        return AnyView(HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
@@ -118,7 +121,27 @@ struct HomebrewTab: View {
         }
         // The same size as the other tabs' drop strip, filled rather than dashed.
         .padding(14)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous)))
+    }
+
+    /// Nothing is known before the first read: the title, the counts and
+    /// the button are placeholders rather than "0 installed".
+    private var firstLoad: Bool { homebrew.isLoadingInstalled && homebrew.installed.isEmpty }
+
+    private var statusSkeleton: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 7) {
+                RoundedRectangle(cornerRadius: 3).frame(width: 190, height: 12)
+                RoundedRectangle(cornerRadius: 3).frame(width: 260, height: 9)
+            }
+            Spacer(minLength: 8)
+            Capsule().frame(width: 86, height: 26)
+        }
+        .foregroundStyle(Color.primary.opacity(0.08))
+        .padding(.vertical, 3)
+        .padding(14)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityHidden(true)
     }
 
     /// The search field with its filter inside it, as Process Manager's.
@@ -259,11 +282,19 @@ struct HomebrewTab: View {
         let graph = folded
         let orphanIDs = Set(graph.orphans.map(\.id))
         return VStack(alignment: .leading, spacing: 8) {
-            AppManagerSectionHeader(title: s.homebrewInstalled, meta: String(format: strings.packagesFormat, rows.count)) {
-                Toggle(s.homebrewGroupDependencies, isOn: $groupDependencies)
-                    .toggleStyle(.checkbox)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.secondary)
+            AppManagerSectionHeader(title: s.homebrewInstalled,
+                                    meta: firstLoad ? nil : String(format: strings.packagesFormat, rows.count)) {
+                if firstLoad {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.primary.opacity(0.08))
+                        .frame(width: 120, height: 10)
+                        .accessibilityHidden(true)
+                } else {
+                    Toggle(s.homebrewGroupDependencies, isOn: $groupDependencies)
+                        .toggleStyle(.checkbox)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.secondary)
+                }
             }
             SettingsCard {
                 if homebrew.isLoadingInstalled && homebrew.installed.isEmpty {

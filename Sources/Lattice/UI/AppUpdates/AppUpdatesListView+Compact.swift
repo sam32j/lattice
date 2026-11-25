@@ -19,7 +19,9 @@ extension AppUpdatesListView {
                 if allSourcesOff {
                     compactNoSourcesState
                 } else if updates.items.isEmpty {
+                    // Centered in the room under the heading.
                     compactEmptyState
+                        .frame(maxHeight: .infinity)
                 } else {
                     ScrollView(showsIndicators: false) {
                         compactList

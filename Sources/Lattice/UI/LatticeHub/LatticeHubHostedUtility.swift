@@ -214,7 +214,8 @@ private struct LatticeHubSystemUtility: View {
             .contentMargins(.top, SystemIslandEdges.top(metric: navigation.selectedMetric), for: .scrollContent)
             .contentMargins(.bottom, SystemIslandEdges.bottom(metric: navigation.selectedMetric), for: .scrollContent)
             .frame(height: notchSize.height)
-            .hubScrollEdgeFade()
+            // The grid never scrolls, so it keeps a hard edge and no extra room.
+            .hubScrollEdgeFade(navigation.selectedMetric != nil)
         } else if notchSize == nil, navigation.selectedMetric != nil,
                   navigation.selectedMetric != .cpu {
             // Keep the natural detail height when it fits. Only oversized
@@ -261,16 +262,16 @@ private struct LatticeHubSystemUtility: View {
     }
 }
 
-/// The room System's island pages add for their soft edges. The grid has
-/// 8pt above its tiles, so it needs only the rest of the top fade; below,
-/// its uptime pill sits at the very bottom, so the fade gets room of its own.
+/// The room System's island pages add for their soft edges: none for the
+/// grid, which never scrolls and keeps a hard edge; the full room at both
+/// ends for a detail page.
 enum SystemIslandEdges {
     static func top(metric: MetricDetailKind?) -> CGFloat {
-        metric == nil ? HubScrollEdge.inset - SystemWidgetLayout.summaryTopInset : HubScrollEdge.inset
+        metric == nil ? 0 : HubScrollEdge.inset
     }
 
     static func bottom(metric: MetricDetailKind?) -> CGFloat {
-        HubScrollEdge.inset
+        metric == nil ? 0 : HubScrollEdge.inset
     }
 
     static func extraHeight(metric: MetricDetailKind?) -> CGFloat {
