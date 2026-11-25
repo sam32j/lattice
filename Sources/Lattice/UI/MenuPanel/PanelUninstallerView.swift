@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import Combine
 import SwiftUI
 
 /// The uninstaller in the Hub and the island. It reuses AppUninstaller so the
@@ -82,8 +83,20 @@ struct PanelUninstallerView: View {
         }
         .onAppear {
             loadAppsIfNeeded()
-            // Typing searches at once, with no click into the field first.
-            DispatchQueue.main.async { searchFocused = true }
+            focusSearch()
+        }
+        // The island may open straight onto this list, by hovering too.
+        .onReceive(NotchService.shared.$expanded.removeDuplicates().filter { $0 }) { _ in
+            if inNotch { focusSearch() }
+        }
+    }
+
+    /// Typing searches at once, with no click into the field first; in the
+    /// island that means taking the keys, which hovering it open does not.
+    private func focusSearch() {
+        DispatchQueue.main.async {
+            if inNotch { NotchService.shared.takeKeyboardFocus() }
+            searchFocused = true
         }
     }
 

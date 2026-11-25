@@ -98,24 +98,13 @@ extension AppUpdatesListView {
     }
 
     /// The list's heading carries when it was last checked and the way to
-    /// check again, as text rather than a card of its own.
+    /// check again, rather than a card of its own.
     var availableUpdatesHeader: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(text.availableUpdatesTitle)
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(.secondary)
-            if !updates.items.isEmpty {
-                Text(String(format: text.appCountFormat, updates.items.count))
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.tertiary)
-            }
-            Spacer(minLength: 8)
-            UpdatesCheckLine(text: text, lastCheck: lastCheckLine, isChecking: updates.isChecking,
-                             disabled: !AppFeature.appUpdates.isAvailable || allSourcesOff,
-                             size: 11.5) { updates.check() }
-        }
-        .padding(.horizontal, 2)
-        .padding(.top, 4)
+        UpdatesHeading(text: text, count: updates.items.count, lastCheck: lastCheckLine,
+                       isChecking: updates.isChecking,
+                       disabled: !AppFeature.appUpdates.isAvailable || allSourcesOff) { updates.check() }
+            .padding(.horizontal, 2)
+            .padding(.top, 6)
     }
 
     var skeletonSection: some View {
