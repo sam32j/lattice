@@ -7,43 +7,36 @@ import UniformTypeIdentifiers
 
 
 extension AppUpdatesListView {
+    /// Shaped like an update row: the heading above already says there is
+    /// nothing to update, so this is a quiet line of what was checked.
     var caughtUpCard: some View {
-        VStack(spacing: 8) {
-            Image(systemName: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
-                .font(.system(size: 26))
-                .foregroundStyle(successfulEmptyCheck ? Color.green : Color.secondary)
-            Text(statusHeadline)
-                .font(.system(size: 13.5, weight: .semibold))
-            Text(updates.hasCheckedThisSession && totalAppsCount > 0 && !coveragePartial
-                 ? String(format: text.checkedAppsFormat, totalAppsCount) : statusDetail)
-                .font(.system(size: 11.5))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 142)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.025))
-        )
+        emptyRow(symbol: successfulEmptyCheck ? "checkmark.seal.fill" : "info.circle.fill",
+                 tint: successfulEmptyCheck ? .green : .secondary,
+                 title: statusHeadline,
+                 detail: updates.hasCheckedThisSession && totalAppsCount > 0 && !coveragePartial
+                     ? String(format: text.checkedAppsFormat, totalAppsCount) : statusDetail)
     }
 
     var noSourcesCard: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 26))
-                .foregroundStyle(.orange)
-            Text(text.selectSource)
-                .font(.system(size: 13.5, weight: .semibold))
-            Text(text.selectSourceDetail)
-                .font(.system(size: 11.5))
-                .foregroundStyle(.secondary)
+        emptyRow(symbol: "exclamationmark.triangle.fill", tint: .orange,
+                 title: text.selectSource, detail: text.selectSourceDetail)
+    }
+
+    func emptyRow(symbol: String, tint: Color, title: String, detail: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 20))
+                .foregroundStyle(tint)
+                .frame(width: 36, height: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 13, weight: .semibold))
+                Text(detail).font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 142)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.025))
-        )
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
     }
 
     var errorCard: some View {

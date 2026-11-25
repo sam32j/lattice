@@ -234,8 +234,9 @@ private struct LatticeHubSystemUtility: View {
             ScrollView {
                 content
             }
+            // Sized to its content in the island, so no edge room at rest;
+            // the fade shows only if it ever overflows.
             .scrollBounceBehavior(.basedOnSize)
-            .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
             .frame(height: notchSize.height)
             .hubScrollEdgeFade()
         } else if notchSize == nil, navigation.selectedMetric != nil,
