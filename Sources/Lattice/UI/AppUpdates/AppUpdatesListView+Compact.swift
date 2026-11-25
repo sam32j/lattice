@@ -70,7 +70,10 @@ extension AppUpdatesListView {
     var hubBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             if updates.isChecking {
-                compactLoader
+                // The floating Hub has the room to show the list's shape.
+                AppManagerListSkeleton(rows: 6)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 6)
             } else {
                 compactHeader
                 if allSourcesOff {
@@ -115,25 +118,6 @@ extension AppUpdatesListView {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    /// The one loader while a check runs; the heading and list wait for
-    /// its answer.
-    var compactLoader: some View {
-        VStack(spacing: 8) {
-            if reduceMotion {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 18))
-                    .foregroundStyle(.secondary)
-            } else {
-                ProgressView().controlSize(.small)
-            }
-            Text(text.checking + "…")
-                .font(.system(size: 11.5, weight: .medium))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: Self.compactLoaderHeight)
     }
 
     /// The list's heading, as in Settings. Apps the check could not read

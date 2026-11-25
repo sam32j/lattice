@@ -22,7 +22,6 @@ extension AppUpdatesListView {
     }
 
     static let headerLineHeight: CGFloat = 32
-    static let compactLoaderHeight: CGFloat = 120
 
     static let compactRowHeight: CGFloat = 40
     static let compactRowSpacing: CGFloat = 5

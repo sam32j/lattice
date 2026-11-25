@@ -228,11 +228,13 @@ struct PanelUninstallerView: View {
                     .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 0)
+            // Right under what it stops.
             if cancellable {
                 Button(l10n.s.uninstallerCancel) { uninstaller.reset() }
                     .buttonStyle(.appManager(.neutral, compact: true))
+                    .padding(.top, 2)
             }
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, 6)

@@ -1291,8 +1291,13 @@ final class NotchService: ObservableObject {
         guard let utility else { return nil }
         switch utility {
         case .appManager:
-            // Every App Manager tab has the same fixed height in the island.
-            return MainActor.assumeIsolated { AppManagerPanelState.islandHeight }
+            // Every App Manager tab takes the All Tools page's height, worked
+            // out for two rows of tiles, whatever the Hub holds.
+            let geometry = expandedGeometry
+            let widgets = modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : 0
+            return geometry.hubContentHeight(toolCount: geometry.hubColumns * 2,
+                                             controlsHeight: LatticeHubService.shared.notchControlsHeight,
+                                             editing: false, widgetsHeight: widgets)
         case .videoDownloader:
             return 172
         case .deviceControls:
