@@ -128,7 +128,12 @@ final class LatticeHubService: ObservableObject {
             .sink { [weak self] expanded in
                 guard let self, !expanded, NotchService.shared.selected == .hub else { return }
                 if UserDefaults.standard.bool(forKey: DefaultsKey.notchReturnHome) {
-                    self.activeUtility = nil
+                    // Once the island has closed: cleared at once, the closing
+                    // island showed All Tools on its way out.
+                    NotchService.shared.perform(collapsing: false) { [weak self] in
+                        guard !NotchService.shared.expanded else { return }
+                        self?.activeUtility = nil
+                    }
                 }
                 self.isEditing = false
                 self.isPinned = false
