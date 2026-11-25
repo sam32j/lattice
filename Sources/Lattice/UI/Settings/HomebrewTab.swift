@@ -96,7 +96,7 @@ struct HomebrewTab: View {
                         RefreshArrow(isSpinning: refreshing)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.secondary)
-                            .frame(width: 20, height: 20)
+                            .frame(width: 20, height: 16)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -116,7 +116,8 @@ struct HomebrewTab: View {
                     .disabled(homebrew.isBusy)
             }
         }
-        .padding(16)
+        // The same size as the other tabs' drop strip, filled rather than dashed.
+        .padding(14)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 

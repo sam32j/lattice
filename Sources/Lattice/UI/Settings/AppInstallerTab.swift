@@ -49,6 +49,7 @@ struct AppInstallerTab: View {
                             detail: strings.watchingDetail, types: [.fileURL],
                             onDrop: { urls in urls.forEach { installer.open(diskImage: $0) } }) {
             Button(strings.chooseButton, action: chooseDiskImage)
+                .buttonStyle(.appManager())
         }
     }
 
@@ -228,8 +229,10 @@ struct AppInstallerTab: View {
             Spacer(minLength: 8)
             if missing {
                 Button(strings.clear) { installer.forget(install) }
+                    .buttonStyle(.appManager(.neutral))
             } else {
                 Button(strings.reveal) { installer.reveal(install) }
+                    .buttonStyle(.appManager(.neutral))
             }
         }
         // An app deleted since reads as gone.
