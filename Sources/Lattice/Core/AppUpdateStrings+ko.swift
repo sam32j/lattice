@@ -44,6 +44,7 @@ extension AppUpdateStrings {
         includeOnlineToggle: "설치된 다른 앱 포함",
         includeOnlineCaption: "지원되는 경우 개발자에게 직접 확인하고 공개 카탈로그로 검색을 보완합니다. 업데이트는 앱 자체에서 설치합니다.",
         incompleteCheck: "다음 앱은 확인할 수 없었습니다",
+        someAppsUnchecked: "일부 앱을 확인할 수 없었습니다",
         onlineUnavailable: "온라인 확인을 완료하지 못했습니다. 다른 결과는 계속 표시됩니다.",
         skipVersionFormat: "%@ 버전 건너뛰기",
         excludeApp: "이 앱 확인 안 함",

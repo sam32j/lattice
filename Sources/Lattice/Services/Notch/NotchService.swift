@@ -166,6 +166,9 @@ final class NotchService: ObservableObject {
     @Published private(set) var targetsEditorDrop = false
     @Published private(set) var editorDropAvailable = false
     @Published private(set) var optimizationDropAvailable = false
+    /// A disk image to install or an app to uninstall, while one is dragged in.
+    @Published private(set) var appDrop: NotchAppDrop?
+    @Published private(set) var targetsAppDrop = false
     @Published private(set) var selectedMetric: MetricDetailKind?
     @Published var pinned = false
     @Published private(set) var selected: NotchModule = .hub { didSet { if oldValue != selected { musicSwipe.cancel() } } }
@@ -2716,7 +2719,8 @@ final class NotchService: ObservableObject {
 
     var canAcceptFileDrop: Bool {
         acceptsUserInteraction
-            && (canDropOnShelf || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
+            && (canDropOnShelf || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable
+                || AppFeature.diskImageInstaller.isAvailable || AppFeature.uninstaller.isAvailable)
     }
 
     var canDropOnShelf: Bool {
@@ -2726,7 +2730,8 @@ final class NotchService: ObservableObject {
 
     private func canAcceptFilePayload(_ pasteboard: NSPasteboard) -> Bool {
         guard canAcceptFileDrop else { return false }
-        if MediaEditorFileOpener.shared.canOpen(MediaEditorFileSupport.urls(from: pasteboard)) { return true }
+        let urls = MediaEditorFileSupport.urls(from: pasteboard)
+        if MediaEditorFileOpener.shared.canOpen(urls) || NotchAppDrop(urls: urls) != nil { return true }
         return canDropOnShelf && !ShelfService.shared.isInternalDragActive
             && ShelfService.shared.canAcceptPasteboard(pasteboard)
     }
@@ -2735,15 +2740,23 @@ final class NotchService: ObservableObject {
         guard canAcceptFileDrop else { return }
         editorDropAvailable = MediaEditorFileOpener.shared.canOpen(MediaEditorFileSupport.urls(from: pasteboard))
         optimizationDropAvailable = canDropOnShelf && NotchFileToolsService.shared.mediaDropContent(for: pasteboard) != nil
-        choosingFileDropDestination = editorDropAvailable || optimizationDropAvailable
+        appDrop = NotchAppDrop(urls: MediaEditorFileSupport.urls(from: pasteboard))
+        choosingFileDropDestination = editorDropAvailable || optimizationDropAvailable || appDrop != nil
         targetsMediaDrop = false
         targetsEditorDrop = false
+        // Without the Shelf the whole island is the install or uninstall zone.
+        targetsAppDrop = appDrop != nil && !canDropOnShelf
         open(canDropOnShelf ? .files : .captures, takeFocus: false)
     }
 
     @discardableResult
     func updateFileDrop(at point: CGPoint) -> Bool {
         let area = NotchFileToolsSupport.mediaDropArea(in: expandedGeometry, size: surfaceSize)
+        if appDrop != nil {
+            let targeted = !canDropOnShelf || area.contains(point)
+            if targetsAppDrop != targeted { targetsAppDrop = targeted }
+            return targeted || canDropOnShelf
+        }
         let right = choosingFileDropDestination && area.contains(point)
         let editor = right && editorDropAvailable && (!optimizationDropAvailable || point.y >= area.midY)
         let targeted = right && optimizationDropAvailable && !editor
@@ -2759,7 +2772,37 @@ final class NotchService: ObservableObject {
         targetsEditorDrop = false
         editorDropAvailable = false
         optimizationDropAvailable = false
+        appDrop = nil
+        targetsAppDrop = false
         if changed, acceptsUserInteraction { refreshPresentation() }
+    }
+
+    /// Installs a dropped disk image with the usual prompt, or opens the App
+    /// Manager's uninstaller on a dropped app (also one dropped on Lattice's
+    /// icon).
+    func perform(_ drop: NotchAppDrop) {
+        heldDrag = false
+        dragPlaceholder = false
+        switch drop {
+        case let .install(url):
+            collapse()
+            DiskImageInstallerService.shared.open(diskImage: url)
+        case let .uninstall(url):
+            MainActor.assumeIsolated { AppManagerPanelState.shared.tab = .uninstaller }
+            AppUninstaller.shared.select(appURL: url)
+            guard modules.contains(.hub), LatticeHubItem.appManager.isAvailable() else {
+                collapse()
+                SettingsRouter.shared.request(AppFeature.uninstaller.settingsDestination)
+                (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+                return
+            }
+            let launcher = LatticeHubService.shared
+            if launcher.isVisible { launcher.hide() }
+            launcher.opensUtilityDirectly = false
+            launcher.activeUtility = .appManager
+            open(.hub)
+            refreshPresentation(transitionContent: .page)
+        }
     }
 
     func keepFileInteractionOpen(_ active: Bool) {
@@ -2770,6 +2813,10 @@ final class NotchService: ObservableObject {
     func accept(_ pasteboard: NSPasteboard) -> Bool {
         defer { endFileDrop() }
         guard canAcceptFileDrop else { return false }
+        if let appDrop, targetsAppDrop {
+            perform(appDrop)
+            return true
+        }
         let editor = choosingFileDropDestination && targetsEditorDrop
         let optimize = choosingFileDropDestination && targetsMediaDrop
         let accepted = editor ? MediaEditorFileOpener.shared.open(MediaEditorFileSupport.urls(from: pasteboard)) : optimize

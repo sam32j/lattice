@@ -44,6 +44,8 @@ struct AppUpdateStrings {
     let includeOnlineToggle: String
     let includeOnlineCaption: String
     let incompleteCheck: String
+    /// The Hub and island's one-line note; it opens the settings page, which lists them.
+    let someAppsUnchecked: String
     let onlineUnavailable: String
     let skipVersionFormat: String
     let excludeApp: String

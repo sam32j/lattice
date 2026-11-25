@@ -11,14 +11,26 @@ struct NotchMediaDropTargets: View {
     let optimizationAvailable: Bool
     let targetsMediaDrop: Bool
     let targetsEditorDrop: Bool
+    var appDrop: NotchAppDrop? = nil
+    var targetsAppDrop = false
     @ObservedObject private var l10n = L10n.shared
 
     var body: some View {
         HStack(spacing: NotchFileToolsSupport.dropSpacing) {
-            target(FeatureStrings.notch(l10n.language).files, symbol: "tray.full",
-                   selected: !targetsMediaDrop && !targetsEditorDrop,
-                   available: canDropOnShelf)
+            // Without the Shelf, a disk image or app has the island to itself.
+            if appDrop == nil || canDropOnShelf {
+                target(FeatureStrings.notch(l10n.language).files, symbol: "tray.full",
+                       selected: !targetsMediaDrop && !targetsEditorDrop && !targetsAppDrop,
+                       available: canDropOnShelf)
+            }
             VStack(spacing: NotchFileToolsSupport.dropSpacing) {
+                if let appDrop {
+                    target(appDrop.isInstall
+                               ? FeatureStrings.diskImageInstaller(l10n.language).installButton
+                               : l10n.s.homebrewUninstall,
+                           symbol: appDrop.isInstall ? "arrow.down.app" : "trash",
+                           selected: targetsAppDrop, available: true)
+                }
                 if optimizationDropAvailable {
                     target(FeatureStrings.notchFiles(l10n.language).optimizeMedia, symbol: "wand.and.stars",
                            selected: targetsMediaDrop, available: optimizationAvailable)
@@ -54,6 +66,7 @@ extension NotchMediaDropTargets {
                   optimizationDropAvailable: service.optimizationDropAvailable,
                   editorDropAvailable: service.editorDropAvailable,
                   optimizationAvailable: service.optimizationDropAvailable && NotchFileToolsService.shared.canAcceptMediaDrop,
-                  targetsMediaDrop: service.targetsMediaDrop, targetsEditorDrop: service.targetsEditorDrop)
+                  targetsMediaDrop: service.targetsMediaDrop, targetsEditorDrop: service.targetsEditorDrop,
+                  appDrop: service.appDrop, targetsAppDrop: service.targetsAppDrop)
     }
 }

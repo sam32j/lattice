@@ -48,7 +48,7 @@ extension AppUpdatesListView {
                     pageIncompleteNote
                 }
 
-                if let status = homebrew.operationStatus {
+                if let status = appUpdatesOperationStatus {
                     HomebrewOperationStatusView(status: status,
                                                 log: homebrew.log,
                                                 terminalFallbackCommand: homebrew.terminalFallbackCommand,

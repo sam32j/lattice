@@ -11,6 +11,8 @@ enum ShelfDropRoutingContract {
         static var mediaTools = Feature()
         static var screenshot = Feature(isAvailable: false)
         static var screenRecorder = Feature(isAvailable: false)
+        static var diskImageInstaller = Feature(isAvailable: false)
+        static var uninstaller = Feature(isAvailable: false)
         struct Feature { var isAvailable = true }
     }
     enum MediaEditorFileOpener {
@@ -83,6 +85,10 @@ enum ShelfDropRoutingContract {
         var targetsEditorDrop = false
         var editorDropAvailable = false
         var optimizationDropAvailable = false
+        var appDrop: NotchAppDrop?
+        var targetsAppDrop = false
+        var performedAppDrops: [NotchAppDrop] = []
+        func perform(_ drop: NotchAppDrop) { performedAppDrops.append(drop) }
         var pinned = false
         var geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 32, cameraWidth: 180)
         var expandedGeometry: NotchGeometry { geometry }
@@ -372,5 +378,43 @@ enum ShelfDropRoutingTests {
                        "releasing outside cancels cleanly and releasing over the shelf preserves its route")
             }
         } catch { suite.expect(false, "media drop fixtures failed: \(error)") }
+
+        // A single app or disk image dragged in offers Uninstall or Install
+        // beside the Shelf; the drop hands it over instead of shelving it.
+        do {
+            let folder = FileManager.default.temporaryDirectory
+                .appendingPathComponent("vorss-app-drop-\(UUID())", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: folder) }
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let app = folder.appendingPathComponent("Editor.app", isDirectory: true)
+            let image = folder.appendingPathComponent("Editor.dmg")
+            try FileManager.default.createDirectory(at: app, withIntermediateDirectories: true)
+            try Data([0]).write(to: image)
+            Context.AppFeature.shelf.isAvailable = true
+            Context.UserDefaults.standard.enabled = true
+            Context.AppFeature.uninstaller.isAvailable = true
+            Context.AppFeature.diskImageInstaller.isAvailable = true
+            defer {
+                Context.AppFeature.uninstaller.isAvailable = false
+                Context.AppFeature.diskImageInstaller.isAvailable = false
+            }
+            for (url, expected) in [(app, Context.NotchAppDrop.uninstall(app)), (image, .install(image))] {
+                Context.ShelfService.shared = Context.ShelfService()
+                board.clearContents()
+                board.writeObjects([url as NSURL])
+                let notch = Context.Notch()
+                notch.beginFileDrop(board)
+                suite.expect(notch.choosingFileDropDestination && notch.appDrop == expected,
+                             "a dragged \(url.pathExtension) offers its App Manager action")
+                let area = NotchFileToolsSupport.mediaDropArea(in: notch.geometry, size: notch.surfaceSize)
+                suite.expect(notch.updateFileDrop(at: CGPoint(x: area.midX, y: area.midY)) && notch.targetsAppDrop,
+                             "the right-hand zone targets the App Manager action")
+                suite.expect(notch.accept(board) && notch.performedAppDrops == [expected]
+                             && Context.ShelfService.shared.ordinaryAccepts == 0 && notch.appDrop == nil,
+                             "dropping there hands the \(url.pathExtension) over instead of shelving it")
+            }
+        } catch {
+            suite.expect(false, "app drop fixture failed: \(error)")
+        }
     }
 }

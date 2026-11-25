@@ -129,6 +129,16 @@ extension AppUpdatesService {
         UserDefaults.standard.set(items.count, forKey: DefaultsKey.appUpdatesLastCount)
     }
 
+    /// Drops the Homebrew rows whose app was upgraded to the listed version
+    /// or removed, after a Homebrew run this list did not start.
+    func dropFinishedCasks() {
+        let finished = items.filter { item in
+            guard item.token != nil, let path = item.bundlePath else { return false }
+            return !FileManager.default.fileExists(atPath: path) || Self.isNowCurrent(item)
+        }.map(\.id)
+        dropUpdated(Set(finished))
+    }
+
     /// Whether the app a row stands for now reports the version the row
     /// offered, read from its Info.plist so a replaced bundle is not served
     /// from Bundle's cache.

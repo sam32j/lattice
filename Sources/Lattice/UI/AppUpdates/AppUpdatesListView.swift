@@ -79,6 +79,11 @@ struct AppUpdatesListView: View {
     /// The row menu holds both rule actions, so it is named for neither.
     var moreOptions: String { FeatureStrings.mouseClickDebounce(l10n.language).moreOptions }
     var isBusy: Bool { updates.isChecking || homebrew.operation != nil }
+    /// The Homebrew run this list started; one from the Homebrew tab (a
+    /// formula, say) is that tab's to show.
+    var appUpdatesOperationStatus: HomebrewOperationStatus? {
+        homebrew.operationOwner == .appUpdates ? homebrew.operationStatus : nil
+    }
     var storeCoverageIncomplete: Bool {
         includeAppStore && !updates.appStoreAvailable
     }

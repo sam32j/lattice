@@ -44,6 +44,7 @@ extension AppUpdateStrings {
         includeOnlineToggle: "Includi le altre app installate",
         includeOnlineCaption: "Consulta direttamente gli sviluppatori quando possibile e integra la ricerca con un catalogo pubblico. L’app installa il proprio aggiornamento.",
         incompleteCheck: "Non è stato possibile verificare queste app",
+        someAppsUnchecked: "Non è stato possibile verificare alcune app",
         onlineUnavailable: "Non è stato possibile completare il controllo online. Gli altri risultati restano visibili.",
         skipVersionFormat: "Salta la versione %@",
         excludeApp: "Non controllare questa app",

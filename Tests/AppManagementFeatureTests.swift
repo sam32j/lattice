@@ -513,7 +513,7 @@ enum AppManagementFeatureTests {
             suite.expect(pickerSource.contains("return uninstaller.select(appURL: app)"),
                    "\(path) springs a refused drop back instead of accepting it")
             suite.expect(pickerSource.contains("UninstallRefusalNote(refusal: refusal")
-                   && pickerSource.contains("emptyNote: l10n.s.uninstallerPickerHiddenNote"),
+                   && pickerSource.contains("l10n.s.uninstallerPickerHiddenNote"),
                    "\(path) says why a drop was refused and why an app is not listed")
             suite.expect(pickerSource.components(separatedBy: "uninstaller.clearRefusal()").count == 3,
                    "\(path) drops an old refusal note when it opens and when it closes")

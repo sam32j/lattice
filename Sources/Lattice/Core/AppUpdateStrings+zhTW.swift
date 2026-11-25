@@ -44,6 +44,7 @@ extension AppUpdateStrings {
         includeOnlineToggle: "包含其他已安裝的 App",
         includeOnlineCaption: "支援時直接向開發者查詢，並透過公開目錄補充搜尋。更新由 App 自行安裝。",
         incompleteCheck: "無法檢查以下 App",
+        someAppsUnchecked: "部分 App 無法檢查",
         onlineUnavailable: "無法完成線上檢查。其他結果仍會顯示。",
         skipVersionFormat: "略過版本 %@",
         excludeApp: "不檢查此 App",
