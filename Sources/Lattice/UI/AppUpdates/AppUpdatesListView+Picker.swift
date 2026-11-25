@@ -38,10 +38,10 @@ struct UpdatesHeading: View {
     let isChecking: Bool
     let disabled: Bool
     var compact = false
-    /// What a check could not read, shown as a small mark that opens the
-    /// list of them; nil when it read everything.
-    var uncheckedNote: String? = nil
-    var onShowUnchecked: () -> Void = {}
+    /// The "Last checked …" line under the title.
+    var showsDetail = true
+    /// An arrow at the row's end that opens App Updates in Settings.
+    var onOpen: (() -> Void)? = nil
     let onCheck: () -> Void
 
     private var title: String {
@@ -70,23 +70,25 @@ struct UpdatesHeading: View {
                     .help(text.checkNow)
                     .accessibilityLabel(isChecking ? text.checking : text.checkNow)
                 }
-                Text(isChecking ? text.checking + "…" : lastCheck)
-                    .font(.system(size: compact ? 10 : 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if showsDetail {
+                    Text(isChecking ? text.checking + "…" : lastCheck)
+                        .font(.system(size: compact ? 10 : 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             Spacer(minLength: 8)
-            if let uncheckedNote {
-                Button(action: onShowUnchecked) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: compact ? 11 : 12))
-                        .foregroundStyle(.orange)
+            if let onOpen {
+                Button(action: onOpen) {
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: compact ? 11 : 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
                         .frame(width: 24, height: 24)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help(uncheckedNote)
-                .accessibilityLabel(uncheckedNote)
+                .help(text.openAppUpdates)
+                .accessibilityLabel(text.openAppUpdates)
             }
         }
     }
