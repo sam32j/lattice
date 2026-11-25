@@ -14,19 +14,12 @@ extension AppUpdatesListView {
 
                 preferencesSection
 
-                // One loader while a check runs; the heading and list wait
-                // for its answer, as in the Hub.
-                if updates.isChecking {
-                    pageLoader
-                        .transition(reduceMotion ? .identity : .opacity)
-                } else {
-                    availableUpdatesHeader
-                    pageResults
-                }
+                availableUpdatesHeader
+                pageResults
 
                 // After the list, never sliding in over it: what the check
                 // could not reach is a footnote to what it found.
-                if coverageIncomplete && !updates.isChecking {
+                if coverageIncomplete {
                     pageIncompleteNote
                 }
 
@@ -102,6 +95,9 @@ extension AppUpdatesListView {
         if allSourcesOff {
             noSourcesCard
                 .transition(reduceMotion ? .identity : .opacity)
+        } else if updates.isChecking && updates.items.isEmpty {
+            skeletonSection
+                .transition(reduceMotion ? .identity : .opacity)
         } else if !updates.items.isEmpty {
             LazyVStack(spacing: 8) {
                 ForEach(updates.items) { item in
@@ -121,22 +117,56 @@ extension AppUpdatesListView {
         }
     }
 
-    var pageLoader: some View {
-        VStack(spacing: 10) {
-            if reduceMotion {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.secondary)
-            } else {
-                ProgressView().controlSize(.regular)
-            }
-            Text(text.checking + "…")
-                .font(.system(size: 12.5, weight: .medium))
-                .foregroundStyle(.secondary)
+    var skeletonSection: some View {
+        VStack(spacing: 8) {
+            skeletonRow(titleWidth: 130, subtitleWidth: 90)
+            skeletonRow(titleWidth: 100, subtitleWidth: 70)
+            skeletonRow(titleWidth: 150, subtitleWidth: 110)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 48)
-        .accessibilityElement(children: .combine)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                skeletonPulse = true
+            }
+        }
+        .onDisappear { skeletonPulse = false }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text.checking)
+    }
+
+    func skeletonRow(titleWidth: CGFloat, subtitleWidth: CGFloat) -> some View {
+        let shimmerOpacity = skeletonPulse ? 0.08 : 0.04
+        return HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.primary.opacity(shimmerOpacity))
+                .frame(width: 36, height: 36)
+
+            VStack(alignment: .leading, spacing: 6) {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color.primary.opacity(shimmerOpacity))
+                    .frame(width: titleWidth, height: 12)
+
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(Color.primary.opacity(shimmerOpacity * 0.75))
+                    .frame(width: subtitleWidth, height: 10)
+            }
+
+            Spacer(minLength: 8)
+
+            Capsule()
+                .fill(Color.primary.opacity(shimmerOpacity))
+                .frame(width: 72, height: 24)
+
+            Circle()
+                .fill(Color.primary.opacity(shimmerOpacity * 0.7))
+                .frame(width: 14, height: 14)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.025))
+        )
     }
 
     // Status Card
