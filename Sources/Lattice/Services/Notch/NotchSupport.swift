@@ -289,6 +289,10 @@ struct NotchBand: Equatable {
 /// Shared measurements keep the window's content budget and its SwiftUI
 /// layout in agreement, including small screens and both presets.
 enum NotchLayout {
+    /// Recent Captures' strip in the Hub: a card (8 + 100pt preview + 5 +
+    /// 18pt row + 6) and the strip's 4pt above and below.
+    static let recentCapturesStripHeight: CGFloat = 8 + 100 + 5 + 18 + 6 + 8
+
     static let shoulder: CGFloat = 18
     static let horizontalInset: CGFloat = 28
     static let headerHeight: CGFloat = 36
@@ -3061,7 +3065,9 @@ struct NotchGeometry: Equatable {
                         + NotchLayout.systemHoverInset(width: contentWidth) * 2)
             case .hub:
                 if hubRecentCaptures {
-                    contentHeight = budget
+                    // As tall as the strip of capture cards, not the whole
+                    // budget, which left empty room under them.
+                    contentHeight = min(budget, NotchLayout.recentCapturesStripHeight)
                     break
                 }
                 if let utilityHeight = hubActiveUtilityHeight {
