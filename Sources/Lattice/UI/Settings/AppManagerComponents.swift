@@ -400,9 +400,9 @@ struct AppManagerSearchField<Menu: View>: View {
         .font(.system(size: 13))
         .padding(.leading, 10)
         .frame(minHeight: 37)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
     }
 }
 

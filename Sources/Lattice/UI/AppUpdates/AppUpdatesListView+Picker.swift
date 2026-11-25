@@ -45,7 +45,8 @@ struct UpdatesHeading: View {
     let onCheck: () -> Void
 
     private var title: String {
-        count == 0 ? text.noUpdatesAvailable
+        if isChecking && count == 0 { return text.checking + "…" }
+        return count == 0 ? text.noUpdatesAvailable
             : count == 1 ? text.oneUpdateAvailable : String(format: text.updatesAvailableFormat, count)
     }
 
@@ -53,11 +54,12 @@ struct UpdatesHeading: View {
     /// Homebrew card's title has it, and when it was last checked below.
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: showsDetail ? 2 : 0) {
                 HStack(spacing: 6) {
                     Text(title)
                         .font(.system(size: compact ? 11.5 : 12, weight: .semibold))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                     Button(action: onCheck) {
                         RefreshArrow(isSpinning: isChecking)
                             .font(.system(size: compact ? 11 : 12, weight: .medium))
@@ -71,7 +73,7 @@ struct UpdatesHeading: View {
                     .accessibilityLabel(isChecking ? text.checking : text.checkNow)
                 }
                 if showsDetail {
-                    Text(isChecking ? text.checking + "…" : lastCheck)
+                    Text((isChecking && count > 0) ? text.checking + "…" : lastCheck)
                         .font(.system(size: compact ? 10 : 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -80,15 +82,15 @@ struct UpdatesHeading: View {
             Spacer(minLength: 8)
             if let onOpen {
                 Button(action: onOpen) {
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: compact ? 11 : 12, weight: .semibold))
+                    Text(text.openAppUpdates)
+                        .font(.system(size: compact ? 10.5 : 11.5, weight: .medium))
                         .foregroundStyle(.secondary)
-                        .frame(width: 24, height: 24)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .padding(.vertical, 2)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help(text.openAppUpdates)
-                .accessibilityLabel(text.openAppUpdates)
             }
         }
     }
