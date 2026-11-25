@@ -4186,7 +4186,7 @@ final class NotchService: ObservableObject {
             panel?.title = FeatureStrings.notch(L10n.shared.language).title
             syncGestures()
         }
-        if (modules.contains(.files) && AppFeature.shelf.isAvailable) || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable {
+        if canAcceptFileDrop {
             windowHost?.setFileDropActions(NotchFileDropActions(
                 canAccept: { [weak self] pasteboard in
                     self?.canAcceptFilePayload(pasteboard) == true

@@ -466,8 +466,11 @@ final class DiskImageInstallerService: ObservableObject {
         // the copy above left behind, so macOS goes on blocking it at launch
         // unless the person allows it afterwards.
         verified = Self.gatekeeperAccepts(stagedApp)
-        if !verified { Self.carryQuarantine(from: [candidate.imageURL, candidate.appURL], to: stagedApp) }
+        if !verified, !Self.carryQuarantine(from: [candidate.imageURL, candidate.appURL], to: stagedApp) {
+            return InstallResult(outcome: .failed(.verification), destinationURL: destinationURL)
+        }
 
+        var trashed: [(original: URL, trashed: URL)] = []
         do {
             guard let finalCollisionURLs = DiskImageInstallerSupport.collisionURLs(
                 for: candidate.appURL,
@@ -483,11 +486,18 @@ final class DiskImageInstallerService: ObservableObject {
             }
             // The copy being updated goes to the Trash, where it can be put back.
             for existing in finalCollisionURLs where fm.fileExists(atPath: existing.path) {
-                try fm.trashItem(at: existing, resultingItemURL: nil)
+                var trashedURL: NSURL?
+                try fm.trashItem(at: existing, resultingItemURL: &trashedURL)
+                if let resultURL = trashedURL as URL? {
+                    trashed.append((original: existing, trashed: resultURL))
+                }
             }
             report(.moving)
             try fm.moveItem(at: stagedApp, to: destinationURL)
         } catch {
+            for item in trashed.reversed() {
+                try? fm.moveItem(at: item.trashed, to: item.original)
+            }
             return InstallResult(outcome: .failed(.copy), destinationURL: destinationURL)
         }
 
@@ -571,15 +581,21 @@ final class DiskImageInstallerService: ObservableObject {
     /// Puts the download mark on the staged copy, which the copy dropped, so
     /// macOS still treats the app as downloaded and blocks it at launch. The
     /// mark is on the downloaded .dmg; a volume Lattice mounts carries none.
-    private static func carryQuarantine(from sources: [URL], to destination: URL) {
+    /// Returns `false` only when a source carried quarantine and restoring it
+    /// to `destination` failed.
+    private static func carryQuarantine(from sources: [URL], to destination: URL) -> Bool {
+        var foundQuarantine = false
         for source in sources {
             let size = getxattr(source.path, quarantineAttribute, nil, 0, 0, 0)
             guard size > 0 else { continue }
+            foundQuarantine = true
             var value = [UInt8](repeating: 0, count: size)
             guard getxattr(source.path, quarantineAttribute, &value, size, 0, 0) == size else { continue }
-            _ = setxattr(destination.path, quarantineAttribute, value, size, 0, 0)
-            return
+            if setxattr(destination.path, quarantineAttribute, value, size, 0, 0) == 0 {
+                return true
+            }
         }
+        return !foundQuarantine
     }
 
     /// Asks whether an installed app macOS could not verify may open, with

@@ -105,6 +105,9 @@ final class SettingsRouter: ObservableObject {
         notchSettingsTab = nil
         let requestID = UUID()
         let samePage = page == destination.page
+        if samePage && !isTraversingHistory && subpage != nil {
+            dropSubpageForLeavingPage()
+        }
         page = destination.page
         self.destination = destination
         self.sidebarFeature = sidebarFeature?.settingsDestination == destination ? sidebarFeature : nil
