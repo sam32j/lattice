@@ -372,6 +372,7 @@ final class NotchService: ObservableObject {
     private var menuBarMeasurements = NotchMenuBarMeasurements()
     private var screenRefreshWork: DispatchWorkItem?
     private var preferenceSyncWork: DispatchWorkItem?
+    private var sessionResumeWork: DispatchWorkItem?
     private let menuSpaceQueue = DispatchQueue(label: "io.github.sam32j.lattice.notch-menu-space", qos: .utility)
     /// Set while the live window is on its way to another display, so the copy
     /// there stays up until that window has been drawn for it and ordered in.
@@ -1576,6 +1577,9 @@ final class NotchService: ObservableObject {
         NotchVisualizerRuntime.reconcileParents()
         preferenceSyncWork?.cancel(); preferenceSyncWork = nil
         guard NotchSupport.isEnabled() else { stop(); return }
+        // While waiting for the unlock/screensaver animation to finish, let
+        // `sessionResumeWork` perform the single coalesced rebuild + handoff.
+        guard sessionResumeWork == nil else { return }
         if !running {
             running = true
             installObservers()
@@ -1717,6 +1721,7 @@ final class NotchService: ObservableObject {
         // capture still gets its standalone preview after teardown.
         defer { deferredCapturePresentation.finish(restore: restoreCapture) }
         preferenceSyncWork?.cancel(); preferenceSyncWork = nil
+        sessionResumeWork?.cancel(); sessionResumeWork = nil
         hotkey.unregister()
         if shortcutRegistrationFailed { shortcutRegistrationFailed = false }
         NotchLyricsService.shared.stop()
@@ -4381,8 +4386,6 @@ final class NotchService: ObservableObject {
         observe(distributed, Notification.Name("com.apple.screenIsUnlocked")) { [weak self] in
             // No screen saver outlasts an unlock, whether or not its stop was announced.
             self?.updateSession { $0.locked = false; $0.screenSaverRunning = false }
-            // It slept through the lock and wakes up glad to see you.
-            self?.reactMascot(.wakeUp)
         }
         observe(distributed, Notification.Name("com.apple.screensaver.didstart")) { [weak self] in
             self?.updateSession { $0.screenSaverRunning = true }
@@ -4455,6 +4458,7 @@ final class NotchService: ObservableObject {
         let couldPresent = session.canPresent
         let timerCouldRun = session.canRunTimer
         let wasLocked = session.locked
+        let wasScreenSaver = session.screenSaverRunning
         change(&session)
         // The lock screen starts leaving before the island comes back, since
         // rebuilding the island holds the main thread for a moment. It stops
@@ -4462,9 +4466,16 @@ final class NotchService: ObservableObject {
         if wasLocked, !session.locked { NotchLockScreenService.shared.sync(session) }
         if couldPresent != session.canPresent {
             if session.canPresent {
-                syncWithPreferences()
-                finishLockHandoff()
+                let fromUnlock = wasLocked && !session.locked
+                let fromScreenSaver = wasScreenSaver && !session.screenSaverRunning
+                scheduleSessionPresentationResume(fromUnlock: fromUnlock, fromScreenSaver: fromScreenSaver) { [weak self] in
+                    guard let self, self.running, self.session.canPresent else { return }
+                    self.syncWithPreferences()
+                    self.finishLockHandoff()
+                    if fromUnlock { self.reactMascot(.wakeUp) }
+                }
             } else {
+                cancelSessionPresentationResume()
                 if !wasLocked, session.locked { prepareLockHandoff() }
                 captureClose?()
                 clearCapture()
@@ -4484,6 +4495,29 @@ final class NotchService: ObservableObject {
         guard timerCouldRun != session.canRunTimer, !session.canPresent else { return }
         if session.canRunTimer { NotchTimerService.shared.syncWithPreferences() }
         else { NotchTimerService.shared.suspend() }
+    }
+
+    /// Defers rebuilding the desktop island after an unlock or screensaver exit
+    /// so macOS's WindowServer transition completes at full frame rate without
+    /// competing with SwiftUI layout, SkyLight space updates, and event taps.
+    private func scheduleSessionPresentationResume(fromUnlock: Bool, fromScreenSaver: Bool, _ work: @escaping () -> Void) {
+        cancelSessionPresentationResume()
+        guard fromUnlock || fromScreenSaver else {
+            work()
+            return
+        }
+        let delay: TimeInterval = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0.1 : 0.36
+        let item = DispatchWorkItem { [weak self] in
+            self?.sessionResumeWork = nil
+            work()
+        }
+        sessionResumeWork = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
+    }
+
+    private func cancelSessionPresentationResume() {
+        sessionResumeWork?.cancel()
+        sessionResumeWork = nil
     }
 
     private func prepareLockHandoff() {

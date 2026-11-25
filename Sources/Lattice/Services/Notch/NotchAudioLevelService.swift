@@ -39,6 +39,12 @@ final class NotchAudioLevelService: ObservableObject {
                 subscription = NotchMusicService.shared.$playback
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] playback in self?.playbackChanged(playback) }
+            } else if reader == nil {
+                // `stop()` (e.g., on screen lock) tears down the audio tap
+                // while keeping `subscription` alive; re-read current playback
+                // when presentation resumes so live levels return immediately.
+                silence.rearm()
+                playbackChanged(NotchMusicService.shared.playback)
             }
         } else {
             subscription = nil
