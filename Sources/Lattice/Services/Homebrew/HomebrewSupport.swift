@@ -228,12 +228,13 @@ struct HomebrewOperation {
         case upgrade
         case upgradeAll
         case updateHomebrew
+        case cleanup
 
         var clearsSelectionOnSuccess: Bool {
             switch self {
             case .uninstall:
                 return true
-            case .install, .upgrade, .upgradeAll, .updateHomebrew:
+            case .install, .upgrade, .upgradeAll, .updateHomebrew, .cleanup:
                 return false
             }
         }
@@ -248,6 +249,8 @@ struct HomebrewOperation {
                 return "arrow.up.circle.fill"
             case .updateHomebrew:
                 return "arrow.triangle.2.circlepath"
+            case .cleanup:
+                return "sparkles"
             }
         }
     }
@@ -262,6 +265,7 @@ enum HomebrewOperationPhase: Equatable {
     case installing
     case uninstalling
     case upgrading
+    case cleaning
     case finalizing
     case refreshing
 }
@@ -410,6 +414,14 @@ enum HomebrewCommandBuilder {
 
     static func upgradeAll(brewPath: String) -> HomebrewCommand {
         HomebrewCommand(executable: brewPath, arguments: ["upgrade"])
+    }
+
+    static func cleanup(brewPath: String) -> HomebrewCommand {
+        HomebrewCommand(executable: brewPath, arguments: ["cleanup", "--prune=all", "-s"])
+    }
+
+    static func cleanupDryRun(brewPath: String) -> HomebrewCommand {
+        HomebrewCommand(executable: brewPath, arguments: ["cleanup", "--prune=all", "-s", "--dry-run"])
     }
 
     static func isValidToken(_ token: String) -> Bool {
@@ -684,6 +696,16 @@ enum HomebrewProgressParser {
     static func phase(in output: String,
                       action: HomebrewOperation.Action) -> HomebrewOperationPhase? {
         let lower = stripANSI(output).lowercased()
+        if action == .cleanup {
+            if lower.contains("removing:")
+                || lower.contains("pruning")
+                || lower.contains("autoremoving")
+                || lower.contains("cleanup")
+                || lower.contains("cleaning") {
+                return .cleaning
+            }
+            return nil
+        }
         if lower.contains("downloading")
             || lower.contains("fetching")
             || lower.contains("downloaded") {
@@ -716,6 +738,8 @@ enum HomebrewProgressParser {
                 return .upgrading
             case .updateHomebrew:
                 return .refreshing
+            case .cleanup:
+                return .cleaning
             case .install:
                 return .installing
             }
@@ -771,7 +795,7 @@ enum HomebrewProgressParser {
         return value
     }
 
-    private static func stripANSI(_ value: String) -> String {
+    static func stripANSI(_ value: String) -> String {
         guard let regex = ansiRegex else {
             return value
         }
@@ -785,6 +809,62 @@ enum HomebrewProgressParser {
         guard !scalars.isEmpty else { return true }
         let progressCount = scalars.filter { allowed.contains($0) }.count
         return Double(progressCount) / Double(scalars.count) > 0.85
+    }
+}
+
+struct HomebrewCleanupSummary: Equatable {
+    let freedSizeText: String?
+    let removedCount: Int
+
+    var isEmpty: Bool {
+        freedSizeText == nil && removedCount == 0
+    }
+}
+
+enum HomebrewCleanupParser {
+    private static let freedRegex = try? NSRegularExpression(
+        pattern: #"(?:has freed|would free) approximately\s+([0-9]+(?:\.[0-9]+)?)\s*(bytes|TB|GB|MB|KB|B)\b"#,
+        options: .caseInsensitive
+    )
+
+    static func parse(_ output: String) -> HomebrewCleanupSummary {
+        let clean = HomebrewProgressParser.stripANSI(output)
+            .replacingOccurrences(of: "\r", with: "\n")
+        var freedSizeText: String?
+        if let regex = freedRegex,
+           let match = regex.firstMatch(in: clean, range: NSRange(clean.startIndex..<clean.endIndex, in: clean)),
+           let amountRange = Range(match.range(at: 1), in: clean),
+           let unitRange = Range(match.range(at: 2), in: clean) {
+            let amount = String(clean[amountRange])
+            let rawUnit = String(clean[unitRange])
+            let unit = rawUnit.lowercased() == "bytes" ? "B" : rawUnit.uppercased()
+            freedSizeText = "\(amount) \(unit)"
+        }
+
+        var removedCount = 0
+        for raw in clean.split(whereSeparator: \.isNewline) {
+            var line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            while line.hasPrefix("==>") {
+                line = String(line.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            if line.hasPrefix("Removing: ") || line.hasPrefix("Would remove: ") {
+                removedCount += 1
+            } else if line.hasPrefix("Pruning ") || line.hasPrefix("Would prune ") || line.hasPrefix("Pruned ") {
+                let count = firstInt(in: line) ?? 1
+                removedCount += count
+            } else if line.hasPrefix("Autoremoving ") || line.hasPrefix("Would autoremove ") {
+                let count = firstInt(in: line) ?? 1
+                removedCount += count
+            }
+        }
+        return HomebrewCleanupSummary(freedSizeText: freedSizeText, removedCount: removedCount)
+    }
+
+    private static func firstInt(in line: String) -> Int? {
+        for token in line.split(separator: " ") {
+            if let value = Int(token) { return value }
+        }
+        return nil
     }
 }
 

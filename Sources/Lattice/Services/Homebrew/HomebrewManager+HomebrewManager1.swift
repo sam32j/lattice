@@ -223,7 +223,46 @@ extension HomebrewManager {
         perform(.updateHomebrew, package: nil)
     }
 
+    func cleanup(owner: AppFeature = .homebrew) {
+        perform(.cleanup, package: nil, owner: owner)
+    }
+
+    func refreshCleanupEstimate(force: Bool = false) {
+        guard AppFeature.homebrew.isAvailable, operation == nil, !HomebrewSimulator.shared.isSimulating else { return }
+        if !force {
+            if isCheckingCleanup { return }
+            if let checkedAt = cleanupEstimateCheckedAt,
+               Date().timeIntervalSince(checkedAt) < 5 * 60 { return }
+        }
+        guard let brewPath = brewPath ?? detectBrewPath(),
+              let cancellation = readWork.begin(owner: .homebrew, isAvailable: { $0.isAvailable }) else {
+            cleanupEstimateRead = nil
+            isCheckingCleanup = false
+            return
+        }
+        let request = UUID()
+        cleanupEstimateRead = request
+        isCheckingCleanup = true
+        let command = HomebrewCommandBuilder.cleanupDryRun(brewPath: brewPath)
+        cleanupEstimateQueue.async { [weak self] in
+            let result = FeatureReadProcess.run(command.executable, command.arguments,
+                                                timeout: Self.brewReadTimeout,
+                                                environment: HomebrewEnvironment.forBrew,
+                                                cancellation: cancellation)
+            DispatchQueue.main.async {
+                guard let self, self.cleanupEstimateRead == request else { return }
+                self.cleanupEstimateRead = nil
+                self.isCheckingCleanup = false
+                guard !HomebrewSimulator.shared.isSimulating else { return }
+                guard !cancellation.isCancelled, self.operation == nil, result.status == 0 else { return }
+                self.cleanupEstimate = HomebrewCleanupParser.parse(result.output)
+                self.cleanupEstimateCheckedAt = Date()
+            }
+        }
+    }
+
     func cancelOperation() {
+        if HomebrewSimulator.shared.handleCancel() { return }
         guard operation != nil else { return }
         cancelRequested = true
         if let activeProcess {
@@ -233,12 +272,16 @@ extension HomebrewManager {
     }
 
     func clearLog() {
+        if HomebrewSimulator.shared.handleClearLog() { return }
         completedOperationCleanup?.cancel()
         completedOperationCleanup = nil
+        isOperationDetailsExpanded = false
         log = ""
         terminalFallbackCommand = nil
         if operation == nil {
+            errorMessage = nil
             operationStatus = nil
+            lastCleanupSummary = nil
         }
     }
 

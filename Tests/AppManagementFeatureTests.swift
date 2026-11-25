@@ -273,8 +273,11 @@ enum AppManagementFeatureTests {
                && CleanerSupport.isProtectedBundleID("group.com.apple.notes")
                && CleanerSupport.isProtectedBundleID("io.github.sam32j.lattice"),
                "system domains and this app can never be junk owners")
-        suite.expect(!CleanerSupport.isProtectedBundleID("com.vendor.editor"),
-               "third party identifiers are eligible for the leftover check")
+        suite.expect(!CleanerSupport.isProtectedBundleID("com.vendor.editor")
+               && !CleanerSupport.isProtectedBundleID("com.vorssaint")
+               && !CleanerSupport.isProtectedBundleID("com.vorssaint.app")
+               && !CleanerSupport.isProtectedBundleID("group.com.vorssaint.app"),
+               "third party identifiers including upstream vorssaint are eligible for leftover and uninstall checks")
         suite.expect(UninstallerSupport.verifiedBundleID("com.vendor.editor") == "com.vendor.editor"
                && UninstallerSupport.verifiedBundleID("com.vendor.editor.helper") == "com.vendor.editor.helper"
                && UninstallerSupport.verifiedBundleID("test.editor") == "test.editor"
@@ -285,8 +288,10 @@ enum AppManagementFeatureTests {
                && UninstallerSupport.verifiedBundleID("plain-name") == nil
                && UninstallerSupport.verifiedBundleID("com.vendor../escape") == nil
                && UninstallerSupport.verifiedBundleID("io.github.sam32j.lattice") == nil
-               && UninstallerSupport.verifiedBundleID("com.apple.system") == nil,
-               "malformed, protected and current app identifiers never enter uninstall paths")
+               && UninstallerSupport.verifiedBundleID("com.apple.system") == nil
+               && UninstallerSupport.verifiedBundleID("com.vorssaint") == "com.vorssaint"
+               && UninstallerSupport.verifiedBundleID("com.vorssaint.app") == "com.vorssaint.app",
+               "malformed, protected and current app identifiers never enter uninstall paths while upstream vorssaint is allowed")
         let selectionFixture = FileManager.default.temporaryDirectory
             .appendingPathComponent("lattice-uninstaller-selection-\(UUID().uuidString)",
                                     isDirectory: true)
@@ -434,6 +439,8 @@ enum AppManagementFeatureTests {
             return nil
         }
         let ownApp = selectionBundle("Copy.app", bundleID: "io.github.sam32j.lattice.dev")
+        let upstreamRootApp = selectionBundle("VorssaintRoot.app", bundleID: "com.vorssaint")
+        let upstreamApp = selectionBundle("Vorssaint.app", bundleID: "com.vorssaint.app")
         let plainFolder = selectionFixture.appendingPathComponent("Folder", isDirectory: true)
         try? FileManager.default.createDirectory(at: plainFolder, withIntermediateDirectories: true)
         let document = selectionFixture.appendingPathComponent("Notes.txt")
@@ -447,8 +454,9 @@ enum AppManagementFeatureTests {
                && refusal(bareApp) == .unidentified
                && refusal(flatApp) == .unidentified
                && refusal(hostedApp) == .insideAnotherApp
-               && refusal(editorApp) == nil && refusal(mimoApp) == nil,
-               "each refused selection reports the rule that refused it")
+               && refusal(editorApp) == nil && refusal(mimoApp) == nil
+               && refusal(upstreamRootApp) == nil && refusal(upstreamApp) == nil,
+               "each refused selection reports the rule that refused it, and upstream vorssaint is allowed")
         let systemApp = URL(fileURLWithPath: "/System/Applications/Calculator.app")
         suite.expect(!FileManager.default.fileExists(atPath: systemApp.path) || refusal(systemApp) == .systemApp,
                "an app that is part of macOS is refused as a system app")

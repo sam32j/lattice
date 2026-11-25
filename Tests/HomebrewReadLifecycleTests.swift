@@ -24,9 +24,15 @@ enum HomebrewReadLifecycleTests {
         var operation: HomebrewOperation?, operationOwner: AppFeature?
         var completedOperationCleanup: DispatchWorkItem?
         var operationStatus: HomebrewOperationStatus?
+        var isOperationDetailsExpanded = false
         var terminalFallbackCommand: String?, log = ""
         var popularityCache: [HomebrewPackageKind: Int] = [:]
         var popularityLoads: Set<HomebrewPackageKind> = []
+        var cleanupEstimate: HomebrewCleanupSummary?
+        var isCheckingCleanup = false
+        var lastCleanupSummary: HomebrewCleanupSummary?
+        var cleanupEstimateRead: UUID?
+        var cleanupEstimateCheckedAt: Date?
         var ownershipLoads: [String: [(Result<HomebrewPackage?, HomebrewOwnershipError>) -> Void]] = [:]
         var commands: [(FeatureWorkCancellation, (Int32, String) -> Void)] = []
         func detectBrewPath() -> String? { brewPath }
@@ -137,5 +143,30 @@ enum HomebrewReadLifecycleTests {
         suite.expect(!failed.isTrustingTap && failed.errorMessage == "permission denied"
                      && failed.untrustedTap == "vendor/tools" && retries == 1,
                      "a failed trust attempt shows the error and remains retryable")
+
+        let logTimer = Service()
+        let finished = Date()
+        logTimer.log = "$ brew upgrade\nUpdated 1 package."
+        logTimer.operationStatus = HomebrewOperationStatus(
+            action: .upgradeAll, package: nil, phase: .refreshing, result: .succeeded,
+            progressFraction: 1, startedAt: finished.addingTimeInterval(-3),
+            finishedAt: finished, lastActivity: nil
+        )
+        logTimer.scheduleCompletedOperationCleanup(result: .succeeded,
+                                                 targetID: logTimer.operationStatus!.targetID,
+                                                 finishedAt: finished)
+        let initialTimer = logTimer.completedOperationCleanup
+        suite.expect(initialTimer != nil,
+                     "completed Homebrew log schedules automatic dismissal timer when collapsed")
+        logTimer.setOperationDetailsExpanded(true)
+        suite.expect(logTimer.isOperationDetailsExpanded && logTimer.completedOperationCleanup == nil
+                     && initialTimer?.isCancelled == true,
+                     "expanding log details cancels auto-dismiss timeout so manual close is required")
+        logTimer.setOperationDetailsExpanded(false)
+        let restartedTimer = logTimer.completedOperationCleanup
+        suite.expect(!logTimer.isOperationDetailsExpanded && restartedTimer != nil
+                     && restartedTimer !== initialTimer,
+                     "collapsing log details starts a fresh timeout to dismiss the footer")
+        restartedTimer?.cancel()
     }
 }

@@ -19,6 +19,7 @@ final class HomebrewManager: ObservableObject {
     @Published var isLoadingDetails = false
     @Published var operation: HomebrewOperation?
     @Published var operationStatus: HomebrewOperationStatus?
+    @Published var isOperationDetailsExpanded = false
     @Published var log = ""
     @Published var errorMessage: String?
     @Published var terminalFallbackCommand: String?
@@ -32,13 +33,19 @@ final class HomebrewManager: ObservableObject {
     @Published var shellConfigProfilePath: String?
     @Published var didOpenShellConfig = false
     @Published var outdatedPackagesByID: [String: HomebrewPackageUpdate] = [:]
+    @Published var cleanupEstimate: HomebrewCleanupSummary?
+    @Published var isCheckingCleanup = false
+    @Published var lastCleanupSummary: HomebrewCleanupSummary?
 
     let readWork = FeatureWorkRegistry()
     var installedRead: (id: UUID, owner: AppFeature)?
     var outdatedRead: (id: UUID, owner: AppFeature)?
+    var cleanupEstimateRead: UUID?
+    var cleanupEstimateCheckedAt: Date?
     var trustRead: UUID?
     var operationOwner: AppFeature?
     let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.homebrew", qos: .userInitiated)
+    let cleanupEstimateQueue = DispatchQueue(label: "io.github.sam32j.lattice.homebrew.cleanup-estimate", qos: .utility)
     var searchGeneration = 0
     var detailsGeneration = 0
     var outdatedGeneration = 0

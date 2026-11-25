@@ -1,87 +1,261 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
+// Copyright (C) 2026 Samuel Ji
 
 import AppKit
 import SwiftUI
 
+/// Homebrew inside the App Manager's Dynamic Island and floating Hub:
+/// - In the Dynamic Island: a focused glance with instant search across
+///   installed packages and the online catalog, Update All, and Clean Up.
+/// - In the floating Hub: an interactive compact workbench with pinned heading,
+///   search + filter, edge-faded scrollable package list with expandable
+///   details, and a docked maintenance / live-operation footer.
 struct PanelHomebrewView: View {
-    private static let packageListTopID = "panel-homebrew-package-list-top"
+    @ObservedObject var l10n = L10n.shared
+    @ObservedObject var homebrew = HomebrewManager.shared
+    @ObservedObject var catalog = HomebrewOnlineCatalog.shared
+    @Environment(\.notchPresentation) var inNotch
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @State var query = ""
+    @State var filter: Filter = .all
+    @State var expandedPackageID: String?
+    @State var armedUninstallID: String?
+    @State var armReset: DispatchWorkItem?
+    @State var installedSnapshot = InstalledSnapshot()
+    @State var cachedFilteredInstalled: [HomebrewPackage] = []
+    @FocusState var searchFocused: Bool
 
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var homebrew = HomebrewManager.shared
-    @Environment(\.notchPresentation) private var inNotch
-    @State private var query = ""
-    @State private var searchKind: HomebrewPackageKind = .cask
-    @State private var mode: PanelHomebrewMode = .search
-    @State private var filter: PanelHomebrewFilter = .all
-    @State private var pendingAction: HomebrewPendingAction?
-    @State private var showOperationDetails = false
+    enum Filter: Hashable { case all, cask, formula, outdated, orphans }
+
+    struct InstalledSnapshot {
+        var outdated: [HomebrewPackage] = []
+        var orphans: [HomebrewPackage] = []
+        var orphanIDs: Set<String> = []
+        var caskCount: Int = 0
+        var formulaCount: Int = 0
+    }
 
     var showHeader: Bool = true
     var onClose: () -> Void = {}
 
+    var strings: HomebrewTabStrings { FeatureStrings.homebrewTab(l10n.language) }
+    var s: Strings { l10n.s }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if showHeader { header }
-            if homebrew.brewPath == nil {
-                missingState
+        VStack(alignment: .leading, spacing: 8) {
+            if showHeader && !inNotch {
+                legacyHeader
+            }
+            if inNotch {
+                islandBody
             } else {
-                modePicker
-                shellSetupCard
-                if mode == .search {
-                    searchControls
-                    packageList(homebrew.searchResults,
-                                emptyText: searchEmptyText,
-                                isLoading: homebrew.isSearching
-                                    || (!homebrew.searchResults.isEmpty && homebrew.isLoadingPopularity))
-                } else {
-                    installedControls
-                    packageList(filteredInstalled,
-                                emptyText: l10n.s.homebrewNoPackages,
-                                isLoading: homebrew.isLoadingInstalled)
-                }
-                errorBanner
-                detailCard
-                operationCard
+                hubBody
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear {
-            if homebrew.installed.isEmpty {
-                homebrew.refreshInstalled()
+            PanelInteractionState.shared.viewKeepsPopoverOpen = true
+            if !HomebrewSimulator.shared.isSimulating {
+                if homebrew.installed.isEmpty {
+                    homebrew.refreshInstalled()
+                }
+                catalog.checkVersion()
+                homebrew.refreshCleanupEstimate()
             }
-        }
-        .onChange(of: query) { _, _ in resetContextSelection() }
-        .onChange(of: mode) { _, _ in resetContextSelection() }
-        .onChange(of: filter) { _, _ in resetContextSelection() }
-        .onChange(of: searchKind) { _, _ in resetContextSelection() }
-        .onChange(of: homebrew.operationStatus?.targetID) { _, _ in
-            showOperationDetails = false
+            rebuildInstalledSnapshot()
+            runSearch()
         }
         .onDisappear {
-            PanelInteractionState.shared.isPresentingPopoverModal = false
+            PanelInteractionState.shared.viewKeepsPopoverOpen = false
+            armReset?.cancel()
+            armedUninstallID = nil
         }
-        .confirmationDialog(confirmationTitle,
-                            isPresented: confirmationPresented,
-                            titleVisibility: .visible) {
-            if let pendingAction {
-                Button(actionTitle(for: pendingAction), role: pendingAction.action == .uninstall ? .destructive : nil) {
-                    run(pendingAction)
-                }
-            }
-            Button(l10n.s.uninstallerCancel, role: .cancel) {
-                dismissConfirmation()
-            }
-        } message: {
-            if let pendingAction {
-                Text(confirmationBody(for: pendingAction))
+        .onChange(of: query) { _, _ in
+            armedUninstallID = nil
+            rebuildFilteredInstalled()
+            runSearch()
+        }
+        .onChange(of: filter) { _, _ in
+            armedUninstallID = nil
+            rebuildFilteredInstalled()
+            runSearch()
+        }
+        .onChange(of: homebrew.installed) { _, _ in
+            rebuildInstalledSnapshot()
+            if !trimmedQuery.isEmpty { runSearch() }
+        }
+        .onChange(of: homebrew.outdatedPackagesByID) { _, _ in
+            rebuildInstalledSnapshot()
+        }
+        .onChange(of: searchFocused) { _, focused in
+            if focused && inNotch {
+                NotchService.shared.takeKeyboardFocus()
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .onChange(of: homebrew.operationStatus?.targetID) { _, _ in
+            homebrew.setOperationDetailsExpanded(false)
+        }
     }
 
-    private var header: some View {
+    // MARK: Derived state
+
+    var outdated: [HomebrewPackage] {
+        installedSnapshot.outdated
+    }
+
+    var firstLoad: Bool {
+        homebrew.isLoadingInstalled && homebrew.installed.isEmpty
+    }
+
+    var trimmedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var orphanIDs: Set<String> {
+        installedSnapshot.orphanIDs
+    }
+
+    var searchesOnline: Bool {
+        inNotch || (filter != .outdated && filter != .orphans)
+    }
+
+    var activeOrHomebrewStatus: HomebrewOperationStatus? {
+        homebrew.operationStatus.flatMap { status in
+            (status.isActive || homebrew.operationOwner == .homebrew) ? status : nil
+        }
+    }
+
+    var filteredInstalled: [HomebrewPackage] {
+        cachedFilteredInstalled
+    }
+
+    func rebuildInstalledSnapshot() {
+        let installed = homebrew.installed
+        var outdatedList: [HomebrewPackage] = []
+        var caskCount = 0
+        var formulaCount = 0
+        for package in installed {
+            if package.hasUpdateAvailable { outdatedList.append(package) }
+            if package.kind == .cask {
+                caskCount += 1
+            } else {
+                formulaCount += 1
+            }
+        }
+        let folded = HomebrewDependencyGraph.fold(installed, installed: installed)
+        installedSnapshot = InstalledSnapshot(
+            outdated: outdatedList,
+            orphans: folded.orphans,
+            orphanIDs: Set(folded.orphans.map(\.id)),
+            caskCount: caskCount,
+            formulaCount: formulaCount
+        )
+        if !visibleFilters.contains(filter) { filter = .all }
+        rebuildFilteredInstalled()
+    }
+
+    func rebuildFilteredInstalled() {
+        var base = homebrew.installed
+        if !inNotch {
+            switch activeFilter {
+            case .all: break
+            case .cask: base = base.filter { $0.kind == .cask }
+            case .formula: base = base.filter { $0.kind == .formula }
+            case .outdated: base = installedSnapshot.outdated
+            case .orphans: base = installedSnapshot.orphans
+            }
+        }
+        let lower = trimmedQuery.lowercased()
+        if !lower.isEmpty {
+            base = base.filter {
+                $0.name.lowercased().contains(lower)
+                    || $0.displayName.lowercased().contains(lower)
+            }
+        }
+        cachedFilteredInstalled = HomebrewPackageOrdering.updatesFirst(base)
+    }
+
+    var outdatedPreviewLine: String {
+        let names = outdated.prefix(3).map(\.displayName)
+        guard !names.isEmpty else { return "" }
+        let joined = names.joined(separator: ", ")
+        let remaining = outdated.count - names.count
+        guard remaining > 0 else { return joined }
+        return joined + ", " + String(format: strings.moreUpdatesFormat, remaining)
+    }
+
+    var showsCleanupButton: Bool {
+        if let estimate = homebrew.cleanupEstimate {
+            return !estimate.isEmpty
+        }
+        return !homebrew.isCheckingCleanup
+    }
+
+    var cleanupActionTitle: String {
+        homebrew.cleanupEstimate?.freedSizeText.map {
+            String(format: strings.cleanupCompactFormat, $0)
+        } ?? strings.cleanupButton
+    }
+
+    // MARK: Actions
+
+    func runSearch() {
+        guard searchesOnline else { catalog.clear(); return }
+        let kind: HomebrewPackageKind? = (!inNotch && activeFilter == .cask) ? .cask
+            : (!inNotch && activeFilter == .formula) ? .formula : nil
+        catalog.search(query, kind: kind, installed: Set(homebrew.installed.map { $0.name.lowercased() }))
+    }
+
+    func refreshAll() {
+        if HomebrewSimulator.shared.isSimulating {
+            HomebrewSimulator.shared.refreshCurrent()
+            return
+        }
+        homebrew.refreshInstalled()
+        catalog.checkVersion(force: true)
+        homebrew.refreshCleanupEstimate(force: true)
+    }
+
+    func openHomebrewSettings() {
+        SettingsRouter.shared.request(AppFeature.homebrew.settingsDestination)
+        (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+    }
+
+    func armOrUninstall(_ package: HomebrewPackage) {
+        guard armedUninstallID == package.id else {
+            armedUninstallID = package.id
+            armReset?.cancel()
+            let work = DispatchWorkItem { armedUninstallID = nil }
+            armReset = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: work)
+            return
+        }
+        armReset?.cancel()
+        armedUninstallID = nil
+        homebrew.uninstall(package)
+    }
+
+    func activeStatus(for package: HomebrewPackage) -> HomebrewOperationStatus? {
+        guard let status = homebrew.operationStatus, status.isActive else { return nil }
+        if status.package?.id == package.id { return status }
+        if status.action == .upgradeAll, package.hasUpdateAvailable {
+            return status
+        }
+        return nil
+    }
+
+    func activeStatus(for id: String) -> HomebrewOperationStatus? {
+        guard let status = homebrew.operationStatus, status.isActive else { return nil }
+        if status.package?.id == id { return status }
+        return nil
+    }
+
+    // MARK: Shared Controls
+
+    private var legacyHeader: some View {
         HStack(spacing: 8) {
-            Label(l10n.s.homebrewName, systemImage: "shippingbox")
+            Label(s.homebrewName, systemImage: "shippingbox")
                 .font(.system(size: 12, weight: .semibold))
             Spacer()
             Button(action: onClose) {
@@ -91,808 +265,215 @@ struct PanelHomebrewView: View {
                     .frame(width: 22, height: 22)
             }
             .buttonStyle(.plain)
-            .help(l10n.s.uninstallerCancel)
+            .help(s.uninstallerCancel)
         }
-    }
-
-    private var missingState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "shippingbox")
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(.secondary)
-            Text(l10n.s.homebrewMissingTitle)
-                .font(.system(size: 13, weight: .semibold))
-            Text(l10n.s.homebrewMissingBody)
-                .font(.system(size: 10.5))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            Button {
-                homebrew.openHomebrewInstaller()
-            } label: {
-                Label(l10n.s.homebrewInstallHomebrew, systemImage: "terminal")
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            Text(homebrew.didOpenInstaller ? l10n.s.homebrewInstallHomebrewOpened : l10n.s.homebrewInstallHomebrewCaption)
-                .font(.system(size: 9.5))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            if let error = homebrew.errorMessage, !error.isEmpty {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.orange)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Button {
-                homebrew.refreshInstalled()
-            } label: {
-                Label(l10n.s.homebrewRefresh, systemImage: "arrow.clockwise")
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .frame(maxWidth: .infinity)
-        .panelCard()
-    }
-
-    private var modePicker: some View {
-        Picker("", selection: $mode) {
-            Text(l10n.s.homebrewSearchButton).tag(PanelHomebrewMode.search)
-            Text("\(l10n.s.homebrewInstalled) \(homebrew.installed.count)").tag(PanelHomebrewMode.installed)
-        }
-        .labelsHidden()
-        .pickerStyle(.segmented)
     }
 
     @ViewBuilder
-    private var shellSetupCard: some View {
-        if !homebrew.isShellConfigured {
-            VStack(alignment: .leading, spacing: 7) {
-                Label(l10n.s.homebrewShellSetupTitle, systemImage: "terminal")
-                    .font(.system(size: 10.5, weight: .semibold))
-                Text(homebrew.didOpenShellConfig ? l10n.s.homebrewShellSetupOpened : l10n.s.homebrewShellSetupBody)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 7) {
-                    Button {
-                        homebrew.openShellConfiguration()
-                    } label: {
-                        Label(l10n.s.homebrewShellSetupButton, systemImage: "wrench.and.screwdriver")
-                            .font(.system(size: 10.5, weight: .medium))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    Button {
-                        homebrew.refreshShellConfigurationStatus()
-                    } label: {
-                        Label(l10n.s.homebrewRefresh, systemImage: "arrow.clockwise")
-                            .font(.system(size: 10.5, weight: .medium))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+    func searchBar(compactNotch: Bool) -> some View {
+        let content = HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11.5))
+                .foregroundStyle(compactNotch ? AnyShapeStyle(.white.opacity(0.55)) : AnyShapeStyle(.secondary))
+                .accessibilityHidden(true)
+            TextField(compactNotch ? strings.searchAll : searchPlaceholder, text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .foregroundStyle(compactNotch ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+                .focused($searchFocused)
+                .onSubmit { runSearch() }
+                .onKeyPress(.escape) {
+                    guard !query.isEmpty else { return .ignored }
+                    query = ""
+                    return .handled
                 }
+            if catalog.isSearching {
+                ProgressView().controlSize(.mini)
             }
-            .panelCard()
-        }
-    }
-
-    private var searchControls: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 6) {
-                PanelHomebrewSearchField(text: $query,
-                                         placeholder: l10n.s.homebrewSearchPlaceholder,
-                                         onSubmit: search)
-                    .frame(height: 24)
-                Button {
-                    search()
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                        .frame(width: 20, height: 18)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || homebrew.isBusy)
-            }
-            Picker("", selection: $searchKind) {
-                Text(l10n.s.homebrewCasks).tag(HomebrewPackageKind.cask)
-                Text(l10n.s.homebrewFormulas).tag(HomebrewPackageKind.formula)
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            Text(l10n.s.homebrewKeyboardHint)
-                .font(.system(size: 9))
-                .foregroundStyle(.tertiary)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .panelCard()
-    }
-
-    private var installedControls: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Picker("", selection: $filter) {
-                Text("\(l10n.s.homebrewAll) \(homebrew.installed.count)").tag(PanelHomebrewFilter.all)
-                Text("\(l10n.s.homebrewCasks) \(installedCaskCount)").tag(PanelHomebrewFilter.cask)
-                Text("\(l10n.s.homebrewFormulas) \(installedFormulaCount)").tag(PanelHomebrewFilter.formula)
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-
-            HStack(spacing: 7) {
-                Button {
-                    homebrew.refreshInstalled()
-                } label: {
-                    Label(l10n.s.homebrewCheckPackages, systemImage: "arrow.clockwise")
-                        .font(.system(size: 10.5, weight: .medium))
-                        .lineLimit(1)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help(l10n.s.homebrewCheckPackages)
-                .disabled(homebrew.isBusy)
-                Button {
-                    presentConfirmation(HomebrewPendingAction(action: .updateHomebrew))
-                } label: {
-                    Label(l10n.s.homebrewUpdateHomebrew, systemImage: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 10.5, weight: .medium))
-                        .lineLimit(1)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help(l10n.s.homebrewUpdateHomebrew)
-                .disabled(homebrew.isBusy)
-                Spacer(minLength: 0)
-            }
-            outdatedSummary
-        }
-        .panelCard()
-    }
-
-    @ViewBuilder
-    private var outdatedSummary: some View {
-        if homebrew.isLoadingOutdated {
-            HStack(spacing: 6) {
-                ProgressView()
-                    .controlSize(.mini)
-                Text(l10n.s.homebrewUpdates)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-            }
-        } else if homebrew.outdatedCount > 0 {
-            HStack(spacing: 7) {
-                Label("\(l10n.s.homebrewUpdates) \(homebrew.outdatedCount)",
-                      systemImage: "arrow.up.circle.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.orange)
-                Spacer(minLength: 0)
-                Button {
-                    presentConfirmation(HomebrewPendingAction(action: .upgradeAll))
-                } label: {
-                    Label(l10n.s.homebrewUpgradeAll, systemImage: "arrow.up.circle")
-                        .font(.system(size: 10.5, weight: .medium))
-                        .lineLimit(1)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help(l10n.s.homebrewUpgradeAll)
-                .disabled(homebrew.isBusy)
-            }
-        } else {
-            Label("\(l10n.s.homebrewUpdates) 0", systemImage: "checkmark.circle.fill")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func packageList(_ packages: [HomebrewPackage],
-                             emptyText: String,
-                             isLoading: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack {
-                Text(mode == .search ? l10n.s.homebrewSearchResults : l10n.s.homebrewInstalled)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.tertiary)
-                if !isLoading {
-                    countBadge(packages.count)
-                }
-                Spacer()
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.mini)
-                }
-            }
-            if packages.isEmpty {
-                Text(isLoading ? l10n.s.homebrewLoading : emptyText)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(height: 64)
-            } else {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 5) {
-                            Color.clear
-                                .frame(height: 0)
-                                .id(Self.packageListTopID)
-                            ForEach(packages) { package in
-                                row(package)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .onChange(of: homebrew.operationStatus?.result) { _, result in
-                        guard result == .succeeded,
-                              homebrew.operationStatus?.action.clearsSelectionOnSuccess == true else { return }
-                        proxy.scrollTo(Self.packageListTopID, anchor: .top)
-                    }
-                }
-                .frame(height: 162)
-            }
-        }
-        .panelCard()
-    }
-
-    private func countBadge(_ count: Int) -> some View {
-        Text("\(count)")
-            .font(.system(size: 8.5, weight: .semibold, design: .rounded))
-            .monospacedDigit()
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            .background(Capsule().fill(Color.primary.opacity(0.07)))
-    }
-
-    private func row(_ package: HomebrewPackage) -> some View {
-        HStack(spacing: 8) {
-            Button {
-                homebrew.select(package)
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: package.kind == .formula ? "terminal" : "app")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 15)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(package.displayName)
-                            .font(.system(size: 11.5, weight: selected(package) ? .semibold : .regular))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Text(package.versionText ?? package.name)
-                            .font(.system(size: 9.5))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                    .layoutPriority(1)
-                    Spacer(minLength: 0)
-                    if let popularity = package.popularity {
-                        popularityBadge(popularity)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .buttonStyle(.plain)
-            if activeStatus(for: package) != nil {
-                ProgressView()
-                    .controlSize(.mini)
-            } else if let update = package.update {
-                updateButton(package, update: update)
-            } else if package.isInstalled {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.green)
-            } else {
-                Button {
-                    presentConfirmation(HomebrewPendingAction(action: .install, package: package))
-                } label: {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .frame(width: 22, height: 20)
-                        .contentShape(Rectangle())
+            if !query.isEmpty {
+                Button { query = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(compactNotch ? AnyShapeStyle(.white.opacity(0.45)) : AnyShapeStyle(.tertiary))
                 }
                 .buttonStyle(.plain)
-                .disabled(homebrew.isBusy)
-                .help(l10n.s.homebrewInstall)
-                .accessibilityLabel(l10n.s.homebrewInstall)
+                .accessibilityLabel(s.actionClear)
+            }
+            if !compactNotch {
+                Rectangle()
+                    .fill(Color.primary.opacity(0.18))
+                    .frame(width: 1, height: 13)
+                    .accessibilityHidden(true)
+                filterMenu
+                    .font(.system(size: 11))
             }
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(selected(package) ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.035))
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-        .contextMenu {
-            packageContextMenu(package)
+        .padding(.leading, 10)
+        .padding(.trailing, compactNotch ? 9 : 0)
+        .frame(height: compactNotch ? 30 : 32)
+
+        if compactNotch {
+            content
+                .modifier(NotchControlSurface(cornerRadius: 10,
+                                              selected: searchFocused || !trimmedQuery.isEmpty,
+                                              interactive: false))
+        } else {
+            content
+                .background(Color.primary.opacity(0.06),
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func updateButton(_ package: HomebrewPackage, update: HomebrewPackageUpdate) -> some View {
-        Button {
-            presentConfirmation(HomebrewPendingAction(action: .upgrade, package: package))
+    private var activeFilter: Filter {
+        visibleFilters.contains(filter) ? filter : .all
+    }
+
+    var visibleFilters: [Filter] {
+        [Filter.all, .cask, .formula, .outdated, .orphans].filter {
+            $0 == .all || filterCount($0) > 0
+        }
+    }
+
+    private func filterCount(_ option: Filter) -> Int {
+        switch option {
+        case .all: return homebrew.installed.count
+        case .cask: return installedSnapshot.caskCount
+        case .formula: return installedSnapshot.formulaCount
+        case .outdated: return installedSnapshot.outdated.count
+        case .orphans: return installedSnapshot.orphans.count
+        }
+    }
+
+    private var searchPlaceholder: String {
+        switch activeFilter {
+        case .all: return strings.searchAll
+        case .cask: return strings.searchCasks
+        case .formula: return strings.searchFormulae
+        case .outdated: return strings.searchOutdated
+        case .orphans: return strings.searchOrphans
+        }
+    }
+
+    private func filterTitle(_ option: Filter) -> String {
+        let count = filterCount(option)
+        switch option {
+        case .all: return String(format: strings.filterAllFormat, count)
+        case .cask: return String(format: strings.filterCasksFormat, count)
+        case .formula: return String(format: strings.filterFormulasFormat, count)
+        case .outdated: return String(format: strings.filterOutdatedFormat, count)
+        case .orphans: return String(format: strings.filterOrphansFormat, count)
+        }
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            Picker(s.homebrewAll, selection: $filter) {
+                ForEach(visibleFilters, id: \.self) { option in
+                    Text(filterTitle(option)).tag(option)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
         } label: {
-            Image(systemName: "arrow.up.circle.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.orange)
-                .frame(width: 20, height: 18)
+            SearchFilterMenuLabel(title: filterTitle(activeFilter))
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+
+    func refreshButton(size: CGFloat) -> some View {
+        let spinning = homebrew.isLoadingInstalled || homebrew.isLoadingOutdated
+        return Button(action: refreshAll) {
+            RefreshArrow(isSpinning: spinning)
+                .font(.system(size: size, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 18, height: 16)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(homebrew.isBusy)
-        .help("\(l10n.s.homebrewUpgrade): \(update.versionSummary)")
-        .accessibilityLabel(l10n.s.homebrewUpgrade)
+        .disabled(homebrew.isBusy || spinning)
+        .help(s.homebrewRefresh)
+        .accessibilityLabel(s.homebrewRefresh)
     }
 
-    @ViewBuilder
-    private func packageContextMenu(_ package: HomebrewPackage) -> some View {
-        let isBusy = homebrew.isBusy || activeStatus(for: package) != nil
-        Button {
-            homebrew.select(package)
-        } label: {
-            Label(l10n.s.homebrewDetailsTitle, systemImage: "info.circle")
+    func kindTile(_ kind: HomebrewPackageKind, size: CGFloat = 26) -> some View {
+        AppManagerSymbolTile(symbol: kind == .cask ? "macwindow" : "terminal",
+                             tint: kind == .cask ? .purple : .secondary,
+                             size: size)
+    }
+
+    func busyPill(_ text: String) -> some View {
+        HStack(spacing: 4) {
+            ProgressView()
+                .controlSize(.mini)
+                .scaleEffect(0.75)
+                .frame(width: 10, height: 10)
+            Text(text)
         }
-        if package.update != nil {
-            Button {
-                presentConfirmation(HomebrewPendingAction(action: .upgrade, package: package))
-            } label: {
-                Label(l10n.s.homebrewUpgrade, systemImage: "arrow.up.circle")
-            }
-            .disabled(isBusy)
-        }
-        if package.isInstalled {
-            Button(role: .destructive) {
-                presentConfirmation(HomebrewPendingAction(action: .uninstall, package: package))
-            } label: {
-                Label(l10n.s.homebrewUninstall, systemImage: "trash")
-            }
-            .disabled(isBusy)
-        } else {
-            Button {
-                presentConfirmation(HomebrewPendingAction(action: .install, package: package))
-            } label: {
-                Label(l10n.s.homebrewInstall, systemImage: "arrow.down.circle")
-            }
-            .disabled(isBusy)
-        }
+        .font(.system(size: 10.5, weight: .semibold))
+        .lineLimit(1)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 3.5)
+        .foregroundStyle(Color.accentColor)
+        .background(Color.accentColor.opacity(0.12), in: Capsule())
     }
 
-    @ViewBuilder
-    private var errorBanner: some View {
-        if let tap = homebrew.untrustedTap {
-            HomebrewTrustCard(tap: tap, compact: true)
-        }
-        if let error = homebrew.errorMessage, !error.isEmpty {
-            Label(error, systemImage: "exclamationmark.triangle.fill")
-                .font(.system(size: 10))
-                .foregroundStyle(.orange)
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
-                .panelCard()
-        }
-    }
-
-    @ViewBuilder
-    private var detailCard: some View {
-        if let package = homebrew.selectedPackage {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Text(package.displayName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(2)
-                    statusBadge(package)
-                    Spacer(minLength: 0)
-                }
-                if let desc = package.desc, !desc.isEmpty {
-                    Text(desc)
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 8) {
-                    Text(package.name)
-                        .font(.system(size: 9.5, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer(minLength: 0)
-                    if let version = package.versionText {
-                        Text(version)
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                if let popularity = package.popularity {
-                    Label(popularityDescription(popularity), systemImage: "chart.bar.fill")
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                if let update = package.update {
-                    Label(update.versionSummary, systemImage: "arrow.up.circle.fill")
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(.orange)
-                        .lineLimit(1)
-                        .help(updateHelp(update))
-                }
-                if let homepage = package.homepage, let url = URL(string: homepage) {
-                    Link(l10n.s.homebrewHomepage, destination: url)
-                        .font(.system(size: 10.5))
-                        .lineLimit(1)
-                }
-                HStack(spacing: 7) {
-                    Spacer(minLength: 0)
-                    detailActions(for: package)
-                }
-                .controlSize(.small)
-                .disabled(homebrew.isBusy)
-            }
-            .panelCard()
-        } else {
-            Text(l10n.s.homebrewNoSelection)
-                .font(.system(size: 10.5))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .panelCard()
-        }
-    }
-
-    @ViewBuilder
-    private var operationCard: some View {
-        if let status = homebrew.operationStatus {
-            HomebrewOperationStatusView(status: status,
-                                        log: homebrew.log,
-                                        terminalFallbackCommand: homebrew.terminalFallbackCommand,
-                                        compact: true,
-                                        showDetails: $showOperationDetails,
-                                        onCancel: homebrew.cancelOperation,
-                                        onClear: homebrew.clearLog,
-                                        onOpenTerminal: homebrew.openTerminalFallback)
-            .panelCard()
-        }
-    }
-
-    @ViewBuilder
-    private func detailActions(for package: HomebrewPackage) -> some View {
-        if let status = activeStatus(for: package) {
-            Label(activeActionTitle(for: status), systemImage: "hourglass")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-        } else if package.isInstalled {
-            if package.update != nil {
-                VStack(alignment: .trailing, spacing: 6) {
-                    Button {
-                        presentConfirmation(HomebrewPendingAction(action: .upgrade, package: package))
-                    } label: {
-                        Label(l10n.s.homebrewUpgrade, systemImage: "arrow.up.circle")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    Button(role: .destructive) {
-                        presentConfirmation(HomebrewPendingAction(action: .uninstall, package: package))
-                    } label: {
-                        Label(l10n.s.homebrewUninstall, systemImage: "trash")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .tint(.red)
-                }
-            } else {
-                Button(role: .destructive) {
-                    presentConfirmation(HomebrewPendingAction(action: .uninstall, package: package))
-                } label: {
-                    Label(l10n.s.homebrewUninstall, systemImage: "trash")
-                        .font(.system(size: 11, weight: .semibold))
-                }
-                .tint(.red)
-            }
-        } else {
-            Button {
-                presentConfirmation(HomebrewPendingAction(action: .install, package: package))
-            } label: {
-                Label(l10n.s.homebrewInstall, systemImage: "arrow.down.circle")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-            .buttonStyle(.borderedProminent)
-        }
-    }
-
-    private func statusBadge(_ package: HomebrewPackage) -> some View {
-        let active = activeStatus(for: package)
-        let title = active.map { activeActionTitle(for: $0) }
-            ?? (package.update != nil
-                ? l10n.s.homebrewUpdateAvailableBadge
-                : (package.isInstalled ? l10n.s.homebrewInstalledBadge : l10n.s.homebrewNotInstalledBadge))
-        let color: Color = active != nil ? .accentColor : (package.update != nil ? .orange : (package.isInstalled ? .green : .secondary))
-        return Text(title)
-            .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                Capsule().fill(color.opacity(0.12))
-            )
-    }
-
-    private func popularityBadge(_ popularity: HomebrewPopularity) -> some View {
-        Text(popularity.compactCount)
-            .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(Color.accentColor)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
-            .background(Capsule().fill(Color.accentColor.opacity(0.12)))
-            .help(popularityDescription(popularity))
-    }
-
-    private func updateHelp(_ update: HomebrewPackageUpdate) -> String {
-        "\(l10n.s.homebrewUpdateAvailableBadge): \(update.versionSummary)"
-    }
-
-    private func popularityDescription(_ popularity: HomebrewPopularity) -> String {
-        String(format: l10n.s.homebrewPopularityFormat,
-               popularity.decimalCount,
-               "\(popularity.days)")
-    }
-
-    private var searchEmptyText: String {
-        query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? l10n.s.homebrewNoSelection
-            : l10n.s.homebrewSearchEmpty
-    }
-
-    private var filteredInstalled: [HomebrewPackage] {
-        let packages: [HomebrewPackage]
-        switch filter {
-        case .all:
-            packages = homebrew.installed
-        case .formula:
-            packages = homebrew.installed.filter { $0.kind == .formula }
-        case .cask:
-            packages = homebrew.installed.filter { $0.kind == .cask }
-        }
-        return HomebrewPackageOrdering.updatesFirst(packages)
-    }
-
-    private var installedCaskCount: Int {
-        homebrew.installed.filter { $0.kind == .cask }.count
-    }
-
-    private var installedFormulaCount: Int {
-        homebrew.installed.filter { $0.kind == .formula }.count
-    }
-
-    private var confirmationPresented: Binding<Bool> {
-        Binding {
-            pendingAction != nil
-        } set: { isPresented in
-            if !isPresented { dismissConfirmation() }
-        }
-    }
-
-    private var confirmationTitle: String {
-        guard let pendingAction else { return "" }
-        return dialogTitle(for: pendingAction)
-    }
-
-    private func dialogTitle(for action: HomebrewPendingAction) -> String {
-        switch action.action {
-        case .install:
-            return l10n.s.homebrewConfirmInstallTitle
-        case .uninstall:
-            return l10n.s.homebrewConfirmUninstallTitle
-        case .upgrade:
-            return l10n.s.homebrewConfirmUpgradeTitle
-        case .upgradeAll:
-            return l10n.s.homebrewConfirmUpgradeAllTitle
-        case .updateHomebrew:
-            return l10n.s.homebrewConfirmUpdateHomebrewTitle
-        }
-    }
-
-    private func confirmationBody(for action: HomebrewPendingAction) -> String {
-        if action.action == .updateHomebrew {
-            return l10n.s.homebrewConfirmUpdateHomebrewBody
-        }
-        if action.action == .upgradeAll {
-            return l10n.s.homebrewConfirmUpgradeAllBody
-        }
-        guard let package = action.package else { return "" }
-        let format: String
-        switch action.action {
-        case .install:
-            format = l10n.s.homebrewConfirmInstallBodyFormat
-        case .uninstall:
-            format = l10n.s.homebrewConfirmUninstallBodyFormat
-        case .upgrade:
-            format = l10n.s.homebrewConfirmUpgradeBodyFormat
-        case .upgradeAll:
-            return l10n.s.homebrewConfirmUpgradeAllBody
-        case .updateHomebrew:
-            return l10n.s.homebrewConfirmUpdateHomebrewBody
-        }
-        return String(format: format, package.displayName)
-    }
-
-    private func actionTitle(for action: HomebrewPendingAction) -> String {
-        switch action.action {
-        case .install: return l10n.s.homebrewInstall
-        case .uninstall: return l10n.s.homebrewUninstall
-        case .upgrade: return l10n.s.homebrewUpgrade
-        case .upgradeAll: return l10n.s.homebrewUpgradeAll
-        case .updateHomebrew: return l10n.s.homebrewUpdateHomebrew
-        }
-    }
-
-    private func run(_ action: HomebrewPendingAction) {
-        switch action.action {
-        case .install:
-            if let package = action.package { homebrew.install(package) }
-        case .uninstall:
-            if let package = action.package { homebrew.uninstall(package) }
-        case .upgrade:
-            if let package = action.package { homebrew.upgrade(package) }
-        case .upgradeAll:
-            homebrew.upgradeAll()
-        case .updateHomebrew:
-            homebrew.updateHomebrew()
-        }
-        dismissConfirmation()
-    }
-
-    private func search() {
-        resetContextSelection()
-        mode = .search
-        homebrew.search(query: query, kind: searchKind)
-    }
-
-    private func selected(_ package: HomebrewPackage) -> Bool {
-        homebrew.selectedPackage?.id == package.id
-    }
-
-    private func activeStatus(for package: HomebrewPackage) -> HomebrewOperationStatus? {
-        guard let status = homebrew.operationStatus,
-              status.isActive,
-              status.package?.id == package.id else { return nil }
-        return status
-    }
-
-    private func activeActionTitle(for status: HomebrewOperationStatus) -> String {
+    func operationTitle(_ status: HomebrewOperationStatus) -> String {
+        let name = status.package?.displayName ?? ""
         switch status.action {
-        case .install: return l10n.s.homebrewOperationInstalling
-        case .uninstall: return l10n.s.homebrewOperationUninstalling
-        case .upgrade: return l10n.s.homebrewOperationUpgrading
-        case .upgradeAll: return l10n.s.homebrewOperationUpgrading
-        case .updateHomebrew: return l10n.s.homebrewOperationRefreshing
+        case .install: return String(format: s.homebrewOperationInstallFormat, name)
+        case .uninstall: return String(format: s.homebrewOperationUninstallFormat, name)
+        case .upgrade: return String(format: s.homebrewOperationUpgradeFormat, name)
+        case .upgradeAll: return s.homebrewOperationUpgradeAll
+        case .updateHomebrew: return s.homebrewOperationUpdateHomebrew
+        case .cleanup: return strings.operationCleaning
         }
     }
 
-    private func presentConfirmation(_ action: HomebrewPendingAction) {
-        // The dialog would hang from the island as a sheet; there it asks on its own.
-        guard !inNotch else {
-            DispatchQueue.main.async {
-                guard NSAlert.confirmAboveIsland(dialogTitle(for: action), message: confirmationBody(for: action),
-                                                 action: actionTitle(for: action), destructive: action.action == .uninstall,
-                                                 cancel: l10n.s.uninstallerCancel) else { return }
-                run(action)
-            }
-            return
+    func failedTargetName(_ status: HomebrewOperationStatus) -> String {
+        if let name = status.package?.displayName { return name }
+        switch status.action {
+        case .updateHomebrew: return s.homebrewName
+        case .cleanup: return strings.cleanupTitle
+        default: return s.homebrewAllPackages
         }
-        PanelInteractionState.shared.isPresentingPopoverModal = true
-        pendingAction = action
     }
 
-    private func dismissConfirmation() {
-        pendingAction = nil
-        PanelInteractionState.shared.isPresentingPopoverModal = false
+    func succeededTitle(_ status: HomebrewOperationStatus) -> String {
+        let name = status.package?.displayName ?? ""
+        switch status.action {
+        case .install: return String(format: s.homebrewOperationInstalledFormat, name)
+        case .uninstall: return String(format: s.homebrewOperationUninstalledFormat, name)
+        case .upgrade: return String(format: s.homebrewOperationUpgradedFormat, name)
+        case .upgradeAll: return s.homebrewOperationUpgradedAll
+        case .updateHomebrew: return s.homebrewOperationUpdatedHomebrew
+        case .cleanup: return strings.operationCleaned
+        }
     }
 
-    private func resetContextSelection() {
-        dismissConfirmation()
-        showOperationDetails = false
-        homebrew.clearSelection()
-    }
-}
-
-private enum PanelHomebrewMode: String, CaseIterable, Identifiable {
-    case search
-    case installed
-
-    var id: String { rawValue }
-}
-
-private enum PanelHomebrewFilter: String, CaseIterable, Identifiable {
-    case all
-    case cask
-    case formula
-
-    var id: String { rawValue }
-}
-
-private struct PanelHomebrewSearchField: NSViewRepresentable {
-    @Binding var text: String
-    let placeholder: String
-    let onSubmit: () -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, onSubmit: onSubmit)
+    func succeededDetail(_ status: HomebrewOperationStatus) -> String? {
+        guard status.action == .cleanup else { return nil }
+        guard let summary = homebrew.lastCleanupSummary else { return nil }
+        return summary.freedSizeText.map { String(format: strings.cleanupFreedFormat, $0) }
+            ?? strings.cleanupAlreadyClean
     }
 
-    func makeNSView(context: Context) -> NSSearchField {
-        let field = NSSearchField()
-        field.delegate = context.coordinator
-        field.target = context.coordinator
-        field.action = #selector(Coordinator.submitFromSearchField(_:))
-        field.font = .systemFont(ofSize: 11)
-        field.controlSize = .small
-        field.placeholderString = placeholder
-        field.sendsSearchStringImmediately = false
-        field.sendsWholeSearchString = true
-        return field
-    }
-
-    func updateNSView(_ field: NSSearchField, context: Context) {
-        field.placeholderString = placeholder
-        field.target = context.coordinator
-        field.action = #selector(Coordinator.submitFromSearchField(_:))
-        if field.stringValue != text {
-            field.stringValue = text
-        }
-        context.coordinator.onSubmit = onSubmit
-        context.coordinator.focusIfNeeded(field)
-    }
-
-    final class Coordinator: NSObject, NSSearchFieldDelegate {
-        @Binding var text: String
-        var onSubmit: () -> Void
-        private var didFocus = false
-
-        init(text: Binding<String>, onSubmit: @escaping () -> Void) {
-            _text = text
-            self.onSubmit = onSubmit
-        }
-
-        func controlTextDidChange(_ notification: Notification) {
-            guard let field = notification.object as? NSSearchField else { return }
-            text = field.stringValue
-        }
-
-        func control(_ control: NSControl,
-                     textView: NSTextView,
-                     doCommandBy commandSelector: Selector) -> Bool {
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                text = (control as? NSSearchField)?.stringValue ?? text
-                submit()
-                return true
-            }
-            return false
-        }
-
-        @objc func submitFromSearchField(_ sender: NSSearchField) {
-            text = sender.stringValue
-            submit()
-        }
-
-        private func submit() {
-            onSubmit()
-        }
-
-        func focusIfNeeded(_ field: NSSearchField) {
-            guard !didFocus else { return }
-            DispatchQueue.main.async { [weak self, weak field] in
-                guard let self, let field, let window = field.window else { return }
-                window.makeFirstResponder(field)
-                self.didFocus = true
-            }
+    func phaseLabel(_ phase: HomebrewOperationPhase) -> String {
+        switch phase {
+        case .preparing: return s.homebrewOperationPreparing
+        case .downloading: return s.homebrewOperationDownloading
+        case .installing: return s.homebrewOperationInstalling
+        case .uninstalling: return s.homebrewOperationUninstalling
+        case .upgrading: return s.homebrewOperationUpgrading
+        case .cleaning: return strings.cleaningPhase
+        case .finalizing: return s.homebrewOperationFinalizing
+        case .refreshing: return s.homebrewOperationRefreshing
         }
     }
 }

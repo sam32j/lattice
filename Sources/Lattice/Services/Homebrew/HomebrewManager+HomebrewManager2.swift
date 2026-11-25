@@ -37,6 +37,7 @@ extension HomebrewManager {
     func perform(_ action: HomebrewOperation.Action,
                          package: HomebrewPackage?,
                          command commandOverride: HomebrewCommand? = nil, owner: AppFeature = .homebrew) {
+        if HomebrewSimulator.shared.handlePerform(action, package: package, owner: owner) { return }
         guard owner.isAvailable, operation == nil else { return }
         guard let brewPath = brewPath ?? detectBrewPath() else { return }
         guard let command = commandOverride
@@ -53,10 +54,14 @@ extension HomebrewManager {
                                                   lastActivity: nil)
         terminalFallbackCommand = nil
         errorMessage = nil
+        cleanupEstimateRead = nil
+        isCheckingCleanup = false
+        if action == .cleanup { lastCleanupSummary = nil }
         clearUntrustedTap()
         cancelRequested = false
         completedOperationCleanup?.cancel()
         completedOperationCleanup = nil
+        isOperationDetailsExpanded = false
         log = ""
         runStreaming(command,
                      onOutput: { [weak self] chunk in
@@ -68,6 +73,14 @@ extension HomebrewManager {
                 self.activeProcess = nil
                 self.operation = nil
                 if status == 0 {
+                    if action == .cleanup {
+                        self.lastCleanupSummary = HomebrewCleanupParser.parse(output)
+                        self.cleanupEstimate = HomebrewCleanupSummary(freedSizeText: nil, removedCount: 0)
+                        self.cleanupEstimateCheckedAt = Date()
+                    } else if action != .updateHomebrew {
+                        self.lastCleanupSummary = nil
+                        self.cleanupEstimateCheckedAt = nil
+                    }
                     self.markOperationComplete(result: .succeeded,
                                                phase: .refreshing,
                                                activity: nil)
@@ -77,6 +90,9 @@ extension HomebrewManager {
                         }
                     }
                     self.refreshInstalled(owner: owner)
+                    if action != .cleanup && action != .updateHomebrew {
+                        self.refreshCleanupEstimate(force: true)
+                    }
                     if !action.clearsSelectionOnSuccess, let package {
                         self.select(package, owner: owner)
                     }
@@ -139,6 +155,8 @@ extension HomebrewManager {
             return HomebrewCommandBuilder.upgradeAll(brewPath: brewPath)
         case .updateHomebrew:
             return HomebrewCommandBuilder.update(brewPath: brewPath)
+        case .cleanup:
+            return HomebrewCommandBuilder.cleanup(brewPath: brewPath)
         }
     }
 
@@ -162,6 +180,8 @@ extension HomebrewManager {
             return .preparing
         case .uninstall:
             return .uninstalling
+        case .cleanup:
+            return .cleaning
         }
     }
 

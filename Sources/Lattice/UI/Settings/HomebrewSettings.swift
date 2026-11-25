@@ -753,6 +753,7 @@ struct HomebrewSettings: View {
         case .upgrade: return l10n.s.homebrewConfirmUpgradeTitle
         case .upgradeAll: return l10n.s.homebrewConfirmUpgradeAllTitle
         case .updateHomebrew: return l10n.s.homebrewConfirmUpdateHomebrewTitle
+        case .cleanup: return FeatureStrings.homebrewTab(l10n.language).cleanupTitle
         }
     }
 
@@ -762,6 +763,9 @@ struct HomebrewSettings: View {
         }
         if action.action == .upgradeAll {
             return l10n.s.homebrewConfirmUpgradeAllBody
+        }
+        if action.action == .cleanup {
+            return FeatureStrings.homebrewTab(l10n.language).cleanupDescription
         }
         guard let package = action.package else { return "" }
         let format: String
@@ -776,6 +780,8 @@ struct HomebrewSettings: View {
             return l10n.s.homebrewConfirmUpgradeAllBody
         case .updateHomebrew:
             return l10n.s.homebrewConfirmUpdateHomebrewBody
+        case .cleanup:
+            return FeatureStrings.homebrewTab(l10n.language).cleanupDescription
         }
         return String(format: format, package.displayName)
     }
@@ -787,6 +793,7 @@ struct HomebrewSettings: View {
         case .upgrade: return l10n.s.homebrewUpgrade
         case .upgradeAll: return l10n.s.homebrewUpgradeAll
         case .updateHomebrew: return l10n.s.homebrewUpdateHomebrew
+        case .cleanup: return FeatureStrings.homebrewTab(l10n.language).cleanupButton
         }
     }
 
@@ -803,6 +810,8 @@ struct HomebrewSettings: View {
             homebrew.upgradeAll()
         case .updateHomebrew:
             homebrew.updateHomebrew()
+        case .cleanup:
+            homebrew.cleanup()
         }
     }
 
@@ -841,6 +850,7 @@ struct HomebrewSettings: View {
         case .upgrade: return l10n.s.homebrewOperationUpgrading
         case .upgradeAll: return l10n.s.homebrewOperationUpgrading
         case .updateHomebrew: return l10n.s.homebrewOperationRefreshing
+        case .cleanup: return FeatureStrings.homebrewTab(l10n.language).cleaningPhase
         }
     }
 

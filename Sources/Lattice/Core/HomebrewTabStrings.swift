@@ -38,6 +38,21 @@ struct HomebrewTabStrings {
     let noPackagesMatch: String
     let footerAvailableFormat: String
     let footerDetailFormat: String
+    let openHomebrew: String
+    let cleanupTitle: String
+    let cleanupDescription: String
+    let cleanupChecking: String
+    let cleanupReclaimableFormat: String
+    let cleanupClean: String
+    let cleanupButton: String
+    let cleanupCleanedUpButton: String
+    let cleanupCompactFormat: String
+    let cleanupFreedFormat: String
+    let cleanupAlreadyClean: String
+    let operationCleaning: String
+    let operationCleaned: String
+    let cleaningPhase: String
+    let moreUpdatesFormat: String
 }
 
 extension FeatureStrings {
@@ -64,7 +79,7 @@ extension FeatureStrings {
 
 extension HomebrewTabStrings {
     static let enUS = HomebrewTabStrings(
-        packageUpdatesFormat: "%d Homebrew updates available",
+        packageUpdatesFormat: "%d updates available",
         upToDate: "All packages are up to date",
         summaryFormat: "%1$d installed · %2$d casks · %3$d formulas",
         versionFormat: "Homebrew %@",
@@ -85,7 +100,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formula",
         installing: "Installing…",
-        upgrading: "Upgrading…",
+        upgrading: "Updating…",
         uninstalling: "Uninstalling…",
         updateChip: "Update",
         orphanChip: "Orphan",
@@ -96,10 +111,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d packages",
         noPackagesMatch: "No installed packages match this filter",
         footerAvailableFormat: "Homebrew %@ available",
-        footerDetailFormat: "Installed: %@ · Updates Homebrew and its tap metadata")
+        footerDetailFormat: "Installed: %@ · Updates Homebrew and its tap metadata",
+        openHomebrew: "Open Homebrew",
+        cleanupTitle: "Homebrew Cache",
+        cleanupDescription: "Removes cached downloads, temporary files, old versions, and unneeded dependencies.",
+        cleanupChecking: "Checking cached downloads and old versions…",
+        cleanupReclaimableFormat: "%@ reclaimable · Cached downloads, temp files, and old versions",
+        cleanupClean: "Cached downloads and old versions are clear",
+        cleanupButton: "Clean Up",
+        cleanupCleanedUpButton: "Cache cleaned up",
+        cleanupCompactFormat: "Clean Up · %@",
+        cleanupFreedFormat: "Freed %@",
+        cleanupAlreadyClean: "Already clean",
+        operationCleaning: "Cleaning up Homebrew",
+        operationCleaned: "Homebrew cleaned up.",
+        cleaningPhase: "Cleaning up caches…",
+        moreUpdatesFormat: "+%d more")
 
     static let ptBR = HomebrewTabStrings(
-        packageUpdatesFormat: "%d atualizações do Homebrew disponíveis",
+        packageUpdatesFormat: "%d atualizações disponíveis",
         upToDate: "Todos os pacotes estão atualizados",
         summaryFormat: "%1$d instalados · %2$d casks · %3$d fórmulas",
         versionFormat: "Homebrew %@",
@@ -131,10 +161,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d pacotes",
         noPackagesMatch: "Nenhum pacote instalado corresponde a este filtro",
         footerAvailableFormat: "Homebrew %@ disponível",
-        footerDetailFormat: "Instalado: %@ · Atualiza o Homebrew e os metadados dos taps")
+        footerDetailFormat: "Instalado: %@ · Atualiza o Homebrew e os metadados dos taps",
+        openHomebrew: "Abrir Homebrew",
+        cleanupTitle: "Cache do Homebrew",
+        cleanupDescription: "Remove downloads em cache, arquivos temporários, versões antigas e dependências sem uso.",
+        cleanupChecking: "Verificando downloads em cache e versões antigas…",
+        cleanupReclaimableFormat: "%@ liberáveis · Downloads em cache, temporários e versões antigas",
+        cleanupClean: "Downloads em cache e versões antigas estão limpos",
+        cleanupButton: "Limpar",
+        cleanupCleanedUpButton: "Cache limpo",
+        cleanupCompactFormat: "Limpar · %@",
+        cleanupFreedFormat: "%@ liberados",
+        cleanupAlreadyClean: "Tudo limpo",
+        operationCleaning: "Limpando o Homebrew",
+        operationCleaned: "Homebrew limpo.",
+        cleaningPhase: "Limpando caches…",
+        moreUpdatesFormat: "+%d mais")
 
     static let tr = HomebrewTabStrings(
-        packageUpdatesFormat: "%d Homebrew güncellemesi var",
+        packageUpdatesFormat: "%d güncelleme var",
         upToDate: "Tüm paketler güncel",
         summaryFormat: "%1$d yüklü · %2$d cask · %3$d formül",
         versionFormat: "Homebrew %@",
@@ -155,7 +200,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formül",
         installing: "Yükleniyor…",
-        upgrading: "Yükseltiliyor…",
+        upgrading: "Güncelleniyor…",
         uninstalling: "Kaldırılıyor…",
         updateChip: "Güncelleme",
         orphanChip: "Sahipsiz",
@@ -166,10 +211,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d paket",
         noPackagesMatch: "Bu süzgeçle eşleşen yüklü paket yok",
         footerAvailableFormat: "Homebrew %@ kullanılabilir",
-        footerDetailFormat: "Yüklü: %@ · Homebrew’u ve tap verilerini günceller")
+        footerDetailFormat: "Yüklü: %@ · Homebrew’u ve tap verilerini günceller",
+        openHomebrew: "Homebrew’u Aç",
+        cleanupTitle: "Homebrew Önbelleği",
+        cleanupDescription: "Önbelleğe alınmış indirmeleri, geçici dosyaları, eski sürümleri ve gereksiz bağımlılıkları temizler.",
+        cleanupChecking: "Önbellek ve eski sürümler denetleniyor…",
+        cleanupReclaimableFormat: "%@ geri kazanılabilir · İndirmeler, geçici dosyalar ve eski sürümler",
+        cleanupClean: "Önbelleğe alınmış indirmeler ve eski sürümler temiz",
+        cleanupButton: "Temizle",
+        cleanupCleanedUpButton: "Önbellek temizlendi",
+        cleanupCompactFormat: "Temizle · %@",
+        cleanupFreedFormat: "%@ temizlendi",
+        cleanupAlreadyClean: "Zaten temiz",
+        operationCleaning: "Homebrew temizleniyor",
+        operationCleaned: "Homebrew temizlendi.",
+        cleaningPhase: "Önbellek temizleniyor…",
+        moreUpdatesFormat: "+%d daha")
 
     static let ru = HomebrewTabStrings(
-        packageUpdatesFormat: "Доступно обновлений Homebrew: %d",
+        packageUpdatesFormat: "Доступно обновлений: %d",
         upToDate: "Все пакеты обновлены",
         summaryFormat: "Установлено: %1$d · cask: %2$d · формул: %3$d",
         versionFormat: "Homebrew %@",
@@ -201,10 +261,25 @@ extension HomebrewTabStrings {
         packagesFormat: "Пакетов: %d",
         noPackagesMatch: "Нет установленных пакетов по этому фильтру",
         footerAvailableFormat: "Доступна версия Homebrew %@",
-        footerDetailFormat: "Установлено: %@ · Обновит Homebrew и данные tap")
+        footerDetailFormat: "Установлено: %@ · Обновит Homebrew и данные tap",
+        openHomebrew: "Открыть Homebrew",
+        cleanupTitle: "Кэш Homebrew",
+        cleanupDescription: "Удаляет кэш загрузок, временные файлы, старые версии и ненужные зависимости.",
+        cleanupChecking: "Проверка кэша загрузок и старых версий…",
+        cleanupReclaimableFormat: "Можно освободить %@ · Загрузки, временные файлы и старые версии",
+        cleanupClean: "Кэш загрузок и старые версии очищены",
+        cleanupButton: "Очистить",
+        cleanupCleanedUpButton: "Кэш очищен",
+        cleanupCompactFormat: "Очистить · %@",
+        cleanupFreedFormat: "Освобождено %@",
+        cleanupAlreadyClean: "Уже чисто",
+        operationCleaning: "Очистка Homebrew",
+        operationCleaned: "Очистка Homebrew завершена.",
+        cleaningPhase: "Очистка кэша…",
+        moreUpdatesFormat: "и ещё %d")
 
     static let es = HomebrewTabStrings(
-        packageUpdatesFormat: "%d actualizaciones de Homebrew disponibles",
+        packageUpdatesFormat: "%d actualizaciones disponibles",
         upToDate: "Todos los paquetes están al día",
         summaryFormat: "%1$d instalados · %2$d casks · %3$d fórmulas",
         versionFormat: "Homebrew %@",
@@ -236,10 +311,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d paquetes",
         noPackagesMatch: "Ningún paquete instalado coincide con este filtro",
         footerAvailableFormat: "Homebrew %@ disponible",
-        footerDetailFormat: "Instalado: %@ · Actualiza Homebrew y los metadatos de los taps")
+        footerDetailFormat: "Instalado: %@ · Actualiza Homebrew y los metadatos de los taps",
+        openHomebrew: "Abrir Homebrew",
+        cleanupTitle: "Caché de Homebrew",
+        cleanupDescription: "Elimina descargas en caché, archivos temporales, versiones antiguas y dependencias innecesarias.",
+        cleanupChecking: "Comprobando descargas en caché y versiones antiguas…",
+        cleanupReclaimableFormat: "%@ recuperables · Descargas, temporales y versiones antiguas",
+        cleanupClean: "No hay descargas en caché ni versiones antiguas",
+        cleanupButton: "Limpiar",
+        cleanupCleanedUpButton: "Caché limpia",
+        cleanupCompactFormat: "Limpiar · %@",
+        cleanupFreedFormat: "%@ liberados",
+        cleanupAlreadyClean: "Ya está limpio",
+        operationCleaning: "Limpiando Homebrew",
+        operationCleaned: "Homebrew limpiado.",
+        cleaningPhase: "Limpiando cachés…",
+        moreUpdatesFormat: "+%d más")
 
     static let sk = HomebrewTabStrings(
-        packageUpdatesFormat: "Dostupné aktualizácie Homebrew: %d",
+        packageUpdatesFormat: "Dostupné aktualizácie: %d",
         upToDate: "Všetky balíky sú aktuálne",
         summaryFormat: "Nainštalované: %1$d · casky: %2$d · receptúry: %3$d",
         versionFormat: "Homebrew %@",
@@ -271,10 +361,25 @@ extension HomebrewTabStrings {
         packagesFormat: "Balíky: %d",
         noPackagesMatch: "Tomuto filtru nezodpovedá žiadny nainštalovaný balík",
         footerAvailableFormat: "K dispozícii je Homebrew %@",
-        footerDetailFormat: "Nainštalované: %@ · Aktualizuje Homebrew a údaje tapov")
+        footerDetailFormat: "Nainštalované: %@ · Aktualizuje Homebrew a údaje tapov",
+        openHomebrew: "Otvoriť Homebrew",
+        cleanupTitle: "Cache Homebrew",
+        cleanupDescription: "Odstráni stiahnuté súbory vo vyrovnávacej pamäti, dočasné súbory, staré verzie a nepotrebné závislosti.",
+        cleanupChecking: "Kontrolujú sa stiahnuté súbory a staré verzie…",
+        cleanupReclaimableFormat: "Možno uvoľniť %@ · Stiahnuté súbory, dočasné dáta a staré verzie",
+        cleanupClean: "Stiahnuté súbory a staré verzie sú vyčistené",
+        cleanupButton: "Vyčistiť",
+        cleanupCleanedUpButton: "Cache vyčistená",
+        cleanupCompactFormat: "Vyčistiť · %@",
+        cleanupFreedFormat: "Uvoľnené %@",
+        cleanupAlreadyClean: "Už je čisto",
+        operationCleaning: "Čistí sa Homebrew",
+        operationCleaned: "Homebrew bol vyčistený.",
+        cleaningPhase: "Čistia sa dočasné súbory…",
+        moreUpdatesFormat: "+%d ďalších")
 
     static let de = HomebrewTabStrings(
-        packageUpdatesFormat: "%d Homebrew-Updates verfügbar",
+        packageUpdatesFormat: "%d Updates verfügbar",
         upToDate: "Alle Pakete sind aktuell",
         summaryFormat: "%1$d installiert · %2$d Casks · %3$d Formeln",
         versionFormat: "Homebrew %@",
@@ -306,10 +411,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d Pakete",
         noPackagesMatch: "Keine installierten Pakete passen zu diesem Filter",
         footerAvailableFormat: "Homebrew %@ verfügbar",
-        footerDetailFormat: "Installiert: %@ · Aktualisiert Homebrew und die Tap-Daten")
+        footerDetailFormat: "Installiert: %@ · Aktualisiert Homebrew und die Tap-Daten",
+        openHomebrew: "Homebrew öffnen",
+        cleanupTitle: "Homebrew-Cache",
+        cleanupDescription: "Entfernt zwischengespeicherte Downloads, temporäre Dateien, alte Versionen und ungenutzte Abhängigkeiten.",
+        cleanupChecking: "Zwischengespeicherte Downloads und alte Versionen werden geprüft …",
+        cleanupReclaimableFormat: "%@ freigebbar · Downloads, temporäre Dateien und alte Versionen",
+        cleanupClean: "Downloads und alte Versionen sind bereinigt",
+        cleanupButton: "Bereinigen",
+        cleanupCleanedUpButton: "Cache bereinigt",
+        cleanupCompactFormat: "Bereinigen · %@",
+        cleanupFreedFormat: "%@ freigegeben",
+        cleanupAlreadyClean: "Bereits sauber",
+        operationCleaning: "Homebrew wird bereinigt",
+        operationCleaned: "Homebrew wurde bereinigt.",
+        cleaningPhase: "Caches werden bereinigt …",
+        moreUpdatesFormat: "+%d weitere")
 
     static let fr = HomebrewTabStrings(
-        packageUpdatesFormat: "%d mises à jour Homebrew disponibles",
+        packageUpdatesFormat: "%d mises à jour disponibles",
         upToDate: "Tous les paquets sont à jour",
         summaryFormat: "%1$d installés · %2$d casks · %3$d formules",
         versionFormat: "Homebrew %@",
@@ -330,7 +450,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formule",
         installing: "Installation…",
-        upgrading: "Mise à niveau…",
+        upgrading: "Mise à jour…",
         uninstalling: "Désinstallation…",
         updateChip: "Mise à jour",
         orphanChip: "Orphelin",
@@ -341,10 +461,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d paquets",
         noPackagesMatch: "Aucun paquet installé ne correspond à ce filtre",
         footerAvailableFormat: "Homebrew %@ disponible",
-        footerDetailFormat: "Installée : %@ · Met à jour Homebrew et les données des taps")
+        footerDetailFormat: "Installée : %@ · Met à jour Homebrew et les données des taps",
+        openHomebrew: "Ouvrir Homebrew",
+        cleanupTitle: "Cache Homebrew",
+        cleanupDescription: "Supprime les téléchargements en cache, fichiers temporaires, anciennes versions et dépendances inutilisées.",
+        cleanupChecking: "Vérification des téléchargements en cache et anciennes versions…",
+        cleanupReclaimableFormat: "%@ récupérables · Téléchargements, fichiers temporaires et anciennes versions",
+        cleanupClean: "Les téléchargements en cache et anciennes versions sont propres",
+        cleanupButton: "Nettoyer",
+        cleanupCleanedUpButton: "Cache nettoyé",
+        cleanupCompactFormat: "Nettoyer · %@",
+        cleanupFreedFormat: "%@ libérés",
+        cleanupAlreadyClean: "Déjà propre",
+        operationCleaning: "Nettoyage de Homebrew",
+        operationCleaned: "Homebrew nettoyé.",
+        cleaningPhase: "Nettoyage des caches…",
+        moreUpdatesFormat: "+%d autres")
 
     static let it = HomebrewTabStrings(
-        packageUpdatesFormat: "%d aggiornamenti Homebrew disponibili",
+        packageUpdatesFormat: "%d aggiornamenti disponibili",
         upToDate: "Tutti i pacchetti sono aggiornati",
         summaryFormat: "%1$d installati · %2$d cask · %3$d formule",
         versionFormat: "Homebrew %@",
@@ -376,10 +511,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d pacchetti",
         noPackagesMatch: "Nessun pacchetto installato corrisponde a questo filtro",
         footerAvailableFormat: "Homebrew %@ disponibile",
-        footerDetailFormat: "Installato: %@ · Aggiorna Homebrew e i metadati dei tap")
+        footerDetailFormat: "Installato: %@ · Aggiorna Homebrew e i metadati dei tap",
+        openHomebrew: "Apri Homebrew",
+        cleanupTitle: "Cache Homebrew",
+        cleanupDescription: "Rimuove i download nella cache, file temporanei, versioni precedenti e dipendenze non più necessarie.",
+        cleanupChecking: "Controllo di download nella cache e versioni precedenti…",
+        cleanupReclaimableFormat: "%@ recuperabili · Download, file temporanei e versioni precedenti",
+        cleanupClean: "I download nella cache e le versioni precedenti sono puliti",
+        cleanupButton: "Pulisci",
+        cleanupCleanedUpButton: "Cache pulita",
+        cleanupCompactFormat: "Pulisci · %@",
+        cleanupFreedFormat: "Liberati %@",
+        cleanupAlreadyClean: "Già pulito",
+        operationCleaning: "Pulizia di Homebrew",
+        operationCleaned: "Homebrew pulito.",
+        cleaningPhase: "Pulizia delle cache…",
+        moreUpdatesFormat: "+%d altri")
 
     static let ja = HomebrewTabStrings(
-        packageUpdatesFormat: "%d件のHomebrewアップデートがあります",
+        packageUpdatesFormat: "%d件のアップデートがあります",
         upToDate: "すべてのパッケージが最新です",
         summaryFormat: "インストール済み%1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
@@ -400,7 +550,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formula",
         installing: "インストール中…",
-        upgrading: "アップグレード中…",
+        upgrading: "更新中…",
         uninstalling: "アンインストール中…",
         updateChip: "アップデート",
         orphanChip: "孤立",
@@ -411,10 +561,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d個のパッケージ",
         noPackagesMatch: "このフィルタに一致するインストール済みパッケージはありません",
         footerAvailableFormat: "Homebrew %@を利用できます",
-        footerDetailFormat: "インストール済み: %@ · Homebrewとtapのメタデータをアップデートします")
+        footerDetailFormat: "インストール済み: %@ · Homebrewとtapのメタデータをアップデートします",
+        openHomebrew: "Homebrewを開く",
+        cleanupTitle: "Homebrewキャッシュ",
+        cleanupDescription: "キャッシュされたダウンロード、一時ファイル、古いバージョン、不要な依存関係を削除します。",
+        cleanupChecking: "ダウンロードキャッシュと古いバージョンを確認中…",
+        cleanupReclaimableFormat: "%@ 解放可能 · ダウンロード、一時ファイル、古いバージョン",
+        cleanupClean: "ダウンロードキャッシュと古いバージョンは整理済みです",
+        cleanupButton: "クリーンアップ",
+        cleanupCleanedUpButton: "キャッシュ整理済み",
+        cleanupCompactFormat: "クリーンアップ · %@",
+        cleanupFreedFormat: "%@ 解放",
+        cleanupAlreadyClean: "クリーン済み",
+        operationCleaning: "Homebrewをクリーンアップ中",
+        operationCleaned: "Homebrewをクリーンアップしました。",
+        cleaningPhase: "キャッシュをクリーンアップ中…",
+        moreUpdatesFormat: "ほか%d件")
 
     static let ko = HomebrewTabStrings(
-        packageUpdatesFormat: "Homebrew 업데이트 %d개 있음",
+        packageUpdatesFormat: "업데이트 %d개 있음",
         upToDate: "모든 패키지가 최신 상태입니다",
         summaryFormat: "설치됨 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
@@ -435,7 +600,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formula",
         installing: "설치 중…",
-        upgrading: "업그레이드 중…",
+        upgrading: "업데이트 중…",
         uninstalling: "제거 중…",
         updateChip: "업데이트",
         orphanChip: "고아",
@@ -446,10 +611,25 @@ extension HomebrewTabStrings {
         packagesFormat: "패키지 %d개",
         noPackagesMatch: "이 필터와 일치하는 설치된 패키지가 없습니다",
         footerAvailableFormat: "Homebrew %@ 사용 가능",
-        footerDetailFormat: "설치됨: %@ · Homebrew와 tap 메타데이터를 업데이트합니다")
+        footerDetailFormat: "설치됨: %@ · Homebrew와 tap 메타데이터를 업데이트합니다",
+        openHomebrew: "Homebrew 열기",
+        cleanupTitle: "Homebrew 캐시",
+        cleanupDescription: "캐시된 다운로드, 임시 파일, 이전 버전 및 불필요한 의존성을 제거합니다.",
+        cleanupChecking: "다운로드 캐시와 이전 버전을 확인하는 중…",
+        cleanupReclaimableFormat: "%@ 확보 가능 · 다운로드, 임시 파일 및 이전 버전",
+        cleanupClean: "다운로드 캐시와 이전 버전이 깨끗합니다",
+        cleanupButton: "정리",
+        cleanupCleanedUpButton: "캐시 정리됨",
+        cleanupCompactFormat: "정리 · %@",
+        cleanupFreedFormat: "%@ 확보됨",
+        cleanupAlreadyClean: "이미 깨끗함",
+        operationCleaning: "Homebrew 정리 중",
+        operationCleaned: "Homebrew를 정리했습니다.",
+        cleaningPhase: "캐시 정리 중…",
+        moreUpdatesFormat: "외 %d개")
 
     static let zhHans = HomebrewTabStrings(
-        packageUpdatesFormat: "有 %d 个 Homebrew 更新",
+        packageUpdatesFormat: "有 %d 个可用更新",
         upToDate: "所有软件包均为最新",
         summaryFormat: "已安装 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
@@ -470,7 +650,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formula",
         installing: "正在安装…",
-        upgrading: "正在升级…",
+        upgrading: "正在更新…",
         uninstalling: "正在卸载…",
         updateChip: "更新",
         orphanChip: "孤立",
@@ -481,10 +661,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d 个软件包",
         noPackagesMatch: "没有与此过滤条件匹配的已安装软件包",
         footerAvailableFormat: "Homebrew %@ 可用",
-        footerDetailFormat: "已安装：%@ · 更新 Homebrew 及其 tap 元数据")
+        footerDetailFormat: "已安装：%@ · 更新 Homebrew 及其 tap 元数据",
+        openHomebrew: "打开 Homebrew",
+        cleanupTitle: "Homebrew 缓存",
+        cleanupDescription: "清理已缓存的下载、临时文件、历史旧版本及不再需要的依赖。",
+        cleanupChecking: "正在检查缓存的下载和旧版本…",
+        cleanupReclaimableFormat: "可释放 %@ · 缓存下载、临时文件与旧版本",
+        cleanupClean: "缓存下载和历史旧版本已清理干净",
+        cleanupButton: "清理",
+        cleanupCleanedUpButton: "缓存已清理",
+        cleanupCompactFormat: "清理 · %@",
+        cleanupFreedFormat: "已释放 %@",
+        cleanupAlreadyClean: "无需清理",
+        operationCleaning: "正在清理 Homebrew",
+        operationCleaned: "Homebrew 清理完成。",
+        cleaningPhase: "正在清理缓存…",
+        moreUpdatesFormat: "及另外 %d 项")
 
     static let zhTW = HomebrewTabStrings(
-        packageUpdatesFormat: "有 %d 個 Homebrew 更新",
+        packageUpdatesFormat: "有 %d 個可用更新",
         upToDate: "所有套件皆為最新",
         summaryFormat: "已安裝 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
@@ -505,7 +700,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formula",
         installing: "正在安裝⋯",
-        upgrading: "正在升級⋯",
+        upgrading: "正在更新⋯",
         uninstalling: "正在解除安裝⋯",
         updateChip: "更新",
         orphanChip: "孤立",
@@ -516,10 +711,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d 個套件",
         noPackagesMatch: "沒有符合此過濾條件的已安裝套件",
         footerAvailableFormat: "Homebrew %@ 可用",
-        footerDetailFormat: "已安裝：%@ · 更新 Homebrew 及其 tap 中繼資料")
+        footerDetailFormat: "已安裝：%@ · 更新 Homebrew 及其 tap 中繼資料",
+        openHomebrew: "開啟 Homebrew",
+        cleanupTitle: "Homebrew 快取",
+        cleanupDescription: "移除快取下載、暫存檔案、歷史舊版本與不再需要的相依項目。",
+        cleanupChecking: "正在檢查快取下載與舊版本…",
+        cleanupReclaimableFormat: "可釋放 %@ · 快取下載、暫存檔案與舊版本",
+        cleanupClean: "快取下載與歷史舊版本已清理完成",
+        cleanupButton: "清理",
+        cleanupCleanedUpButton: "快取已清理",
+        cleanupCompactFormat: "清理 · %@",
+        cleanupFreedFormat: "已釋放 %@",
+        cleanupAlreadyClean: "已清理乾淨",
+        operationCleaning: "正在清理 Homebrew",
+        operationCleaned: "已完成 Homebrew 清理。",
+        cleaningPhase: "正在清理快取…",
+        moreUpdatesFormat: "及其他 %d 項")
 
     static let zhHK = HomebrewTabStrings(
-        packageUpdatesFormat: "有 %d 個 Homebrew 更新",
+        packageUpdatesFormat: "有 %d 個可用更新",
         upToDate: "所有套件皆為最新",
         summaryFormat: "已安裝 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
@@ -540,7 +750,7 @@ extension HomebrewTabStrings {
         cask: "Cask",
         formula: "Formula",
         installing: "正在安裝⋯",
-        upgrading: "正在升級⋯",
+        upgrading: "正在更新⋯",
         uninstalling: "正在解除安裝⋯",
         updateChip: "更新",
         orphanChip: "孤立",
@@ -551,10 +761,25 @@ extension HomebrewTabStrings {
         packagesFormat: "%d 個套件",
         noPackagesMatch: "沒有符合此過濾條件的已安裝套件",
         footerAvailableFormat: "Homebrew %@ 可用",
-        footerDetailFormat: "已安裝：%@ · 更新 Homebrew 及其 tap 元數據")
+        footerDetailFormat: "已安裝：%@ · 更新 Homebrew 及其 tap 元數據",
+        openHomebrew: "開啟 Homebrew",
+        cleanupTitle: "Homebrew 快取",
+        cleanupDescription: "移除快取下載、暫存檔案、歷史舊版本及不再需要的相依項目。",
+        cleanupChecking: "正在檢查快取下載與舊版本…",
+        cleanupReclaimableFormat: "可釋放 %@ · 快取下載、暫存檔案與舊版本",
+        cleanupClean: "快取下載與歷史舊版本已清理完成",
+        cleanupButton: "清理",
+        cleanupCleanedUpButton: "快取已清理",
+        cleanupCompactFormat: "清理 · %@",
+        cleanupFreedFormat: "已釋放 %@",
+        cleanupAlreadyClean: "無需清理",
+        operationCleaning: "正在清理 Homebrew",
+        operationCleaned: "Homebrew 清理完成。",
+        cleaningPhase: "正在清理快取…",
+        moreUpdatesFormat: "及其他 %d 項")
 
     static let uk = HomebrewTabStrings(
-        packageUpdatesFormat: "Доступно оновлень Homebrew: %d",
+        packageUpdatesFormat: "Доступно оновлень: %d",
         upToDate: "Усі пакети оновлено",
         summaryFormat: "Встановлено: %1$d · cask: %2$d · формул: %3$d",
         versionFormat: "Homebrew %@",
@@ -586,5 +811,20 @@ extension HomebrewTabStrings {
         packagesFormat: "Пакетів: %d",
         noPackagesMatch: "Немає встановлених пакетів за цим фільтром",
         footerAvailableFormat: "Доступна версія Homebrew %@",
-        footerDetailFormat: "Встановлено: %@ · Оновить Homebrew і дані tap")
+        footerDetailFormat: "Встановлено: %@ · Оновить Homebrew і дані tap",
+        openHomebrew: "Відкрити Homebrew",
+        cleanupTitle: "Кеш Homebrew",
+        cleanupDescription: "Видаляє кешовані завантаження, тимчасові файли, старі версії та непотрібні залежності.",
+        cleanupChecking: "Перевірка кешу завантажень і старих версій…",
+        cleanupReclaimableFormat: "Можна звільнити %@ · Завантаження, тимчасові файли й старі версії",
+        cleanupClean: "Кеш завантажень і старі версії очищено",
+        cleanupButton: "Очистити",
+        cleanupCleanedUpButton: "Кеш очищено",
+        cleanupCompactFormat: "Очистити · %@",
+        cleanupFreedFormat: "Звільнено %@",
+        cleanupAlreadyClean: "Уже чисто",
+        operationCleaning: "Очищення Homebrew",
+        operationCleaned: "Homebrew очищено.",
+        cleaningPhase: "Очищення кешу…",
+        moreUpdatesFormat: "та ще %d")
 }

@@ -176,7 +176,7 @@ final class HomebrewOnlineCatalog: ObservableObject {
 
     nonisolated private static func brewSearch(_ query: String, kind: HomebrewPackageKind,
                                                excluding installed: Set<String>) async -> [Entry] {
-        guard let brewPath = await HomebrewManager.shared.brewPath ?? HomebrewManager.shared.detectBrewPath() else {
+        guard let brewPath = HomebrewManager.shared.brewPath ?? HomebrewManager.shared.detectBrewPath() else {
             return []
         }
         let command = HomebrewCommandBuilder.search(brewPath: brewPath, kind: kind, query: query)
@@ -193,17 +193,30 @@ final class HomebrewOnlineCatalog: ObservableObject {
     /// Reads the installed Homebrew version and the newest release, at most
     /// every six hours.
     func checkVersion(force: Bool = false) {
+        if HomebrewSimulator.shared.isSimulating { return }
         if !force, let versionCheckedAt, Date().timeIntervalSince(versionCheckedAt) < 6 * 60 * 60 { return }
         versionCheckedAt = Date()
         let brewPath = HomebrewManager.shared.brewPath ?? HomebrewManager.shared.detectBrewPath()
         Task.detached(priority: .utility) { [weak self] in
             let installed = brewPath.flatMap { Self.run($0, ["--version"]) }.flatMap(Self.parseBrewVersion)
             let latest = await Self.latestRelease()
-            await MainActor.run {
-                self?.installedVersion = installed
-                self?.latestVersion = latest
+            await MainActor.run { [weak self] in
+                guard let self, !HomebrewSimulator.shared.isSimulating else { return }
+                self.installedVersion = installed
+                self.latestVersion = latest
             }
         }
+    }
+
+    func setSimulatedVersion(installed: String?, latest: String?) {
+        installedVersion = installed
+        latestVersion = latest
+    }
+
+    func clearSimulatedVersion() {
+        installedVersion = nil
+        latestVersion = nil
+        versionCheckedAt = nil
     }
 
     /// "Homebrew 4.4.12" (with a git suffix on development checkouts).

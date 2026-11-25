@@ -6,22 +6,27 @@ import SwiftUI
 
 struct HomebrewOperationStatusView: View {
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isDismissing = false
 
     let status: HomebrewOperationStatus
     let log: String
     let terminalFallbackCommand: String?
     let compact: Bool
+    var cleanupSummary: HomebrewCleanupSummary? = nil
     @Binding var showDetails: Bool
     var onCancel: () -> Void
     var onClear: () -> Void
     var onOpenTerminal: () -> Void
 
+    private var tabStrings: HomebrewTabStrings { FeatureStrings.homebrewTab(l10n.language) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 7 : 9) {
             header
             progressArea
-            if let activity = status.lastActivity, !activity.isEmpty {
-                Text(activity)
+            if let summaryText = displayedActivity, !summaryText.isEmpty {
+                Text(summaryText)
                     .font(.system(size: compact ? 9.5 : 11))
                     .foregroundStyle(.secondary)
                     .lineLimit(compact ? 2 : 3)
@@ -35,8 +40,19 @@ struct HomebrewOperationStatusView: View {
             }
             if showDetails && !log.isEmpty {
                 technicalLog
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .clipped()
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: showDetails)
+    }
+
+    private var displayedActivity: String? {
+        if status.action == .cleanup, status.result == .succeeded, let cleanupSummary {
+            return cleanupSummary.freedSizeText.map { String(format: tabStrings.cleanupFreedFormat, $0) }
+                ?? tabStrings.cleanupAlreadyClean
+        }
+        return status.lastActivity
     }
 
     private var header: some View {
@@ -76,7 +92,7 @@ struct HomebrewOperationStatusView: View {
                 .controlSize(.mini)
             } else {
                 Button(l10n.s.homebrewClearLog) {
-                    onClear()
+                    dismiss()
                 }
                 .controlSize(.mini)
             }
@@ -126,7 +142,9 @@ struct HomebrewOperationStatusView: View {
 
     private var detailsToggle: some View {
         Button {
-            showDetails.toggle()
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
+                showDetails.toggle()
+            }
         } label: {
             Label(showDetails ? l10n.s.homebrewOperationHideDetails : l10n.s.homebrewOperationShowDetails,
                   systemImage: showDetails ? "chevron.up" : "chevron.down")
@@ -134,7 +152,27 @@ struct HomebrewOperationStatusView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
-        .disabled(log.isEmpty)
+        .disabled(log.isEmpty || isDismissing)
+    }
+
+    private func dismiss() {
+        guard !isDismissing else { return }
+        if showDetails && !reduceMotion {
+            isDismissing = true
+            withAnimation(.easeInOut(duration: 0.18)) {
+                showDetails = false
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onClear()
+                }
+                isDismissing = false
+            }
+        } else {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                onClear()
+            }
+        }
     }
 
     private var technicalLog: some View {
@@ -172,6 +210,9 @@ struct HomebrewOperationStatusView: View {
             if status.action == .upgradeAll {
                 return l10n.s.homebrewOperationUpgradeAll
             }
+            if status.action == .cleanup {
+                return tabStrings.operationCleaning
+            }
             return String(format: runningTitleFormat, packageDisplayName)
         case .succeeded:
             if status.action == .updateHomebrew {
@@ -179,6 +220,9 @@ struct HomebrewOperationStatusView: View {
             }
             if status.action == .upgradeAll {
                 return l10n.s.homebrewOperationUpgradedAll
+            }
+            if status.action == .cleanup {
+                return tabStrings.operationCleaned
             }
             return String(format: succeededTitleFormat, packageDisplayName)
         case .failed:
@@ -205,6 +249,7 @@ struct HomebrewOperationStatusView: View {
             case .installing: return l10n.s.homebrewOperationInstalling
             case .uninstalling: return l10n.s.homebrewOperationUninstalling
             case .upgrading: return l10n.s.homebrewOperationUpgrading
+            case .cleaning: return tabStrings.cleaningPhase
             case .finalizing: return l10n.s.homebrewOperationFinalizing
             case .refreshing: return l10n.s.homebrewOperationRefreshing
             }
@@ -218,6 +263,7 @@ struct HomebrewOperationStatusView: View {
         case .upgrade: return l10n.s.homebrewOperationUpgradeFormat
         case .upgradeAll: return l10n.s.homebrewOperationUpgradeAll
         case .updateHomebrew: return l10n.s.homebrewOperationUpdateHomebrew
+        case .cleanup: return tabStrings.operationCleaning
         }
     }
 
@@ -228,11 +274,17 @@ struct HomebrewOperationStatusView: View {
         case .upgrade: return l10n.s.homebrewOperationUpgradedFormat
         case .upgradeAll: return l10n.s.homebrewOperationUpgradedAll
         case .updateHomebrew: return l10n.s.homebrewOperationUpdatedHomebrew
+        case .cleanup: return tabStrings.operationCleaned
         }
     }
 
     private var packageDisplayName: String {
-        status.package?.displayName ?? l10n.s.homebrewAllPackages
+        if let name = status.package?.displayName { return name }
+        switch status.action {
+        case .updateHomebrew: return l10n.s.homebrewName
+        case .cleanup: return tabStrings.cleanupTitle
+        default: return l10n.s.homebrewAllPackages
+        }
     }
 
     private var iconName: String {
@@ -240,7 +292,7 @@ struct HomebrewOperationStatusView: View {
         case .running: return status.action.runningSystemImage
         case .succeeded: return "checkmark.circle.fill"
         case .failed: return "exclamationmark.triangle.fill"
-        case .cancelled: return "xmark.circle.fill"
+        case .cancelled: return "xmark.octagon.fill"
         case .needsTerminal: return "terminal.fill"
         }
     }
@@ -250,7 +302,7 @@ struct HomebrewOperationStatusView: View {
         case .running: return .accentColor
         case .succeeded: return .green
         case .failed, .needsTerminal: return .orange
-        case .cancelled: return .secondary
+        case .cancelled: return .red
         }
     }
 
@@ -277,7 +329,7 @@ struct HomebrewOperationStatusView: View {
     }
 }
 
-private struct HomebrewIndeterminateProgressBar: View {
+struct HomebrewIndeterminateProgressBar: View {
     @State private var offset: CGFloat = -0.35
 
     var body: some View {
@@ -298,6 +350,262 @@ private struct HomebrewIndeterminateProgressBar: View {
             withAnimation(.linear(duration: 1.15).repeatForever(autoreverses: false)) {
                 offset = 1.05
             }
+        }
+    }
+}
+
+/// Compact operation footer shared identically by the floating Hub and Settings
+/// Homebrew page, with toggleable monospaced log drawer.
+struct HomebrewCompactOperationFooter: View {
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var homebrew = HomebrewManager.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isDismissing = false
+    @State private var displayedLog = ""
+
+    let status: HomebrewOperationStatus
+
+    private var s: Strings { l10n.s }
+    private var tabStrings: HomebrewTabStrings { FeatureStrings.homebrewTab(l10n.language) }
+    private var effectiveLog: String { homebrew.log.isEmpty ? displayedLog : homebrew.log }
+    private var showsLogDrawer: Bool { homebrew.isOperationDetailsExpanded && !effectiveLog.isEmpty }
+    private static let logDrawerExpandedHeight: CGFloat = 82
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if status.isActive {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.mini)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(operationTitle)
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .lineLimit(1)
+                        Text(status.lastActivity ?? "$ " + commandLine)
+                            .font(.system(size: 9.5, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    Spacer(minLength: 6)
+                    Button(s.homebrewCancelOperation) {
+                        homebrew.cancelOperation()
+                    }
+                    .buttonStyle(.appManager(.neutral, compact: true))
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: resultIcon)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(resultColor)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(completedTitle)
+                            .font(.system(size: 11, weight: .semibold))
+                            .lineLimit(1)
+                        if let detail = completedSubtitle {
+                            Text(detail)
+                                .font(.system(size: 9.5))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
+                    Spacer(minLength: 6)
+                    if status.result == .needsTerminal, homebrew.terminalFallbackCommand != nil {
+                        Button(s.homebrewOpenTerminal) {
+                            homebrew.openTerminalFallback()
+                        }
+                        .buttonStyle(.appManager(compact: true))
+                    }
+                    if !homebrew.log.isEmpty {
+                        Button {
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
+                                homebrew.setOperationDetailsExpanded(!homebrew.isOperationDetailsExpanded)
+                            }
+                        } label: {
+                            Image(systemName: homebrew.isOperationDetailsExpanded ? "chevron.down" : "text.alignleft")
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 22, height: 22)
+                                .contentShape(Rectangle())
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isDismissing)
+                        .help(homebrew.isOperationDetailsExpanded
+                              ? s.homebrewOperationHideDetails
+                              : s.homebrewOperationShowDetails)
+                    }
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 22, height: 22)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(s.homebrewClearLog)
+                }
+                if !effectiveLog.isEmpty {
+                    logDrawer(effectiveLog)
+                        .padding(.top, 6)
+                        .frame(height: showsLogDrawer ? Self.logDrawerExpandedHeight : 0, alignment: .top)
+                        .opacity(showsLogDrawer ? 1 : 0)
+                        .clipped()
+                        .allowsHitTesting(showsLogDrawer)
+                        .accessibilityHidden(!showsLogDrawer)
+                }
+            }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: showsLogDrawer)
+        .onAppear {
+            if !homebrew.log.isEmpty {
+                displayedLog = homebrew.log
+            }
+        }
+        .onChange(of: homebrew.log) { _, newValue in
+            if !newValue.isEmpty {
+                displayedLog = newValue
+            }
+        }
+    }
+
+    private func logDrawer(_ text: String) -> some View {
+        ScrollView {
+            Text(text)
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 24)
+        }
+        .frame(height: 64)
+        .padding(6)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            Button {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.declareLatticeSource()
+                pasteboard.setString(text, forType: .string)
+            } label: {
+                Image(systemName: "doc.on.doc")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20, height: 20)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(4)
+            .help(s.menuCopy)
+            .accessibilityLabel(s.menuCopy)
+        }
+    }
+
+    private func dismiss() {
+        guard !isDismissing else { return }
+        if homebrew.isOperationDetailsExpanded && !reduceMotion {
+            isDismissing = true
+            withAnimation(.easeInOut(duration: 0.18)) {
+                homebrew.setOperationDetailsExpanded(false)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    homebrew.clearLog()
+                }
+                isDismissing = false
+            }
+        } else {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                homebrew.clearLog()
+            }
+        }
+    }
+
+    private var targetDisplayName: String {
+        if let name = status.package?.displayName { return name }
+        switch status.action {
+        case .updateHomebrew: return s.homebrewName
+        case .cleanup: return tabStrings.cleanupTitle
+        default: return s.homebrewAllPackages
+        }
+    }
+
+    private var operationTitle: String {
+        let name = status.package?.displayName ?? ""
+        switch status.action {
+        case .install: return String(format: s.homebrewOperationInstallFormat, name)
+        case .uninstall: return String(format: s.homebrewOperationUninstallFormat, name)
+        case .upgrade: return String(format: s.homebrewOperationUpgradeFormat, name)
+        case .upgradeAll: return s.homebrewOperationUpgradeAll
+        case .updateHomebrew: return s.homebrewOperationUpdateHomebrew
+        case .cleanup: return tabStrings.operationCleaning
+        }
+    }
+
+    private var completedTitle: String {
+        let name = status.package?.displayName ?? ""
+        switch status.result {
+        case .running:
+            return operationTitle
+        case .succeeded:
+            switch status.action {
+            case .install: return String(format: s.homebrewOperationInstalledFormat, name)
+            case .uninstall: return String(format: s.homebrewOperationUninstalledFormat, name)
+            case .upgrade: return String(format: s.homebrewOperationUpgradedFormat, name)
+            case .upgradeAll: return s.homebrewOperationUpgradedAll
+            case .updateHomebrew: return s.homebrewOperationUpdatedHomebrew
+            case .cleanup: return tabStrings.operationCleaned
+            }
+        case .failed:
+            return String(format: s.homebrewOperationFailedFormat, targetDisplayName)
+        case .cancelled:
+            return s.homebrewOperationCancelled
+        case .needsTerminal:
+            return s.homebrewOperationTerminal
+        }
+    }
+
+    private var completedSubtitle: String? {
+        if status.result == .succeeded {
+            guard status.action == .cleanup, let summary = homebrew.lastCleanupSummary else { return nil }
+            return summary.freedSizeText.map { String(format: tabStrings.cleanupFreedFormat, $0) }
+                ?? tabStrings.cleanupAlreadyClean
+        }
+        return status.lastActivity ?? homebrew.errorMessage
+    }
+
+    private var commandLine: String {
+        let cask = status.package?.kind == .cask ? "--cask " : ""
+        let name = status.package?.name ?? ""
+        switch status.action {
+        case .install: return "brew install \(cask)\(name)"
+        case .uninstall: return "brew uninstall \(cask)\(name)"
+        case .upgrade: return "brew upgrade \(cask)\(name)"
+        case .upgradeAll: return "brew upgrade"
+        case .updateHomebrew: return "brew update"
+        case .cleanup: return "brew cleanup --prune=all -s"
+        }
+    }
+
+    private var resultIcon: String {
+        switch status.result {
+        case .running: return "hourglass"
+        case .succeeded: return "checkmark.circle.fill"
+        case .failed: return "exclamationmark.triangle.fill"
+        case .cancelled: return "xmark.octagon.fill"
+        case .needsTerminal: return "terminal.fill"
+        }
+    }
+
+    private var resultColor: Color {
+        switch status.result {
+        case .running: return .accentColor
+        case .succeeded: return .green
+        case .failed, .needsTerminal: return .orange
+        case .cancelled: return .red
         }
     }
 }
