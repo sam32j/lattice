@@ -14,6 +14,12 @@ struct DeviceControlsHubView: View {
     /// floating panel caps it, and the list must scroll inside that space.
     var viewportHeight: CGFloat? = nil
 
+    /// App Volumes taller than the height it is given.
+    private var appVolumesOverflow: Bool {
+        let available = notchSize?.height ?? viewportHeight ?? navigation.contentHeight
+        return navigation.measuredAppVolumesHeight > available + 1
+    }
+
     var body: some View {
         Group {
             if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
@@ -27,7 +33,11 @@ struct DeviceControlsHubView: View {
                             navigation.updateMeasuredAppVolumesHeight(height)
                         }
                 }
-                .hubScrollEdgeFade()
+                // Shorter than the space it has (never less than the main
+                // page), it holds still with hard edges.
+                .scrollDisabled(!appVolumesOverflow)
+                .scrollBounceBehavior(.basedOnSize)
+                .hubScrollEdgeFade(appVolumesOverflow)
             } else {
                 // Device Controls never scrolls and keeps hard edges: the
                 // island and the floating Hub are sized to all of it.
