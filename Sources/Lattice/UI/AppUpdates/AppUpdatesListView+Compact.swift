@@ -37,6 +37,14 @@ extension AppUpdatesListView {
                     .foregroundStyle(.green)
                 Text(text.emptyUpToDate)
                     .font(.system(size: 13, weight: .semibold))
+                Button {
+                    updates.check()
+                } label: {
+                    Label(text.checkNow, systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.appManager(.neutral, compact: true))
+                .disabled(isBusy)
+                .padding(.top, 2)
             } else {
                 stackedIcons
                 Text(text.updatesAvailableShort)
