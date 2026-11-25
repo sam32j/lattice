@@ -5083,6 +5083,29 @@ final class NotchService: ObservableObject {
             }
             .store(in: &subscriptions)
 
+        // The App Manager is as tall as its tab shows: the updates list
+        // measures itself, and a tab switch changes the height too.
+        let appManager = MainActor.assumeIsolated { AppManagerPanelState.shared }
+        MainActor.assumeIsolated {
+            Publishers.Merge(appManager.$updatesHeight.map { _ in () },
+                             appManager.$tab.map { _ in () })
+        }
+            .dropFirst(2)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self,
+                    self.expanded,
+                    !self.showingSections,
+                    [.hub, .controls].contains(self.selected),
+                    LatticeHubService.shared.activeUtility == .appManager
+                else {
+                    return
+                }
+
+                self.refreshPresentation()
+            }
+            .store(in: &subscriptions)
+
         WindowSnappingNavigationState.shared.$contentHeight
             .removeDuplicates()
             .dropFirst()

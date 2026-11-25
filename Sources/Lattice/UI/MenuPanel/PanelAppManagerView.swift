@@ -10,6 +10,15 @@ import SwiftUI
 final class AppManagerPanelState: ObservableObject {
     static let shared = AppManagerPanelState()
     @Published var tab: AppManagerTab = .updates
+    /// The updates panel's measured height, so the surface fits it.
+    @Published private(set) var updatesHeight: CGFloat = 0
+
+    func setUpdatesHeight(_ height: CGFloat) {
+        guard height.isFinite, height > 0 else { return }
+        let target = ceil(height)
+        guard abs(target - updatesHeight) > 1 else { return }
+        updatesHeight = target
+    }
 
     /// The tabs the panel offers: every module that is on, except the App
     /// Installer, which works by opening or dropping a disk image instead.
@@ -25,12 +34,14 @@ final class AppManagerPanelState: ObservableObject {
     /// The height the island gives the panel: App Updates sizes to its list,
     /// the others take the utility's usual height.
     var contentHeight: CGFloat? {
-        // The tabs sit in the surface's header, outside this height; the
-        // scroll edges' margins are inside it.
-        let edges = HubScrollEdge.inset * 2
+        // The tabs sit in the surface's header, outside this height.
         switch shownTab {
         case .updates:
-            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count) + edges
+            // What the panel measured, or a guess until it has.
+            if updatesHeight > 0 { return updatesHeight }
+            let inIsland = NotchService.shared.expanded && LatticeHubService.shared.isVisible == false
+            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count,
+                                                           maxRows: inIsland ? 5 : 8)
         case .uninstaller:
             // Fills this height itself: the list scrolls, the footer stays.
             return 330

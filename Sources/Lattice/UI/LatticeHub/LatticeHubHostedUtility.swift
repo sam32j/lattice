@@ -55,9 +55,10 @@ struct LatticeHubHostedUtility: View {
         } else if item == .deviceControls {
             DeviceControlsHubView(onClose: onClose, notchSize: notchSize, viewportHeight: viewportHeight)
                 .frame(height: viewportHeight, alignment: .top)
-        } else if item == .appManager, appManager.shownTab == .uninstaller {
-            // The uninstaller fills the panel and scrolls its own list, so
-            // its button stays under the list rather than scrolling away.
+        } else if item == .appManager, [.uninstaller, .updates].contains(appManager.shownTab) {
+            // The uninstaller and updates fill the panel and scroll their
+            // own lists, so a heading or button stays put rather than
+            // scrolling away.
             PanelAppManagerView(onClose: onClose, showsPicker: false)
                 .frame(height: viewportHeight)
         } else if item == .killProcess {
