@@ -148,8 +148,9 @@ struct KillProcessView: View {
 
     // MARK: Search
 
+    @ViewBuilder
     private var searchField: some View {
-        HStack(spacing: 8) {
+        let field = HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
@@ -176,9 +177,28 @@ struct KillProcessView: View {
         .font(.system(size: compact ? 12 : 13))
         .padding(.leading, 10)
         .frame(minHeight: compact ? 28 : 37)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+
+        Group {
+            switch surface {
+            case .settings:
+                field
+                    .background(Color(nsColor: .controlBackgroundColor),
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+            case .hud:
+                field
+                    .background(Color.primary.opacity(0.06),
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+            case .island:
+                field
+                    .modifier(NotchControlSurface(cornerRadius: 10,
+                                                  selected: searchFocused || !query.isEmpty,
+                                                  interactive: false))
+            }
+        }
         .padding(.bottom, compact ? 10 : 14)
     }
 

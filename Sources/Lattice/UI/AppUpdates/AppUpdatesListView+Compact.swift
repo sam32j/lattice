@@ -85,10 +85,15 @@ extension AppUpdatesListView {
     var hubBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             if updates.isChecking {
-                // The floating Hub has the room to show the list's shape.
-                AppManagerListSkeleton(rows: 6)
-                    .padding(.horizontal, 4)
-                    .padding(.top, 6)
+                // Keep the floating heading above the skeleton rows so the
+                // header never disappears while checking, matching Homebrew.
+                VStack(alignment: .leading, spacing: 0) {
+                    compactHeader
+                    AppManagerListSkeleton(rows: 6)
+                        .padding(.horizontal, 4)
+                        .padding(.top, HubScrollEdge.inset)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                }
             } else if allSourcesOff {
                 compactNoSourcesState
                     .frame(maxHeight: .infinity)
@@ -97,15 +102,17 @@ extension AppUpdatesListView {
                 VStack(spacing: 10) { upToDateState }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                compactHeader
-                ScrollView(showsIndicators: false) {
-                    compactList
+                VStack(alignment: .leading, spacing: 0) {
+                    compactHeader
+                    ScrollView(showsIndicators: false) {
+                        compactList
+                    }
+                    .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
+                    .hubScrollEdgeFade()
+                    // The floating Hub keeps the All Tools height; the list
+                    // takes what the heading leaves.
+                    .frame(maxHeight: .infinity, alignment: .top)
                 }
-                .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
-                .hubScrollEdgeFade()
-                // The floating Hub keeps the All Tools height; the list
-                // takes what the heading leaves.
-                .frame(maxHeight: .infinity, alignment: .top)
                 if versionsUncompared {
                     uncomparableVersions
                         .panelCard()
