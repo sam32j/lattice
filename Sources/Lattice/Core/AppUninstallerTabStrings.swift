@@ -44,6 +44,7 @@ struct AppUninstallerTabStrings {
     let done: String
     let close: String
     let uninstallButton: String
+    let openUninstaller: String
 }
 
 extension FeatureStrings {
@@ -85,7 +86,7 @@ extension AppUninstallerTabStrings {
         running: "Running",
         noMatchesFormat: "No applications matching “%@”",
         loadingApps: "Finding installed apps…",
-        scanningTitle: "Scanning leftover files…",
+        scanningTitle: "Scanning files…",
         uninstallingFormat: "Uninstalling %@ with Homebrew…",
         trashingFormat: "Moving %@ to Trash…",
         managedTitle: "Managed by Homebrew Cask",
@@ -108,7 +109,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Open Trash",
         done: "Done",
         close: "Close",
-        uninstallButton: "Uninstall…")
+        uninstallButton: "Uninstall…",
+        openUninstaller: "Open Uninstaller")
 
     static let ptBR = AppUninstallerTabStrings(
         dropTitle: "Desinstalar um app",
@@ -126,7 +128,7 @@ extension AppUninstallerTabStrings {
         running: "Em execução",
         noMatchesFormat: "Nenhum aplicativo corresponde a “%@”",
         loadingApps: "Procurando apps instalados…",
-        scanningTitle: "Procurando arquivos restantes…",
+        scanningTitle: "Analisando arquivos…",
         uninstallingFormat: "Desinstalando %@ com o Homebrew…",
         trashingFormat: "Movendo %@ para o Lixo…",
         managedTitle: "Gerenciado pelo Homebrew Cask",
@@ -149,7 +151,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Abrir Lixo",
         done: "OK",
         close: "Fechar",
-        uninstallButton: "Desinstalar…")
+        uninstallButton: "Desinstalar…",
+        openUninstaller: "Abrir desinstalador")
 
     static let tr = AppUninstallerTabStrings(
         dropTitle: "Bir Uygulamayı Kaldır",
@@ -167,7 +170,7 @@ extension AppUninstallerTabStrings {
         running: "Çalışıyor",
         noMatchesFormat: "“%@” ile eşleşen uygulama yok",
         loadingApps: "Yüklü uygulamalar bulunuyor…",
-        scanningTitle: "Artık dosyalar taranıyor…",
+        scanningTitle: "Dosyalar taranıyor…",
         uninstallingFormat: "%@ Homebrew ile kaldırılıyor…",
         trashingFormat: "%@ Çöp Sepeti’ne taşınıyor…",
         managedTitle: "Homebrew Cask ile yönetiliyor",
@@ -190,7 +193,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Çöp Sepeti’ni Aç",
         done: "Bitti",
         close: "Kapat",
-        uninstallButton: "Kaldır…")
+        uninstallButton: "Kaldır…",
+        openUninstaller: "Kaldırıcıyı Aç")
 
     static let ru = AppUninstallerTabStrings(
         dropTitle: "Удаление приложения",
@@ -208,7 +212,7 @@ extension AppUninstallerTabStrings {
         running: "Запущено",
         noMatchesFormat: "Нет приложений по запросу «%@»",
         loadingApps: "Поиск установленных приложений…",
-        scanningTitle: "Поиск оставшихся файлов…",
+        scanningTitle: "Сканирование файлов…",
         uninstallingFormat: "Удаление %@ через Homebrew…",
         trashingFormat: "Перемещение %@ в Корзину…",
         managedTitle: "Управляется Homebrew Cask",
@@ -231,7 +235,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Открыть Корзину",
         done: "Готово",
         close: "Закрыть",
-        uninstallButton: "Удалить…")
+        uninstallButton: "Удалить…",
+        openUninstaller: "Открыть деинсталлятор")
 
     static let es = AppUninstallerTabStrings(
         dropTitle: "Desinstalar una app",
@@ -249,7 +254,7 @@ extension AppUninstallerTabStrings {
         running: "En ejecución",
         noMatchesFormat: "Ninguna aplicación coincide con “%@”",
         loadingApps: "Buscando apps instaladas…",
-        scanningTitle: "Buscando archivos restantes…",
+        scanningTitle: "Analizando archivos…",
         uninstallingFormat: "Desinstalando %@ con Homebrew…",
         trashingFormat: "Moviendo %@ a la Papelera…",
         managedTitle: "Gestionada por Homebrew Cask",
@@ -272,7 +277,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Abrir Papelera",
         done: "Listo",
         close: "Cerrar",
-        uninstallButton: "Desinstalar…")
+        uninstallButton: "Desinstalar…",
+        openUninstaller: "Abrir desinstalador")
 
     static let sk = AppUninstallerTabStrings(
         dropTitle: "Odinštalovať aplikáciu",
@@ -290,7 +296,7 @@ extension AppUninstallerTabStrings {
         running: "Spustená",
         noMatchesFormat: "Žiadne aplikácie nezodpovedajú „%@“",
         loadingApps: "Hľadajú sa nainštalované aplikácie…",
-        scanningTitle: "Hľadajú sa zvyšné súbory…",
+        scanningTitle: "Prehľadávajú sa súbory…",
         uninstallingFormat: "%@ sa odinštaluje cez Homebrew…",
         trashingFormat: "%@ sa presúva do Koša…",
         managedTitle: "Spravované cez Homebrew Cask",
@@ -313,7 +319,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Otvoriť Kôš",
         done: "Hotovo",
         close: "Zavrieť",
-        uninstallButton: "Odinštalovať…")
+        uninstallButton: "Odinštalovať…",
+        openUninstaller: "Otvoriť odinštalátor")
 
     static let de = AppUninstallerTabStrings(
         dropTitle: "App deinstallieren",
@@ -331,7 +338,7 @@ extension AppUninstallerTabStrings {
         running: "Aktiv",
         noMatchesFormat: "Keine Programme passend zu „%@“",
         loadingApps: "Installierte Apps werden gesucht …",
-        scanningTitle: "Übrige Dateien werden gesucht …",
+        scanningTitle: "Dateien werden analysiert…",
         uninstallingFormat: "%@ wird mit Homebrew deinstalliert …",
         trashingFormat: "%@ wird in den Papierkorb gelegt …",
         managedTitle: "Von Homebrew Cask verwaltet",
@@ -354,7 +361,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Papierkorb öffnen",
         done: "Fertig",
         close: "Schließen",
-        uninstallButton: "Deinstallieren …")
+        uninstallButton: "Deinstallieren …",
+        openUninstaller: "Deinstaller öffnen")
 
     static let fr = AppUninstallerTabStrings(
         dropTitle: "Désinstaller une app",
@@ -372,7 +380,7 @@ extension AppUninstallerTabStrings {
         running: "Ouverte",
         noMatchesFormat: "Aucune application ne correspond à « %@ »",
         loadingApps: "Recherche des apps installées…",
-        scanningTitle: "Recherche des fichiers restants…",
+        scanningTitle: "Analyse des fichiers…",
         uninstallingFormat: "Désinstallation de %@ avec Homebrew…",
         trashingFormat: "Placement de %@ dans la corbeille…",
         managedTitle: "Gérée par Homebrew Cask",
@@ -395,7 +403,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Ouvrir la corbeille",
         done: "Terminé",
         close: "Fermer",
-        uninstallButton: "Désinstaller…")
+        uninstallButton: "Désinstaller…",
+        openUninstaller: "Ouvrir le désinstalleur")
 
     static let it = AppUninstallerTabStrings(
         dropTitle: "Disinstalla un’app",
@@ -413,7 +422,7 @@ extension AppUninstallerTabStrings {
         running: "In esecuzione",
         noMatchesFormat: "Nessuna applicazione corrisponde a “%@”",
         loadingApps: "Ricerca delle app installate…",
-        scanningTitle: "Ricerca dei file residui…",
+        scanningTitle: "Analisi dei file…",
         uninstallingFormat: "Disinstallazione di %@ con Homebrew…",
         trashingFormat: "Spostamento di %@ nel Cestino…",
         managedTitle: "Gestita da Homebrew Cask",
@@ -436,7 +445,8 @@ extension AppUninstallerTabStrings {
         openTrash: "Apri Cestino",
         done: "Fine",
         close: "Chiudi",
-        uninstallButton: "Disinstalla…")
+        uninstallButton: "Disinstalla…",
+        openUninstaller: "Apri disinstallatore")
 
     static let ja = AppUninstallerTabStrings(
         dropTitle: "Appをアンインストール",
@@ -454,7 +464,7 @@ extension AppUninstallerTabStrings {
         running: "実行中",
         noMatchesFormat: "“%@”に一致するアプリケーションはありません",
         loadingApps: "インストール済みのAppを検索中…",
-        scanningTitle: "残りファイルを検索中…",
+        scanningTitle: "ファイルをスキャン中…",
         uninstallingFormat: "%@をHomebrewでアンインストール中…",
         trashingFormat: "%@をゴミ箱に移動中…",
         managedTitle: "Homebrew Caskで管理",
@@ -477,7 +487,8 @@ extension AppUninstallerTabStrings {
         openTrash: "ゴミ箱を開く",
         done: "完了",
         close: "閉じる",
-        uninstallButton: "アンインストール…")
+        uninstallButton: "アンインストール…",
+        openUninstaller: "アンインストーラを開く")
 
     static let ko = AppUninstallerTabStrings(
         dropTitle: "앱 제거",
@@ -495,7 +506,7 @@ extension AppUninstallerTabStrings {
         running: "실행 중",
         noMatchesFormat: "“%@”와 일치하는 응용 프로그램 없음",
         loadingApps: "설치된 앱 찾는 중…",
-        scanningTitle: "남은 파일 찾는 중…",
+        scanningTitle: "파일을 검사하는 중…",
         uninstallingFormat: "Homebrew로 %@ 제거 중…",
         trashingFormat: "%@을(를) 휴지통으로 이동 중…",
         managedTitle: "Homebrew Cask로 관리됨",
@@ -518,7 +529,8 @@ extension AppUninstallerTabStrings {
         openTrash: "휴지통 열기",
         done: "완료",
         close: "닫기",
-        uninstallButton: "제거…")
+        uninstallButton: "제거…",
+        openUninstaller: "제거기 열기")
 
     static let zhHans = AppUninstallerTabStrings(
         dropTitle: "卸载 App",
@@ -536,7 +548,7 @@ extension AppUninstallerTabStrings {
         running: "运行中",
         noMatchesFormat: "没有与“%@”匹配的应用程序",
         loadingApps: "正在查找已安装的 App…",
-        scanningTitle: "正在查找残留文件…",
+        scanningTitle: "正在扫描文件…",
         uninstallingFormat: "正在用 Homebrew 卸载 %@…",
         trashingFormat: "正在将 %@ 移到废纸篓…",
         managedTitle: "由 Homebrew Cask 管理",
@@ -559,7 +571,8 @@ extension AppUninstallerTabStrings {
         openTrash: "打开废纸篓",
         done: "完成",
         close: "关闭",
-        uninstallButton: "卸载…")
+        uninstallButton: "卸载…",
+        openUninstaller: "打开卸载器")
 
     static let zhTW = AppUninstallerTabStrings(
         dropTitle: "解除安裝 App",
@@ -577,7 +590,7 @@ extension AppUninstallerTabStrings {
         running: "執行中",
         noMatchesFormat: "沒有符合「%@」的應用程式",
         loadingApps: "正在尋找已安裝的 App⋯",
-        scanningTitle: "正在尋找殘留檔案⋯",
+        scanningTitle: "正在掃描檔案…",
         uninstallingFormat: "正在用 Homebrew 解除安裝 %@⋯",
         trashingFormat: "正在將 %@ 移到垃圾桶⋯",
         managedTitle: "由 Homebrew Cask 管理",
@@ -600,7 +613,8 @@ extension AppUninstallerTabStrings {
         openTrash: "打開垃圾桶",
         done: "完成",
         close: "關閉",
-        uninstallButton: "解除安裝⋯")
+        uninstallButton: "解除安裝⋯",
+        openUninstaller: "開啟解除安裝器")
 
     static let zhHK = AppUninstallerTabStrings(
         dropTitle: "解除安裝 App",
@@ -618,7 +632,7 @@ extension AppUninstallerTabStrings {
         running: "執行中",
         noMatchesFormat: "沒有符合「%@」的應用程式",
         loadingApps: "正在尋找已安裝的 App⋯",
-        scanningTitle: "正在尋找殘留檔案⋯",
+        scanningTitle: "正在掃描檔案…",
         uninstallingFormat: "正在用 Homebrew 解除安裝 %@⋯",
         trashingFormat: "正在將 %@ 移到垃圾桶⋯",
         managedTitle: "由 Homebrew Cask 管理",
@@ -641,7 +655,8 @@ extension AppUninstallerTabStrings {
         openTrash: "打開垃圾桶",
         done: "完成",
         close: "關閉",
-        uninstallButton: "解除安裝⋯")
+        uninstallButton: "解除安裝⋯",
+        openUninstaller: "開啟解除安裝器")
 
     static let uk = AppUninstallerTabStrings(
         dropTitle: "Видалення програми",
@@ -659,7 +674,7 @@ extension AppUninstallerTabStrings {
         running: "Запущено",
         noMatchesFormat: "Немає програм за запитом «%@»",
         loadingApps: "Пошук встановлених програм…",
-        scanningTitle: "Пошук залишкових файлів…",
+        scanningTitle: "Сканування файлів…",
         uninstallingFormat: "Видалення %@ через Homebrew…",
         trashingFormat: "Переміщення %@ у Смітник…",
         managedTitle: "Керується Homebrew Cask",
@@ -682,5 +697,6 @@ extension AppUninstallerTabStrings {
         openTrash: "Відкрити Смітник",
         done: "Готово",
         close: "Закрити",
-        uninstallButton: "Видалити…")
+        uninstallButton: "Видалити…",
+        openUninstaller: "Відкрити деінсталятор")
 }

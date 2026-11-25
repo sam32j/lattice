@@ -2108,6 +2108,9 @@ final class NotchService: ObservableObject {
         if launcher.activeUtility != .system, SystemNavigationState.shared.selectedMetric != nil {
             SystemNavigationState.shared.reset()
         }
+        if launcher.activeUtility == .appManager {
+            AppManagerPanelState.resetUninstallerIfSelected()
+        }
         guard let previous = hubStateBeforeMenuBarReading else { return }
         hubStateBeforeMenuBarReading = nil
         guard launcher.activeUtility == .system else { return }

@@ -39,8 +39,17 @@ struct PanelUninstallerView: View {
             }
             .onDisappear {
                 PanelInteractionState.shared.viewKeepsPopoverOpen = false
+                let pendingConfirmation = pendingHomebrewRemoval != nil
                 dismissHomebrewRemovalConfirmation()
                 uninstaller.clearRefusal()
+                if !pendingConfirmation && uninstaller.phase != .removing {
+                    uninstaller.reset()
+                }
+            }
+            .onReceive(NotchService.shared.$expanded.removeDuplicates().filter { !$0 }) { _ in
+                if inNotch && pendingHomebrewRemoval == nil && uninstaller.phase != .removing {
+                    uninstaller.reset()
+                }
             }
             .alert(l10n.s.homebrewConfirmUninstallTitle,
                    isPresented: homebrewRemovalConfirmationPresented,
@@ -72,6 +81,9 @@ struct PanelUninstallerView: View {
 
     private var appChooser: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if !inNotch {
+                hubChooserHeader
+            }
             searchField
             if let refusal = uninstaller.refusal {
                 UninstallRefusalNote(refusal: refusal, compact: true)
@@ -96,13 +108,50 @@ struct PanelUninstallerView: View {
     /// Asked again for a moment: when the Hub or island opens straight onto
     /// this list, the page is still sliding in and the first ask is lost.
     private func focusSearch() {
-        for delay in [0.0, 0.12, 0.3, 0.6] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                guard uninstaller.phase == .empty, !searchFocused else { return }
-                if inNotch { NotchService.shared.takeKeyboardFocus() }
+        if inNotch {
+            for delay in [0.0, 0.12, 0.3, 0.6] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    guard uninstaller.phase == .empty, !searchFocused else { return }
+                    NotchService.shared.takeKeyboardFocus()
+                    searchFocused = true
+                }
+            }
+        } else {
+            DispatchQueue.main.async {
+                guard uninstaller.phase == .empty, !searchFocused,
+                      LatticeHubService.shared.isVisible else { return }
+                LatticeHubService.shared.panel?.makeKey()
                 searchFocused = true
             }
         }
+    }
+
+    private var hubChooserHeader: some View {
+        let strings = FeatureStrings.appUninstallerTab(l10n.language)
+        let updatesStrings = FeatureStrings.appUpdates(l10n.language)
+        return HStack(alignment: .center, spacing: 10) {
+            Text(loadingApps
+                 ? strings.loadingApps
+                 : String(format: updatesStrings.totalAppsFormat, apps.count))
+                .font(.system(size: 11.5, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: 8)
+            Button {
+                SettingsRouter.shared.request(AppFeature.uninstaller.settingsDestination)
+                (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+            } label: {
+                Text(strings.openUninstaller)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.vertical, 2)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 4)
     }
 
     private var searchField: some View {
@@ -114,7 +163,6 @@ struct PanelUninstallerView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
                 .focused($searchFocused)
-                .defaultFocus($searchFocused, true)
             if !query.isEmpty {
                 Button { query = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
