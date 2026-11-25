@@ -16,18 +16,23 @@ struct LatticeHubHostedUtility: View {
         // available display needs its own scroll viewport.
         guard let notchSize else {
             // The App Manager's tabs add a row to the header above.
-            let header: CGFloat = item == .appManager ? 92 + 33 : 92
+            let header: CGFloat = item == .appManager ? 92 + Self.appManagerTabsHeight : 92
             return min(fallbackHeight, max(100, launcher.floatingPanelHeightBudget - header))
         }
         return notchSize.height
     }
 
+    /// The App Manager's tab row in the floating header, with its 5pt below.
+    static let appManagerTabsHeight: CGFloat = 33
+
     private var fallbackHeight: CGFloat {
         switch item {
         case .appManager:
-            // Like Recent Captures: the All Tools page's height, never less
-            // than the floating subpage minimum.
+            // The root Hub page's height, never less than the floating
+            // subpage minimum. Its tabs sit in the header, so the page under
+            // them gives up their row and the window keeps the root's height.
             return max(HubScrollEdge.floatingSubpageMinimum, launcher.floatingRootPageHeight)
+                - Self.appManagerTabsHeight
         case .videoDownloader:
             return 172
         case .deviceControls:
