@@ -29,6 +29,7 @@ struct AppUpdatesListView: View {
     @State var showingAppPicker = false
     @State var showOperationDetails = false
     var compact = false
+    @State var skeletonPulse = false
 
     var currentFrequency: AppUpdatesSupport.CheckFrequency {
         AppUpdatesSupport.CheckFrequency.sanitized(frequencyRaw)
