@@ -48,6 +48,8 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "%d güncelleme var",
         noUpdatesAvailable: "Güncelleme yok",
         emptyUpToDate: "Tüm uygulamalarınız güncel",
+        updatesAvailableShort: "Güncellemeler var",
+        openAppUpdates: "Uygulama Güncellemelerini Aç",
         totalAppsFormat: "Toplam %d uygulama",
         someAppsUnchecked: "Bazı uygulamalar denetlenemedi",
         onlineUnavailable: "Çevrimiçi denetleme tamamlanamadı. Diğer sonuçlar gösterilmeye devam ediyor.",

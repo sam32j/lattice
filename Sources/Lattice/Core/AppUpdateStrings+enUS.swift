@@ -48,6 +48,8 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "%d Updates Available",
         noUpdatesAvailable: "No Available Updates",
         emptyUpToDate: "All apps are up to date",
+        updatesAvailableShort: "Updates available",
+        openAppUpdates: "Open App Updates",
         totalAppsFormat: "%d total apps",
         someAppsUnchecked: "Some apps couldn’t be checked",
         onlineUnavailable: "The online check could not be completed. Other results are still shown.",
