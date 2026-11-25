@@ -33,6 +33,11 @@ enum DownstreamUpdateTests {
                 && CleanerSupport.isProtectedBundleID(bundle),
                 "Lattice protects its active captures and app-owned files from cleanup: \(bundle)")
         }
+        for upstreamBundle in ["com.vorssaint", "com.vorssaint.app"] {
+            suite.expect(!CleanerPolicy.isExcludedCacheEntry(upstreamBundle)
+                && !CleanerSupport.isProtectedBundleID(upstreamBundle),
+                "Upstream Vorssaint files are not protected from uninstall or cache cleanup: \(upstreamBundle)")
+        }
         suite.expect(ScreenshotSharingSupport.endpoint(bundleIdentifier: "io.github.sam32j.lattice.dev",
             developerOverride: "https://example.invalid") == URL(string: "https://example.invalid"),
             "developer screenshot uploads honor their explicit test endpoint")

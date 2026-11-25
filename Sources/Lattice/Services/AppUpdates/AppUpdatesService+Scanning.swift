@@ -121,7 +121,7 @@ extension AppUpdatesService {
     /// exists to do safely.
     static func isOwnBundle(_ bundleID: String) -> Bool {
         bundleID == Bundle.main.bundleIdentifier || bundleID == DownstreamIdentity.bundleID
-            || bundleID.hasPrefix(DownstreamIdentity.bundleID + ".") || bundleID.hasPrefix("com.vorssaint")
+            || bundleID.hasPrefix(DownstreamIdentity.bundleID + ".")
     }
 
     static let ownPackageTokens: Set<String> = ["lattice", "lattice@beta", "lattice-beta"]
