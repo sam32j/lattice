@@ -105,18 +105,16 @@ final class DiskImageInstallerService: ObservableObject {
     }
 
     /// Opens a disk image handed to Lattice (double-clicked while Lattice
-    /// opens disk images, chosen or dropped in the tab): it is mounted out of
-    /// Finder's sight and the prompt asks before anything else happens. An
-    /// image without a single app to install opens in Finder as usual.
-    /// `fromFinder` is an open macOS routed to Lattice; with the switch off
-    /// (macOS may not have caught up yet) it goes to Disk Image Mounter.
-    func open(diskImage url: URL, fromFinder: Bool = false) {
+    /// opens disk images, dropped on its menu bar or app icon or the island,
+    /// chosen or dropped in the tab): it is mounted out of Finder's sight and
+    /// the prompt asks before anything else happens. An image without a
+    /// single app to install opens in Finder as usual.
+    func open(diskImage url: URL) {
         guard url.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame else { return }
-        let declined = fromFinder && !UserDefaults.standard.bool(forKey: DefaultsKey.diskImageInstallerOpensDiskImages)
         // A double-click that launches Lattice arrives before the features
         // start at launch; the App Installer starts for it.
         if !isRunning, AppFeature.diskImageInstaller.isAvailable { start() }
-        guard isRunning, !declined else {
+        guard isRunning else {
             DiskImageOpenHandler.openWithDiskImageMounter(url)
             return
         }

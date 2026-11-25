@@ -4,7 +4,7 @@
 import SwiftUI
 
 /// Audio settings: one page with Input and Output segments. The segmented
-/// control heads the page and scrolls with it; below it, each segment shows
+/// control sits in the header and the page scrolls under it; each segment shows
 /// the Audio Input or Audio Output cards, permission handling included.
 struct AudioSettings: View {
     /// The segment last shown, so coming back to Audio without a deep link
@@ -22,26 +22,26 @@ struct AudioSettings: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                sidePicker
-
-                // Both segments share the spot under the control while one
-                // fades into the other.
-                ZStack(alignment: .top) {
-                    switch side {
-                    case .input:
-                        AudioInputSettings()
-                            .transition(.opacity)
-                    case .output:
-                        AudioOutputSettings()
-                            .transition(.opacity)
-                    }
+            // Both segments share the spot under the control while one
+            // fades into the other.
+            ZStack(alignment: .top) {
+                switch side {
+                case .input:
+                    AudioInputSettings()
+                        .transition(.opacity)
+                case .output:
+                    AudioOutputSettings()
+                        .transition(.opacity)
                 }
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
-            .padding(22)
+            .padding(.horizontal, 22)
+            .padding(.top, 12)
+            .padding(.bottom, 22)
         }
+        // The control joins the header, so the cards scroll under it.
+        .settingsHeaderBar { sidePicker.modifier(SettingsHeaderBarLayout()) }
         .settingsExpansionAnimation(value: side)
         .onChange(of: router.requestID) { _, _ in
             // A deep link names a section; show the segment that holds it

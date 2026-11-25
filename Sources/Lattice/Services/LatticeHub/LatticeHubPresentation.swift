@@ -109,6 +109,21 @@ extension LatticeHubService {
         show(forceFloating: true, initialUtility: .recentCaptures)
     }
 
+    /// An app dropped on Lattice's menu bar or app icon: the floating Hub
+    /// opens on the App Manager's uninstaller, already scanning that app.
+    func openUninstaller(for appURL: URL, anchoredBelow anchor: NSRect? = nil) {
+        guard LatticeHubItem.appManager.isAvailable(), NotchAppDrop.canUninstall(appURL) else { return }
+        MainActor.assumeIsolated { AppManagerPanelState.shared.tab = .uninstaller }
+        AppUninstaller.shared.select(appURL: appURL)
+        if isVisible {
+            opensUtilityDirectly = true
+            activeUtility = .appManager
+            panel?.makeKey()
+            return
+        }
+        show(forceFloating: true, anchoredBelow: anchor, initialUtility: .appManager)
+    }
+
     /// Hides the floating Hub for an editor opened from Recent Captures and
     /// returns how to bring it back where it was once that editor closes.
     func hideForEditor(revealing entryID: UUID? = nil) -> (() -> Void)? {

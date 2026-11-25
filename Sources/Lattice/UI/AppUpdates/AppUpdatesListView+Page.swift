@@ -10,8 +10,6 @@ extension AppUpdatesListView {
     var overhauledBody: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 14) {
-                statusCard
-
                 updateSourcesSection
 
                 preferencesSection
@@ -99,25 +97,22 @@ extension AppUpdatesListView {
         .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    /// The list's heading carries when it was last checked and the way to
+    /// check again, as text rather than a card of its own.
     var availableUpdatesHeader: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(text.availableUpdatesTitle)
                 .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(.secondary)
-            Spacer()
             if !updates.items.isEmpty {
                 Text(String(format: text.appCountFormat, updates.items.count))
                     .font(.system(size: 11.5))
-                    .foregroundStyle(.secondary)
-            } else if updates.isChecking {
-                Text(text.checking)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.secondary)
-            } else if !allSourcesOff && updates.hasCheckedThisSession {
-                Text(String(format: text.appCountFormat, 0))
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
             }
+            Spacer(minLength: 8)
+            UpdatesCheckLine(text: text, lastCheck: lastCheckLine, isChecking: updates.isChecking,
+                             disabled: !AppFeature.appUpdates.isAvailable || allSourcesOff,
+                             size: 11.5) { updates.check() }
         }
         .padding(.horizontal, 2)
         .padding(.top, 4)
@@ -176,49 +171,6 @@ extension AppUpdatesListView {
     }
 
     // Status Card
-    var statusCard: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(statusHeadline)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(statusDetail)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(statusHeadline), \(statusDetail)")
-
-            Spacer(minLength: 16)
-
-            Button {
-                updates.check()
-            } label: {
-                // The arrow turns while checking. Both labels size the
-                // button, so it keeps one width and the arrow never shifts.
-                HStack(spacing: 5) {
-                    RefreshArrow(isSpinning: updates.isChecking)
-                        .font(.system(size: 11))
-                    ZStack(alignment: .leading) {
-                        Text(text.checkNow).hidden()
-                        Text(text.checking + "…").hidden()
-                        Text(updates.isChecking ? text.checking + "…" : text.checkNow)
-                    }
-                    .font(.system(size: 12, weight: .medium))
-                }
-                .foregroundStyle(updates.isChecking || !AppFeature.appUpdates.isAvailable || allSourcesOff ? Color.secondary.opacity(0.6) : Color.primary.opacity(0.85))
-            }
-            .buttonStyle(.plain)
-            .disabled(updates.isChecking || !AppFeature.appUpdates.isAvailable || allSourcesOff)
-            .accessibilityLabel(updates.isChecking ? text.checking : text.checkNow)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(0.04))
-        )
-    }
-
     // MARK: - Update Sources
 
 }

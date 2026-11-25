@@ -189,11 +189,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         // Disk images Lattice was asked to open go to the App Installer.
         let isDiskImage: (URL) -> Bool = { $0.pathExtension.caseInsensitiveCompare("dmg") == .orderedSame }
-        urls.filter(isDiskImage).forEach { DiskImageInstallerService.shared.open(diskImage: $0, fromFinder: true) }
-        // An app dropped on Lattice's icon opens in the uninstaller.
+        // Opened, or dropped on Lattice's icon: either way it was handed to
+        // Lattice, so the App Installer asks.
+        urls.filter(isDiskImage).forEach { DiskImageInstallerService.shared.open(diskImage: $0) }
+        // An app dropped on Lattice's icon opens in the floating uninstaller.
         let isApp: (URL) -> Bool = { $0.pathExtension.caseInsensitiveCompare("app") == .orderedSame }
-        if let app = urls.first(where: isApp), AppFeature.uninstaller.isAvailable {
-            NotchService.shared.perform(.uninstall(app))
+        if let app = urls.first(where: isApp) {
+            LatticeHubService.shared.openUninstaller(for: app)
         }
         let others = urls.filter { !isDiskImage($0) && !isApp($0) }
         if !others.isEmpty { MediaEditorFileOpener.shared.open(others) }

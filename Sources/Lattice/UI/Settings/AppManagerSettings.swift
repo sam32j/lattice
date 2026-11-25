@@ -151,28 +151,26 @@ struct AppManagerSettings: View {
 
     private var page: some View {
         let visible = AppManagerModules.visibleTabs
-        return VStack(spacing: 0) {
+        return ZStack(alignment: .top) {
+            switch shownTab {
+            case .installer: AppInstallerTab().transition(.opacity)
+            case .updates: AppUpdatesSettings().transition(.opacity)
+            case .uninstaller: AppUninstallerTab().transition(.opacity)
+            case .homebrew: HomebrewTab().transition(.opacity)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        // The cross-fade is the content's alone: the tab bar's thumb
+        // keeps its own spring.
+        .animation(.easeInOut(duration: 0.18), value: shownTab)
+        // The tabs join the header, so a tab scrolls under them.
+        .settingsHeaderBar {
             if visible.count > 1 {
                 AppManagerTabBar(tabs: visible, selection: Binding(get: { shownTab }, set: { tab = $0 }),
                                  strings: strings)
-                    .frame(maxWidth: 760)
-                    .padding(.horizontal, 22)
-                    .padding(.top, 14)
-                    .padding(.bottom, 4)
+                    .modifier(SettingsHeaderBarLayout())
                     .transition(.opacity)
             }
-            ZStack(alignment: .top) {
-                switch shownTab {
-                case .installer: AppInstallerTab().transition(.opacity)
-                case .updates: AppUpdatesSettings().transition(.opacity)
-                case .uninstaller: AppUninstallerTab().transition(.opacity)
-                case .homebrew: HomebrewTab().transition(.opacity)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            // The cross-fade is the content's alone: the tab bar's thumb
-            // keeps its own spring.
-            .animation(.easeInOut(duration: 0.18), value: shownTab)
         }
     }
 }

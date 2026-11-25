@@ -20,6 +20,7 @@ struct PanelUninstallerView: View {
     @State private var hoveredLeftover: UUID?
     @State private var pendingHomebrewRemoval: AppUninstaller.HomebrewRemovalConfirmation?
     @State private var showHomebrewDetails = false
+    @FocusState private var searchFocused: Bool
 
     var onClose: () -> Void = {}
 
@@ -79,7 +80,11 @@ struct PanelUninstallerView: View {
                 FullDiskAccessNote(compact: true)
             }
         }
-        .onAppear(perform: loadAppsIfNeeded)
+        .onAppear {
+            loadAppsIfNeeded()
+            // Typing searches at once, with no click into the field first.
+            DispatchQueue.main.async { searchFocused = true }
+        }
     }
 
     private var searchField: some View {
@@ -90,6 +95,7 @@ struct PanelUninstallerView: View {
             TextField(l10n.s.uninstallerPickerSearch, text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
+                .focused($searchFocused)
             if !query.isEmpty {
                 Button { query = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
@@ -240,21 +246,10 @@ struct PanelUninstallerView: View {
         }
     }
 
-    /// The way back to the app list is the header's one control: no second
-    /// close or cancel elsewhere on the page.
+    /// The app and what was found. The way back is Cancel beside the remove
+    /// button: a back arrow here would sit right under the surface's own.
     private var resultsHeader: some View {
         HStack(spacing: 9) {
-            Button { uninstaller.reset() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 11, weight: .semibold))
-                    .frame(width: 24, height: 24)
-                    .background(Color.primary.opacity(inNotch ? 0.12 : 0.07), in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .disabled(uninstaller.isRemovingWithHomebrew)
-            .help(l10n.s.uninstallerCancel)
-            .accessibilityLabel(l10n.s.uninstallerCancel)
             if let target = uninstaller.target {
                 Image(nsImage: target.icon)
                     .resizable()
@@ -371,6 +366,8 @@ struct PanelUninstallerView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
+            Button(l10n.s.uninstallerCancel) { uninstaller.reset() }
+                .disabled(uninstaller.isRemovingWithHomebrew)
             Button {
                 if let confirmation = uninstaller.homebrewRemovalConfirmation {
                     presentHomebrewRemovalConfirmation(confirmation)

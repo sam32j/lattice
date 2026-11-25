@@ -70,3 +70,34 @@ struct SettingsFullWidthSegmentedControl<Value: Hashable>: View {
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 }
+
+extension View {
+    /// Puts a page's segmented control in the header: content scrolls under
+    /// it and the toolbar together, behind one scroll edge, rather than the
+    /// control sitting in a band of its own. Before macOS 26 it simply
+    /// heads the page.
+    @ViewBuilder
+    func settingsHeaderBar<Bar: View>(@ViewBuilder _ bar: () -> Bar) -> some View {
+#if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            safeAreaBar(edge: .top, spacing: 0, content: bar)
+        } else {
+            VStack(spacing: 0) { bar(); self }
+        }
+#else
+        VStack(spacing: 0) { bar(); self }
+#endif
+    }
+}
+
+/// The header bar's layout: the page column's width and margins.
+struct SettingsHeaderBarLayout: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: 760)
+            .padding(.horizontal, 22)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity)
+    }
+}
