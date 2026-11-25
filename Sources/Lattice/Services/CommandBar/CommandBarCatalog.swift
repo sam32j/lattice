@@ -717,7 +717,7 @@ enum CommandBarCatalog {
                 id: "action.cleaner",
                 title: s.cleanerName,
                 subtitle: area(.cleaner, under: s.cleanerName),
-                icon: .symbol("sparkle"),
+                icon: .symbol(LatticeSymbol.cleanerSymbol),
                 run: { _ in openSettings(at: .cleaner) }))
         }
         if AppFeature.uninstaller.isAvailable {

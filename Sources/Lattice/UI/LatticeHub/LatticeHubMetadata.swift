@@ -32,7 +32,7 @@ extension LatticeHubView {
         case .media: return LatticeSymbol.mediaSymbol
         case .urlCleaner: return "link"
         case .appManager: return LatticeSymbol.appManagerSymbol
-        case .cleaner: return "sparkle"
+        case .cleaner: return LatticeSymbol.cleanerSymbol
         case .scratchpad: return "note.text"
         case .videoDownloader: return "lattice.video.downloader"
         case .shelf: return "tray.full"

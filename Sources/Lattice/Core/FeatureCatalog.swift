@@ -165,7 +165,7 @@ extension AppFeature {
         case .screenOCR: return "text.viewfinder"
         case .cleaningMode: return "bubbles.and.sparkles"
         case .mediaTools: return "lattice.media" // LatticeSymbol.mediaSymbol
-        case .cleaner: return "sparkles"
+        case .cleaner: return "lattice.cleaner" // LatticeSymbol.cleanerSymbol
         case .uninstaller: return "externaldrive.badge.minus"
         case .homebrew: return "shippingbox"
         case .appUpdates: return "app.badge.checkmark"

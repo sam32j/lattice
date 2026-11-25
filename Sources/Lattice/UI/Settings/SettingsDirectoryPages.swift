@@ -268,7 +268,7 @@ extension SettingsDirectory {
                                                  FeatureStrings.appUpdates(language).frequencyLabel,
                                                  SettingsOwnershipStrings.text(.dmgInstaller, language),
                                                  "dmg", "disk image", "brew", "cask", "uninstall", "leftovers"]),
-                SettingsDirectoryItem(page: .cleaner, title: s.cleanerName, icon: "sparkles",
+                SettingsDirectoryItem(page: .cleaner, title: s.cleanerName, icon: "lattice.cleaner", // LatticeSymbol.cleanerSymbol
                                       keywords: [s.cleanerScheduleTitle]),
                 SettingsDirectoryItem(page: .killProcess,
                                       title: FeatureStrings.killProcess(language).pageTitle,

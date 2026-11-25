@@ -738,7 +738,7 @@ struct CommandBarView: View {
     private func iconContent(_ entry: CommandBarEntry) -> some View {
         switch entry.icon {
         case .symbol(let name):
-            Image(systemName: name)
+            LatticeSymbol(name)
                 .font(.system(size: 13.5, weight: .semibold))
                 .foregroundStyle(entry.isActive ? Color.accentColor : Color.primary.opacity(0.85))
         case .appIcon(let path):
