@@ -72,21 +72,54 @@ struct SettingsFullWidthSegmentedControl<Value: Hashable>: View {
 }
 
 extension View {
-    /// Puts a page's segmented control in the header: content scrolls under
-    /// it and the toolbar together, behind one scroll edge, rather than the
-    /// control sitting in a band of its own. Before macOS 26 it simply
-    /// heads the page.
-    @ViewBuilder
+    /// Puts a page's segmented control in the header. At rest it is part of
+    /// the page, with no edge or line; once the page scrolls, the bar and
+    /// the toolbar above it share one background and one line beneath, so
+    /// content passes under both as one header.
     func settingsHeaderBar<Bar: View>(@ViewBuilder _ bar: () -> Bar) -> some View {
-#if compiler(>=6.2)
-        if #available(macOS 26, *) {
-            safeAreaBar(edge: .top, spacing: 0, content: bar)
-        } else {
-            VStack(spacing: 0) { bar(); self }
-        }
-#else
-        VStack(spacing: 0) { bar(); self }
-#endif
+        modifier(SettingsHeaderBar(bar: bar()))
+    }
+}
+
+/// Whether the Settings page on screen has scrolled, for its header bar.
+struct SettingsDetailScrolledKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+/// Set by a page with a header bar, so the window leaves the scrolled
+/// toolbar background to that bar and draws no line of its own between them.
+struct SettingsHasHeaderBarKey: PreferenceKey {
+    static let defaultValue = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
+}
+
+extension EnvironmentValues {
+    var settingsDetailScrolled: Bool {
+        get { self[SettingsDetailScrolledKey.self] }
+        set { self[SettingsDetailScrolledKey.self] = newValue }
+    }
+}
+
+private struct SettingsHeaderBar<Bar: View>: ViewModifier {
+    let bar: Bar
+    @Environment(\.settingsDetailScrolled) private var scrolled
+
+    func body(content: Content) -> some View {
+        content
+            .safeAreaInset(edge: .top, spacing: 0) {
+                bar
+                    .background {
+                        if scrolled {
+                            // Reaches up behind the toolbar, so the two read
+                            // as one surface.
+                            Rectangle().fill(.bar).ignoresSafeArea(edges: .top)
+                        }
+                    }
+                    .overlay(alignment: .bottom) {
+                        if scrolled { Divider() }
+                    }
+            }
+            .preference(key: SettingsHasHeaderBarKey.self, value: true)
     }
 }
 

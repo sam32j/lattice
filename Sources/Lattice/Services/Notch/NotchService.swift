@@ -2025,6 +2025,13 @@ final class NotchService: ObservableObject {
         if closesCommandBar { commandBarDidClose() }
     }
 
+    /// A page made for typing (the uninstaller's search) takes the keys even
+    /// when the island was opened by hovering, so typing reaches it at once.
+    func takeKeyboardFocus() {
+        guard expanded, acceptsUserInteraction, islandConfirmationDepth == 0 else { return }
+        panel?.makeKey()
+    }
+
     // A destructive confirmation opened from the Island owns keyboard focus
     // until it resolves. Do not close the background Island during that modal.
     private var islandConfirmationDepth = 0

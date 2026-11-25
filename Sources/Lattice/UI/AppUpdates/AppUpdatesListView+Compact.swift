@@ -48,20 +48,13 @@ extension AppUpdatesListView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The list's heading, with when it was last checked and the way to
-    /// check again in plain text beside it.
+    /// The list's heading, as in Settings.
     var compactHeader: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(text.availableUpdatesTitle)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            Spacer(minLength: 6)
-            UpdatesCheckLine(text: text, lastCheck: lastCheckLine, isChecking: updates.isChecking,
-                             disabled: isBusy || allSourcesOff, size: 10.5) { updates.check() }
-        }
-        .frame(height: Self.headerLineHeight)
-        .padding(.horizontal, 4)
+        UpdatesHeading(text: text, count: updates.items.count, lastCheck: lastCheckLine,
+                       isChecking: updates.isChecking, disabled: isBusy || allSourcesOff,
+                       compact: true) { updates.check() }
+            .frame(height: Self.headerLineHeight)
+            .padding(.horizontal, 4)
     }
 
     var lastCheckLine: String {

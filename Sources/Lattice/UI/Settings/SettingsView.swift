@@ -17,6 +17,9 @@ struct SettingsView: View {
     @State var directoryCache = SettingsDirectoryCache()
     @State var navigationFromSidebar = false
     @State var detailIsScrolled = false
+    /// The page on screen keeps a segmented control in the header, which
+    /// draws the scrolled header itself.
+    @State var detailHasHeaderBar = false
     /// The row just picked in the sidebar, until the router has taken it.
     @State var sidebarPick: SettingsSidebarItem.ID?
     @FocusState var sidebarSearchFocused: Bool
@@ -110,10 +113,12 @@ struct SettingsView: View {
             SettingsDetailViewport {
                 scrollEdgeDetail
                     .settingsSectionFocus(for: router.page)
+                    .environment(\.settingsDetailScrolled, detailIsScrolled)
+                    .onPreferenceChange(SettingsHasHeaderBarKey.self) { detailHasHeaderBar = $0 }
             }
             .toolbar { settingsNavigationToolbar }
-            .toolbarBackground(detailIsScrolled ? .visible : .hidden, for: .windowToolbar)
-            .background(SettingsToolbarBackdrop(isScrolled: detailIsScrolled))
+            .toolbarBackground(toolbarShowsScrolled ? .visible : .hidden, for: .windowToolbar)
+            .background(SettingsToolbarBackdrop(isScrolled: toolbarShowsScrolled))
             .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea(.container, edges: .top) }
         }
         .navigationSplitViewStyle(.balanced)
@@ -198,11 +203,18 @@ struct SettingsView: View {
             .accessibilityIdentifier("settings-page-title")
     }
 
+    /// The window's own scrolled toolbar: not on a page whose header bar
+    /// draws one surface for both.
+    var toolbarShowsScrolled: Bool { detailIsScrolled && !detailHasHeaderBar }
+
     @ViewBuilder
     var scrollEdgeDetail: some View {
 #if compiler(>=6.2)
         if #available(macOS 26, *) {
-            observedScrollDetail.scrollEdgeEffectStyle(.hard, for: .top)
+            // A page with a header bar draws the scrolled header itself.
+            observedScrollDetail
+                .scrollEdgeEffectStyle(.hard, for: .top)
+                .scrollEdgeEffectHidden(detailHasHeaderBar, for: .top)
         } else {
             observedScrollDetail
         }
