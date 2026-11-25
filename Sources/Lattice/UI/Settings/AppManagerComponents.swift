@@ -411,13 +411,17 @@ struct AppManagerSearchField<Menu: View>: View {
 struct SearchFilterMenuLabel: View {
     let title: String
     var color: Color = .secondary
+    /// Inside a search field the label takes the field's height and the
+    /// room at its end as its target; elsewhere (the island's toolbar) it is
+    /// the text alone, so it lines up with what sits beside it.
+    var fillsField = true
 
     var body: some View {
         (Text(title + " ") + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
             .foregroundStyle(color)
-            .padding(.leading, 4)
-            .padding(.trailing, 10)
-            .padding(.vertical, 8)
+            .padding(.leading, fillsField ? 4 : 0)
+            .padding(.trailing, fillsField ? 10 : 0)
+            .padding(.vertical, fillsField ? 8 : 0)
             .contentShape(Rectangle())
     }
 }

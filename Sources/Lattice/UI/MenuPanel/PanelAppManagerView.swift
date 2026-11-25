@@ -10,8 +10,6 @@ import SwiftUI
 final class AppManagerPanelState: ObservableObject {
     static let shared = AppManagerPanelState()
     @Published var tab: AppManagerTab = .updates
-    /// Every App Manager tab in the island has this height.
-    static let islandHeight: CGFloat = 240
 
     /// The tabs the panel offers: every module that is on, except the App
     /// Installer, which works by opening or dropping a disk image instead.

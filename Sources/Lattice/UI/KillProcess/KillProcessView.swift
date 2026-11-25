@@ -374,7 +374,8 @@ struct KillProcessScopeMenu: View {
             let name = surface == .island && scope == .everything
                 ? strings.scopeEverythingShort : strings.scopeName(scope)
             SearchFilterMenuLabel(title: name,
-                                  color: surface == .island ? Color.white.opacity(0.6) : Color.secondary)
+                                  color: surface == .island ? Color.white.opacity(0.6) : Color.secondary,
+                                  fillsField: surface != .island)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
