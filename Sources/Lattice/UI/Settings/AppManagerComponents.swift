@@ -310,3 +310,39 @@ enum AppManagerFormat {
         return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
+
+/// The App Manager's button: the capsule App Updates draws for "Update",
+/// so the uninstaller and Homebrew read the same. Neutral for a way back,
+/// red for removing, the accent for everything else.
+struct AppManagerButtonStyle: ButtonStyle {
+    enum Tone { case accent, destructive, neutral }
+    var tone: Tone = .accent
+    var compact = false
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: compact ? 10.5 : 11.5, weight: .semibold))
+            .lineLimit(1)
+            .padding(.horizontal, compact ? 10 : 14)
+            .padding(.vertical, compact ? 3.5 : 5.5)
+            .background(fill, in: Capsule())
+            .foregroundStyle(tone == .neutral ? Color.primary : Color.white)
+            .contentShape(Capsule())
+            .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)
+    }
+
+    private var fill: Color {
+        switch tone {
+        case .accent: return .accentColor
+        case .destructive: return .red
+        case .neutral: return Color.primary.opacity(0.1)
+        }
+    }
+}
+
+extension ButtonStyle where Self == AppManagerButtonStyle {
+    static func appManager(_ tone: AppManagerButtonStyle.Tone = .accent, compact: Bool = false) -> AppManagerButtonStyle {
+        AppManagerButtonStyle(tone: tone, compact: compact)
+    }
+}

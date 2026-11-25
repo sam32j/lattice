@@ -2185,6 +2185,32 @@ enum FeatureCatalogTests {
         settingsRouter.page = .general
         withExtendedLifetime(settingsRequestObservation) {}
 
+        // A view inside a page (an inspected app) is a step of history:
+        // Back closes it on the same page, and leaving the page closes it so
+        // the page shows its root when visited again.
+        let subpageRouter = SettingsRouter()
+        subpageRouter.page = .appManager
+        var subpageCloses = 0
+        subpageRouter.pushSubpage("inspect") { subpageCloses += 1 }
+        suite.expect(subpageRouter.subpage == "inspect" && subpageRouter.canGoBack(),
+                     "an opened subpage can be backed out of")
+        subpageRouter.goBack()
+        suite.expect(subpageRouter.page == .appManager && subpageRouter.subpage == nil && subpageCloses == 1,
+                     "Back from a subpage closes it and stays on its page")
+        subpageRouter.goForward()
+        suite.expect(subpageRouter.subpage == nil, "a closed subpage is not returned to by Forward")
+        subpageRouter.pushSubpage("inspect") { subpageCloses += 1 }
+        subpageRouter.page = .general
+        suite.expect(subpageRouter.subpage == nil && subpageCloses == 2,
+                     "leaving the page closes its subpage")
+        subpageRouter.goBack()
+        suite.expect(subpageRouter.page == .appManager && subpageRouter.subpage == nil,
+                     "back on the page, its root shows rather than the closed subpage")
+        subpageRouter.pushSubpage("inspect") { subpageCloses += 1 }
+        subpageRouter.endSubpage("inspect")
+        suite.expect(subpageRouter.subpage == nil && subpageCloses == 2,
+                     "a subpage that closes itself leaves history without being closed again")
+
         let historyRouter = SettingsRouter()
         let initialHistoryRequestID = historyRouter.requestID
         historyRouter.goBack()

@@ -23,12 +23,17 @@ final class SettingsRouter: ObservableObject {
     private struct HistoryEntry {
         let destination: FeatureSettingsDestination
         let sidebarFeature: AppFeature?
+        /// A view inside the page, such as an app the uninstaller inspects.
+        var subpage: String? = nil
     }
 
     @Published var page: SettingsPage = .general {
         didSet {
             if page == .features { page = .general }
             guard page != oldValue else { return }
+            // Leaving the page ends a view inside it: back on the page, its
+            // root shows, and history never returns into the stale view.
+            if !isTraversingHistory { dropSubpageForLeavingPage() }
             destination = FeatureSettingsDestination(page)
             sidebarFeature = nil
             pendingDestinationRequest = nil
@@ -60,6 +65,10 @@ final class SettingsRouter: ObservableObject {
     @Published var notchCompanion = false
     /// One-shot hint for the Video Downloader page to scroll to a specific section.
     @Published var videoDownloaderSection: String?
+
+    /// The view inside the page that is open, if any, and how to close it.
+    @Published private(set) var subpage: String?
+    private var closeSubpage: (() -> Void)?
 
     private var history = [HistoryEntry(destination: FeatureSettingsDestination(.general),
                                         sidebarFeature: nil)]
@@ -133,14 +142,57 @@ final class SettingsRouter: ObservableObject {
     }
 
     func canGoBack(isPageVisible: (SettingsPage) -> Bool = { _ in true }) -> Bool {
-        historyTarget(step: -1, isPageVisible: isPageVisible) != nil
+        subpage != nil || historyTarget(step: -1, isPageVisible: isPageVisible) != nil
     }
 
     func canGoForward(isPageVisible: (SettingsPage) -> Bool = { _ in true }) -> Bool {
         historyTarget(step: 1, isPageVisible: isPageVisible) != nil
     }
 
+    // MARK: Subpages
+
+    /// Opens a view inside the current page as a step of its own, so Back
+    /// leaves it for the page's root. `close` puts the page back there.
+    func pushSubpage(_ id: String, close: @escaping () -> Void) {
+        guard subpage != id else { return }
+        if subpage != nil { dropSubpage(callingClose: false) }
+        closeSubpage = close
+        subpage = id
+        history.removeSubrange((historyIndex + 1)..<history.count)
+        history.append(HistoryEntry(destination: destination, sidebarFeature: sidebarFeature, subpage: id))
+        historyIndex += 1
+    }
+
+    /// The view closed itself (Cancel, Done): its step leaves history.
+    func endSubpage(_ id: String) {
+        guard subpage == id else { return }
+        dropSubpage(callingClose: false)
+    }
+
+    private func dropSubpageForLeavingPage() {
+        guard subpage != nil else { return }
+        dropSubpage(callingClose: true)
+    }
+
+    /// Removes the open subpage's step, which is the current one, and keeps
+    /// nothing after it: a view once left is not returned to.
+    private func dropSubpage(callingClose: Bool) {
+        let close = closeSubpage
+        if history.indices.contains(historyIndex), history[historyIndex].subpage == subpage, historyIndex > 0 {
+            history.removeSubrange(historyIndex..<history.count)
+            historyIndex -= 1
+        }
+        subpage = nil
+        closeSubpage = nil
+        if callingClose { close?() }
+    }
+
     private func navigateHistory(step: Int, isPageVisible: (SettingsPage) -> Bool) {
+        // Back out of a view inside the page lands on the page's root.
+        if subpage != nil, step < 0 {
+            dropSubpage(callingClose: true)
+            return
+        }
         guard let index = historyTarget(step: step, isPageVisible: isPageVisible) else { return }
         historyIndex = index
         isTraversingHistory = true

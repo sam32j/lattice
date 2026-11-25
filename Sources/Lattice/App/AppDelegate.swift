@@ -563,7 +563,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func openSettingsWindow() {
         NotchService.shared.prepareForSettings()
         LatticeHubService.shared.previousApp = nil
-        LatticeHubService.shared.hide()
+        // Only a floating Hub on screen is hidden: hiding also clears the
+        // utility the island shares, which flashed the island back to the
+        // Hub's home as it closed.
+        if LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
         let isAlreadyVisible = settingsWindow?.isVisible == true
         let targetScreen = NSScreen.withMouse
         let createdWindow = settingsWindow == nil

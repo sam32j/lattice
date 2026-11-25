@@ -24,6 +24,24 @@ class SettingsWindow: NSWindow {
         collectionBehavior.insert(.fullScreenNone)
     }
 
+    /// Back and Forward are icons only: the toolbar's right-click choice of
+    /// Icon and Text is not offered.
+    override var toolbar: NSToolbar? {
+        didSet { lockToolbarDisplay() }
+    }
+
+    override func becomeKey() {
+        super.becomeKey()
+        lockToolbarDisplay()
+    }
+
+    private func lockToolbarDisplay() {
+        guard let toolbar else { return }
+        toolbar.displayMode = .iconOnly
+        toolbar.allowsUserCustomization = false
+        if #available(macOS 15, *) { toolbar.allowsDisplayModeCustomization = false }
+    }
+
     var router = SettingsRouter.shared
     // The app supplies capture state without making the window own a global input service.
     var isMouseButtonCaptureActive: () -> Bool = { false }
