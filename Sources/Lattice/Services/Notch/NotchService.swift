@@ -1291,7 +1291,11 @@ final class NotchService: ObservableObject {
         guard let utility else { return nil }
         switch utility {
         case .appManager:
-            return MainActor.assumeIsolated { AppManagerPanelState.shared.contentHeight }
+            return MainActor.assumeIsolated {
+                // The island shows App Updates as one state at a fixed size.
+                let state = AppManagerPanelState.shared
+                return state.shownTab == .updates ? AppManagerPanelState.islandUpdatesHeight : state.contentHeight
+            }
         case .videoDownloader:
             return 172
         case .deviceControls:

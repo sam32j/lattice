@@ -10,6 +10,8 @@ import SwiftUI
 final class AppManagerPanelState: ObservableObject {
     static let shared = AppManagerPanelState()
     @Published var tab: AppManagerTab = .updates
+    /// App Updates in the island: one state, at this height.
+    static let islandUpdatesHeight: CGFloat = 240
     /// The updates panel's measured height, so the surface fits it.
     @Published private(set) var updatesHeight: CGFloat = 0
 

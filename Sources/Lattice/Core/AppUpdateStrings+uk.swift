@@ -48,6 +48,8 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "Доступно оновлень: %d",
         noUpdatesAvailable: "Немає доступних оновлень",
         emptyUpToDate: "Усі програми оновлено",
+        updatesAvailableShort: "Доступні оновлення",
+        openAppUpdates: "Відкрити оновлення програм",
         totalAppsFormat: "Усього програм: %d",
         someAppsUnchecked: "Деякі програми не вдалося перевірити",
         onlineUnavailable: "Онлайн-перевірку не вдалося завершити. Інші результати все ще показуються.",

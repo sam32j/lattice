@@ -48,6 +48,8 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "Dostupné aktualizácie: %d",
         noUpdatesAvailable: "Žiadne dostupné aktualizácie",
         emptyUpToDate: "Všetky aplikácie sú aktuálne",
+        updatesAvailableShort: "Dostupné aktualizácie",
+        openAppUpdates: "Otvoriť aktualizácie aplikácií",
         totalAppsFormat: "Spolu aplikácií: %d",
         someAppsUnchecked: "Niektoré aplikácie sa nepodarilo skontrolovať",
         onlineUnavailable: "Online kontrolu sa nepodarilo dokončiť. Ostatné výsledky sa aj tak zobrazujú.",

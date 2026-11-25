@@ -10,7 +10,64 @@ extension AppUpdatesListView {
     /// The Hub and island's updates: one loader while a check runs, then
     /// the heading, fixed, over a list as tall as its rows up to five in the
     /// island and eight in the floating Hub, scrolling past that.
+    @ViewBuilder
     var compactBody: some View {
+        if inNotch { islandBody } else { hubBody }
+    }
+
+    /// The island is a window onto App Updates, not the place to work it:
+    /// one state, centered, with a way into App Updates when there is
+    /// something to update.
+    var islandBody: some View {
+        VStack(spacing: 10) {
+            if updates.isChecking {
+                ProgressView().controlSize(.small)
+                Text(text.checking + "…")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+            } else if allSourcesOff {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.orange)
+                Text(text.selectSource)
+                    .font(.system(size: 13, weight: .semibold))
+            } else if updates.items.isEmpty {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 30))
+                    .foregroundStyle(.green)
+                Text(text.emptyUpToDate)
+                    .font(.system(size: 13, weight: .semibold))
+            } else {
+                stackedIcons
+                Text(text.updatesAvailableShort)
+                    .font(.system(size: 13, weight: .semibold))
+                Button(text.openAppUpdates) {
+                    SettingsRouter.shared.request(AppFeature.appUpdates.settingsDestination)
+                    (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+                }
+                .buttonStyle(.appManager(compact: true))
+                .padding(.top, 2)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Up to four of the apps with updates, overlapping.
+    private var stackedIcons: some View {
+        let shown = Array(updates.items.prefix(4))
+        return HStack(spacing: -14) {
+            ForEach(Array(shown.enumerated()), id: \.element.id) { index, item in
+                Image(nsImage: icon(for: item))
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 44, height: 44)
+                    .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+                    .zIndex(Double(shown.count - index))
+            }
+        }
+    }
+
+    var hubBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             if updates.isChecking {
                 compactLoader

@@ -48,6 +48,8 @@ extension AppUpdateStrings {
         updatesAvailableFormat: "%d件のアップデートがあります",
         noUpdatesAvailable: "アップデートはありません",
         emptyUpToDate: "すべてのAppは最新です",
+        updatesAvailableShort: "アップデートがあります",
+        openAppUpdates: "Appアップデートを開く",
         totalAppsFormat: "合計%d個のApp",
         someAppsUnchecked: "一部のAppを確認できませんでした",
         onlineUnavailable: "オンライン確認を完了できませんでした。その他の結果は引き続き表示されます。",
