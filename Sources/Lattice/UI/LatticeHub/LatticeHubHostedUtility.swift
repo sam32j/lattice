@@ -16,7 +16,7 @@ struct LatticeHubHostedUtility: View {
         // available display needs its own scroll viewport.
         guard let notchSize else {
             // The App Manager's tabs add a row to the header above.
-            let header: CGFloat = item == .appManager ? 92 + 30 : 92
+            let header: CGFloat = item == .appManager ? 92 + 33 : 92
             return min(fallbackHeight, max(100, launcher.floatingPanelHeightBudget - header))
         }
         return notchSize.height

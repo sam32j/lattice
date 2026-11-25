@@ -231,7 +231,7 @@ struct PanelUninstallerView: View {
             Spacer(minLength: 0)
             if cancellable {
                 Button(l10n.s.uninstallerCancel) { uninstaller.reset() }
-                    .controlSize(.small)
+                    .buttonStyle(.appManager(.neutral, compact: true))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -265,8 +265,8 @@ struct PanelUninstallerView: View {
         }
     }
 
-    /// The app and what was found. The way back is Cancel beside the remove
-    /// button: a back arrow here would sit right under the surface's own.
+    /// The app and what was found, with Cancel at the row's end: a back
+    /// arrow here would sit right under the surface's own.
     private var resultsHeader: some View {
         HStack(spacing: 9) {
             if let target = uninstaller.target {
@@ -284,6 +284,9 @@ struct PanelUninstallerView: View {
                 }
             }
             Spacer(minLength: 0)
+            Button(l10n.s.uninstallerCancel) { uninstaller.reset() }
+                .buttonStyle(.appManager(.neutral, compact: true))
+                .disabled(uninstaller.isRemovingWithHomebrew)
         }
     }
 
@@ -385,8 +388,6 @@ struct PanelUninstallerView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            Button(l10n.s.uninstallerCancel) { uninstaller.reset() }
-                .disabled(uninstaller.isRemovingWithHomebrew)
             Button {
                 if let confirmation = uninstaller.homebrewRemovalConfirmation {
                     presentHomebrewRemovalConfirmation(confirmation)
@@ -395,12 +396,8 @@ struct PanelUninstallerView: View {
                 }
             } label: {
                 Label(removeButtonTitle, systemImage: "trash")
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .lineLimit(1)
-                    .padding(.horizontal, 4)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
+            .buttonStyle(.appManager(.destructive, compact: true))
             .disabled(!uninstaller.canRemoveSelected
                       || (uninstaller.selectedHomebrewPackage != nil && homebrew.isBusy))
         }
@@ -469,8 +466,7 @@ struct PanelUninstallerView: View {
             Button(l10n.s.uninstallerAnother) {
                 uninstaller.reset()
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
+            .buttonStyle(.appManager(compact: true))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, 6)

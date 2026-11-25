@@ -9,7 +9,11 @@ struct HomebrewTabStrings {
     let upToDate: String
     let summaryFormat: String
     let versionFormat: String
-    let searchPlaceholder: String
+    let searchAll: String
+    let searchCasks: String
+    let searchFormulae: String
+    let searchOutdated: String
+    let searchOrphans: String
     let filterAllFormat: String
     let filterCasksFormat: String
     let filterFormulasFormat: String
@@ -18,8 +22,6 @@ struct HomebrewTabStrings {
     let onlineTitle: String
     let searchingOnline: String
     let resultsFormat: String
-    let liveSource: String
-    let offlineSource: String
     let noOnlineFormat: String
     let cask: String
     let formula: String
@@ -62,11 +64,15 @@ extension FeatureStrings {
 
 extension HomebrewTabStrings {
     static let enUS = HomebrewTabStrings(
-        packageUpdatesFormat: "%d package updates available",
+        packageUpdatesFormat: "%d Homebrew updates available",
         upToDate: "All packages are up to date",
         summaryFormat: "%1$d installed · %2$d casks · %3$d formulas",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Search installed or Homebrew online (cursor, vlc, ripgrep)…",
+        searchAll: "Search Homebrew",
+        searchCasks: "Search Casks",
+        searchFormulae: "Search Formulae",
+        searchOutdated: "Search Outdated",
+        searchOrphans: "Search Orphans",
         filterAllFormat: "All (%d)",
         filterCasksFormat: "Casks (%d)",
         filterFormulasFormat: "Formulas (%d)",
@@ -75,8 +81,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Online Catalog",
         searchingOnline: "Searching formulae.brew.sh…",
         resultsFormat: "%d results",
-        liveSource: "Live · formulae.brew.sh",
-        offlineSource: "Offline Catalog",
         noOnlineFormat: "No Homebrew casks or formulas found for “%@”",
         cask: "Cask",
         formula: "Formula",
@@ -95,11 +99,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Installed: %@ · Updates Homebrew and its tap metadata")
 
     static let ptBR = HomebrewTabStrings(
-        packageUpdatesFormat: "%d atualizações de pacotes disponíveis",
+        packageUpdatesFormat: "%d atualizações do Homebrew disponíveis",
         upToDate: "Todos os pacotes estão atualizados",
         summaryFormat: "%1$d instalados · %2$d casks · %3$d fórmulas",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Buscar instalados ou no Homebrew online (cursor, vlc, ripgrep)…",
+        searchAll: "Buscar no Homebrew",
+        searchCasks: "Buscar casks",
+        searchFormulae: "Buscar fórmulas",
+        searchOutdated: "Buscar desatualizados",
+        searchOrphans: "Buscar órfãos",
         filterAllFormat: "Todos (%d)",
         filterCasksFormat: "Casks (%d)",
         filterFormulasFormat: "Fórmulas (%d)",
@@ -108,8 +116,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Catálogo online",
         searchingOnline: "Buscando em formulae.brew.sh…",
         resultsFormat: "%d resultados",
-        liveSource: "Ao vivo · formulae.brew.sh",
-        offlineSource: "Catálogo offline",
         noOnlineFormat: "Nenhum cask ou fórmula do Homebrew encontrado para “%@”",
         cask: "Cask",
         formula: "Fórmula",
@@ -128,11 +134,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Instalado: %@ · Atualiza o Homebrew e os metadados dos taps")
 
     static let tr = HomebrewTabStrings(
-        packageUpdatesFormat: "%d paket güncellemesi var",
+        packageUpdatesFormat: "%d Homebrew güncellemesi var",
         upToDate: "Tüm paketler güncel",
         summaryFormat: "%1$d yüklü · %2$d cask · %3$d formül",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Yüklüleri veya çevrimiçi Homebrew’u arayın (cursor, vlc, ripgrep)…",
+        searchAll: "Homebrew’da ara",
+        searchCasks: "Cask’lerde ara",
+        searchFormulae: "Formüllerde ara",
+        searchOutdated: "Eskilerde ara",
+        searchOrphans: "Sahipsizlerde ara",
         filterAllFormat: "Tümü (%d)",
         filterCasksFormat: "Cask’ler (%d)",
         filterFormulasFormat: "Formüller (%d)",
@@ -141,8 +151,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Çevrimiçi Katalog",
         searchingOnline: "formulae.brew.sh aranıyor…",
         resultsFormat: "%d sonuç",
-        liveSource: "Canlı · formulae.brew.sh",
-        offlineSource: "Çevrimdışı Katalog",
         noOnlineFormat: "“%@” için Homebrew cask’i veya formülü bulunamadı",
         cask: "Cask",
         formula: "Formül",
@@ -161,11 +169,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Yüklü: %@ · Homebrew’u ve tap verilerini günceller")
 
     static let ru = HomebrewTabStrings(
-        packageUpdatesFormat: "Доступно обновлений пакетов: %d",
+        packageUpdatesFormat: "Доступно обновлений Homebrew: %d",
         upToDate: "Все пакеты обновлены",
         summaryFormat: "Установлено: %1$d · cask: %2$d · формул: %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Поиск среди установленных или в Homebrew онлайн (cursor, vlc, ripgrep)…",
+        searchAll: "Поиск в Homebrew",
+        searchCasks: "Поиск cask",
+        searchFormulae: "Поиск формул",
+        searchOutdated: "Поиск устаревших",
+        searchOrphans: "Поиск ненужных",
         filterAllFormat: "Все (%d)",
         filterCasksFormat: "Cask (%d)",
         filterFormulasFormat: "Формулы (%d)",
@@ -174,8 +186,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Онлайн-каталог",
         searchingOnline: "Поиск на formulae.brew.sh…",
         resultsFormat: "Результатов: %d",
-        liveSource: "Онлайн · formulae.brew.sh",
-        offlineSource: "Офлайн-каталог",
         noOnlineFormat: "По запросу «%@» нет cask и формул Homebrew",
         cask: "Cask",
         formula: "Формула",
@@ -194,11 +204,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Установлено: %@ · Обновит Homebrew и данные tap")
 
     static let es = HomebrewTabStrings(
-        packageUpdatesFormat: "%d actualizaciones de paquetes disponibles",
+        packageUpdatesFormat: "%d actualizaciones de Homebrew disponibles",
         upToDate: "Todos los paquetes están al día",
         summaryFormat: "%1$d instalados · %2$d casks · %3$d fórmulas",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Buscar instalados o en Homebrew en línea (cursor, vlc, ripgrep)…",
+        searchAll: "Buscar en Homebrew",
+        searchCasks: "Buscar casks",
+        searchFormulae: "Buscar fórmulas",
+        searchOutdated: "Buscar desactualizados",
+        searchOrphans: "Buscar huérfanos",
         filterAllFormat: "Todos (%d)",
         filterCasksFormat: "Casks (%d)",
         filterFormulasFormat: "Fórmulas (%d)",
@@ -207,8 +221,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Catálogo en línea",
         searchingOnline: "Buscando en formulae.brew.sh…",
         resultsFormat: "%d resultados",
-        liveSource: "En vivo · formulae.brew.sh",
-        offlineSource: "Catálogo sin conexión",
         noOnlineFormat: "No se encontraron casks ni fórmulas de Homebrew para “%@”",
         cask: "Cask",
         formula: "Fórmula",
@@ -227,11 +239,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Instalado: %@ · Actualiza Homebrew y los metadatos de los taps")
 
     static let sk = HomebrewTabStrings(
-        packageUpdatesFormat: "Dostupné aktualizácie balíkov: %d",
+        packageUpdatesFormat: "Dostupné aktualizácie Homebrew: %d",
         upToDate: "Všetky balíky sú aktuálne",
         summaryFormat: "Nainštalované: %1$d · casky: %2$d · receptúry: %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Hľadať nainštalované alebo v Homebrew online (cursor, vlc, ripgrep)…",
+        searchAll: "Hľadať v Homebrew",
+        searchCasks: "Hľadať casky",
+        searchFormulae: "Hľadať receptúry",
+        searchOutdated: "Hľadať zastarané",
+        searchOrphans: "Hľadať osirotené",
         filterAllFormat: "Všetky (%d)",
         filterCasksFormat: "Casky (%d)",
         filterFormulasFormat: "Receptúry (%d)",
@@ -240,8 +256,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Online katalóg",
         searchingOnline: "Hľadá sa na formulae.brew.sh…",
         resultsFormat: "Výsledky: %d",
-        liveSource: "Naživo · formulae.brew.sh",
-        offlineSource: "Offline katalóg",
         noOnlineFormat: "Pre „%@“ sa nenašli žiadne casky ani receptúry Homebrew",
         cask: "Cask",
         formula: "Receptúra",
@@ -260,11 +274,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Nainštalované: %@ · Aktualizuje Homebrew a údaje tapov")
 
     static let de = HomebrewTabStrings(
-        packageUpdatesFormat: "%d Paket-Updates verfügbar",
+        packageUpdatesFormat: "%d Homebrew-Updates verfügbar",
         upToDate: "Alle Pakete sind aktuell",
         summaryFormat: "%1$d installiert · %2$d Casks · %3$d Formeln",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Installierte oder Homebrew online durchsuchen (cursor, vlc, ripgrep) …",
+        searchAll: "Homebrew durchsuchen",
+        searchCasks: "Casks durchsuchen",
+        searchFormulae: "Formeln durchsuchen",
+        searchOutdated: "Veraltete durchsuchen",
+        searchOrphans: "Verwaiste durchsuchen",
         filterAllFormat: "Alle (%d)",
         filterCasksFormat: "Casks (%d)",
         filterFormulasFormat: "Formeln (%d)",
@@ -273,8 +291,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Online-Katalog",
         searchingOnline: "formulae.brew.sh wird durchsucht …",
         resultsFormat: "%d Ergebnisse",
-        liveSource: "Live · formulae.brew.sh",
-        offlineSource: "Offline-Katalog",
         noOnlineFormat: "Keine Homebrew-Casks oder -Formeln für „%@“ gefunden",
         cask: "Cask",
         formula: "Formel",
@@ -293,11 +309,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Installiert: %@ · Aktualisiert Homebrew und die Tap-Daten")
 
     static let fr = HomebrewTabStrings(
-        packageUpdatesFormat: "%d mises à jour de paquets disponibles",
+        packageUpdatesFormat: "%d mises à jour Homebrew disponibles",
         upToDate: "Tous les paquets sont à jour",
         summaryFormat: "%1$d installés · %2$d casks · %3$d formules",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Rechercher parmi les installés ou sur Homebrew en ligne (cursor, vlc, ripgrep)…",
+        searchAll: "Rechercher dans Homebrew",
+        searchCasks: "Rechercher des casks",
+        searchFormulae: "Rechercher des formules",
+        searchOutdated: "Rechercher les obsolètes",
+        searchOrphans: "Rechercher les orphelins",
         filterAllFormat: "Tous (%d)",
         filterCasksFormat: "Casks (%d)",
         filterFormulasFormat: "Formules (%d)",
@@ -306,8 +326,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Catalogue en ligne",
         searchingOnline: "Recherche sur formulae.brew.sh…",
         resultsFormat: "%d résultats",
-        liveSource: "En direct · formulae.brew.sh",
-        offlineSource: "Catalogue hors ligne",
         noOnlineFormat: "Aucun cask ni formule Homebrew trouvé pour « %@ »",
         cask: "Cask",
         formula: "Formule",
@@ -326,11 +344,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Installée : %@ · Met à jour Homebrew et les données des taps")
 
     static let it = HomebrewTabStrings(
-        packageUpdatesFormat: "%d aggiornamenti di pacchetti disponibili",
+        packageUpdatesFormat: "%d aggiornamenti Homebrew disponibili",
         upToDate: "Tutti i pacchetti sono aggiornati",
         summaryFormat: "%1$d installati · %2$d cask · %3$d formule",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Cerca tra gli installati o su Homebrew online (cursor, vlc, ripgrep)…",
+        searchAll: "Cerca in Homebrew",
+        searchCasks: "Cerca cask",
+        searchFormulae: "Cerca formule",
+        searchOutdated: "Cerca obsoleti",
+        searchOrphans: "Cerca orfani",
         filterAllFormat: "Tutti (%d)",
         filterCasksFormat: "Cask (%d)",
         filterFormulasFormat: "Formule (%d)",
@@ -339,8 +361,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Catalogo online",
         searchingOnline: "Ricerca su formulae.brew.sh…",
         resultsFormat: "%d risultati",
-        liveSource: "Dal vivo · formulae.brew.sh",
-        offlineSource: "Catalogo offline",
         noOnlineFormat: "Nessun cask o formula Homebrew trovato per “%@”",
         cask: "Cask",
         formula: "Formula",
@@ -359,11 +379,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "Installato: %@ · Aggiorna Homebrew e i metadati dei tap")
 
     static let ja = HomebrewTabStrings(
-        packageUpdatesFormat: "%d件のパッケージアップデートがあります",
+        packageUpdatesFormat: "%d件のHomebrewアップデートがあります",
         upToDate: "すべてのパッケージが最新です",
         summaryFormat: "インストール済み%1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "インストール済み、またはHomebrewをオンラインで検索（cursor、vlc、ripgrep）…",
+        searchAll: "Homebrewを検索",
+        searchCasks: "Caskを検索",
+        searchFormulae: "Formulaを検索",
+        searchOutdated: "古いものを検索",
+        searchOrphans: "孤立を検索",
         filterAllFormat: "すべて（%d）",
         filterCasksFormat: "Cask（%d）",
         filterFormulasFormat: "Formula（%d）",
@@ -372,8 +396,6 @@ extension HomebrewTabStrings {
         onlineTitle: "オンラインカタログ",
         searchingOnline: "formulae.brew.shを検索中…",
         resultsFormat: "%d件の結果",
-        liveSource: "ライブ · formulae.brew.sh",
-        offlineSource: "オフラインカタログ",
         noOnlineFormat: "“%@”に一致するHomebrewのcaskやformulaはありません",
         cask: "Cask",
         formula: "Formula",
@@ -392,11 +414,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "インストール済み: %@ · Homebrewとtapのメタデータをアップデートします")
 
     static let ko = HomebrewTabStrings(
-        packageUpdatesFormat: "패키지 업데이트 %d개 있음",
+        packageUpdatesFormat: "Homebrew 업데이트 %d개 있음",
         upToDate: "모든 패키지가 최신 상태입니다",
         summaryFormat: "설치됨 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "설치된 항목 또는 온라인 Homebrew 검색(cursor, vlc, ripgrep)…",
+        searchAll: "Homebrew 검색",
+        searchCasks: "Cask 검색",
+        searchFormulae: "Formula 검색",
+        searchOutdated: "오래된 항목 검색",
+        searchOrphans: "고아 검색",
         filterAllFormat: "전체(%d)",
         filterCasksFormat: "Cask(%d)",
         filterFormulasFormat: "Formula(%d)",
@@ -405,8 +431,6 @@ extension HomebrewTabStrings {
         onlineTitle: "온라인 카탈로그",
         searchingOnline: "formulae.brew.sh 검색 중…",
         resultsFormat: "결과 %d개",
-        liveSource: "실시간 · formulae.brew.sh",
-        offlineSource: "오프라인 카탈로그",
         noOnlineFormat: "“%@”에 대한 Homebrew cask나 formula가 없습니다",
         cask: "Cask",
         formula: "Formula",
@@ -425,11 +449,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "설치됨: %@ · Homebrew와 tap 메타데이터를 업데이트합니다")
 
     static let zhHans = HomebrewTabStrings(
-        packageUpdatesFormat: "有 %d 个软件包更新",
+        packageUpdatesFormat: "有 %d 个 Homebrew 更新",
         upToDate: "所有软件包均为最新",
         summaryFormat: "已安装 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "搜索已安装项或在线 Homebrew（cursor、vlc、ripgrep）…",
+        searchAll: "搜索 Homebrew",
+        searchCasks: "搜索 Cask",
+        searchFormulae: "搜索 Formula",
+        searchOutdated: "搜索过时项",
+        searchOrphans: "搜索孤立项",
         filterAllFormat: "全部（%d）",
         filterCasksFormat: "Cask（%d）",
         filterFormulasFormat: "Formula（%d）",
@@ -438,8 +466,6 @@ extension HomebrewTabStrings {
         onlineTitle: "在线目录",
         searchingOnline: "正在搜索 formulae.brew.sh…",
         resultsFormat: "%d 个结果",
-        liveSource: "实时 · formulae.brew.sh",
-        offlineSource: "离线目录",
         noOnlineFormat: "未找到与“%@”匹配的 Homebrew cask 或 formula",
         cask: "Cask",
         formula: "Formula",
@@ -458,11 +484,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "已安装：%@ · 更新 Homebrew 及其 tap 元数据")
 
     static let zhTW = HomebrewTabStrings(
-        packageUpdatesFormat: "有 %d 個套件更新",
+        packageUpdatesFormat: "有 %d 個 Homebrew 更新",
         upToDate: "所有套件皆為最新",
         summaryFormat: "已安裝 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "搜尋已安裝項目或線上 Homebrew（cursor、vlc、ripgrep）⋯",
+        searchAll: "搜尋 Homebrew",
+        searchCasks: "搜尋 Cask",
+        searchFormulae: "搜尋 Formula",
+        searchOutdated: "搜尋過時項目",
+        searchOrphans: "搜尋孤立項目",
         filterAllFormat: "全部（%d）",
         filterCasksFormat: "Cask（%d）",
         filterFormulasFormat: "Formula（%d）",
@@ -471,8 +501,6 @@ extension HomebrewTabStrings {
         onlineTitle: "線上目錄",
         searchingOnline: "正在搜尋 formulae.brew.sh⋯",
         resultsFormat: "%d 個結果",
-        liveSource: "即時 · formulae.brew.sh",
-        offlineSource: "離線目錄",
         noOnlineFormat: "找不到符合「%@」的 Homebrew cask 或 formula",
         cask: "Cask",
         formula: "Formula",
@@ -491,11 +519,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "已安裝：%@ · 更新 Homebrew 及其 tap 中繼資料")
 
     static let zhHK = HomebrewTabStrings(
-        packageUpdatesFormat: "有 %d 個套件更新",
+        packageUpdatesFormat: "有 %d 個 Homebrew 更新",
         upToDate: "所有套件皆為最新",
         summaryFormat: "已安裝 %1$d · cask %2$d · formula %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "搜尋已安裝項目或網上 Homebrew（cursor、vlc、ripgrep）⋯",
+        searchAll: "搜尋 Homebrew",
+        searchCasks: "搜尋 Cask",
+        searchFormulae: "搜尋 Formula",
+        searchOutdated: "搜尋過時項目",
+        searchOrphans: "搜尋孤立項目",
         filterAllFormat: "全部（%d）",
         filterCasksFormat: "Cask（%d）",
         filterFormulasFormat: "Formula（%d）",
@@ -504,8 +536,6 @@ extension HomebrewTabStrings {
         onlineTitle: "網上目錄",
         searchingOnline: "正在搜尋 formulae.brew.sh⋯",
         resultsFormat: "%d 個結果",
-        liveSource: "即時 · formulae.brew.sh",
-        offlineSource: "離線目錄",
         noOnlineFormat: "找不到符合「%@」的 Homebrew cask 或 formula",
         cask: "Cask",
         formula: "Formula",
@@ -524,11 +554,15 @@ extension HomebrewTabStrings {
         footerDetailFormat: "已安裝：%@ · 更新 Homebrew 及其 tap 元數據")
 
     static let uk = HomebrewTabStrings(
-        packageUpdatesFormat: "Доступно оновлень пакетів: %d",
+        packageUpdatesFormat: "Доступно оновлень Homebrew: %d",
         upToDate: "Усі пакети оновлено",
         summaryFormat: "Встановлено: %1$d · cask: %2$d · формул: %3$d",
         versionFormat: "Homebrew %@",
-        searchPlaceholder: "Пошук серед встановлених або в Homebrew онлайн (cursor, vlc, ripgrep)…",
+        searchAll: "Пошук у Homebrew",
+        searchCasks: "Пошук cask",
+        searchFormulae: "Пошук формул",
+        searchOutdated: "Пошук застарілих",
+        searchOrphans: "Пошук непотрібних",
         filterAllFormat: "Усі (%d)",
         filterCasksFormat: "Cask (%d)",
         filterFormulasFormat: "Формули (%d)",
@@ -537,8 +571,6 @@ extension HomebrewTabStrings {
         onlineTitle: "Онлайн-каталог",
         searchingOnline: "Пошук на formulae.brew.sh…",
         resultsFormat: "Результатів: %d",
-        liveSource: "Онлайн · formulae.brew.sh",
-        offlineSource: "Офлайн-каталог",
         noOnlineFormat: "За запитом «%@» немає cask і формул Homebrew",
         cask: "Cask",
         formula: "Формула",

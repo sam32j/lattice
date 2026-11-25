@@ -7,58 +7,30 @@ import UniformTypeIdentifiers
 
 
 extension AppUpdatesListView {
+    /// Built from the same header, card and rows as the other App Manager
+    /// tabs, so its switches and the notify row's reveal match them.
     var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(text.updatePreferences)
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .padding(.leading, 2)
-
-            VStack(alignment: .leading, spacing: 0) {
-                // Row 1: Automatic checks
-                HStack(alignment: .center) {
-                    Text(text.frequencyLabel)
-                        .font(.system(size: 13, weight: .regular))
-                    Spacer()
-                    schedulePicker
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-
+        VStack(alignment: .leading, spacing: 8) {
+            AppManagerSectionHeader(title: text.updatePreferences)
+            SettingsCard {
+                SettingsControlRow(title: text.frequencyLabel) { schedulePicker }
                 // The page's settingsExpansionAnimation, keyed on the same
                 // condition, grows the card and moves the sections below.
                 if showsNotifyRow {
                     VStack(alignment: .leading, spacing: 0) {
-                        preferenceDivider
-                        HStack(alignment: .center) {
-                            Text(text.notifyToggle)
-                                .font(.system(size: 13, weight: .regular))
-                            Spacer()
+                        Divider()
+                        SettingsControlRow(title: text.notifyToggle) {
                             Toggle(text.notifyToggle, isOn: notifyDisplayBinding)
                                 .labelsHidden()
-                                .toggleStyle(.switch)
-                                .controlSize(.small)
                                 .disabled(isNotifyControlDisabled)
                                 .opacity(isNotifyControlDisabled ? 0.45 : 1.0)
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
+                        .padding(.top, SettingsCard<EmptyView>.headerSpacing)
                     }
                     .transition(.settingsReveal)
                 }
-
-                preferenceDivider
-
-                // Row 3: Excluded Apps
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(text.excludedAppsTitle)
-                            .font(.system(size: 13, weight: .regular))
-                        Text(excludedSummaryText)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
+                Divider()
+                SettingsControlRow(title: text.excludedAppsTitle, caption: excludedSummaryText) {
                     Button {
                         showingALS = true
                     } label: {
@@ -73,13 +45,8 @@ extension AppUpdatesListView {
                     .buttonStyle(.plain)
                     .accessibilityLabel(text.manageExcludedApps)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.primary.opacity(0.04))
-            )
+            .toggleStyle(.switch)
         }
     }
 
@@ -93,7 +60,7 @@ extension AppUpdatesListView {
         }
         .labelsHidden()
         .pickerStyle(.menu)
-        .frame(width: 140, alignment: .trailing)
+        .fixedSize()
         .disabled(isScheduleControlDisabled)
         .opacity(isScheduleControlDisabled ? 0.45 : 1.0)
         .onChange(of: frequencyRaw) { _, value in
@@ -102,12 +69,6 @@ extension AppUpdatesListView {
                 Notifier.requestPermission()
             }
         }
-    }
-
-    var preferenceDivider: some View {
-        Rectangle()
-            .fill(Color.primary.opacity(0.06))
-            .frame(height: 1)
     }
 
     // MARK: - ALS (App List Sheet)

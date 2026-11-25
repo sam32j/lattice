@@ -28,12 +28,30 @@ struct AppUninstallerTab: View {
             .onAppear {
                 uninstaller.clearRefusal()
                 catalog.load()
+                syncInspection(uninstaller.phase)
             }
             .onDisappear { uninstaller.clearRefusal() }
             .onChange(of: uninstaller.phase) { _, phase in
                 armed = false
                 if phase == .empty { catalog.load(force: summary != nil); summary = nil }
+                syncInspection(phase)
             }
+    }
+
+    private static let inspectionSubpage = "appUninstaller.inspect"
+
+    /// An app being inspected is a step of the Settings window's history:
+    /// Back returns to the app list, and leaving the page closes it.
+    private func syncInspection(_ phase: AppUninstaller.Phase) {
+        let router = SettingsRouter.shared
+        if phase == .empty {
+            router.endSubpage(Self.inspectionSubpage)
+        } else {
+            router.pushSubpage(Self.inspectionSubpage) {
+                // A removal under way finishes; anything else closes.
+                if AppUninstaller.shared.phase != .removing { AppUninstaller.shared.reset() }
+            }
+        }
     }
 
     @ViewBuilder
@@ -61,6 +79,7 @@ struct AppUninstallerTab: View {
                                     }
                                 }) {
                 Button(strings.uninstallButton, action: choose)
+                    .buttonStyle(.appManager())
             }
             if let refusal = uninstaller.refusal {
                 UninstallRefusalNote(refusal: refusal)
@@ -68,6 +87,7 @@ struct AppUninstallerTab: View {
             if !permissions.fullDiskAccess {
                 AppManagerBanner(title: strings.fdaTitle, detail: strings.fdaDetail) {
                     Button(strings.grantAccess) { Permissions.shared.requestFullDiskAccess() }
+                        .buttonStyle(.appManager())
                 }
             }
             VStack(alignment: .leading, spacing: 10) {
@@ -180,12 +200,14 @@ struct AppUninstallerTab: View {
             }, headline: message, detail: uninstaller.target?.bundleID ?? uninstaller.target?.url.path) {
                 if cancellable {
                     Button(s.uninstallerCancel) { uninstaller.reset() }
+                        .buttonStyle(.appManager(.neutral))
                 } else {
                     ProgressView().controlSize(.small)
                 }
             }
-            AppManagerSkeletonRow()
-            AppManagerSkeletonRow()
+            // Shaped like what the scan brings back: a category heading
+            // over a card of leftover rows.
+            UninstallerLeftoverSkeleton()
         }
     }
 
@@ -200,13 +222,10 @@ struct AppUninstallerTab: View {
                    detail: [target.bundleID, String(format: strings.foundFormat,
                                                      AppManagerFormat.bytes(uninstaller.totalSize))]
                     .compactMap { $0 }.joined(separator: " · ")) {
-                    Button { uninstaller.reset() } label: {
-                        Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help(strings.close)
-                    .accessibilityLabel(strings.close)
-                    .disabled(uninstaller.isRemovingWithHomebrew)
+                    // The way back sits with the app it is about, as while scanning.
+                    Button(s.uninstallerCancel) { uninstaller.reset() }
+                        .buttonStyle(.appManager(.neutral))
+                        .disabled(uninstaller.isRemovingWithHomebrew)
                 }
             }
             homebrewNotice
@@ -299,14 +318,11 @@ struct AppUninstallerTab: View {
                     .monospacedDigit()
             }
             Spacer()
-            Button(s.uninstallerCancel) { uninstaller.reset() }
-                .disabled(uninstaller.isRemovingWithHomebrew)
             Button(armed ? strings.confirmRemoval
                    : (uninstaller.selectedHomebrewPackage == nil ? s.uninstallerRemove : strings.uninstallViaHomebrew)) {
                 remove()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
+            .buttonStyle(.appManager(.destructive))
             .disabled(!uninstaller.canRemoveSelected
                       || (uninstaller.selectedHomebrewPackage != nil && homebrew.isBusy))
         }
@@ -374,6 +390,7 @@ struct AppUninstallerTab: View {
                 AppManagerBanner(title: String(format: strings.skippedFormat, failed.count),
                                  detail: strings.skippedDetail) {
                     Button(strings.grant) { Permissions.shared.requestFullDiskAccess() }
+                        .buttonStyle(.appManager())
                 }
                 .frame(maxWidth: 440)
             } else if !failed.isEmpty {
@@ -396,8 +413,9 @@ struct AppUninstallerTab: View {
                 Button(strings.openTrash) {
                     NSWorkspace.shared.open(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".Trash"))
                 }
+                .buttonStyle(.appManager(.neutral))
                 Button(strings.done) { uninstaller.reset() }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.appManager())
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -451,5 +469,45 @@ struct AppUninstallSummary {
         breakdown = Dictionary(grouping: selected, by: \.category)
             .map { Row(category: $0.key, size: $0.value.map(\.size).reduce(0, +)) }
             .sorted { $0.size > $1.size }
+    }
+}
+
+/// A placeholder in the shape of the leftovers a scan finds: a category
+/// heading and its size over a card of rows with a checkbox, a name, a
+/// path and a size.
+struct UninstallerLeftoverSkeleton: View {
+    var rows = 4
+    @State private var dim = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                RoundedRectangle(cornerRadius: 3).frame(width: 90, height: 9)
+                Spacer()
+                RoundedRectangle(cornerRadius: 3).frame(width: 48, height: 9)
+            }
+            .padding(.horizontal, 4)
+            VStack(alignment: .leading, spacing: 13) {
+                ForEach(0..<rows, id: \.self) { index in
+                    if index > 0 { Rectangle().frame(height: 1).opacity(0.5) }
+                    HStack(spacing: 10) {
+                        RoundedRectangle(cornerRadius: 3).frame(width: 14, height: 14)
+                        VStack(alignment: .leading, spacing: 6) {
+                            RoundedRectangle(cornerRadius: 3).frame(width: [150, 110, 180, 130][index % 4], height: 10)
+                            RoundedRectangle(cornerRadius: 3).frame(width: [220, 190, 240, 170][index % 4], height: 8)
+                        }
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 3).frame(width: 52, height: 9)
+                    }
+                }
+            }
+            .padding(16)
+            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .foregroundStyle(Color.primary.opacity(dim ? 0.05 : 0.1))
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.9).repeatForever()) { dim = true }
+        }
+        .accessibilityHidden(true)
     }
 }

@@ -106,14 +106,15 @@ struct AppManagerPanelPicker: View {
     var body: some View {
         let strings = FeatureStrings.appManager(l10n.language)
         if state.tabs.count > 1 {
-            Picker(strings.tabsLabel, selection: Binding(get: { state.shownTab }, set: { state.tab = $0 })) {
-                ForEach(state.tabs, id: \.self) { tab in
-                    Text(tab.shortTitle(strings)).tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(maxWidth: .infinity)
+            // The same full-width control as Settings, with room under it
+            // before the page.
+            SettingsFullWidthSegmentedControl(
+                title: strings.tabsLabel,
+                options: state.tabs.map { ($0, $0.shortTitle(strings)) },
+                selection: Binding(get: { state.shownTab }, set: { state.tab = $0 }),
+                dot: { AppManagerAttention.shared.dot(for: $0) })
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 5)
         }
     }
 }
