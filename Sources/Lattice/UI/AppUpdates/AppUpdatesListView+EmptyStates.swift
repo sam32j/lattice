@@ -22,27 +22,26 @@ extension AppUpdatesListView {
     func emptyRow(symbol: String, tint: Color, title: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: symbol)
-                .font(.system(size: 20))
+                .font(.system(size: 18))
                 .foregroundStyle(tint)
-                .frame(width: 36, height: 36)
-            Text(title).font(.system(size: 13, weight: .medium))
+                .frame(width: 30, height: 30)
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
             Spacer(minLength: 8)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
     }
 
     var errorCard: some View {
         VStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 24))
+                .font(.system(size: 22))
                 .foregroundStyle(.orange)
             Text(text.checkFailed)
-                .font(.system(size: 13.5, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
             if let error = updates.lastError, !error.isEmpty {
                 Text(error)
-                    .font(.system(size: 11.5))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
@@ -50,17 +49,11 @@ extension AppUpdatesListView {
             Button(text.retry) {
                 updates.check()
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.appManager(.neutral))
             .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.025))
-        )
+        .padding(.vertical, 12)
     }
 
     // MARK: - Row Implementation
