@@ -7,11 +7,26 @@ import Foundation
 
 extension HomebrewManager {
 
+    func setOperationDetailsExpanded(_ expanded: Bool) {
+        guard isOperationDetailsExpanded != expanded else { return }
+        isOperationDetailsExpanded = expanded
+        if expanded {
+            completedOperationCleanup?.cancel()
+            completedOperationCleanup = nil
+        } else if let status = operationStatus, !status.isActive {
+            scheduleCompletedOperationCleanup(result: status.result,
+                                              targetID: status.targetID,
+                                              finishedAt: status.finishedAt)
+        }
+    }
+
     func scheduleCompletedOperationCleanup(result: HomebrewOperationResult,
                                                    targetID: String,
                                                    finishedAt: Date?) {
         completedOperationCleanup?.cancel()
-        guard result != .running,
+        completedOperationCleanup = nil
+        guard !isOperationDetailsExpanded,
+              result != .running,
               let finishedAt else { return }
         let delay: TimeInterval
         let clearsWholeStatus: Bool
@@ -31,13 +46,16 @@ extension HomebrewManager {
 
         let item = DispatchWorkItem { [weak self] in
             guard let self,
+                  !self.isOperationDetailsExpanded,
                   self.operation == nil,
                   self.operationStatus?.targetID == targetID,
                   self.operationStatus?.finishedAt == finishedAt else { return }
+            self.isOperationDetailsExpanded = false
             self.log = ""
             if clearsWholeStatus {
                 self.terminalFallbackCommand = nil
                 self.operationStatus = nil
+                self.lastCleanupSummary = nil
             }
             self.completedOperationCleanup = nil
         }

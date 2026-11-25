@@ -30,6 +30,11 @@ extension HomebrewManager {
             isSearching = false
             isLoadingDetails = false
             isLoadingPopularity = false
+            cleanupEstimateRead = nil
+            cleanupEstimateCheckedAt = nil
+            isCheckingCleanup = false
+            cleanupEstimate = nil
+            lastCleanupSummary = nil
             clearUntrustedTap()
         }
         if !AppFeature.uninstaller.isAvailable {

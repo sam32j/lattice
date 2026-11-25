@@ -705,6 +705,12 @@ enum RepositoryFeatureTests {
         suite.expect(HomebrewCommandBuilder.upgradeAll(brewPath: brewPath).arguments
                == ["upgrade"],
                "Homebrew update all command upgrades all outdated packages")
+        suite.expect(HomebrewCommandBuilder.cleanup(brewPath: brewPath).arguments
+               == ["cleanup", "--prune=all", "-s"],
+               "Homebrew cleanup command prunes stale versions, temp downloads, and caches")
+        suite.expect(HomebrewCommandBuilder.cleanupDryRun(brewPath: brewPath).arguments
+               == ["cleanup", "--prune=all", "-s", "--dry-run"],
+               "Homebrew cleanup dry-run command estimates reclaimable cache size")
 
         // brew exits non-zero when it could not do all of a run, not only when it
         // did none of it, so the installed and outdated lists have to be re-read
@@ -735,11 +741,14 @@ enum RepositoryFeatureTests {
                "Homebrew package update status uses an update icon")
         suite.expect(HomebrewOperation.Action.updateHomebrew.runningSystemImage == "arrow.triangle.2.circlepath",
                "Homebrew metadata refresh status uses a refresh icon")
+        suite.expect(HomebrewOperation.Action.cleanup.runningSystemImage == "sparkles",
+               "Homebrew cleanup status uses a sparkles icon")
         suite.expect(HomebrewOperation.Action.uninstall.clearsSelectionOnSuccess,
                "Homebrew uninstall clears details for the package that left the installed list")
         suite.expect(!HomebrewOperation.Action.install.clearsSelectionOnSuccess
-                && !HomebrewOperation.Action.upgrade.clearsSelectionOnSuccess,
-               "Homebrew install and upgrade preserve package details after success")
+                && !HomebrewOperation.Action.upgrade.clearsSelectionOnSuccess
+                && !HomebrewOperation.Action.cleanup.clearsSelectionOnSuccess,
+               "Homebrew install, upgrade, and cleanup preserve package details after success")
         suite.expect(HomebrewCommandBuilder.needsTerminalFallback(output: "sudo: a terminal is required to read the password"),
                "sudo terminal error triggers Homebrew terminal fallback")
         suite.expect(HomebrewCommandBuilder.installerCommand == #"/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)""#,
@@ -974,6 +983,129 @@ enum RepositoryFeatureTests {
         suite.expect(HomebrewProgressParser.activity(in: "\u{001B}[32m==> Moving App 'Sample.app'\u{001B}[0m")
                == "Moving App 'Sample.app'",
                "Homebrew progress parser cleans activity lines")
+        suite.expect(HomebrewProgressParser.phase(in: "Removing: /Users/test/Library/Caches/Homebrew/foo.tar.gz... (12.4MB)",
+                                            action: .cleanup) == .cleaning,
+               "Homebrew progress parser detects cleanup removals")
+        suite.expect(HomebrewProgressParser.phase(in: "Pruning 3 days from /Users/test/Library/Caches/Homebrew",
+                                            action: .cleanup) == .cleaning,
+               "Homebrew progress parser detects cache pruning")
+
+        let executedCleanup = HomebrewCleanupParser.parse("""
+        \u{001B}[32mRemoving: /Users/test/Library/Caches/Homebrew/downloads/a.incomplete... (42MB)\u{001B}[0m
+        Removing: /Users/test/Library/Caches/Homebrew/b--1.0.tar.gz... (8MB)
+        ==> Autoremoving 2 unneeded formulae:
+        ==> This operation has freed approximately 148.5MB of disk space.
+        """)
+        suite.expect(executedCleanup.freedSizeText == "148.5 MB"
+                && executedCleanup.removedCount == 4
+                && !executedCleanup.isEmpty,
+               "Homebrew cleanup parser extracts freed disk space and removed item count from cleanup output")
+
+        let dryRunCleanup = HomebrewCleanupParser.parse("""
+        Would remove: /Users/test/Library/Caches/Homebrew/downloads/stale.incomplete (24.2MB)
+        ==> This operation would free approximately 24.2MB of disk space.
+        """)
+        suite.expect(dryRunCleanup.freedSizeText == "24.2 MB"
+                && dryRunCleanup.removedCount == 1
+                && !dryRunCleanup.isEmpty,
+               "Homebrew cleanup parser extracts estimated space from dry-run output")
+
+        let emptyCleanup = HomebrewCleanupParser.parse("")
+        suite.expect(emptyCleanup.freedSizeText == nil
+                && emptyCleanup.removedCount == 0
+                && emptyCleanup.isEmpty,
+               "Homebrew cleanup parser treats empty output as nothing to clean")
+
+        let panelHomebrewSource = repository.moduleSource(at: "Sources/Lattice/UI/MenuPanel/PanelHomebrewView.swift")
+        let panelHomebrewSurfacesSource = repository.moduleSource(at: "Sources/Lattice/UI/MenuPanel/PanelHomebrewView+Surfaces.swift")
+        let hostedUtilitySource = repository.moduleSource(at: "Sources/Lattice/UI/LatticeHub/LatticeHubHostedUtility.swift")
+        let homebrewTabSource = repository.moduleSource(at: "Sources/Lattice/UI/Settings/HomebrewTab.swift")
+        let operationStatusSource = repository.moduleSource(at: "Sources/Lattice/UI/HomebrewOperationStatusView.swift")
+        let updatesPickerSource = repository.moduleSource(at: "Sources/Lattice/UI/AppUpdates/AppUpdatesListView+Picker.swift")
+        let updatesCompactSource = repository.moduleSource(at: "Sources/Lattice/UI/AppUpdates/AppUpdatesListView+Compact.swift")
+        suite.expect(panelHomebrewSurfacesSource.contains("var islandBody: some View")
+                && panelHomebrewSurfacesSource.contains("var hubBody: some View")
+                && panelHomebrewSurfacesSource.contains("islandUpdatesCard")
+                && panelHomebrewSurfacesSource.contains("islandCleanupCard")
+                && panelHomebrewSurfacesSource.contains("NotchControlSurface")
+                && panelHomebrewSource.contains("if inNotch"),
+               "PanelHomebrewView separates Dynamic Island package updates and cache cleanup into stacked full-width modules alongside its floating hub layout")
+        suite.expect(panelHomebrewSource.contains("homebrew.cleanup")
+                && panelHomebrewSource.contains("homebrew.upgradeAll")
+                && panelHomebrewSurfacesSource.contains(".hubScrollEdgeFade")
+                && panelHomebrewSurfacesSource.contains("minHeight: 70"),
+               "PanelHomebrewView exposes cleanup, update all, 70pt empty online state, and edge-faded hub scrolling")
+        suite.expect(homebrewTabSource.contains("cleanupButton")
+                && homebrewTabSource.contains("homebrew.cleanup")
+                && homebrewTabSource.contains("hidesEmptyInstalledSection")
+                && homebrewTabSource.contains("minHeight: 70"),
+               "HomebrewTab compounds cache cleanup into one top card, hides empty local results for online searches, and sizes online empty state to 70pt")
+        suite.expect(!homebrewTabSource.contains("sparkles")
+                && !panelHomebrewSurfacesSource.contains("sparkles"),
+               "Homebrew cleanup controls omit the sparkles icon across Settings, Dynamic Island, and floating Hub")
+        suite.expect(homebrewTabSource.contains("showsCleanupButton")
+                && !homebrewTabSource.contains("ellipsis.circle")
+                && panelHomebrewSurfacesSource.contains("showsCleanupButton")
+                && !panelHomebrewSurfacesSource.contains("ellipsis.circle")
+                && !panelHomebrewSurfacesSource.contains("islandOutdatedMoreMenu")
+                && homebrewTabSource.contains("HomebrewCompactOperationFooter")
+                && panelHomebrewSurfacesSource.contains("HomebrewCompactOperationFooter")
+                && operationStatusSource.contains("setOperationDetailsExpanded"),
+               "Clean Up sits directly beside Update All without an overflow menu, hides when clean, and Settings shares the auto-dismissing compact operation footer")
+        suite.expect(HomebrewTabStrings.enUS.upgrading == "Updating…"
+                && !repository.moduleSource(at: "Sources/Lattice/Core/HomebrewTabStrings.swift").contains("Upgrading"),
+               "Homebrew UI strings consistently use Update/Updating terminology rather than mixing Upgrade")
+        suite.expect(operationStatusSource.contains("case .cancelled: return \"xmark.octagon.fill\"")
+                && panelHomebrewSurfacesSource.contains("case .cancelled: return \"xmark.octagon.fill\"")
+                && operationStatusSource.contains("case .cancelled: return .red")
+                && panelHomebrewSurfacesSource.contains("case .cancelled: return .red"),
+               "Cancelled Homebrew operations use a red octagon icon rather than a close button X")
+        suite.expect(panelHomebrewSource.contains("case all, cask, formula, outdated, orphans")
+                && panelHomebrewSource.contains("filterCount($0) > 0")
+                && homebrewTabSource.contains("filterCount($0) > 0"),
+               "Floating window and Settings share All/Casks/Formulas/Outdated/Orphans filter ordering and omit zero-count categories")
+        let uninstallerPanelSource = repository.moduleSource(at: "Sources/Lattice/UI/MenuPanel/PanelUninstallerView.swift")
+        let hubPresentationSource = repository.moduleSource(at: "Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift")
+        let notchServiceSource = repository.moduleSource(at: "Sources/Lattice/Services/Notch/NotchService.swift")
+        let appManagerPanelSource = repository.moduleSource(at: "Sources/Lattice/UI/MenuPanel/PanelAppManagerView.swift")
+        let appManagerSettingsSource = repository.moduleSource(at: "Sources/Lattice/UI/Settings/AppManagerSettings.swift")
+        suite.expect(uninstallerPanelSource.contains("uninstaller.reset()")
+                && hubPresentationSource.contains("resetUninstallerIfSelected()")
+                && notchServiceSource.contains("resetUninstallerIfSelected()")
+                && appManagerPanelSource.contains("AppUninstaller.shared.reset()"),
+               "Exiting or closing an inspected uninstaller panel resets to the app chooser for the next open")
+        suite.expect(appManagerSettingsSource.contains("HomebrewSimulator")
+                && appManagerSettingsSource.contains("debugButton"),
+               "Developer App Manager Settings header places a Homebrew state simulator button beside the knob menu")
+        suite.expect(!updatesPickerSource.contains("arrow.up.right.square")
+                && updatesPickerSource.contains("text.openAppUpdates")
+                && !panelHomebrewSurfacesSource.contains("arrow.up.right.square")
+                && panelHomebrewSurfacesSource.contains("strings.openHomebrew")
+                && updatesCompactSource.contains("VStack(alignment: .leading, spacing: 0)")
+                && updatesCompactSource.contains(".contentMargins(.vertical, HubScrollEdge.inset"),
+               "Updates and Homebrew floating/island views replace the boxed arrow with secondary Open buttons while preserving scroll soft-edge fade")
+        suite.expect(HomebrewTabStrings.enUS.cleanupTitle == "Homebrew Cache"
+                && !panelHomebrewSurfacesSource.contains("islandCleanupSubtitle")
+                && !panelHomebrewSurfacesSource.contains(".help(strings.cleanupDescription)")
+                && !panelHomebrewSurfacesSource.contains("Circle()\n                        .fill(Color.green")
+                && !panelHomebrewSurfacesSource.contains("Text(summaryLine)")
+                && !homebrewTabSource.contains("strings.summaryFormat")
+                && !homebrewTabSource.contains("ProgressView().controlSize(.mini)\n            }")
+                && !panelHomebrewSurfacesSource.contains("if homebrew.isCheckingCleanup")
+                && homebrewTabSource.contains(".padding(.vertical, 5.5)")
+                && panelHomebrewSource.contains(".padding(.vertical, 3.5)"),
+               "DI/Floating/Settings Homebrew views match simplified labels, centered badge-free checkmark, no cleanup spinner, and matching Updating button heights")
+        let hubMonitorsSource = repository.moduleSource(at: "Sources/Lattice/Services/LatticeHub/LatticeHubMonitors.swift")
+        suite.expect(updatesCompactSource.contains("if updates.isChecking")
+                && updatesCompactSource.contains("compactHeader\n                    AppManagerListSkeleton")
+                && updatesPickerSource.contains("if isChecking && count == 0")
+                && !hubMonitorsSource.contains("didResignKeyNotification")
+                && hubMonitorsSource.contains("shouldDismissWhenOtherWindowBecomesKey")
+                && !uninstallerPanelSource.contains(".defaultFocus("),
+               "Floating App Updates skeleton retains its heading and switching to Uninstaller in the floating window never spurs key-loss dismissal")
+        suite.expect(hostedUtilitySource.contains("if item == .appManager {")
+                && !hostedUtilitySource.contains("appManagerPanel.selectedTab != .homebrew"),
+               "LatticeHubHostedUtility lets all App Manager tabs including Homebrew manage their viewport directly")
         suite.expect(HomebrewProgressParser.visibleError(from: "$ brew install x\nError: Cask failed")
                == "Error: Cask failed",
                "Homebrew progress parser hides command lines from visible errors")

@@ -17,7 +17,6 @@ struct HomebrewTab: View {
     @State private var filter = Filter.all
     @State private var expanded: Set<String> = []
     @State private var armedUninstall: String?
-    @State private var showDetails = false
 
     enum Filter: Hashable { case all, cask, formula, outdated, orphans }
 
@@ -38,101 +37,157 @@ struct HomebrewTab: View {
                         }
                     }
                     if let tap = homebrew.untrustedTap { HomebrewTrustCard(tap: tap) }
-                    if let error = homebrew.errorMessage, !error.isEmpty, homebrew.operationStatus?.isActive != true {
+                    if let error = homebrew.errorMessage, !error.isEmpty, activeOrHomebrewStatus == nil {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
                             .font(.caption)
                             .foregroundStyle(.orange)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     searchBar
-                    // What is installed comes first; the catalog follows, and
-                    // only for the filters it can answer.
-                    installedSection
-                    if searchesOnline, !query.trimmingCharacters(in: .whitespaces).isEmpty { onlineSection }
-                    if let status = homebrew.operationStatus, !status.isActive, status.result != .running {
-                        HomebrewOperationStatusView(status: status, log: homebrew.log,
-                                                    terminalFallbackCommand: homebrew.terminalFallbackCommand,
-                                                    compact: false, showDetails: $showDetails,
-                                                    onCancel: homebrew.cancelOperation, onClear: homebrew.clearLog,
-                                                    onOpenTerminal: homebrew.openTerminalFallback)
+                    // What is installed comes first; when an online-capable search
+                    // finds nothing installed locally, hide the empty local box and
+                    // surface the online catalog directly. Outdated and orphan
+                    // filters have no online search, so they keep their empty state.
+                    if !hidesEmptyInstalledSection {
+                        installedSection
                     }
+                    if searchesOnline, !trimmedQuery.isEmpty { onlineSection }
                 } footer: {
                     footer
                 }
             }
         }
         .onAppear {
-            if homebrew.installed.isEmpty { homebrew.refreshInstalled() }
-            catalog.checkVersion()
+            if !HomebrewSimulator.shared.isSimulating {
+                if homebrew.installed.isEmpty { homebrew.refreshInstalled() }
+                catalog.checkVersion()
+                homebrew.refreshCleanupEstimate()
+            }
+            if !visibleFilters.contains(filter) { filter = .all }
         }
         .onChange(of: query) { _, _ in runSearch() }
         .onChange(of: filter) { _, _ in runSearch() }
-        .animation(.easeInOut(duration: 0.2), value: homebrew.operationStatus?.isActive == true)
+        .onChange(of: homebrew.installed) { _, _ in
+            if !visibleFilters.contains(filter) { filter = .all }
+        }
+        .onChange(of: homebrew.outdatedPackagesByID) { _, _ in
+            if !visibleFilters.contains(filter) { filter = .all }
+        }
+        .onChange(of: homebrew.operationStatus?.targetID) { _, _ in
+            homebrew.setOperationDetailsExpanded(false)
+        }
+        .animation(.easeInOut(duration: 0.2), value: activeOrHomebrewStatus?.targetID)
+        .animation(.easeInOut(duration: 0.2), value: activeOrHomebrewStatus?.result)
+        .animation(.easeInOut(duration: 0.2), value: showsCleanupButton)
+        .animation(.easeInOut(duration: 0.2), value: showsCacheCleanedButton)
         .animation(.easeInOut(duration: 0.2), value: catalog.selfUpdateAvailable)
+        .animation(.easeInOut(duration: 0.22), value: homebrew.isOperationDetailsExpanded)
     }
 
     // MARK: Header
 
     private var outdated: [HomebrewPackage] { homebrew.installed.filter(\.hasUpdateAvailable) }
-
-    /// How many updates, with the refresh arrow right beside it (turning
-    /// while Homebrew is read), and Upgrade All when there is something to
-    /// upgrade.
-    private var statusCard: some View {
-        let casks = homebrew.installed.filter { $0.kind == .cask }.count
-        let formulae = homebrew.installed.count - casks
-        var detail = String(format: strings.summaryFormat, homebrew.installed.count, casks, formulae)
-        if let version = catalog.installedVersion { detail += " · " + String(format: strings.versionFormat, version) }
-        let refreshing = homebrew.isLoadingInstalled
-        if firstLoad {
-            return AnyView(statusSkeleton)
-        }
-        return AnyView(HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
-                        .font(.system(size: 13, weight: .semibold))
-                    Button {
-                        homebrew.refreshInstalled()
-                        catalog.checkVersion(force: true)
-                    } label: {
-                        RefreshArrow(isSpinning: refreshing)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20, height: 16)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(homebrew.isBusy || refreshing)
-                    .help(s.homebrewRefresh)
-                    .accessibilityLabel(s.homebrewRefresh)
-                }
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 8)
-            if !outdated.isEmpty {
-                Button(s.homebrewUpgradeAll) { homebrew.upgradeAll() }
-                    .buttonStyle(.appManager())
-                    .disabled(homebrew.isBusy)
-            }
-        }
-        // The same size as the other tabs' drop strip, filled rather than dashed.
-        .padding(14)
-        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous)))
+    private var trimmedQuery: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var hidesEmptyInstalledSection: Bool {
+        !trimmedQuery.isEmpty && searchesOnline && installedRows.isEmpty && !firstLoad
     }
 
-    /// Nothing is known before the first read: the title, the counts and
-    /// the button are placeholders rather than "0 installed".
+    private var activeOrHomebrewStatus: HomebrewOperationStatus? {
+        homebrew.operationStatus.flatMap { status in
+            (status.isActive || homebrew.operationOwner == .homebrew) ? status : nil
+        }
+    }
+
+    private var showsCleanupButton: Bool {
+        if let estimate = homebrew.cleanupEstimate {
+            return !estimate.isEmpty
+        }
+        return !homebrew.isCheckingCleanup
+    }
+
+    private var showsCacheCleanedButton: Bool {
+        outdated.isEmpty && homebrew.cleanupEstimate?.isEmpty == true
+    }
+
+    /// How many updates, with the refresh arrow right beside it (turning
+    /// while Homebrew is read) and Homebrew version below, compounded in one
+    /// top container with Clean Up (left of Update All) when applicable.
+    @ViewBuilder
+    private var statusCard: some View {
+        let refreshing = homebrew.isLoadingInstalled
+        if firstLoad {
+            statusSkeleton
+        } else {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 5) {
+                        Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                        Button {
+                            if HomebrewSimulator.shared.isSimulating {
+                                HomebrewSimulator.shared.refreshCurrent()
+                            } else {
+                                homebrew.refreshInstalled()
+                                catalog.checkVersion(force: true)
+                                homebrew.refreshCleanupEstimate(force: true)
+                            }
+                        } label: {
+                            RefreshArrow(isSpinning: refreshing)
+                                .font(.system(size: 10.5, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 16, height: 14)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(homebrew.isBusy || refreshing)
+                        .help(s.homebrewRefresh)
+                        .accessibilityLabel(s.homebrewRefresh)
+                    }
+                    if let version = catalog.installedVersion {
+                        Text(String(format: strings.versionFormat, version))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Spacer(minLength: 8)
+                if showsCleanupButton || showsCacheCleanedButton || !outdated.isEmpty {
+                    HStack(spacing: 8) {
+                        if showsCleanupButton {
+                            cleanupButton
+                                .fixedSize()
+                        } else if showsCacheCleanedButton {
+                            Button(strings.cleanupCleanedUpButton) {}
+                                .buttonStyle(.appManager(.neutral))
+                                .disabled(true)
+                                .help(cleanupDetail)
+                                .fixedSize()
+                        }
+                        if !outdated.isEmpty {
+                            Button(s.homebrewUpgradeAll) { homebrew.upgradeAll() }
+                                .buttonStyle(.appManager())
+                                .disabled(homebrew.isBusy)
+                                .fixedSize()
+                        }
+                    }
+                }
+            }
+            // The same size as the other tabs' drop strip, filled rather than dashed.
+            .padding(14)
+            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    /// Nothing is known before the first read: the title, the version and
+    /// the button are placeholders rather than "All up to date".
     private var firstLoad: Bool { homebrew.isLoadingInstalled && homebrew.installed.isEmpty }
 
     private var statusSkeleton: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 7) {
                 RoundedRectangle(cornerRadius: 3).frame(width: 190, height: 12)
-                RoundedRectangle(cornerRadius: 3).frame(width: 260, height: 9)
+                RoundedRectangle(cornerRadius: 3).frame(width: 96, height: 9)
             }
             Spacer(minLength: 8)
             Capsule().frame(width: 86, height: 26)
@@ -144,13 +199,68 @@ struct HomebrewTab: View {
         .accessibilityHidden(true)
     }
 
+    /// Cleans cached downloads, temporary files, historical versions and
+    /// unneeded dependencies via `brew cleanup --prune=all -s`.
+    private var cleanupActionTitle: String {
+        homebrew.cleanupEstimate?.freedSizeText.map {
+            String(format: strings.cleanupCompactFormat, $0)
+        } ?? strings.cleanupButton
+    }
+
+    private var cleanupButton: some View {
+        Button(cleanupActionTitle) {
+            homebrew.cleanup()
+        }
+        .buttonStyle(.appManager(.neutral))
+        .disabled(homebrew.isBusy)
+        .help(cleanupDetail)
+    }
+
+    private var cleanupDetail: String {
+        if let summary = homebrew.lastCleanupSummary {
+            return summary.freedSizeText.map { String(format: strings.cleanupFreedFormat, $0) }
+                ?? strings.cleanupAlreadyClean
+        }
+        if homebrew.isCheckingCleanup {
+            return strings.cleanupChecking
+        }
+        if let estimate = homebrew.cleanupEstimate {
+            if estimate.isEmpty {
+                return strings.cleanupClean
+            }
+            return estimate.freedSizeText.map { String(format: strings.cleanupReclaimableFormat, $0) }
+                ?? strings.cleanupDescription
+        }
+        return strings.cleanupDescription
+    }
+
     /// The search field with its filter inside it, as Process Manager's.
     private var searchBar: some View {
         AppManagerSearchField(placeholder: searchPlaceholder, text: $query, busy: catalog.isSearching) { filterMenu }
     }
 
+    private var activeFilter: Filter {
+        visibleFilters.contains(filter) ? filter : .all
+    }
+
+    private var visibleFilters: [Filter] {
+        [Filter.all, .cask, .formula, .outdated, .orphans].filter {
+            $0 == .all || filterCount($0) > 0
+        }
+    }
+
+    private func filterCount(_ option: Filter) -> Int {
+        switch option {
+        case .all: return homebrew.installed.count
+        case .cask: return homebrew.installed.filter { $0.kind == .cask }.count
+        case .formula: return homebrew.installed.filter { $0.kind == .formula }.count
+        case .outdated: return outdated.count
+        case .orphans: return folded.orphans.count
+        }
+    }
+
     private var searchPlaceholder: String {
-        switch filter {
+        switch activeFilter {
         case .all: return strings.searchAll
         case .cask: return strings.searchCasks
         case .formula: return strings.searchFormulae
@@ -160,27 +270,27 @@ struct HomebrewTab: View {
     }
 
     private func filterTitle(_ option: Filter) -> String {
+        let count = filterCount(option)
         switch option {
-        case .all: return String(format: strings.filterAllFormat, homebrew.installed.count)
-        case .cask: return String(format: strings.filterCasksFormat, homebrew.installed.filter { $0.kind == .cask }.count)
-        case .formula:
-            return String(format: strings.filterFormulasFormat, homebrew.installed.filter { $0.kind == .formula }.count)
-        case .outdated: return String(format: strings.filterOutdatedFormat, outdated.count)
-        case .orphans: return String(format: strings.filterOrphansFormat, folded.orphans.count)
+        case .all: return String(format: strings.filterAllFormat, count)
+        case .cask: return String(format: strings.filterCasksFormat, count)
+        case .formula: return String(format: strings.filterFormulasFormat, count)
+        case .outdated: return String(format: strings.filterOutdatedFormat, count)
+        case .orphans: return String(format: strings.filterOrphansFormat, count)
         }
     }
 
     private var filterMenu: some View {
         Menu {
             Picker(s.homebrewAll, selection: $filter) {
-                ForEach([Filter.all, .cask, .formula, .outdated, .orphans], id: \.self) { option in
+                ForEach(visibleFilters, id: \.self) { option in
                     Text(filterTitle(option)).tag(option)
                 }
             }
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            SearchFilterMenuLabel(title: filterTitle(filter))
+            SearchFilterMenuLabel(title: filterTitle(activeFilter))
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
@@ -190,11 +300,11 @@ struct HomebrewTab: View {
 
     /// Outdated and orphaned are about what is installed; the catalog has
     /// nothing to add to them.
-    private var searchesOnline: Bool { filter == .all || filter == .cask || filter == .formula }
+    private var searchesOnline: Bool { activeFilter == .all || activeFilter == .cask || activeFilter == .formula }
 
     private func runSearch() {
         guard searchesOnline else { catalog.clear(); return }
-        let kind: HomebrewPackageKind? = filter == .cask ? .cask : filter == .formula ? .formula : nil
+        let kind: HomebrewPackageKind? = activeFilter == .cask ? .cask : activeFilter == .formula ? .formula : nil
         catalog.search(query, kind: kind, installed: Set(homebrew.installed.map { $0.name.lowercased() }))
     }
 
@@ -208,11 +318,13 @@ struct HomebrewTab: View {
             if catalog.isSearching {
                 AppManagerSkeletonRow()
             } else if catalog.results.isEmpty {
-                SettingsCard {
-                    Text(String(format: strings.noOnlineFormat, query.trimmingCharacters(in: .whitespaces)))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                }
+                Text(String(format: strings.noOnlineFormat, trimmedQuery))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity, minHeight: 70)
+                    .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .settingsClipsWhileResizing(to: RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else {
                 SettingsCard {
                     ForEach(Array(catalog.results.enumerated()), id: \.element.id) { index, entry in
@@ -261,14 +373,14 @@ struct HomebrewTab: View {
         let graph = folded
         let orphanIDs = Set(graph.orphans.map(\.id))
         var base: [HomebrewPackage]
-        switch filter {
+        switch activeFilter {
         case .orphans: base = graph.orphans
         case .outdated: base = outdated
         case .cask, .formula, .all:
             base = groupDependencies ? graph.rows + graph.orphans.filter { orphan in !graph.rows.contains(orphan) }
                                      : homebrew.installed
-            if filter == .cask { base = base.filter { $0.kind == .cask } }
-            if filter == .formula { base = base.filter { $0.kind == .formula } }
+            if activeFilter == .cask { base = base.filter { $0.kind == .cask } }
+            if activeFilter == .formula { base = base.filter { $0.kind == .formula } }
         }
         if !trimmed.isEmpty {
             base = base.filter { $0.name.lowercased().contains(trimmed) || $0.displayName.lowercased().contains(trimmed) }
@@ -446,13 +558,17 @@ struct HomebrewTab: View {
 
     private func busyPill(_ text: String) -> some View {
         HStack(spacing: 5) {
-            ProgressView().controlSize(.mini)
+            ProgressView()
+                .controlSize(.mini)
+                .scaleEffect(0.85)
+                .frame(width: 11, height: 11)
             Text(text)
         }
-        .font(.system(size: 11.5, weight: .medium))
+        .font(.system(size: 11.5, weight: .semibold))
+        .lineLimit(1)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 5.5)
         .foregroundStyle(Color.accentColor)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 3)
         .background(Color.accentColor.opacity(0.12), in: Capsule())
     }
 
@@ -465,22 +581,9 @@ struct HomebrewTab: View {
 
     @ViewBuilder
     private var footer: some View {
-        if let status = homebrew.operationStatus, status.isActive {
-            AppManagerDockedFooter(progress: status.progressFraction) {
-                ProgressView().controlSize(.small)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(operationTitle(status))
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .lineLimit(1)
-                    Text("$ " + command(for: status))
-                        .font(.system(size: 10.5, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                Spacer()
-                Button(s.homebrewCancelOperation) { homebrew.cancelOperation() }
-                    .buttonStyle(.appManager(.neutral))
+        if let status = activeOrHomebrewStatus {
+            AppManagerDockedFooter(progress: status.isActive ? status.progressFraction : nil) {
+                HomebrewCompactOperationFooter(status: status)
             }
         } else if catalog.selfUpdateAvailable, let latest = catalog.latestVersion {
             AppManagerDockedFooter {
@@ -498,29 +601,6 @@ struct HomebrewTab: View {
                     .buttonStyle(.appManager())
                     .disabled(homebrew.isBusy)
             }
-        }
-    }
-
-    private func operationTitle(_ status: HomebrewOperationStatus) -> String {
-        let name = status.package?.displayName ?? ""
-        switch status.action {
-        case .install: return String(format: s.homebrewOperationInstallFormat, name)
-        case .uninstall: return String(format: s.homebrewOperationUninstallFormat, name)
-        case .upgrade: return String(format: s.homebrewOperationUpgradeFormat, name)
-        case .upgradeAll: return s.homebrewOperationUpgradeAll
-        case .updateHomebrew: return s.homebrewOperationUpdateHomebrew
-        }
-    }
-
-    private func command(for status: HomebrewOperationStatus) -> String {
-        let cask = status.package?.kind == .cask ? "--cask " : ""
-        let name = status.package?.name ?? ""
-        switch status.action {
-        case .install: return "brew install \(cask)\(name)"
-        case .uninstall: return "brew uninstall \(cask)\(name)"
-        case .upgrade: return "brew upgrade \(cask)\(name)"
-        case .upgradeAll: return "brew upgrade"
-        case .updateHomebrew: return "brew update"
         }
     }
 

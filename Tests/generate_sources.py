@@ -211,7 +211,8 @@ def main():
     homebrew_methods = "".join(declaration(homebrew, marker) for marker in [
         "    func refreshInstalled(", "    func refreshOutdated(", "    func syncWithFeatures()",
         "    func trustTapAndContinue()", "    func clearUntrustedTap()", "    func presentUntrustedTap(",
-        "    func clearOutdatedRead("])
+        "    func clearOutdatedRead(",
+        "    func setOperationDetailsExpanded(", "    func scheduleCompletedOperationCleanup("])
     for expression in ["request.owner", "AppFeature.homebrew", "AppFeature.uninstaller", "$0", "owner"]:
         homebrew_methods = homebrew_methods.replace(expression + ".isAvailable", "HomebrewReadLifecycleTests.isAvailable(" + expression + ")")
     write("HomebrewReadLifecycle.swift", "import Foundation\nextension HomebrewReadLifecycleTests {\nfinal class Service: State {\n"
