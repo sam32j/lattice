@@ -77,7 +77,7 @@ struct UpdatesHeading: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(title)
-                        .font(.system(size: compact ? 12 : 13, weight: .semibold))
+                        .font(.system(size: compact ? 11.5 : 12, weight: .semibold))
                         .lineLimit(1)
                     Button(action: onCheck) {
                         RefreshArrow(isSpinning: isChecking)

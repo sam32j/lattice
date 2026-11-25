@@ -174,8 +174,8 @@ struct KillProcessView: View {
                 .font(.system(size: compact ? 10.5 : 11.5))
         }
         .font(.system(size: compact ? 12 : 13))
-        .padding(.horizontal, 10)
-        .padding(.vertical, compact ? 6 : 8)
+        .padding(.leading, 10)
+        .frame(minHeight: compact ? 28 : 32)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
             .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
@@ -373,11 +373,11 @@ struct KillProcessScopeMenu: View {
             // The Island is narrow: All Processes reads just "All" on the button.
             let name = surface == .island && scope == .everything
                 ? strings.scopeEverythingShort : strings.scopeName(scope)
-            (Text(name + " ")
-             + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
-            .foregroundStyle(surface == .island ? Color.white.opacity(0.6) : Color.secondary)
+            SearchFilterMenuLabel(title: name,
+                                  color: surface == .island ? Color.white.opacity(0.6) : Color.secondary)
         }
-        .menuStyle(.borderlessButton)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
         .controlSize(.small)

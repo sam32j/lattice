@@ -84,7 +84,7 @@ extension AppUpdatesListView {
     /// are a small mark beside the refresh button, opening Settings, which
     /// names them; the tooltip names them too.
     var compactHeader: some View {
-        UpdatesHeading(text: text, count: updates.items.count, lastCheck: lastCheckLine,
+        UpdatesHeading(text: text, count: updates.items.count, lastCheck: headingDetail,
                        isChecking: updates.isChecking, disabled: isBusy || allSourcesOff,
                        compact: true,
                        uncheckedNote: coverageIncomplete
@@ -99,6 +99,12 @@ extension AppUpdatesListView {
             .padding(.horizontal, 4)
     }
 
+    /// "Last checked just now · 29 total apps" under the heading.
+    var headingDetail: String {
+        guard updates.hasCheckedThisSession, totalAppsCount > 0, !allSourcesOff else { return lastCheckLine }
+        return lastCheckLine + " · " + String(format: text.totalAppsFormat, totalAppsCount)
+    }
+
     var lastCheckLine: String {
         if allSourcesOff { return text.noSourcesSelected }
         guard updates.lastCheck != nil else { return text.neverChecked }
@@ -111,16 +117,11 @@ extension AppUpdatesListView {
             Image(systemName: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
                 .font(.system(size: inNotch ? 18 : 24))
                 .foregroundStyle(successfulEmptyCheck ? Color.green : Color.secondary)
-            Label(statusHeadline,
+            Label(coveragePartial ? text.emptyPartialUpToDate : text.emptyUpToDate,
                   systemImage: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
                 .labelStyle(.titleOnly)
                 .font(.system(size: inNotch ? 11.5 : 13, weight: .medium))
                 .foregroundStyle(.secondary)
-            if successfulEmptyCheck {
-                Text(text.upToDate)
-                    .font(.system(size: inNotch ? 9.5 : 11))
-                    .foregroundStyle(.tertiary)
-            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, inNotch ? 6 : 20)

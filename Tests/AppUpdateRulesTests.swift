@@ -202,7 +202,7 @@ enum AppUpdateRulesContract {
                      && !source.contains(".help(text.excludeApp)"),
                      "the row menu is named for both rule actions and says which app it belongs to")
         suite.expect(source.contains("var coveragePartial: Bool { coverageIncomplete || versionsUncompared }")
-                     && source.contains("Label(statusHeadline,")
+                     && source.contains("coveragePartial ? text.emptyPartialUpToDate : text.emptyUpToDate")
                      && source.contains("if versionsUncompared {")
                      && source.contains("Text(updates.uncomparableAppNames.joined(separator: \", \"))"),
                      "apps named as not compared get their own note and keep an empty list from reading as current")

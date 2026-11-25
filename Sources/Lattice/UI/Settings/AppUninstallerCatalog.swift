@@ -23,7 +23,7 @@ final class AppUninstallerCatalog: ObservableObject {
         var running: Bool
     }
 
-    enum Scope: String, CaseIterable { case all, homebrew, largest }
+    enum Scope: String, CaseIterable { case all, largest }
 
     @Published private(set) var entries: [Entry] = []
     @Published private(set) var isLoading = false
@@ -61,7 +61,6 @@ final class AppUninstallerCatalog: ObservableObject {
         var list = entries.filter { entry in
             if !folded.isEmpty, !entry.name.lowercased().contains(folded),
                !(entry.bundleID?.lowercased().contains(folded) ?? false) { return false }
-            if scope == .homebrew, entry.cask == nil { return false }
             return true
         }
         if scope == .largest { list.sort { ($0.size ?? 0) > ($1.size ?? 0) } }

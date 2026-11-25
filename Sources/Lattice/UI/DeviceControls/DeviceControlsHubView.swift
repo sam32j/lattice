@@ -24,10 +24,9 @@ struct DeviceControlsHubView: View {
                 }
             }
             .padding(.horizontal, 2)
-            // The island is sized to this content, as before; the floating
-            // Hub keeps room for its soft edges at rest.
-            .padding(.top, notchSize == nil ? HubScrollEdge.inset : 4)
-            .padding(.bottom, notchSize == nil ? HubScrollEdge.inset : 6)
+            // Room for the soft edges at rest; measured with the content, so
+            // the island and the floating Hub are sized to include it.
+            .padding(.vertical, HubScrollEdge.inset)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                 if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
                     navigation.updateMeasuredAppVolumesHeight(height)

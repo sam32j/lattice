@@ -8,30 +8,24 @@ import UniformTypeIdentifiers
 
 extension AppUpdatesListView {
     /// Shaped like an update row: the heading above already says there is
-    /// nothing to update, so this is a quiet line of what was checked.
+    /// nothing to update, so this is one quiet line.
     var caughtUpCard: some View {
         emptyRow(symbol: successfulEmptyCheck ? "checkmark.seal.fill" : "info.circle.fill",
                  tint: successfulEmptyCheck ? .green : .secondary,
-                 title: statusHeadline,
-                 detail: updates.hasCheckedThisSession && totalAppsCount > 0 && !coveragePartial
-                     ? String(format: text.checkedAppsFormat, totalAppsCount) : statusDetail)
+                 title: coveragePartial ? text.emptyPartialUpToDate : text.emptyUpToDate)
     }
 
     var noSourcesCard: some View {
-        emptyRow(symbol: "exclamationmark.triangle.fill", tint: .orange,
-                 title: text.selectSource, detail: text.selectSourceDetail)
+        emptyRow(symbol: "exclamationmark.triangle.fill", tint: .orange, title: text.selectSource)
     }
 
-    func emptyRow(symbol: String, tint: Color, title: String, detail: String) -> some View {
+    func emptyRow(symbol: String, tint: Color, title: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: symbol)
                 .font(.system(size: 20))
                 .foregroundStyle(tint)
                 .frame(width: 36, height: 36)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13, weight: .semibold))
-                Text(detail).font(.system(size: 11)).foregroundStyle(.secondary)
-            }
+            Text(title).font(.system(size: 13, weight: .medium))
             Spacer(minLength: 8)
         }
         .padding(.horizontal, 14)

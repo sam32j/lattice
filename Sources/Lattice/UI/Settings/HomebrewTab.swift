@@ -123,28 +123,7 @@ struct HomebrewTab: View {
 
     /// The search field with its filter inside it, as Process Manager's.
     private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            TextField(searchPlaceholder, text: $query)
-                .textFieldStyle(.plain)
-            if catalog.isSearching {
-                ProgressView().controlSize(.small)
-            }
-            Rectangle()
-                .fill(Color.primary.opacity(0.18))
-                .frame(width: 1, height: 14)
-                .accessibilityHidden(true)
-            filterMenu
-                .font(.system(size: 11.5))
-        }
-        .font(.system(size: 13))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+        AppManagerSearchField(placeholder: searchPlaceholder, text: $query, busy: catalog.isSearching) { filterMenu }
     }
 
     private var searchPlaceholder: String {
@@ -178,12 +157,10 @@ struct HomebrewTab: View {
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            // One text run, so the menu label keeps the chevron after the name.
-            (Text(filterTitle(filter) + " ")
-             + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
-            .foregroundStyle(.secondary)
+            SearchFilterMenuLabel(title: filterTitle(filter))
         }
-        .menuStyle(.borderlessButton)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
     }
@@ -290,12 +267,7 @@ struct HomebrewTab: View {
             }
             SettingsCard {
                 if homebrew.isLoadingInstalled && homebrew.installed.isEmpty {
-                    HStack(spacing: 8) {
-                        ProgressView().controlSize(.small)
-                        Text(s.homebrewLoading).foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
+                    AppManagerListSkeleton()
                 } else if rows.isEmpty {
                     Text(strings.noPackagesMatch)
                         .foregroundStyle(.secondary)
