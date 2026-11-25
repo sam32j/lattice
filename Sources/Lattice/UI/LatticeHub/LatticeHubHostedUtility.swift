@@ -9,7 +9,6 @@ struct LatticeHubHostedUtility: View {
     let onClose: () -> Void
     @ObservedObject private var launcher = LatticeHubService.shared
     @ObservedObject private var deviceControlsNav = DeviceControlsNavigationState.shared
-    @ObservedObject private var appManager = AppManagerPanelState.shared
 
     private var viewportHeight: CGFloat {
         // Floating panels can be moved upward; only content taller than the
@@ -63,10 +62,10 @@ struct LatticeHubHostedUtility: View {
         } else if item == .deviceControls {
             DeviceControlsHubView(onClose: onClose, notchSize: notchSize, viewportHeight: viewportHeight)
                 .frame(height: viewportHeight, alignment: .top)
-        } else if item == .appManager, [.uninstaller, .updates].contains(appManager.shownTab) {
-            // The uninstaller and updates fill the panel and scroll their
-            // own lists, so a heading or button stays put rather than
-            // scrolling away.
+        } else if item == .appManager {
+            // Every App Manager tab fills the panel and owns its own scroll
+            // view, so headers, search fields and actions stay put rather
+            // than scrolling away.
             PanelAppManagerView(onClose: onClose, showsPicker: false)
                 .frame(height: viewportHeight)
         } else if item == .killProcess {
@@ -104,9 +103,6 @@ struct LatticeHubHostedUtility: View {
                         PanelMediaView(showHeader: false, onClose: onClose)
                     case .urlCleaner:
                         PanelURLCleanerView(showHeader: false, onClose: onClose)
-                    case .appManager:
-                        // The tab is chosen in the header, which never scrolls.
-                        PanelAppManagerView(onClose: onClose, showsPicker: false)
                     case .cleaner:
                         PanelCleanerView(showHeader: false, onClose: onClose)
                     case .wallpaper:

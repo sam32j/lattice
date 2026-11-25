@@ -114,7 +114,6 @@ final class LatticeHubService: ObservableObject {
     var globalKeyMonitor: Any?
     var activationObserver: NSObjectProtocol?
     var resignActiveObserver: NSObjectProtocol?
-    var resignKeyObserver: NSObjectProtocol?
     var otherKeyObserver: NSObjectProtocol?
     /// Until this uptime, a Hub brought back after an editor ignores the
     /// activation and focus changes that closing the editor sets off.
