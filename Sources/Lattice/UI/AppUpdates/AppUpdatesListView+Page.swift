@@ -86,7 +86,7 @@ extension AppUpdatesListView {
     /// The list's heading carries when it was last checked and the way to
     /// check again, rather than a card of its own.
     var availableUpdatesHeader: some View {
-        UpdatesHeading(text: text, count: updates.items.count, lastCheck: lastCheckLine,
+        UpdatesHeading(text: text, count: updates.items.count, lastCheck: headingDetail,
                        isChecking: updates.isChecking,
                        disabled: !AppFeature.appUpdates.isAvailable || allSourcesOff) { updates.check() }
             .padding(.horizontal, 2)
@@ -102,10 +102,12 @@ extension AppUpdatesListView {
             skeletonSection
                 .transition(reduceMotion ? .identity : .opacity)
         } else if !updates.items.isEmpty {
-            LazyVStack(spacing: 8) {
+            // A row that leaves folds away, so the rows below close the gap
+            // instead of sliding under it.
+            VStack(spacing: 8) {
                 ForEach(updates.items) { item in
                     row(item)
-                        .transition(reduceMotion ? .identity : .opacity)
+                        .transition(reduceMotion ? .identity : .settingsReveal)
                 }
             }
         } else {

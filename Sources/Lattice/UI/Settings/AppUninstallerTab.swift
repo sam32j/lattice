@@ -131,23 +131,22 @@ struct AppUninstallerTab: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            TextField(strings.filterPlaceholder, text: $query)
-                .textFieldStyle(.plain)
-            Divider().frame(height: 16)
-            Picker(strings.scopeAll, selection: $scope) {
-                Text(strings.scopeAll).tag(AppUninstallerCatalog.Scope.all)
-                Text(strings.scopeHomebrew).tag(AppUninstallerCatalog.Scope.homebrew)
-                Text(strings.scopeLargest).tag(AppUninstallerCatalog.Scope.largest)
+        AppManagerSearchField(placeholder: strings.filterPlaceholder, text: $query) {
+            Menu {
+                Picker(strings.scopeAll, selection: $scope) {
+                    Text(strings.scopeAll).tag(AppUninstallerCatalog.Scope.all)
+                    Text(strings.scopeLargest).tag(AppUninstallerCatalog.Scope.largest)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            } label: {
+                SearchFilterMenuLabel(title: scope == .largest ? strings.scopeLargest : strings.scopeAll)
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
+            .menuStyle(.button)
+        .buttonStyle(.plain)
+            .menuIndicator(.hidden)
             .fixedSize()
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
     private func appRow(_ app: AppUninstallerCatalog.Entry) -> some View {
@@ -206,8 +205,20 @@ struct AppUninstallerTab: View {
                 }
             }
             // Shaped like what the scan brings back: a category heading
-            // over a card of leftover rows.
+            // over a card of leftover rows, and the footer that holds the
+            // remove button.
             UninstallerLeftoverSkeleton()
+        } footer: {
+            AppManagerDockedFooter {
+                VStack(alignment: .leading, spacing: 6) {
+                    RoundedRectangle(cornerRadius: 3).frame(width: 110, height: 10)
+                    RoundedRectangle(cornerRadius: 3).frame(width: 150, height: 8)
+                }
+                Spacer()
+                Capsule().frame(width: 96, height: 26)
+            }
+            .foregroundStyle(Color.primary.opacity(0.08))
+            .accessibilityHidden(true)
         }
     }
 

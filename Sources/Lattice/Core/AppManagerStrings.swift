@@ -54,9 +54,9 @@ extension AppManagerStrings {
         tabUninstaller: "App Uninstaller",
         tabHomebrew: "Homebrew",
         helpInstaller: "Install apps from disk images",
-        helpUpdates: "Check for updates across Homebrew, App Store, and web channels",
-        helpUninstaller: "Remove apps, leftovers, and Homebrew casks cleanly",
-        helpHomebrew: "Browse, install, upgrade, and manage Homebrew packages",
+        helpUpdates: "Manage app updates in one place",
+        helpUninstaller: "Remove applications and their data",
+        helpHomebrew: "Manage Homebrew packages",
         alwaysOn: "Always On",
         tabsLabel: "App Manager sections")
 
@@ -69,9 +69,9 @@ extension AppManagerStrings {
         tabUninstaller: "Desinstalador de Apps",
         tabHomebrew: "Homebrew",
         helpInstaller: "Instale apps de imagens de disco",
-        helpUpdates: "Procure atualizações no Homebrew, na App Store e em canais da web",
-        helpUninstaller: "Remova apps, restos e casks do Homebrew por completo",
-        helpHomebrew: "Explore, instale, atualize e gerencie pacotes do Homebrew",
+        helpUpdates: "Gerencie atualizações de apps em um só lugar",
+        helpUninstaller: "Remova aplicativos e seus dados",
+        helpHomebrew: "Gerencie pacotes do Homebrew",
         alwaysOn: "Sempre ativo",
         tabsLabel: "Seções do Gerenciador de Apps")
 
@@ -84,9 +84,9 @@ extension AppManagerStrings {
         tabUninstaller: "Uygulama Kaldırıcı",
         tabHomebrew: "Homebrew",
         helpInstaller: "Disk görüntülerinden uygulama yükleyin",
-        helpUpdates: "Homebrew, App Store ve web kanallarında güncellemeleri denetleyin",
-        helpUninstaller: "Uygulamaları, artıklarını ve Homebrew cask’lerini temizce kaldırın",
-        helpHomebrew: "Homebrew paketlerine göz atın, yükleyin, yükseltin ve yönetin",
+        helpUpdates: "Uygulama güncellemelerini tek yerden yönetin",
+        helpUninstaller: "Uygulamaları ve verilerini kaldırın",
+        helpHomebrew: "Homebrew paketlerini yönetin",
         alwaysOn: "Her Zaman Açık",
         tabsLabel: "Uygulama Yöneticisi bölümleri")
 
@@ -99,9 +99,9 @@ extension AppManagerStrings {
         tabUninstaller: "Удаление",
         tabHomebrew: "Homebrew",
         helpInstaller: "Установка приложений из образов дисков",
-        helpUpdates: "Проверка обновлений в Homebrew, App Store и веб-каналах",
-        helpUninstaller: "Полное удаление приложений, остатков и cask Homebrew",
-        helpHomebrew: "Поиск, установка, обновление и управление пакетами Homebrew",
+        helpUpdates: "Управление обновлениями приложений в одном месте",
+        helpUninstaller: "Удаление приложений и их данных",
+        helpHomebrew: "Управление пакетами Homebrew",
         alwaysOn: "Всегда включено",
         tabsLabel: "Разделы менеджера приложений")
 
@@ -114,9 +114,9 @@ extension AppManagerStrings {
         tabUninstaller: "Desinstalador de apps",
         tabHomebrew: "Homebrew",
         helpInstaller: "Instala apps desde imágenes de disco",
-        helpUpdates: "Busca actualizaciones en Homebrew, App Store y canales web",
-        helpUninstaller: "Elimina apps, restos y casks de Homebrew por completo",
-        helpHomebrew: "Explora, instala, actualiza y gestiona paquetes de Homebrew",
+        helpUpdates: "Gestiona las actualizaciones de apps en un solo lugar",
+        helpUninstaller: "Elimina aplicaciones y sus datos",
+        helpHomebrew: "Gestiona los paquetes de Homebrew",
         alwaysOn: "Siempre activo",
         tabsLabel: "Secciones del gestor de apps")
 
@@ -129,9 +129,9 @@ extension AppManagerStrings {
         tabUninstaller: "Odinštalátor aplikácií",
         tabHomebrew: "Homebrew",
         helpInstaller: "Inštalujte aplikácie z obrazov diskov",
-        helpUpdates: "Kontrolujte aktualizácie v Homebrew, App Store a webových kanáloch",
-        helpUninstaller: "Čisto odstráňte aplikácie, zvyšky a casky Homebrew",
-        helpHomebrew: "Prehliadajte, inštalujte, aktualizujte a spravujte balíky Homebrew",
+        helpUpdates: "Spravujte aktualizácie aplikácií na jednom mieste",
+        helpUninstaller: "Odstráňte aplikácie a ich údaje",
+        helpHomebrew: "Spravujte balíky Homebrew",
         alwaysOn: "Vždy zapnuté",
         tabsLabel: "Sekcie správcu aplikácií")
 
@@ -144,9 +144,9 @@ extension AppManagerStrings {
         tabUninstaller: "App-Deinstallation",
         tabHomebrew: "Homebrew",
         helpInstaller: "Apps aus Disk-Images installieren",
-        helpUpdates: "Nach Updates über Homebrew, App Store und Webkanäle suchen",
-        helpUninstaller: "Apps, Reste und Homebrew-Casks sauber entfernen",
-        helpHomebrew: "Homebrew-Pakete durchsuchen, installieren, aktualisieren und verwalten",
+        helpUpdates: "App-Updates an einem Ort verwalten",
+        helpUninstaller: "Apps und ihre Daten entfernen",
+        helpHomebrew: "Homebrew-Pakete verwalten",
         alwaysOn: "Immer an",
         tabsLabel: "Bereiche der App-Verwaltung")
 
@@ -159,9 +159,9 @@ extension AppManagerStrings {
         tabUninstaller: "Désinstallation d’apps",
         tabHomebrew: "Homebrew",
         helpInstaller: "Installez des apps depuis des images disque",
-        helpUpdates: "Rechercher des mises à jour via Homebrew, l’App Store et les canaux web",
-        helpUninstaller: "Supprimer proprement les apps, leurs restes et les casks Homebrew",
-        helpHomebrew: "Parcourir, installer, mettre à niveau et gérer les paquets Homebrew",
+        helpUpdates: "Gérez les mises à jour des apps en un seul endroit",
+        helpUninstaller: "Supprimez des apps et leurs données",
+        helpHomebrew: "Gérez les paquets Homebrew",
         alwaysOn: "Toujours activé",
         tabsLabel: "Sections du gestionnaire d’apps")
 
@@ -174,9 +174,9 @@ extension AppManagerStrings {
         tabUninstaller: "Disinstallazione app",
         tabHomebrew: "Homebrew",
         helpInstaller: "Installa app da immagini disco",
-        helpUpdates: "Cerca aggiornamenti su Homebrew, App Store e canali web",
-        helpUninstaller: "Rimuovi in modo pulito app, residui e cask Homebrew",
-        helpHomebrew: "Sfoglia, installa, aggiorna e gestisci i pacchetti Homebrew",
+        helpUpdates: "Gestisci gli aggiornamenti delle app in un unico posto",
+        helpUninstaller: "Rimuovi le app e i loro dati",
+        helpHomebrew: "Gestisci i pacchetti Homebrew",
         alwaysOn: "Sempre attivo",
         tabsLabel: "Sezioni di Gestione app")
 
@@ -189,9 +189,9 @@ extension AppManagerStrings {
         tabUninstaller: "Appアンインストーラ",
         tabHomebrew: "Homebrew",
         helpInstaller: "ディスクイメージからAppをインストール",
-        helpUpdates: "Homebrew、App Store、Webチャンネルのアップデートを確認します",
-        helpUninstaller: "App、残りファイル、Homebrew caskをきれいに削除します",
-        helpHomebrew: "Homebrewパッケージの検索、インストール、アップグレード、管理",
+        helpUpdates: "Appのアップデートをまとめて管理",
+        helpUninstaller: "Appとそのデータを削除",
+        helpHomebrew: "Homebrewパッケージを管理",
         alwaysOn: "常にオン",
         tabsLabel: "Appマネージャのセクション")
 
@@ -204,9 +204,9 @@ extension AppManagerStrings {
         tabUninstaller: "앱 제거",
         tabHomebrew: "Homebrew",
         helpInstaller: "디스크 이미지에서 앱 설치",
-        helpUpdates: "Homebrew, App Store, 웹 채널에서 업데이트를 확인합니다",
-        helpUninstaller: "앱, 남은 파일, Homebrew cask를 깔끔하게 제거합니다",
-        helpHomebrew: "Homebrew 패키지를 탐색, 설치, 업그레이드, 관리합니다",
+        helpUpdates: "앱 업데이트를 한곳에서 관리",
+        helpUninstaller: "앱과 데이터 제거",
+        helpHomebrew: "Homebrew 패키지 관리",
         alwaysOn: "항상 켬",
         tabsLabel: "앱 관리자 섹션")
 
@@ -219,9 +219,9 @@ extension AppManagerStrings {
         tabUninstaller: "App 卸载器",
         tabHomebrew: "Homebrew",
         helpInstaller: "从磁盘映像安装 App",
-        helpUpdates: "通过 Homebrew、App Store 和网页渠道检查更新",
-        helpUninstaller: "干净地移除 App、残留文件和 Homebrew cask",
-        helpHomebrew: "浏览、安装、升级和管理 Homebrew 软件包",
+        helpUpdates: "在一处管理 App 更新",
+        helpUninstaller: "移除 App 及其数据",
+        helpHomebrew: "管理 Homebrew 软件包",
         alwaysOn: "始终开启",
         tabsLabel: "App 管理器分区")
 
@@ -234,9 +234,9 @@ extension AppManagerStrings {
         tabUninstaller: "App 解除安裝器",
         tabHomebrew: "Homebrew",
         helpInstaller: "從磁碟映像檔安裝 App",
-        helpUpdates: "透過 Homebrew、App Store 和網頁管道檢查更新",
-        helpUninstaller: "乾淨地移除 App、殘留檔案和 Homebrew cask",
-        helpHomebrew: "瀏覽、安裝、升級和管理 Homebrew 套件",
+        helpUpdates: "在同一處管理 App 更新",
+        helpUninstaller: "移除 App 及其資料",
+        helpHomebrew: "管理 Homebrew 套件",
         alwaysOn: "永遠開啟",
         tabsLabel: "App 管理器區段")
 
@@ -249,9 +249,9 @@ extension AppManagerStrings {
         tabUninstaller: "App 解除安裝器",
         tabHomebrew: "Homebrew",
         helpInstaller: "從磁碟映像檔安裝 App",
-        helpUpdates: "透過 Homebrew、App Store 和網頁渠道檢查更新",
-        helpUninstaller: "乾淨地移除 App、殘留檔案和 Homebrew cask",
-        helpHomebrew: "瀏覽、安裝、升級和管理 Homebrew 套件",
+        helpUpdates: "在同一處管理 App 更新",
+        helpUninstaller: "移除 App 及其資料",
+        helpHomebrew: "管理 Homebrew 套件",
         alwaysOn: "永遠開啟",
         tabsLabel: "App 管理器區段")
 
@@ -264,9 +264,9 @@ extension AppManagerStrings {
         tabUninstaller: "Видалення",
         tabHomebrew: "Homebrew",
         helpInstaller: "Встановлення програм з образів дисків",
-        helpUpdates: "Перевірка оновлень у Homebrew, App Store та вебканалах",
-        helpUninstaller: "Повне видалення програм, залишків і cask Homebrew",
-        helpHomebrew: "Пошук, встановлення, оновлення й керування пакетами Homebrew",
+        helpUpdates: "Керування оновленнями програм в одному місці",
+        helpUninstaller: "Видалення програм і їхніх даних",
+        helpHomebrew: "Керування пакетами Homebrew",
         alwaysOn: "Завжди ввімкнено",
         tabsLabel: "Розділи менеджера програм")
 }

@@ -1297,7 +1297,9 @@ final class NotchService: ObservableObject {
         case .deviceControls:
             return DeviceControlsNavigationState.shared.contentHeight
         case .system:
-            return SystemNavigationState.shared.effectiveHeight
+            // Its scrolling pages keep room at rest for their soft edges.
+            let navigation = SystemNavigationState.shared
+            return navigation.effectiveHeight + SystemIslandEdges.extraHeight(metric: navigation.selectedMetric)
         case .windowLayout:
             return WindowSnappingNavigationState.shared.contentHeight
         case .wallpaper:

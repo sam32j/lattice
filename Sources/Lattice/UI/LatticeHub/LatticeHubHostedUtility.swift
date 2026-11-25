@@ -129,46 +129,22 @@ enum HubScrollEdge {
 
 extension View {
     /// Fades the top and bottom `HubScrollEdge.inset` of a scrolling area and
-    /// rounds its corners; the content needs that much room at rest. The fade
-    /// only shows while the content is taller than the area: a page that
-    /// fits, as most island pages do, keeps every row at full strength.
+    /// rounds its corners; the content keeps that much room at rest, and the
+    /// surface is sized to include it.
     func hubScrollEdgeFade(_ isActive: Bool = true) -> some View {
-        modifier(HubScrollEdgeFade(isActive: isActive))
-    }
-}
-
-private struct HubScrollEdgeFade: ViewModifier {
-    let isActive: Bool
-    @State private var overflows = true
-
-    func body(content: Content) -> some View {
-        if #available(macOS 15, *) {
-            content
-                .onScrollGeometryChange(for: Bool.self) { geometry in
-                    geometry.contentSize.height + geometry.contentInsets.top + geometry.contentInsets.bottom
-                        > geometry.containerSize.height + 1
-                } action: { _, value in
-                    overflows = value
+        mask {
+            if isActive {
+                VStack(spacing: 0) {
+                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                        .frame(height: HubScrollEdge.inset)
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                        .frame(height: HubScrollEdge.inset)
                 }
-                .mask { mask(fading: isActive && overflows) }
-        } else {
-            content.mask { mask(fading: isActive) }
-        }
-    }
-
-    @ViewBuilder
-    private func mask(fading: Bool) -> some View {
-        if fading {
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                    .frame(height: HubScrollEdge.inset)
+                .clipShape(RoundedRectangle(cornerRadius: HubScrollEdge.cornerRadius, style: .continuous))
+            } else {
                 Rectangle()
-                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: HubScrollEdge.inset)
             }
-            .clipShape(RoundedRectangle(cornerRadius: HubScrollEdge.cornerRadius, style: .continuous))
-        } else {
-            Rectangle()
         }
     }
 }
@@ -234,9 +210,9 @@ private struct LatticeHubSystemUtility: View {
             ScrollView {
                 content
             }
-            // Sized to its content in the island, so no edge room at rest;
-            // the fade shows only if it ever overflows.
             .scrollBounceBehavior(.basedOnSize)
+            .contentMargins(.top, SystemIslandEdges.top(metric: navigation.selectedMetric), for: .scrollContent)
+            .contentMargins(.bottom, SystemIslandEdges.bottom(metric: navigation.selectedMetric), for: .scrollContent)
             .frame(height: notchSize.height)
             .hubScrollEdgeFade()
         } else if notchSize == nil, navigation.selectedMetric != nil,
@@ -282,5 +258,22 @@ private struct LatticeHubSystemUtility: View {
             }
             .transition(.opacity)
         }
+    }
+}
+
+/// The room System's island pages add for their soft edges. The grid has
+/// 8pt above its tiles and its footer below, so it needs only the rest of
+/// the top fade; a detail page gets the full room at both ends.
+enum SystemIslandEdges {
+    static func top(metric: MetricDetailKind?) -> CGFloat {
+        metric == nil ? HubScrollEdge.inset - SystemWidgetLayout.summaryTopInset : HubScrollEdge.inset
+    }
+
+    static func bottom(metric: MetricDetailKind?) -> CGFloat {
+        metric == nil ? 0 : HubScrollEdge.inset
+    }
+
+    static func extraHeight(metric: MetricDetailKind?) -> CGFloat {
+        metric == .cpu ? 0 : top(metric: metric) + bottom(metric: metric)
     }
 }

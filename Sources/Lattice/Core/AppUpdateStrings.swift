@@ -47,6 +47,9 @@ struct AppUpdateStrings {
     let oneUpdateAvailable: String
     let updatesAvailableFormat: String
     let noUpdatesAvailable: String
+    let emptyUpToDate: String
+    let emptyPartialUpToDate: String
+    let totalAppsFormat: String
     /// The Hub and island's one-line note; it opens the settings page, which lists them.
     let someAppsUnchecked: String
     let onlineUnavailable: String

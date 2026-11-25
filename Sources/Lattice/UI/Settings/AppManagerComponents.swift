@@ -346,3 +346,77 @@ extension ButtonStyle where Self == AppManagerButtonStyle {
         AppManagerButtonStyle(tone: tone, compact: compact)
     }
 }
+
+/// Placeholder rows inside a list's card while it loads: an icon tile, a
+/// name and a detail line, and the button's capsule.
+struct AppManagerListSkeleton: View {
+    var rows = 5
+    @State private var dim = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            ForEach(0..<rows, id: \.self) { index in
+                if index > 0 { Rectangle().frame(height: 1).opacity(0.5) }
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 7).frame(width: 30, height: 30)
+                    VStack(alignment: .leading, spacing: 6) {
+                        RoundedRectangle(cornerRadius: 3).frame(width: [120, 90, 150, 110, 135][index % 5], height: 10)
+                        RoundedRectangle(cornerRadius: 3).frame(width: [200, 170, 220, 160, 190][index % 5], height: 8)
+                    }
+                    Spacer()
+                    Capsule().frame(width: 62, height: 22)
+                }
+            }
+        }
+        .foregroundStyle(Color.primary.opacity(dim ? 0.05 : 0.1))
+        .onAppear { withAnimation(.easeInOut(duration: 0.9).repeatForever()) { dim = true } }
+        .accessibilityHidden(true)
+    }
+}
+
+/// A search field with its filter at the trailing end, as Process Manager
+/// and Homebrew show it. The whole filter area opens the menu.
+struct AppManagerSearchField<Menu: View>: View {
+    let placeholder: String
+    @Binding var text: String
+    var busy = false
+    @ViewBuilder var menu: () -> Menu
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+            if busy { ProgressView().controlSize(.small) }
+            Rectangle()
+                .fill(Color.primary.opacity(0.18))
+                .frame(width: 1, height: 14)
+                .accessibilityHidden(true)
+            menu()
+                .font(.system(size: 11.5))
+        }
+        .font(.system(size: 13))
+        .padding(.leading, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+    }
+}
+
+/// The label of a search field's filter menu: the name and a chevron, with
+/// the field's full height and some room as its target, not the text alone.
+struct SearchFilterMenuLabel: View {
+    let title: String
+    var color: Color = .secondary
+
+    var body: some View {
+        (Text(title + " ") + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
+            .foregroundStyle(color)
+            .padding(.leading, 4)
+            .padding(.trailing, 10)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+    }
+}
