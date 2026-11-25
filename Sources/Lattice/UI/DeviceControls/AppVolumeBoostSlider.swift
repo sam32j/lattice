@@ -756,7 +756,8 @@ private struct AppVolumeAuxiliaryOverlay: NSViewRepresentable {
         /// must be judged against where the knob was before that jump.
         private var knobCenterAtFirstClick: CGFloat?
         private var lastDragWindowX: CGFloat?
-        private var scroll = SliderScroll()
+        /// Sideways only: the app list scrolls past its sliders.
+        private var scroll = SliderScroll(horizontalOnly: true)
         private var scrolling = false
         private var scrollCurrentVolume: Double = 1.0
         private var canCatchUnityInScroll = false
@@ -918,7 +919,7 @@ private struct AppVolumeAuxiliaryOverlay: NSViewRepresentable {
                 scrolling = false
                 owner?.onEditingChanged(false)
             }
-            scroll = SliderScroll()
+            scroll = SliderScroll(horizontalOnly: true)
             canCatchUnityInScroll = false
             holdingAtUnityInScroll = false
             unityScrollAccumulated = 0

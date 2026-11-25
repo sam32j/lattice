@@ -49,6 +49,11 @@ final class LatticeHubService: ObservableObject {
                 UserDefaults.standard.set(activeUtility.rawValue, forKey: DefaultsKey.recentHubUtility)
             }
             guard activeUtility != oldValue else { return }
+            // Leaving Device Controls from App Volumes, straight to All Tools
+            // or by closing, lands back on its own page next time.
+            if oldValue == .deviceControls {
+                DeviceControlsNavigationState.shared.resetSubpage()
+            }
             let island = NotchService.shared
             if island.expanded, !island.showingSections,
                [.hub, .controls, .mixer].contains(island.selected) {

@@ -65,6 +65,13 @@ struct SliderScroll {
     /// Where the gesture on the bar is heading, ahead of a level that settles late.
     private var level: Double?
     private var coasting = false
+    /// Only a sideways gesture moves the level; an up-and-down one goes on
+    /// to the list around the slider, so scrolling past never changes it.
+    var horizontalOnly = false
+
+    init(horizontalOnly: Bool = false) {
+        self.horizontalOnly = horizontalOnly
+    }
     private var liftedAt: Double?
 
     static func step(dx: Double, dy: Double, precise: Bool, inverted: Bool) -> Double {
@@ -85,6 +92,12 @@ struct SliderScroll {
 
     mutating func handle(_ phase: Phase, dx: Double, dy: Double, precise: Bool, inverted: Bool,
                          timestamp: Double, current: Double, range: ClosedRange<Double>) -> Outcome {
+        if horizontalOnly {
+            // Decide on the gesture's first event: mostly vertical passes.
+            if phase == .began || (phase == .none && level == nil), abs(dy) >= abs(dx) {
+                return .pass
+            }
+        }
         switch phase {
         case .began:
             level = current
@@ -106,7 +119,7 @@ struct SliderScroll {
             coasting = false
         }
         let span = range.upperBound - range.lowerBound
-        let step = Self.step(dx: dx, dy: dy, precise: precise, inverted: inverted)
+        let step = Self.step(dx: dx, dy: horizontalOnly ? 0 : dy, precise: precise, inverted: inverted)
         guard span.isFinite, span > 0, step != 0 else { return .hold }
         let base = (level ?? current).isFinite ? (level ?? current) : range.lowerBound
         let next = min(range.upperBound, max(range.lowerBound, base + step * span))
