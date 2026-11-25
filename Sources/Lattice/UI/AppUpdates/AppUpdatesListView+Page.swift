@@ -8,86 +8,113 @@ import UniformTypeIdentifiers
 
 extension AppUpdatesListView {
     var overhauledBody: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(alignment: .leading, spacing: 14) {
-                updateSourcesSection
+        AppManagerPage {
+            statusCard
 
-                preferencesSection
+            updatesSection
 
-                availableUpdatesHeader
-                pageResults
+            // After the list so it never pushes actionable updates down as a check finishes.
+            if coverageIncomplete {
+                pageIncompleteNote
+                    .transition(reduceMotion ? .identity : .settingsReveal)
+            }
 
-                // After the list, never sliding in over it: what the check
-                // could not reach is a footnote to what it found.
-                if coverageIncomplete {
-                    pageIncompleteNote
-                }
+            updateSourcesSection
 
-                if let status = appUpdatesOperationStatus {
-                    HomebrewOperationStatusView(status: status,
-                                                log: homebrew.log,
-                                                terminalFallbackCommand: homebrew.terminalFallbackCommand,
-                                                compact: false,
-                                                showDetails: $showOperationDetails,
-                                                onCancel: homebrew.cancelOperation,
-                                                onClear: homebrew.clearLog,
-                                                onOpenTerminal: homebrew.openTerminalFallback)
-                        .padding(.top, 6)
-                        .transition(.settingsReveal)
+            preferencesSection
+        } footer: {
+            if let status = appUpdatesOperationStatus {
+                AppManagerDockedFooter(progress: status.isActive ? status.progressFraction : nil) {
+                    HomebrewCompactOperationFooter(status: status)
                 }
             }
-            // One animation for the column, so the notice under the list
-            // moves with the rows when one leaves.
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: updates.items)
-            // The App Manager's tabs share one column width and margins.
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 16)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // The one driver for the notify row's reveal, whichever window or
-        // control changed the frequency.
+        .settingsExpansionAnimation(value: updates.isChecking)
+        .settingsExpansionAnimation(value: updates.isChecking ? [] : updates.items.map(\.id))
+        .settingsExpansionAnimation(value: coverageIncomplete)
         .settingsExpansionAnimation(value: showsNotifyRow)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: appUpdatesOperationStatus?.targetID)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: appUpdatesOperationStatus?.result)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: homebrew.isOperationDetailsExpanded)
         .sheet(isPresented: $showingALS) {
             alsSheet
         }
         .onChange(of: statusHeadline) { _, newHeadline in
             AccessibilityNotification.Announcement("\(newHeadline), \(statusDetail)").post()
         }
+        .onChange(of: homebrew.operationStatus?.targetID) { _, _ in
+            homebrew.setOperationDetailsExpanded(false)
+        }
     }
 
-    /// Which apps the check left out, laid out as an update row is: the
-    /// mark the size of an app icon, the text where an app's name starts.
-    var pageIncompleteNote: some View {
+    /// Top status card matching Homebrew's top card: headline and last-checked
+    /// summary on the left, Check Now / Retry pill on the right.
+    @ViewBuilder
+    private var statusCard: some View {
+        if updates.isChecking && !updates.hasCheckedThisSession {
+            statusSkeleton
+                .transition(reduceMotion ? .identity : .opacity)
+        } else {
+            let hasError = updates.lastError?.isEmpty == false
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(updates.isChecking ? text.checking + "…" : statusHeadline)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                    Text(updates.isChecking ? text.checking + "…" : statusDetail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                if !allSourcesOff && AppFeature.appUpdates.isAvailable {
+                    Button(updates.isChecking ? text.checking + "…" : (hasError ? text.retry : text.checkNow)) {
+                        updates.check()
+                    }
+                    .buttonStyle(.appManager(hasError && !updates.isChecking ? .accent : .neutral))
+                    .disabled(isBusy)
+                    .fixedSize()
+                }
+            }
+            .padding(14)
+            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .transition(reduceMotion ? .identity : .opacity)
+        }
+    }
+
+    private var statusSkeleton: some View {
         HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(.orange)
-                .frame(width: 36, height: 36)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(text.incompleteCheck)
-                    .font(.system(size: 13, weight: .semibold))
-                Text(incompleteCheckDetail)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 7) {
+                RoundedRectangle(cornerRadius: 3).frame(width: 170, height: 12)
+                RoundedRectangle(cornerRadius: 3).frame(width: 120, height: 9)
             }
             Spacer(minLength: 8)
+            Capsule().frame(width: 86, height: 26)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .foregroundStyle(Color.primary.opacity(0.08))
+        .padding(.vertical, 3)
+        .padding(14)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityHidden(true)
     }
 
-    /// The list's heading carries when it was last checked and the way to
-    /// check again, rather than a card of its own.
-    var availableUpdatesHeader: some View {
-        UpdatesHeading(text: text, count: updates.items.count, lastCheck: headingDetail,
-                       isChecking: updates.isChecking,
-                       disabled: !AppFeature.appUpdates.isAvailable || allSourcesOff) { updates.check() }
-            .padding(.horizontal, 2)
-            .padding(.top, 6)
+    /// Which apps the check left out, using the shared App Manager banner.
+    var pageIncompleteNote: some View {
+        AppManagerBanner(title: text.incompleteCheck, detail: incompleteCheckDetail) {
+            EmptyView()
+        }
+    }
+
+    private var updatesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AppManagerSectionHeader(
+                title: text.pageTitle,
+                meta: (updates.isChecking || updates.items.isEmpty) ? nil : "\(updates.items.count)"
+            )
+            SettingsCard {
+                pageResults
+            }
+        }
     }
 
     @ViewBuilder
@@ -95,18 +122,25 @@ extension AppUpdatesListView {
         if allSourcesOff {
             noSourcesCard
                 .transition(reduceMotion ? .identity : .opacity)
-        } else if updates.isChecking && updates.items.isEmpty {
-            skeletonSection
+        } else if updates.isChecking {
+            AppManagerListSkeleton(rows: 3)
                 .transition(reduceMotion ? .identity : .opacity)
+                .accessibilityLabel(text.checking)
         } else if !updates.items.isEmpty {
-            // A row that leaves folds away, so the rows below close the gap
-            // instead of sliding under it.
-            VStack(spacing: 8) {
-                ForEach(updates.items) { item in
-                    row(item)
-                        .transition(reduceMotion ? .identity : .settingsReveal)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(updates.items.enumerated()), id: \.element.id) { index, item in
+                    VStack(alignment: .leading, spacing: 0) {
+                        if index > 0 {
+                            Divider()
+                                .padding(.leading, 42)
+                                .padding(.vertical, 6)
+                        }
+                        row(item)
+                    }
+                    .transition(reduceMotion ? .identity : .settingsReveal)
                 }
             }
+            .transition(reduceMotion ? .identity : .opacity)
         } else {
             if let error = updates.lastError, !error.isEmpty {
                 errorCard
@@ -117,60 +151,4 @@ extension AppUpdatesListView {
             }
         }
     }
-
-    var skeletonSection: some View {
-        VStack(spacing: 8) {
-            skeletonRow(titleWidth: 130, subtitleWidth: 90)
-            skeletonRow(titleWidth: 100, subtitleWidth: 70)
-            skeletonRow(titleWidth: 150, subtitleWidth: 110)
-        }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                skeletonPulse = true
-            }
-        }
-        .onDisappear { skeletonPulse = false }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(text.checking)
-    }
-
-    func skeletonRow(titleWidth: CGFloat, subtitleWidth: CGFloat) -> some View {
-        let shimmerOpacity = skeletonPulse ? 0.08 : 0.04
-        return HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Color.primary.opacity(shimmerOpacity))
-                .frame(width: 36, height: 36)
-
-            VStack(alignment: .leading, spacing: 6) {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color.primary.opacity(shimmerOpacity))
-                    .frame(width: titleWidth, height: 12)
-
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(Color.primary.opacity(shimmerOpacity * 0.75))
-                    .frame(width: subtitleWidth, height: 10)
-            }
-
-            Spacer(minLength: 8)
-
-            Capsule()
-                .fill(Color.primary.opacity(shimmerOpacity))
-                .frame(width: 72, height: 24)
-
-            Circle()
-                .fill(Color.primary.opacity(shimmerOpacity * 0.7))
-                .frame(width: 14, height: 14)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(0.025))
-        )
-    }
-
-    // Status Card
-    // MARK: - Update Sources
-
 }
