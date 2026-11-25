@@ -156,22 +156,8 @@ extension LatticeHubService {
             queue: .main
         ) { [weak self] _ in
             guard let self, !self.isPinned, !self.inRestoreGrace, self.panel?.isVisible == true else { return }
+            if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == AssistiveKeyboard.bundleID { return }
             self.hide()
-        }
-        resignKeyObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification,
-            object: panel,
-            queue: .main
-        ) { [weak self, weak panel] _ in
-            guard let self, let panel, !self.isPinned, panel.isVisible else { return }
-            if self.stayAwakeOptionsPresented { return }
-            DispatchQueue.main.async { [weak self, weak panel] in
-                guard let self, let panel, !self.isPinned, !self.inRestoreGrace, panel.isVisible else { return }
-                if self.stayAwakeOptionsPresented { return }
-                if !panel.isKeyWindow && (NSApp.keyWindow == nil || NSApp.keyWindow !== panel) {
-                    self.hide()
-                }
-            }
         }
         otherKeyObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
@@ -180,7 +166,9 @@ extension LatticeHubService {
         ) { [weak self, weak panel] notification in
             guard let self, let panel, !self.isPinned, !self.inRestoreGrace, panel.isVisible else { return }
             if self.stayAwakeOptionsPresented { return }
-            if let window = notification.object as? NSWindow, window !== panel {
+            if let window = notification.object as? NSWindow,
+               window !== panel,
+               Self.shouldDismissWhenOtherWindowBecomesKey(window, relativeTo: panel) {
                 self.hide()
             }
         }
@@ -244,10 +232,6 @@ extension LatticeHubService {
             NotificationCenter.default.removeObserver(resignActiveObserver)
             self.resignActiveObserver = nil
         }
-        if let resignKeyObserver {
-            NotificationCenter.default.removeObserver(resignKeyObserver)
-            self.resignKeyObserver = nil
-        }
         if let otherKeyObserver {
             NotificationCenter.default.removeObserver(otherKeyObserver)
             self.otherKeyObserver = nil
@@ -262,6 +246,19 @@ extension LatticeHubService {
         }
         missionControlTimer?.invalidate()
         missionControlTimer = nil
+    }
+
+    /// Child sheets/popups and AppKit text-input/IME helper windows should not
+    /// dismiss an active floating Hub when a search field inside it takes focus.
+    static func shouldDismissWhenOtherWindowBecomesKey(_ window: NSWindow, relativeTo panel: NSPanel) -> Bool {
+        guard window !== panel, window.isVisible else { return false }
+        if window.parent === panel || panel.attachedSheet === window { return false }
+        if panel.childWindows?.contains(where: { $0 === window }) == true { return false }
+        let name = window.className
+        for token in ["StatusBar", "Popup", "Menu", "Tooltip", "Cursor", "Candidate", "IMK", "TUINS", "Keyboard"] {
+            if name.contains(token) { return false }
+        }
+        return true
     }
 
     static func mouseIsInside(_ panel: NSPanel) -> Bool {
