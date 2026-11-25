@@ -72,10 +72,10 @@ struct SettingsFullWidthSegmentedControl<Value: Hashable>: View {
 }
 
 extension View {
-    /// Puts a page's segmented control in the header. At rest it is part of
-    /// the page, with no edge or line; once the page scrolls, the bar and
-    /// the toolbar above it share one background and one line beneath, so
-    /// content passes under both as one header.
+    /// Puts a page's segmented control in the header. On macOS 26 it joins the
+    /// native Liquid Glass scroll-edge bar with a soft edge (no separation line
+    /// at rest) and draws a divider only once scrolled; on older macOS it falls
+    /// back to a shared `.bar` surface when scrolled.
     func settingsHeaderBar<Bar: View>(@ViewBuilder _ bar: () -> Bar) -> some View {
         modifier(SettingsHeaderBar(bar: bar()))
     }
@@ -105,6 +105,23 @@ private struct SettingsHeaderBar<Bar: View>: ViewModifier {
     @Environment(\.settingsDetailScrolled) private var scrolled
 
     func body(content: Content) -> some View {
+#if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            content
+                .scrollEdgeEffectStyle(.soft, for: .top)
+                .safeAreaBar(edge: .top, spacing: 0) {
+                    bar
+                }
+                .preference(key: SettingsHasHeaderBarKey.self, value: true)
+        } else {
+            legacyBody(content)
+        }
+#else
+        legacyBody(content)
+#endif
+    }
+
+    private func legacyBody(_ content: Content) -> some View {
         content
             .safeAreaInset(edge: .top, spacing: 0) {
                 bar

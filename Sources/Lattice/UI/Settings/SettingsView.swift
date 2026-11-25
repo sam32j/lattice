@@ -211,10 +211,8 @@ struct SettingsView: View {
     var scrollEdgeDetail: some View {
 #if compiler(>=6.2)
         if #available(macOS 26, *) {
-            // A page with a header bar draws the scrolled header itself.
             observedScrollDetail
-                .scrollEdgeEffectStyle(.hard, for: .top)
-                .scrollEdgeEffectHidden(detailHasHeaderBar, for: .top)
+                .scrollEdgeEffectStyle(detailHasHeaderBar ? .soft : .hard, for: .top)
         } else {
             observedScrollDetail
         }

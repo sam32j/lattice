@@ -13,6 +13,7 @@ import SwiftUI
 ///   details, and a docked maintenance / live-operation footer.
 struct PanelHomebrewView: View {
     @ObservedObject var l10n = L10n.shared
+    @ObservedObject var features = FeatureRuntime.shared
     @ObservedObject var homebrew = HomebrewManager.shared
     @ObservedObject var catalog = HomebrewOnlineCatalog.shared
     @Environment(\.notchPresentation) var inNotch
@@ -80,6 +81,14 @@ struct PanelHomebrewView: View {
             armedUninstallID = nil
             rebuildFilteredInstalled()
             runSearch()
+        }
+        .onChange(of: AppFeature.homebrew.isAvailable) { _, available in
+            guard available, !HomebrewSimulator.shared.isSimulating else { return }
+            if homebrew.installed.isEmpty && !homebrew.isLoadingInstalled {
+                homebrew.refreshInstalled()
+            }
+            catalog.checkVersion()
+            homebrew.refreshCleanupEstimate()
         }
         .onChange(of: homebrew.installed) { _, _ in
             rebuildInstalledSnapshot()
