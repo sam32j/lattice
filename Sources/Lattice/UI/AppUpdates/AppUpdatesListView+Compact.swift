@@ -32,19 +32,7 @@ extension AppUpdatesListView {
                 Text(text.selectSource)
                     .font(.system(size: 13, weight: .semibold))
             } else if updates.items.isEmpty {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(.green)
-                Text(text.emptyUpToDate)
-                    .font(.system(size: 13, weight: .semibold))
-                Button {
-                    updates.check()
-                } label: {
-                    Label(text.checkNow, systemImage: "arrow.clockwise")
-                }
-                .buttonStyle(.appManager(.neutral, compact: true))
-                .disabled(isBusy)
-                .padding(.top, 2)
+                upToDateState
             } else {
                 stackedIcons
                 Text(text.updatesAvailableShort)
@@ -58,6 +46,25 @@ extension AppUpdatesListView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Nothing to update: a check, the line, and a way to check again. The
+    /// island and the floating Hub show the same.
+    @ViewBuilder
+    var upToDateState: some View {
+        Image(systemName: "checkmark.circle.fill")
+            .font(.system(size: 30))
+            .foregroundStyle(.green)
+        Text(text.emptyUpToDate)
+            .font(.system(size: 13, weight: .semibold))
+        Button {
+            updates.check()
+        } label: {
+            Label(text.checkNow, systemImage: "arrow.clockwise")
+        }
+        .buttonStyle(.appManager(.neutral, compact: true))
+        .disabled(isBusy)
+        .padding(.top, 2)
     }
 
     /// Up to four of the apps with updates, overlapping.
@@ -82,24 +89,23 @@ extension AppUpdatesListView {
                 AppManagerListSkeleton(rows: 6)
                     .padding(.horizontal, 4)
                     .padding(.top, 6)
+            } else if allSourcesOff {
+                compactNoSourcesState
+                    .frame(maxHeight: .infinity)
+            } else if updates.items.isEmpty {
+                // No heading: the state alone, centered, as in the island.
+                VStack(spacing: 10) { upToDateState }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 compactHeader
-                if allSourcesOff {
-                    compactNoSourcesState
-                } else if updates.items.isEmpty {
-                    // Centered in the room under the heading.
-                    compactEmptyState
-                        .frame(maxHeight: .infinity)
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        compactList
-                    }
-                    .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
-                    .hubScrollEdgeFade()
-                    // The floating Hub keeps the All Tools height; the list
-                    // takes what the heading leaves.
-                    .frame(maxHeight: .infinity, alignment: .top)
+                ScrollView(showsIndicators: false) {
+                    compactList
                 }
+                .contentMargins(.vertical, HubScrollEdge.inset, for: .scrollContent)
+                .hubScrollEdgeFade()
+                // The floating Hub keeps the All Tools height; the list
+                // takes what the heading leaves.
+                .frame(maxHeight: .infinity, alignment: .top)
                 if versionsUncompared {
                     uncomparableVersions
                         .panelCard()
@@ -134,16 +140,11 @@ extension AppUpdatesListView {
     var compactHeader: some View {
         UpdatesHeading(text: text, count: updates.items.count, lastCheck: headingDetail,
                        isChecking: updates.isChecking, disabled: isBusy || allSourcesOff,
-                       compact: true,
-                       uncheckedNote: coverageIncomplete
-                           ? [text.someAppsUnchecked, incompleteCheckDetail].filter { !$0.isEmpty }
-                               .joined(separator: "\n")
-                           : nil,
-                       onShowUnchecked: {
+                       compact: true, showsDetail: false,
+                       onOpen: {
                            SettingsRouter.shared.request(AppFeature.appUpdates.settingsDestination)
                            (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
                        }) { updates.check() }
-            .frame(height: Self.headerLineHeight)
             .padding(.horizontal, 4)
     }
 
@@ -158,21 +159,6 @@ extension AppUpdatesListView {
         guard updates.lastCheck != nil else { return text.neverChecked }
         return String(format: text.lastCheckFormat,
                       lastCheckRelativeText)
-    }
-
-    var compactEmptyState: some View {
-        VStack(spacing: inNotch ? 3 : 6) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: inNotch ? 18 : 24))
-                .foregroundStyle(Color.green)
-            Label(text.emptyUpToDate,
-                  systemImage: successfulEmptyCheck ? "checkmark.circle.fill" : "info.circle")
-                .labelStyle(.titleOnly)
-                .font(.system(size: inNotch ? 11.5 : 13, weight: .medium))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, inNotch ? 6 : 20)
     }
 
     var compactNoSourcesState: some View {

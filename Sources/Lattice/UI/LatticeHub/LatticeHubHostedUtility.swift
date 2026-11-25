@@ -22,8 +22,9 @@ struct LatticeHubHostedUtility: View {
         return notchSize.height
     }
 
-    /// The App Manager's tab row in the floating header, with its 5pt below.
-    static let appManagerTabsHeight: CGFloat = 33
+    /// The App Manager's tab row in the floating header: the 28pt control,
+    /// 5pt below it, and the header stack's 6pt above it.
+    static let appManagerTabsHeight: CGFloat = 28 + 5 + 6
 
     private var fallbackHeight: CGFloat {
         switch item {
