@@ -170,10 +170,12 @@ struct AppUninstallerTab: View {
                 }
                 Spacer(minLength: 8)
                 Text(strings.inspect)
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 3)
-                    .background(Color.primary.opacity(0.06), in: Capsule())
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .lineLimit(1)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 5.5)
+                    .background(Color.primary.opacity(0.1), in: Capsule())
+                    .foregroundStyle(Color.primary)
             }
             .contentShape(Rectangle())
         }

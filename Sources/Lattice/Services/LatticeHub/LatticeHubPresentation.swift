@@ -192,6 +192,7 @@ extension LatticeHubService {
         opensUtilityDirectly = false
         panelResizer.cancel()
         lastDismissedTime = ProcessInfo.processInfo.systemUptime
+        resetPanelUninstallerIfActive()
         // Only a Hub still showing a reading can have been closed by that
         // reading's click; after any other utility, the next click opens it.
         if activeUtility != .system || SystemNavigationState.shared.selectedMetric != systemMetricFromMenuBar {
@@ -214,8 +215,15 @@ extension LatticeHubService {
 
     func closeUtility() {
         opensUtilityDirectly = false
+        resetPanelUninstallerIfActive()
         SystemNavigationState.shared.reset()
         activeUtility = nil
+    }
+
+    private func resetPanelUninstallerIfActive() {
+        if activeUtility == .appManager {
+            AppManagerPanelState.resetUninstallerIfSelected()
+        }
     }
 
     func refocusAfterModal() {

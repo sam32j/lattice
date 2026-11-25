@@ -22,6 +22,18 @@ final class AppManagerPanelState: ObservableObject {
         return available.contains(tab) ? tab : (available.first ?? .updates)
     }
 
+    nonisolated static func resetUninstallerIfSelected() {
+        let work: @MainActor @Sendable () -> Void = {
+            if shared.shownTab == .uninstaller, AppUninstaller.shared.phase != .removing {
+                AppUninstaller.shared.reset()
+            }
+        }
+        if Thread.isMainThread {
+            MainActor.assumeIsolated(work)
+        } else {
+            DispatchQueue.main.async(execute: work)
+        }
+    }
 }
 
 /// The App Manager in the Hub and the island: the panel of the module the
