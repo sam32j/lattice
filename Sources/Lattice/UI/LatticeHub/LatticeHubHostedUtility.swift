@@ -25,7 +25,9 @@ struct LatticeHubHostedUtility: View {
     private var fallbackHeight: CGFloat {
         switch item {
         case .appManager:
-            return AppManagerPanelState.shared.contentHeight ?? 470
+            // Like Recent Captures: the All Tools page's height, never less
+            // than the floating subpage minimum.
+            return max(HubScrollEdge.floatingSubpageMinimum, launcher.floatingRootPageHeight)
         case .videoDownloader:
             return 172
         case .deviceControls:
@@ -33,7 +35,7 @@ struct LatticeHubHostedUtility: View {
         case .recentCaptures:
             // Same height as All Tools, so opening it never resizes the
             // panel, but always room for three 150pt previews.
-            return max(RecentCapturesView.floatingMinimumHeight, launcher.floatingRootPageHeight)
+            return max(HubScrollEdge.floatingSubpageMinimum, launcher.floatingRootPageHeight)
         default:
             return 470
         }
@@ -125,6 +127,9 @@ enum HubScrollEdge {
     /// The fade's height, and the margin that keeps content out of it at rest.
     static let inset: CGFloat = 10
     static let cornerRadius: CGFloat = 12
+    /// A floating subpage that takes the All Tools page's height is never
+    /// shorter than this: three of Recent Captures' 150pt previews.
+    static var floatingSubpageMinimum: CGFloat { RecentCapturesView.floatingMinimumHeight }
 }
 
 extension View {

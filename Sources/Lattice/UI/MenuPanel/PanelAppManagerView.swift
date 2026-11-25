@@ -5,22 +5,13 @@ import AppKit
 import SwiftUI
 
 /// The App Manager tile's tab, shared by the floating Hub and the Dynamic
-/// Island, so either opens where the other left off and both size to it.
+/// Island, so either opens where the other left off.
 @MainActor
 final class AppManagerPanelState: ObservableObject {
     static let shared = AppManagerPanelState()
     @Published var tab: AppManagerTab = .updates
-    /// App Updates in the island: one state, at this height.
-    static let islandUpdatesHeight: CGFloat = 240
-    /// The updates panel's measured height, so the surface fits it.
-    @Published private(set) var updatesHeight: CGFloat = 0
-
-    func setUpdatesHeight(_ height: CGFloat) {
-        guard height.isFinite, height > 0 else { return }
-        let target = ceil(height)
-        guard abs(target - updatesHeight) > 1 else { return }
-        updatesHeight = target
-    }
+    /// Every App Manager tab in the island has this height.
+    static let islandHeight: CGFloat = 240
 
     /// The tabs the panel offers: every module that is on, except the App
     /// Installer, which works by opening or dropping a disk image instead.
@@ -33,24 +24,6 @@ final class AppManagerPanelState: ObservableObject {
         return available.contains(tab) ? tab : (available.first ?? .updates)
     }
 
-    /// The height the island gives the panel: App Updates sizes to its list,
-    /// the others take the utility's usual height.
-    var contentHeight: CGFloat? {
-        // The tabs sit in the surface's header, outside this height.
-        switch shownTab {
-        case .updates:
-            // What the panel measured, or a guess until it has.
-            if updatesHeight > 0 { return updatesHeight }
-            let inIsland = NotchService.shared.expanded && LatticeHubService.shared.isVisible == false
-            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count,
-                                                           maxRows: inIsland ? 5 : 8)
-        case .uninstaller:
-            // Fills this height itself: the list scrolls, the footer stays.
-            return 330
-        case .installer, .homebrew:
-            return nil
-        }
-    }
 }
 
 /// The App Manager in the Hub and the island: the panel of the module the
