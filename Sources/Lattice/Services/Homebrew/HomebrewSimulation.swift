@@ -45,17 +45,22 @@ final class HomebrewSimulator: ObservableObject {
     private var simulatedWork: DispatchWorkItem?
 
     func apply(_ scenario: Scenario) {
+        let manager = HomebrewManager.shared
+        // Never interrupt a real in-flight Homebrew operation from the simulator.
+        guard isSimulating || manager.operation == nil else { return }
         simulatedWork?.cancel()
         simulatedWork = nil
         activeScenario = scenario
 
-        let manager = HomebrewManager.shared
         manager.completedOperationCleanup?.cancel()
         manager.completedOperationCleanup = nil
         manager.activeProcess?.terminate()
         manager.activeProcess = nil
         manager.cancelRequested = false
         manager.operation = nil
+        manager.installedRead = nil
+        manager.clearOutdatedRead(owner: .homebrew)
+        manager.cleanupEstimateRead = nil
         manager.brewPath = manager.detectBrewPath() ?? "/opt/homebrew/bin/brew"
         manager.isLoadingInstalled = false
         manager.isLoadingOutdated = false

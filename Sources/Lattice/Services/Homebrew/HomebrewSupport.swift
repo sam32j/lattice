@@ -847,7 +847,10 @@ enum HomebrewCleanupParser {
             while line.hasPrefix("==>") {
                 line = String(line.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            if line.hasPrefix("Removing: ") || line.hasPrefix("Would remove: ") {
+            if line.hasPrefix("Removing: ")
+                || line.hasPrefix("Would remove: ")
+                || line.hasPrefix("Would remove (broken link): ")
+                || line.hasPrefix("Would remove (empty directory): ") {
                 removedCount += 1
             } else if line.hasPrefix("Pruning ") || line.hasPrefix("Would prune ") || line.hasPrefix("Pruned ") {
                 let count = firstInt(in: line) ?? 1
