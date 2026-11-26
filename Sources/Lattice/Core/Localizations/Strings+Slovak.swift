@@ -194,7 +194,7 @@ extension Strings {
         switcherInstantSelection: "Okamžitý výber",
         switcherInstantSelectionCaption: "Pri prechádzaní aplikácií a okien okamžite presunie zvýraznenie a posunie zoznam.",
         switcherIgnoreHoverSelection: "Ignorovať výber pri ukázaní",
-        switcherIgnoreHoverSelectionCaption: "Posun ukazovateľa po aplikáciách a oknách nechá zvýraznenie na mieste. Kliknutie stále otvorí položku.",
+        switcherIgnoreHoverSelectionCaption: "Posun ukazovateľa po aplikáciách a oknách nechá zvýraznenie na mieste. Kliknutie stále otvorí položku. Podržanie ukazovateľa na okrajoch radu ikon ho stále posúva.",
         switcherMergeTabs: "Zoskupiť okná podľa aplikácie",
         switcherMergeTabsCaption: "Jedna položka na aplikáciu namiesto jednej na okno.",
         switcherWindowlessApps: "Skryť aplikácie bez okien",

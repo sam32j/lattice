@@ -194,7 +194,7 @@ extension Strings {
         switcherInstantSelection: "Anında seçim",
         switcherInstantSelectionCaption: "Uygulamalar ve pencereler arasında gezinirken vurguyu ve kaydırma konumunu anında değiştirir.",
         switcherIgnoreHoverSelection: "Hover ile seçmeyi kapat",
-        switcherIgnoreHoverSelectionCaption: "İmleç uygulamaların ve pencerelerin üzerinden geçerken vurgu yerinde kalır. Tıklamak yine açar.",
+        switcherIgnoreHoverSelectionCaption: "İmleç uygulamaların ve pencerelerin üzerinden geçerken vurgu yerinde kalır. Tıklamak yine açar. Simge sırasının uçlarının üzerine gelmek onu yine kaydırır.",
         switcherMergeTabs: "Pencereleri uygulamaya göre grupla",
         switcherMergeTabsCaption: "Her pencere yerine her uygulama için tek giriş.",
         switcherWindowlessApps: "Penceresiz uygulamaları gizle",

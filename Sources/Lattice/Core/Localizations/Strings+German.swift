@@ -194,7 +194,7 @@ extension Strings {
         switcherInstantSelection: "Sofortige Auswahl",
         switcherInstantSelectionCaption: "Verschiebt Markierung und Liste beim Durchgehen von Apps und Fenstern sofort.",
         switcherIgnoreHoverSelection: "Auswahl beim Zeigen ignorieren",
-        switcherIgnoreHoverSelectionCaption: "Bewegt sich der Zeiger über Apps und Fenster, bleibt die Markierung an ihrem Platz. Ein Klick öffnet weiterhin einen Eintrag.",
+        switcherIgnoreHoverSelectionCaption: "Bewegt sich der Zeiger über Apps und Fenster, bleibt die Markierung an ihrem Platz. Ein Klick öffnet weiterhin einen Eintrag. Zeigst du auf die Enden der Symbolreihe, scrollt sie weiterhin.",
         switcherMergeTabs: "Fenster nach App gruppieren",
         switcherMergeTabsCaption: "Ein Eintrag pro App statt einer pro Fenster.",
         switcherWindowlessApps: "Apps ohne Fenster ausblenden",
