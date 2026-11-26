@@ -16,13 +16,9 @@ import CoreGraphics
 /// flagged continuous are wheels only when they carry no gesture phase at all.
 /// Toggling takes effect immediately. Requires Accessibility.
 ///
-/// Apps on this feature's own exception list (issue #358) keep the direction
-/// macOS gives them. The list is separate from the smooth scrolling one on
-/// purpose, so excepting an app from the glide never leaves it scrolling
-/// backwards; when both features are on, the flip happens inside the smooth
-/// scrolling tap and honors this same list. Linear scrolling keeps a list of
-/// its own, honored the same way in both taps, so a game or a 3D tool that
-/// counts the notches itself can be left out of the cap alone.
+/// It runs ahead of every other wheel tap, smooth scrolling's included, so
+/// they all receive the wheel already turned, redirected and capped, and
+/// none of them applies those a second time.
 final class ScrollInverter: ObservableObject {
     static let shared = ScrollInverter()
 

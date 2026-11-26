@@ -3670,6 +3670,17 @@ enum PointerInputFeatureTests {
                     && source.contains("tapCreationRetryWork?.cancel()"),
                    "\(name) retries tap creation once instead of polling forever")
         }
+        // The inverter turns the wheel at the HID stage, before the glide's
+        // annotated-stage tap sees it; turning it there too would cancel out.
+        suite.expect(scrollInverterSource.contains("tap: .cghidEventTap")
+                && smoothSchedulerCode.contains("tap: ScrollWheelSupport.tapLocation")
+                && ScrollWheelSupport.tapLocation == .cgAnnotatedSessionEventTap,
+               "the scroll inverter's tap runs ahead of smooth scrolling's")
+        suite.expect(!smoothSchedulerCode.contains("direction.invertVertical")
+                && !smoothSchedulerCode.contains("direction.invertHorizontal")
+                && !smoothSchedulerCode.contains("redirectVerticalScroll(")
+                && smoothSchedulerCode.contains("== ScrollWheelSupport.horizontalRedirectTag"),
+               "smooth scrolling glides the wheel as the inverter left it, without flipping or redirecting it again")
         suite.expect(smoothSchedulerCode.contains("screen.displayLink(")
                 && smoothSchedulerCode.contains("displayLink.add(to: .main, forMode: .common)")
                 && smoothSchedulerCode.contains("sender.timestamp")
