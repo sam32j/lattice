@@ -211,7 +211,10 @@ struct PanelHomebrewView: View {
         guard searchesOnline else { catalog.clear(); return }
         let kind: HomebrewPackageKind? = (!inNotch && activeFilter == .cask) ? .cask
             : (!inNotch && activeFilter == .formula) ? .formula : nil
-        catalog.search(query, kind: kind, installed: Set(homebrew.installed.map { $0.name.lowercased() }))
+        catalog.search(query, kind: kind,
+                       installed: Set(homebrew.installed.map {
+                           HomebrewOnlineCatalog.installedKey(kind: $0.kind, name: $0.name)
+                       }))
     }
 
     func refreshAll() {
