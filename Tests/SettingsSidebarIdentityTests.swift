@@ -112,5 +112,33 @@ enum SettingsSidebarIdentityTests {
             for: FeatureSettingsDestination(.keyboard, sectionAnchor: .cleaningMode),
             in: keyboardRows) == nil,
             "visible keyboard page preserves the requested cleaning section anchor")
+        upstream344SearchChecks(suite)
+    }
+
+    /// Rows the v3.4.4 ports added are searchable, and follow-up rows are
+    /// offered only while their parent switch is on (ui-audit U1–U3).
+    private static func upstream344SearchChecks(_ suite: TestSuite) {
+        let items = Directory.sections(.enUS, language: .enUS).flatMap(\.items)
+        func requirements(_ page: SettingsPage) -> [String: String?] {
+            guard let item = items.first(where: { $0.page == page }) else { return [:] }
+            return Dictionary(zip(item.keywords, item.keywordRequirements).map { ($0, $1) },
+                              uniquingKeysWith: { first, _ in first })
+        }
+        func features(_ page: SettingsPage) -> [String: AppFeature?] {
+            guard let item = items.first(where: { $0.page == page }) else { return [:] }
+            return Dictionary(zip(item.keywords, item.keywordFeatures).map { ($0, $1) },
+                              uniquingKeysWith: { first, _ in first })
+        }
+        let strings = Strings.enUS
+        let mouse = requirements(.mouse)
+        suite.expect(mouse[strings.scrollSpeedName] == .some(nil)
+                     && features(.mouse)[strings.scrollSpeedName] == .some(.scrollSpeed)
+                     && mouse[strings.scrollSpeedMultiplierLabel] == .some(DefaultsKey.scrollSpeedEnabled),
+                     "scroll speed is searchable and its Speed row only while the switch is on")
+        let restoreTitle = WindowEdgeSnapRestoreStrings.localized(.enUS).title
+        suite.expect(requirements(.windowLayout)[restoreTitle] == .some(DefaultsKey.windowEdgeSnapEnabled),
+                     "restore-on-drag is searchable only while edge snapping is on")
+        suite.expect(features(.dock)[strings.switcherIgnoreHoverSelection] == .some(.switcher),
+                     "ignore hover selection is a Window Switcher keyword")
     }
 }

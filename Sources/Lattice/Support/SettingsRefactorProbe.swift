@@ -24,6 +24,50 @@ enum SettingsRefactorProbe {
         defaults.set(true, forKey: AppFeature.bluetoothSleep.availabilityKey)
         defaults.set(CommandLine.arguments.contains("--bluetooth-sleep-enabled"),
                      forKey: DefaultsKey.bluetoothSleepEnabled)
+        if CommandLine.arguments.contains("--upstream-344-only") {
+            // The surfaces the v3.4.4 ports touched (ui-audit U1, U2, U3, U9,
+            // U13, U32), each in English and German, light and dark, at the
+            // Settings detail column's minimum width.
+            var failures = [String]()
+            FeatureRuntime.shared.setAvailable([.scrollInverter, .scrollHorizontal, .scrollSpeed, .smoothScroll,
+                                                .switcher, .windowLayout, .screenRecorder, .notch], true)
+            for key in [DefaultsKey.scrollHorizontalEnabled, DefaultsKey.scrollSpeedEnabled,
+                        DefaultsKey.switcherEnabled, DefaultsKey.windowEdgeSnapEnabled,
+                        DefaultsKey.windowEdgeSnapRestoreOnDrag, DefaultsKey.switcherIgnoreHoverSelection] {
+                defaults.set(true, forKey: key)
+            }
+            // The sideways key matches speed's, so its picker shows the taken choice.
+            defaults.set(ScrollHorizontalModifier.option.rawValue, forKey: DefaultsKey.scrollHorizontalModifier)
+            var dimmable = BrightnessDisplay(id: 2, name: "Studio Monitor", isBuiltIn: false, method: .ddc,
+                                             isActive: true, brightness: 0.5, readable: true)
+            dimmable.canChooseDimming = true
+            let width: CGFloat = 560
+            for language in [AppLanguage.enUS, .de] {
+                L10n.shared.language = language
+                for scheme in [ColorScheme.light, .dark] {
+                    let suffix = "\(language.rawValue)-\(scheme == .dark ? "dark" : "light")"
+                    let surfaces: [(String, AnyView, CGFloat)] = [
+                        ("u1-mouse-scrolling", AnyView(MouseSettings().mouseScrollingCard.padding(20)), 1100),
+                        ("u2-switcher", AnyView(ScrollView { SwitcherSettingsSection().padding(20) }), 1500),
+                        ("u3-window-layout", AnyView(WindowLayoutSettings()), 1700),
+                        ("u9-recorder", AnyView(ScreenRecorderSettings()), 1500),
+                        ("u13-island-notifications", AnyView(VStack(alignment: .leading) {
+                            NotchSettings().notificationsModuleOptions }.padding(20)), 200),
+                        // The real row, inside the card's text inset, at the minimum width.
+                        ("u32-dimming", AnyView(BrightnessDisplayRow(display: dimmable)
+                            .padding(.leading, settingsRowTextInset).padding(20)), 110),
+                    ]
+                    for (name, view, height) in surfaces {
+                        render("\(name)-\(suffix)", view: view, size: CGSize(width: width, height: height),
+                               output: output, failures: &failures, colorScheme: scheme)
+                    }
+                }
+            }
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--stay-awake-only") {
             defaults.set(true, forKey: AppFeature.keepAwake.availabilityKey)
             var failures = [String]()

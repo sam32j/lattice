@@ -1838,13 +1838,16 @@ enum Defaults {
     static func migrateRecorderGIFScale(in defaults: UserDefaults) {
         guard defaults.object(forKey: DefaultsKey.recorderGIFScalePercent) == nil,
               let old = defaults.string(forKey: DefaultsKey.recorderGIFSize) else { return }
-        let percent: Int
-        switch RecorderSupport.sanitizedGIFSize(old) {
-        case .small: percent = 50
-        case .medium: percent = 75
-        case .large: percent = 100
+        defaults.set(gifScalePercent(fromLegacySize: old), forKey: DefaultsKey.recorderGIFScalePercent)
+    }
+
+    /// Runs before `register()`, so an absent key really means never chosen.
+    static func gifScalePercent(fromLegacySize raw: String?) -> Int {
+        switch RecorderSupport.sanitizedGIFSize(raw) {
+        case .small: return 50
+        case .medium: return 75
+        case .large: return 100
         }
-        defaults.set(percent, forKey: DefaultsKey.recorderGIFScalePercent)
     }
 
     static func migrateScrollInverterAxes(in defaults: UserDefaults) {
