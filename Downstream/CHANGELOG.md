@@ -2,6 +2,135 @@
 
 ## [Unreleased]
 
+## [3.4.3-d.4] - 2026-11-26
+
+### Added
+- **App Updates**: Align Settings page with App Manager status card, SettingsCard list, and docked footer
+- **Cleaner**: Use custom broom-and-sparkles vector glyph across all surfaces
+- **Homebrew**: Cache cleanup, animated log footer, DI/Hub surfaces, scroll fix, and simulator
+- **Uninstaller**: Reset inspected state on close, match Inspect button style, and refine copy
+- **App Updates**: Floating heading is the count, refresh and a way to Settings
+  - The floating Hub's heading is "N Updates Available" and its refresh
+  - With nothing to update it shows no heading: the check, "All apps are up
+  - The floating App Manager window matches the root Hub page exactly: its
+- **App Updates**: Check now under the island's up-to-date state
+- **App Manager**: Island takes the All Tools height; skeleton, Cancel and Daemons
+  - In the island every App Manager tab is as tall as All Tools with two
+  - The floating Hub's App Updates loads as skeleton rows.
+  - The uninstaller's scan shows Cancel right under its spinner, in the
+  - Process Manager calls its Background category Daemons, in 15 languages,
+- **App Manager**: 240pt in the island; the floating Hub inherits All Tools' height
+  - Every App Manager tab in the island is 240pt.
+  - In the floating Hub the App Manager takes the All Tools page's height,
+  - The per-tab measured heights and their island subscription are gone.
+- **App Updates**: The island shows one state, not the list
+- **App Manager**: One button style, Homebrew search and stats, inspect in history
+  - Opening Settings no longer hides an invisible floating Hub, which cleared
+  - App Updates' sources and preferences use the shared card and rows: full
+  - The uninstaller's Cancel sits at the end of the app row everywhere; the
+  - The floating Hub's App Manager tabs are full width, 5pt above the page.
+  - Homebrew: "N Homebrew updates available" with a refresh arrow beside it,
+  - The uninstaller and Homebrew share App Updates' capsule buttons.
+  - Inspecting an app in Settings is a step of its history: Back returns to
+- **App Updates**: One loader, a fixed heading, a list that fits its rows
+  - While a check runs, the Hub, the island and Settings show one centered
+  - In the Hub and island the heading stays put over a list as tall as its
+  - The count badge is white on the accent, legible in dark mode.
+  - Apps a check could not read are a small orange mark beside refresh,
+  - In Settings that notice lines up with the update rows: an icon-sized
+- **App Manager**: Tabs in the header, text check line, icon drops
+  - App Manager's tabs and Audio's Input/Output join the window header:
+  - App Updates drops its status card; "Last checked … · Check now" sits
+  - A DMG dropped on Lattice's menu bar or app icon gets the install prompt;
+  - Only apps the uninstaller accepts offer the island's Uninstall zone or
+  - The uninstaller's search field takes focus at once, and Cancel sits
+- **App Manager**: Island drop zones, a full-height uninstaller, synced updates
+  - Dragging a DMG or an app onto the island offers Install or Uninstall
+  - The Hub and island uninstaller fill their space: the app list first, a
+  - The App Installer leaves the Hub and island App Manager; disk images
+  - App Updates shows only its own Homebrew runs, drops casks the Homebrew
+  - A DMG that launches Lattice gets the install prompt instead of going to
+- **Hub**: Updates grow to ten apps; utilities scroll under soft edges
+- **Settings**: App lists say Add app… or Exclude app…
+- **App Installer**: Unblock unverified apps sits under Open DMG files
+- **App Updates**: Recheck only the apps that were updated
+- **App Uninstaller**: Uninstall an App, Command Bar always on
+- **App Manager**: Tabs in the island band and the floating Hub header
+- **Media**: Media Compression, with its own glyph
+- **App Installer**: Crisper labels, no system dialog, Not Found installs
+- **App Installer**: Clearer wording, one default-app prompt, unverified apps
+- **App Installer**: Ask on every open, update installed apps, open .dmg files
+- **App Manager**: One App Manager tile in the Hub and the island
+- **App Manager**: Uninstaller and Homebrew tabs from the mock
+- **App Manager**: One App Manager page for the four app tools
+
+### Fixed
+- **Homebrew**: Search both kinds in nil-kind fallback and key installed exclusions by kind
+- **Ci**: Curl Turkish apostrophe, use NBSP in French guillemets, and preserve Notch stop() contract
+- **Settings**: Render sidebar empty search state as List overlay
+- **Pr 61**: Address CodeRabbit review findings across HUD, Homebrew, handoff, and skeleton
+- **Notch**: Defer unlock/screensaver rebuild, avoid Touch ID lock-space glitch, and restore live audio visualizer
+- **App Manager**: Homebrew Checking/Check now states, re-enable reload, concise disabled copy, and soft glass header
+- **App Manager**: Native search field backgrounds and compact updates heading and skeleton
+- **Hub**: Avoid dismissing floating Hub on IME/child windows and refine hosted utility layout
+- **Identity**: Stop protecting upstream com.vorssaint bundles in cleaner, updates, and uninstaller
+- **Pr 60**: Address CodeRabbit review findings on installer, updates, hub scroll, drops, and router
+- **Hub**: The floating App Manager keeps the root Hub page's height
+- **Device Controls**: App Volumes scrolls only when it outgrows its space
+- **Device Controls**: App volumes scroll, rows hold still, sliders take sideways swipes
+  - Leaving Device Controls from App Volumes, straight to All Tools or by
+  - App Volumes keeps the order rows were first shown in, so starting or
+  - Device Controls and app volume sliders move only with a sideways
+  - App Volumes scrolls under soft edges; Device Controls stays a fixed
+  - The uninstaller's search field sits as far above its heading as
+- **Hub**: Skeleton Homebrew header, tighter island System and captures, centered empty updates
+  - Before Homebrew's first read, its title, counts, button, package count
+  - System's grid in the island has a hard edge and no extra room: it never
+  - Recent Captures' island strip is as tall as its cards.
+  - The island's "All apps are up to date" sits centered under the heading.
+- **App Manager**: Island pages fit, Device Controls never scrolls, tidier updates
+  - Device Controls is a plain stack at its measured height in the island
+  - System's grid keeps 10pt under its uptime pill for the bottom fade.
+  - App Updates: one empty line, "All apps are up to date", with a green
+  - App Installer drops the always-on Ignore Homebrew cache images row.
+  - Settings search fields are 5pt taller; knob menu switches and chips
+- **App Manager**: Search fields, skeletons, help texts, updates heading and island edges
+  - One search field for Homebrew, the uninstaller and Process Manager's
+  - Homebrew's installed list and the uninstaller's scan (footer included)
+  - Knob menu help: "Manage app updates in one place", "Remove applications
+  - Updates heading: section-sized title, "Last checked … · N total apps";
+  - The island keeps the soft edges and corners; System adds only the room
+- **App Updates**: Titled heading, row-shaped empty state; island pages sized as before
+  - The heading reads N Updates Available or No Available Updates, with a
+  - The empty and no-source states are quiet rows shaped like update rows.
+  - The column animates as one, so the notice moves with the rows.
+  - In the island, System and Device Controls are sized to their content
+- **Hub**: Island pages keep their height; no All Tools flash on close
+  - System's island height includes the room its soft edges take at rest,
+  - Soft edges fade only while a page is taller than its area; a page that
+  - With Return to home on, the Hub goes back to All Tools once the island
+- **Uninstaller**: Search is ready when App Manager opens on it
+- **App Updates**: Settings keeps its skeleton rows while checking
+- **App Manager**: Quiet header at rest, roomier updates heading, island typing
+  - A page's segmented control in the header shows no line at rest; once
+  - The updates heading has two lines: the title with a count badge and a
+  - The uninstaller's search takes the keys when the island opens straight
+- **App Manager**: One sliding thumb, soft edges everywhere, DMGs only when opened
+  - The full-width segmented control is SwiftUI with one persistent thumb,
+  - Recent Captures, Device Controls, Process Manager and System scroll
+  - Don't quit these apps and Keep full screen in these apps say Add app….
+  - The App Installer no longer watches mounts, so apps updating themselves
+- **App Updates**: "These apps couldn't be checked", after the list
+- **Homebrew**: Find shell setup under ZDOTDIR and however it is written
+- **App Updates**: One incomplete-check note, one scrolling surface
+- **App Installer**: Keep Settings looking active while macOS confirms
+- **App Installer**: Change the DMG opener when the switch flips
+- **App Installer**: Change the .dmg opener once Settings is out of view
+- **App Installer**: Ask to unblock before the result, handler change off main
+- **App Installer**: Faster prompt, native when off, unverified apps stay blocked
+- **App Manager**: One sidebar row, and a video glyph at symbol weight
+- **App Manager**: Switch the App Installer through the module menu
+
 ## [3.4.3-d.3] - 2026-11-25
 
 ### Added
