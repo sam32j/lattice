@@ -194,7 +194,6 @@ extension Strings {
         switcherInstantSelection: "即时选择",
         switcherInstantSelectionCaption: "浏览 App 和窗口时，立即移动高亮并滚动列表。",
         switcherIgnoreHoverSelection: "悬停时不选择",
-        switcherIgnoreHoverSelectionCaption: "指针经过 App 和窗口时，高亮保持不动。单击仍会打开。悬停在图标行两端仍会滚动该行。",
         switcherMergeTabs: "按 App 分组窗口",
         switcherMergeTabsCaption: "每个 App 一个条目，而不是每个窗口一个。",
         switcherWindowlessApps: "隐藏没有窗口的 App",

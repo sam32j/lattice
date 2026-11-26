@@ -80,7 +80,7 @@ enum Upstream344SettingsTests {
         for language in AppLanguage.allCases {
             let s = Strings.localized(language)
             let shipped = [s.scrollSpeedName, s.scrollSpeedCaption, s.switcherIgnoreHoverSelection,
-                           s.switcherIgnoreHoverSelectionCaption, s.uninstallerSelectAll,
+                           s.uninstallerSelectAll,
                            WindowEdgeSnapRestoreStrings.localized(language).title,
                            WindowEdgeSnapRestoreStrings.localized(language).caption]
             suite.expect(!shipped.contains { $0.localizedCaseInsensitiveContains("Vorssaint") },
@@ -88,7 +88,7 @@ enum Upstream344SettingsTests {
         }
         let english = Strings.localized(.enUS)
         suite.expect(!english.scrollSpeedCaption.localizedCaseInsensitiveContains("pinch")
-                     && !english.switcherIgnoreHoverSelectionCaption.localizedCaseInsensitiveContains("all windows"),
+                     && !english.switcherIgnoreHoverSelection.localizedCaseInsensitiveContains("all windows"),
                      "no Pinch Zoom or All-windows wording arrives with the ports")
     }
 }

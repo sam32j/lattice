@@ -195,7 +195,6 @@ extension Strings {
         switcherInstantSelection: "즉시 선택",
         switcherInstantSelectionCaption: "앱과 윈도우를 탐색할 때 강조 표시와 스크롤 위치를 즉시 이동합니다.",
         switcherIgnoreHoverSelection: "가리켜 선택하지 않기",
-        switcherIgnoreHoverSelectionCaption: "앱과 윈도우 위로 포인터를 옮겨도 강조 표시는 그대로입니다. 클릭하면 여전히 엽니다. 아이콘 행의 양 끝에 포인터를 올리면 여전히 행이 스크롤됩니다.",
         switcherMergeTabs: "앱별로 윈도우 그룹화",
         switcherMergeTabsCaption: "윈도우마다가 아니라 앱마다 하나의 항목을 표시합니다.",
         switcherWindowlessApps: "윈도우가 없는 앱 가리기",

@@ -155,8 +155,7 @@ struct SwitcherSettingsSection: View {
                 .fixedSize()
             }
 
-            SettingsControlRow(title: l10n.s.switcherIgnoreHoverSelection,
-                               caption: l10n.s.switcherIgnoreHoverSelectionCaption) {
+            SettingsControlRow(title: l10n.s.switcherIgnoreHoverSelection) {
                 Toggle(l10n.s.switcherIgnoreHoverSelection, isOn: $switcherIgnoreHoverSelection)
                     .labelsHidden()
             }
