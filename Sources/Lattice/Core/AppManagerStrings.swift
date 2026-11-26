@@ -78,7 +78,7 @@ extension AppManagerStrings {
     static let tr = AppManagerStrings(
         title: "Uygulama Yöneticisi",
         hubDescription: "Uygulamaları yükleyin, güncelleyin, kaldırın ve Homebrew’u yönetin.",
-        emptyDescription: "Uygulamaları yükleyin, güncelleyin, kaldırın ve Homebrew'u yönetin.",
+        emptyDescription: "Uygulamaları yükleyin, güncelleyin, kaldırın ve Homebrew’u yönetin.",
         tabInstaller: "Uygulama Yükleyici",
         tabUpdates: "Uygulama Güncellemeleri",
         tabUninstaller: "Uygulama Kaldırıcı",

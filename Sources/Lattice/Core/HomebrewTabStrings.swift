@@ -446,7 +446,7 @@ extension HomebrewTabStrings {
         onlineTitle: "Catalogue en ligne",
         searchingOnline: "Recherche sur formulae.brew.sh…",
         resultsFormat: "%d résultats",
-        noOnlineFormat: "Aucun résultat pour « %@ »",
+        noOnlineFormat: "Aucun résultat pour «\u{00A0}%@\u{00A0}»",
         cask: "Cask",
         formula: "Formule",
         installing: "Installation…",

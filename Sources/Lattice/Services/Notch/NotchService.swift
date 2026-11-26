@@ -1720,8 +1720,8 @@ final class NotchService: ObservableObject {
         // If routing is disabled while Mission Control is up, the pending
         // capture still gets its standalone preview after teardown.
         defer { deferredCapturePresentation.finish(restore: restoreCapture) }
-        preferenceSyncWork?.cancel(); preferenceSyncWork = nil
         sessionResumeWork?.cancel(); sessionResumeWork = nil
+        preferenceSyncWork?.cancel(); preferenceSyncWork = nil
         hotkey.unregister()
         if shortcutRegistrationFailed { shortcutRegistrationFailed = false }
         NotchLyricsService.shared.stop()
