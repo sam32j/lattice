@@ -1,6 +1,5 @@
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct PriorityDeviceList: View {
     @ObservedObject private var l10n = L10n.shared
@@ -16,7 +15,22 @@ struct PriorityDeviceList: View {
     let onMove: ([String]) -> Void
     var canCycle: Bool = true
 
+    /// The row being dragged, the slot it started from, and how far the
+    /// pointer has moved in the list's own space. The order itself stays put
+    /// until the row is let go, so nothing reloads under the pointer.
     @State private var draggingUID: String?
+    @State private var dragStartIndex = 0
+    @State private var dragTranslation: CGFloat = 0
+    /// A released row is settling into its slot; a new drag waits for it, so
+    /// every released drag commits its own move.
+    @State private var settling = false
+    /// Rows differ in height (a status line makes one taller), so slots come
+    /// from each row's measured height.
+    @State private var rowHeights: [String: CGFloat] = [:]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let rowSpacing: CGFloat = 2
+    private static let space = "audioPriorityList"
 
     private var visibleUIDs: [String] {
         AudioPriorityPresentation.visibleUIDs(priorityUIDs, isAvailable: isAvailable, displayName: displayName)
@@ -33,17 +47,30 @@ struct PriorityDeviceList: View {
                     .font(.system(size: 10.5))
                     .foregroundStyle(.secondary)
             } else {
-                VStack(spacing: 2) {
-                    ForEach(Array(visibleUIDs.enumerated()), id: \.element) { index, uid in
-                        priorityRow(uid: uid, index: index)
+                let uids = visibleUIDs
+                let target = proposedIndex(in: uids)
+                VStack(spacing: Self.rowSpacing) {
+                    ForEach(Array(uids.enumerated()), id: \.element) { index, uid in
+                        let isDragged = draggingUID == uid
+                        priorityRow(uid: uid, index: index, isDragged: isDragged)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                                rowHeights[uid] = $0
+                            }
+                            // The dragged row tracks the pointer exactly; the
+                            // rows it passes slide aside by its height.
+                            .offset(y: isDragged ? dragTranslation : shift(for: index, target: target, in: uids))
+                            .animation(isDragged || reduceMotion ? nil : .easeInOut(duration: 0.15), value: target)
+                            .zIndex(isDragged ? 1 : 0)
+                            .gesture(reorderGesture(for: uid, index: index, in: uids))
                     }
                 }
                 .padding(.horizontal, 1)
+                .coordinateSpace(name: Self.space)
             }
         }
     }
 
-    private func priorityRow(uid: String, index: Int) -> some View {
+    private func priorityRow(uid: String, index: Int, isDragged: Bool) -> some View {
         let available = isAvailable(uid)
         let name = displayName(uid) ?? uid
         let isCurrent = uid == currentUID
@@ -96,10 +123,16 @@ struct PriorityDeviceList: View {
         .font(.system(size: 9, weight: .semibold))
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
-        .background(
+        .background {
+            // A lifted row reads as picked up: an opaque card with a shadow.
+            if isDragged {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+            }
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(isCurrent ? Color.accentColor.opacity(0.08) : Color.primary.opacity(0.035))
-        )
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .strokeBorder(isCurrent ? Color.accentColor.opacity(0.65) : Color.clear, lineWidth: 1)
@@ -125,34 +158,102 @@ struct PriorityDeviceList: View {
                 .disabled(isCurrent || !available)
             }
         }
-        .opacity(draggingUID == uid ? 0.45 : 1)
-        .onDrag {
-            draggingUID = uid
-            return NSItemProvider(object: uid as NSString)
-        } preview: {
-            // A full-row preview lingers briefly while AppKit concludes the
-            // drop. The real row has already moved by then, which makes the
-            // two copies look like a slow settle. Keep native drag/drop, but
-            // preview only the affordance so there is no duplicate row.
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
-                .background(.regularMaterial,
-                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-        }
         .accessibilityAction(named: Text(l10n.s.audioPriorityMoveUp)) {
             move(uid, by: -1)
         }
         .accessibilityAction(named: Text(l10n.s.audioPriorityMoveDown)) {
             move(uid, by: 1)
         }
-        .onDrop(of: [UTType.text],
-                delegate: PriorityDeviceDropDelegate(
-                    targetUID: uid,
-                    priorityUIDs: visibleUIDs,
-                    onMove: reorderVisible,
-                    draggingUID: $draggingUID))
+    }
+
+    // MARK: - Dragging
+
+    private func height(of uid: String) -> CGFloat { rowHeights[uid] ?? 34 }
+
+    /// The slot the dragged row would land in now: past every row whose
+    /// middle its own middle has crossed.
+    private func proposedIndex(in uids: [String]) -> Int? {
+        guard let draggingUID, uids.indices.contains(dragStartIndex),
+              uids[dragStartIndex] == draggingUID else { return nil }
+        var target = dragStartIndex
+        if dragTranslation > 0 {
+            var travelled: CGFloat = 0
+            for index in uids.indices where index > dragStartIndex {
+                let row = height(of: uids[index])
+                // Half of the passed row plus the gap before it.
+                guard dragTranslation > travelled + Self.rowSpacing + row / 2 else { break }
+                travelled += Self.rowSpacing + row
+                target = index
+            }
+        } else if dragTranslation < 0 {
+            var travelled: CGFloat = 0
+            for index in uids.indices.reversed() where index < dragStartIndex {
+                let row = height(of: uids[index])
+                guard -dragTranslation > travelled + Self.rowSpacing + row / 2 else { break }
+                travelled += Self.rowSpacing + row
+                target = index
+            }
+        }
+        return target
+    }
+
+    /// How far a row that is not dragged moves aside for the dragged one.
+    private func shift(for index: Int, target: Int?, in uids: [String]) -> CGFloat {
+        guard let target, let draggingUID, index != dragStartIndex else { return 0 }
+        let step = height(of: draggingUID) + Self.rowSpacing
+        if dragStartIndex < target, (dragStartIndex + 1...target).contains(index) { return -step }
+        if target < dragStartIndex, (target...dragStartIndex - 1).contains(index) { return step }
+        return 0
+    }
+
+    /// Where the dragged row sits once it is in `target`'s slot.
+    private func settleOffset(to target: Int, in uids: [String]) -> CGFloat {
+        if target > dragStartIndex {
+            return uids[(dragStartIndex + 1)...target].reduce(0) { $0 + height(of: $1) + Self.rowSpacing }
+        }
+        if target < dragStartIndex {
+            return -uids[target..<dragStartIndex].reduce(0) { $0 + height(of: $1) + Self.rowSpacing }
+        }
+        return 0
+    }
+
+    private func reorderGesture(for uid: String, index: Int, in uids: [String]) -> some Gesture {
+        DragGesture(minimumDistance: 3, coordinateSpace: .named(Self.space))
+            .onChanged { value in
+                guard !settling else { return }
+                if draggingUID != uid {
+                    draggingUID = uid
+                    dragStartIndex = index
+                }
+                dragTranslation = value.translation.height
+            }
+            .onEnded { _ in
+                guard !settling, draggingUID == uid, let target = proposedIndex(in: uids) else { return }
+                settling = true
+                let start = dragStartIndex
+                // Settle into the slot first, then commit the order once with
+                // no animation: every row is already where the order puts it.
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) {
+                    dragTranslation = settleOffset(to: target, in: uids)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : 0.12)) {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        if target != start {
+                            var reordered = uids
+                            reordered.move(fromOffsets: IndexSet(integer: start),
+                                           toOffset: target > start ? target + 1 : target)
+                            reorderVisible(reordered)
+                        }
+                        if draggingUID == uid {
+                            draggingUID = nil
+                            dragTranslation = 0
+                        }
+                        settling = false
+                    }
+                }
+            }
     }
 
     private func move(_ uid: String, by offset: Int) {
@@ -162,32 +263,5 @@ struct PriorityDeviceList: View {
         var reordered = visibleUIDs
         reordered.swapAt(index, destination)
         reorderVisible(reordered)
-    }
-}
-
-private struct PriorityDeviceDropDelegate: DropDelegate {
-    let targetUID: String
-    let priorityUIDs: [String]
-    let onMove: ([String]) -> Void
-    @Binding var draggingUID: String?
-
-    func dropEntered(info: DropInfo) {
-        guard let draggingUID,
-              draggingUID != targetUID,
-              let from = priorityUIDs.firstIndex(of: draggingUID),
-              let to = priorityUIDs.firstIndex(of: targetUID) else { return }
-
-        var reordered = priorityUIDs
-        reordered.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
-        onMove(reordered)
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        draggingUID = nil
-        return true
     }
 }

@@ -2763,7 +2763,8 @@ final class NotchService: ObservableObject {
     }
 
     private func canAcceptFilePayload(_ pasteboard: NSPasteboard) -> Bool {
-        guard canAcceptFileDrop else { return false }
+        guard canAcceptFileDrop,
+              !ShelfPasteboardSupport.isReorderDrag((pasteboard.types ?? []).map(\.rawValue)) else { return false }
         let urls = MediaEditorFileSupport.urls(from: pasteboard)
         if MediaEditorFileOpener.shared.canOpen(urls) || NotchAppDrop(urls: urls) != nil { return true }
         return canDropOnShelf && !ShelfService.shared.isInternalDragActive
