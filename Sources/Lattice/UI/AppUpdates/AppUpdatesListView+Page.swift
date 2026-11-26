@@ -51,62 +51,55 @@ extension AppUpdatesListView {
     /// summary on the left, Check Now / Retry pill on the right.
     @ViewBuilder
     private var statusCard: some View {
-        if updates.isChecking && !updates.hasCheckedThisSession {
-            statusSkeleton
-                .transition(reduceMotion ? .identity : .opacity)
-        } else {
-            let hasError = updates.lastError?.isEmpty == false
-            HStack(spacing: 12) {
+        let hasError = updates.lastError?.isEmpty == false
+        HStack(spacing: 12) {
+            if updates.isChecking {
+                statusTitleSkeleton
+            } else {
                 VStack(alignment: .leading, spacing: 2) {
-                    if updates.isChecking {
-                        AnimatedEllipsisText(base: text.checking)
-                            .font(.system(size: 13, weight: .semibold))
-                            .lineLimit(1)
-                    } else {
-                        Text(statusHeadline)
-                            .font(.system(size: 13, weight: .semibold))
-                            .lineLimit(1)
-                    }
-                    Text(updates.isChecking ? text.checking + "…" : statusDetail)
+                    Text(statusHeadline)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                    Text(statusDetail)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 8)
-                if !allSourcesOff && AppFeature.appUpdates.isAvailable {
-                    Button {
-                        updates.check()
-                    } label: {
-                        if updates.isChecking {
-                            AnimatedEllipsisText(base: text.checking)
-                        } else {
-                            Text(hasError ? text.retry : text.checkNow)
-                        }
-                    }
-                    .buttonStyle(.appManager(hasError && !updates.isChecking ? .accent : .neutral))
-                    .disabled(isBusy)
-                    .fixedSize()
-                }
-            }
-            .padding(14)
-            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .transition(reduceMotion ? .identity : .opacity)
-        }
-    }
-
-    private var statusSkeleton: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 7) {
-                RoundedRectangle(cornerRadius: 3).frame(width: 170, height: 12)
-                RoundedRectangle(cornerRadius: 3).frame(width: 120, height: 9)
             }
             Spacer(minLength: 8)
-            Capsule().frame(width: 86, height: 26)
+            if !allSourcesOff && AppFeature.appUpdates.isAvailable {
+                Button {
+                    updates.check()
+                } label: {
+                    if updates.isChecking {
+                        AnimatedEllipsisText(base: text.checking)
+                    } else {
+                        Text(hasError ? text.retry : text.checkNow)
+                    }
+                }
+                .buttonStyle(.appManager(hasError && !updates.isChecking ? .accent : .neutral))
+                .disabled(isBusy)
+                .fixedSize()
+            }
         }
-        .foregroundStyle(Color.primary.opacity(0.08))
-        .padding(.vertical, 3)
         .padding(14)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var statusTitleSkeleton: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            RoundedRectangle(cornerRadius: 3).frame(width: 170, height: 12)
+            RoundedRectangle(cornerRadius: 3).frame(width: 120, height: 9)
+        }
+        .foregroundStyle(Color.primary.opacity(skeletonPulse ? 0.05 : 0.1))
+        .padding(.vertical, 3)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                skeletonPulse = true
+            }
+        }
+        .onDisappear { skeletonPulse = false }
         .accessibilityHidden(true)
     }
 

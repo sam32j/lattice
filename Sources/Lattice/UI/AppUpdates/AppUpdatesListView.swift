@@ -119,7 +119,11 @@ struct AppUpdatesListView: View {
         }
         if let error = updates.lastError, !error.isEmpty { return text.checkFailed }
         guard updates.hasCheckedThisSession else { return text.neverChecked }
-        if !updates.items.isEmpty { return String(format: text.availableCountFormat, updates.items.count) }
+        if !updates.items.isEmpty {
+            return updates.items.count == 1
+                ? text.oneUpdateAvailable
+                : String(format: text.availableCountFormat, updates.items.count)
+        }
         return coveragePartial ? text.partialUpToDate : text.upToDate
     }
 

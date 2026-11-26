@@ -28,7 +28,7 @@ extension AppUpdateStrings {
         frequencyDaily: "Denne",
         frequencyWeekly: "Týždenne",
         nextCheckFormat: "Ďalšia kontrola %@",
-        notifyToggle: "Upozorniť ma, keď má aplikácia aktualizáciu",
+        notifyToggle: "Upozorniť, keď sú dostupné nové aktualizácie",
         includeStoreToggle: "Zahrnúť aplikácie z App Store",
         includeStoreCaption: "Kontroluje verzie v obchode podľa regiónu tohto Macu. Tieto aktualizácie inštaluje Apple.",
         packageMissing: "Homebrew nie je nainštalovaný, takže aplikácie sa odtiaľto zatiaľ nedajú aktualizovať.",

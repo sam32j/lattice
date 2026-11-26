@@ -22,7 +22,7 @@ extension AppUpdatesListView {
         VStack(spacing: 10) {
             if updates.isChecking {
                 ProgressView().controlSize(.small)
-                Text(text.checking + "…")
+                AnimatedEllipsisText(base: text.checking)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
             } else if allSourcesOff {
