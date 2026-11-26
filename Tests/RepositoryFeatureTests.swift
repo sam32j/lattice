@@ -1068,15 +1068,11 @@ enum RepositoryFeatureTests {
         let hubPresentationSource = repository.moduleSource(at: "Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift")
         let notchServiceSource = repository.moduleSource(at: "Sources/Lattice/Services/Notch/NotchService.swift")
         let appManagerPanelSource = repository.moduleSource(at: "Sources/Lattice/UI/MenuPanel/PanelAppManagerView.swift")
-        let appManagerSettingsSource = repository.moduleSource(at: "Sources/Lattice/UI/Settings/AppManagerSettings.swift")
         suite.expect(uninstallerPanelSource.contains("uninstaller.reset()")
                 && hubPresentationSource.contains("resetUninstallerIfSelected()")
                 && notchServiceSource.contains("resetUninstallerIfSelected()")
                 && appManagerPanelSource.contains("AppUninstaller.shared.reset()"),
                "Exiting or closing an inspected uninstaller panel resets to the app chooser for the next open")
-        suite.expect(appManagerSettingsSource.contains("HomebrewSimulator")
-                && appManagerSettingsSource.contains("debugButton"),
-               "Developer App Manager Settings header places a Homebrew state simulator button beside the knob menu")
         suite.expect(!updatesPickerSource.contains("arrow.up.right.square")
                 && updatesPickerSource.contains("text.openAppUpdates")
                 && !panelHomebrewSurfacesSource.contains("arrow.up.right.square")

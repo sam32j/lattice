@@ -37,7 +37,6 @@ extension HomebrewManager {
     func perform(_ action: HomebrewOperation.Action,
                          package: HomebrewPackage?,
                          command commandOverride: HomebrewCommand? = nil, owner: AppFeature = .homebrew) {
-        if HomebrewSimulator.shared.handlePerform(action, package: package, owner: owner) { return }
         guard owner.isAvailable, operation == nil else { return }
         guard let brewPath = brewPath ?? detectBrewPath() else { return }
         guard let command = commandOverride

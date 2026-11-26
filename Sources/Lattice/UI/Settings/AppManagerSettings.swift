@@ -224,51 +224,18 @@ final class AppManagerAttention: ObservableObject {
 private struct AppManagerTitleBarControls: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
-    @ObservedObject private var simulator = HomebrewSimulator.shared
     @State private var showingMenu = false
-    @State private var showingDebugMenu = false
     @State private var menuClosedAt = Date.distantPast
-    @State private var debugMenuClosedAt = Date.distantPast
 
     var body: some View {
         let isOn = AppManagerModules.anyOn
         let title = FeatureStrings.appManager(l10n.language).title
         HStack(spacing: 6) {
-            if isOn {
-                if AppInfo.isDeveloperBuild { debugButton }
-                menuButton
-            }
+            if isOn { menuButton }
             SettingsTitleBarSwitch(title: title, isOn: isOn) { AppManagerModules.setOn($0) }
         }
         .padding(.horizontal, 8)
-        .onChange(of: isOn) { _, on in
-            if !on {
-                showingMenu = false
-                showingDebugMenu = false
-            }
-        }
-    }
-
-    private var debugButton: some View {
-        Button {
-            guard Date().timeIntervalSince(debugMenuClosedAt) > 0.3 else { return }
-            showingDebugMenu.toggle()
-        } label: {
-            Image(systemName: simulator.isSimulating ? "ladybug.fill" : "ladybug")
-                .foregroundStyle(showingDebugMenu ? Color.accentColor
-                                 : (simulator.isSimulating ? Color.orange : Color.primary))
-        }
-        .buttonStyle(FlatSettingsOptionsButtonStyle())
-        .focusEffectDisabled()
-        .help("Simulate Homebrew states")
-        .accessibilityLabel("Simulate Homebrew states")
-        .accessibilityAddTraits(showingDebugMenu ? .isSelected : [])
-        .popover(isPresented: $showingDebugMenu, arrowEdge: .bottom) {
-            AppManagerHomebrewDebugMenu(dismiss: { showingDebugMenu = false })
-        }
-        .onChange(of: showingDebugMenu) { _, open in
-            if !open { debugMenuClosedAt = Date() }
-        }
+        .onChange(of: isOn) { _, on in if !on { showingMenu = false } }
     }
 
     private var menuButton: some View {
@@ -311,58 +278,5 @@ private struct AppManagerModulesMenu: View {
         }
         .padding(6)
         .frame(width: 320)
-    }
-}
-
-/// Developer-only Homebrew state presets for exercising the Settings, Floating
-/// Hub, and Dynamic Island UIs without altering live packages.
-private struct AppManagerHomebrewDebugMenu: View {
-    let dismiss: () -> Void
-    @ObservedObject private var simulator = HomebrewSimulator.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            ForEach(HomebrewSimulator.Scenario.allCases) { scenario in
-                Button {
-                    simulator.apply(scenario)
-                    dismiss()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: simulator.activeScenario == scenario ? "checkmark" : "")
-                            .font(.system(size: 10.5, weight: .semibold))
-                            .frame(width: 14)
-                            .foregroundStyle(Color.accentColor)
-                        Text(scenario.title)
-                            .font(.system(size: 12))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            Divider().padding(.vertical, 4)
-            Button {
-                simulator.reset()
-                dismiss()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: simulator.isSimulating ? "arrow.counterclockwise" : "checkmark")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .frame(width: 14)
-                        .foregroundStyle(simulator.isSimulating ? Color.orange : Color.accentColor)
-                    Text("Live Homebrew Data")
-                        .font(.system(size: 12, weight: simulator.isSimulating ? .regular : .medium))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(8)
-        .frame(width: 260)
     }
 }

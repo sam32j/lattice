@@ -59,15 +59,13 @@ struct HomebrewTab: View {
             }
         }
         .onAppear {
-            if !HomebrewSimulator.shared.isSimulating {
-                if homebrew.installed.isEmpty { homebrew.refreshInstalled() }
-                catalog.checkVersion()
-                homebrew.refreshCleanupEstimate()
-            }
+            if homebrew.installed.isEmpty { homebrew.refreshInstalled() }
+            catalog.checkVersion()
+            homebrew.refreshCleanupEstimate()
             if !visibleFilters.contains(filter) { filter = .all }
         }
         .onChange(of: AppFeature.homebrew.isAvailable) { _, available in
-            guard available, !HomebrewSimulator.shared.isSimulating else { return }
+            guard available else { return }
             if homebrew.installed.isEmpty && !homebrew.isLoadingInstalled {
                 homebrew.refreshInstalled()
             }
@@ -129,13 +127,9 @@ struct HomebrewTab: View {
     }
 
     private func refreshAll() {
-        if HomebrewSimulator.shared.isSimulating {
-            HomebrewSimulator.shared.refreshCurrent()
-        } else {
-            homebrew.refreshInstalled()
-            catalog.checkVersion(force: true)
-            homebrew.refreshCleanupEstimate(force: true)
-        }
+        homebrew.refreshInstalled()
+        catalog.checkVersion(force: true)
+        homebrew.refreshCleanupEstimate(force: true)
     }
 
     /// How many updates and Homebrew version on the left, with Clean Up /
@@ -152,18 +146,18 @@ struct HomebrewTab: View {
                         Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
                             .font(.system(size: 13, weight: .semibold))
                             .lineLimit(1)
-                        if !showsCheckNowButton && !isCheckingStatus {
+                        if !showsCheckNowButton && !showsCheckingButton {
                             Button {
                                 refreshAll()
                             } label: {
-                                RefreshArrow(isSpinning: refreshing)
+                                RefreshArrow(isSpinning: isCheckingStatus)
                                     .font(.system(size: 10.5, weight: .medium))
                                     .foregroundStyle(.secondary)
                                     .frame(width: 16, height: 14)
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .disabled(homebrew.isBusy || refreshing)
+                            .disabled(homebrew.isBusy || isCheckingStatus)
                             .help(s.homebrewRefresh)
                             .accessibilityLabel(s.homebrewRefresh)
                         }

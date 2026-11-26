@@ -228,7 +228,7 @@ extension HomebrewManager {
     }
 
     func refreshCleanupEstimate(force: Bool = false) {
-        guard AppFeature.homebrew.isAvailable, operation == nil, !HomebrewSimulator.shared.isSimulating else { return }
+        guard AppFeature.homebrew.isAvailable, operation == nil else { return }
         if !force {
             if isCheckingCleanup { return }
             if let checkedAt = cleanupEstimateCheckedAt,
@@ -253,7 +253,6 @@ extension HomebrewManager {
                 guard let self, self.cleanupEstimateRead == request else { return }
                 self.cleanupEstimateRead = nil
                 self.isCheckingCleanup = false
-                guard !HomebrewSimulator.shared.isSimulating else { return }
                 guard !cancellation.isCancelled, self.operation == nil, result.status == 0 else { return }
                 self.cleanupEstimate = HomebrewCleanupParser.parse(result.output)
                 self.cleanupEstimateCheckedAt = Date()
@@ -262,7 +261,6 @@ extension HomebrewManager {
     }
 
     func cancelOperation() {
-        if HomebrewSimulator.shared.handleCancel() { return }
         guard operation != nil else { return }
         cancelRequested = true
         if let activeProcess {
@@ -272,7 +270,6 @@ extension HomebrewManager {
     }
 
     func clearLog() {
-        if HomebrewSimulator.shared.handleClearLog() { return }
         completedOperationCleanup?.cancel()
         completedOperationCleanup = nil
         isOperationDetailsExpanded = false
