@@ -8,10 +8,7 @@ extension WindowLayoutSettings {
     /// macOS tiling takes the same edges, so Lattice's snapping waits for it
     /// to be turned off in Desktop & Dock.
     private var systemTilingStatus: SettingsFeatureStatus {
-        SettingsFeatureStatus(color: .red,
-                              message: edgeSnapEnabled
-                                  ? text.edgeSnapSystemConflict + " " + text.edgeSnapWaitingForSystem
-                                  : text.edgeSnapSystemConflict)
+        SettingsFeatureStatus(color: .red, message: text.edgeSnapSystemConflict)
     }
 
     var edgeSnapControls: some View {
@@ -65,6 +62,9 @@ extension WindowLayoutSettings {
                     .padding(.top, 9)
                 }
                 .padding(.top, 17)
+                // Nothing here takes effect while macOS holds the edges, so
+                // the follow-ups grey out, as Super Key's options do.
+                .disabled(systemTilingEnabled)
                 .transition(.settingsReveal)
             }
         }

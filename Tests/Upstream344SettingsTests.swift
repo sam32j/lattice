@@ -33,6 +33,8 @@ enum Upstream344SettingsTests {
         suite.expect(switchRow.prefix(600).contains("SettingsStatusDot(status: systemTilingStatus)")
                      && snapping.components(separatedBy: "if systemTilingEnabled {").count == 2,
                      "a macOS tiling conflict shows as a status icon beside the edge snapping switch, like Super Key's")
+        suite.expect(snapping.contains(".disabled(systemTilingEnabled)"),
+                     "the edge snapping follow-ups grey out while macOS tiling holds the edges")
         let tab = source("Sources/Lattice/UI/Settings/AppUninstallerTab.swift")
         let panel = source("Sources/Lattice/UI/MenuPanel/PanelUninstallerView.swift")
         suite.expect(tab.contains("uninstaller.setAllIncluded(") && panel.contains("uninstaller.setAllIncluded(")
