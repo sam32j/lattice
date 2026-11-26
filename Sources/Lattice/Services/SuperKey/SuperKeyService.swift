@@ -894,13 +894,17 @@ final class SuperKeyService: ObservableObject {
     private func toggleCapsLock(flags: CGEventFlags) {
         let generation = lifecycleLock.withLock { mappingGeneration }
         let atRelease = stateLock.withLock { (raw: rawCapsLockCount, write: soloCapsLockWrite?.count) }
+        // Only the Caps Lock source counts native presses, so only it can
+        // trust the last solo write; any other source reads the live lock.
+        let countsNativePresses = source == .capsLock
         runOnMainIfNeeded {
             guard self.lifecycleLock.withLock({
                 self.tap != nil && self.mappingGeneration == generation && !self.shouldStopTapThread
             }) else { return }
             let (rawCount, lastWrite) = self.stateLock.withLock { (self.rawCapsLockCount, self.soloCapsLockWrite) }
             let wasOn: Bool
-            if let lastWrite, lastWrite.generation == generation, lastWrite.count != atRelease.write {
+            if countsNativePresses, let lastWrite, lastWrite.generation == generation,
+               lastWrite.count != atRelease.write {
                 wasOn = lastWrite.on  // An earlier queued solo action just ran.
             } else if rawCount != atRelease.raw {
                 wasOn = flags.contains(.maskAlphaShift)  // The live lock can already reflect a later raw press.
