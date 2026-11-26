@@ -24,6 +24,19 @@ extension SettingsView {
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
+            .overlay(alignment: .top) {
+                if hasSearchQuery && searchResults.groups.isEmpty {
+                    let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                    Text(String(format: FeatureStrings.homebrewTab(l10n.language).noOnlineFormat, trimmed))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 24)
+                        .allowsHitTesting(false)
+                }
+            }
             .onChange(of: sidebarPick) { _, selectedID in routeSidebarPick(selectedID) }
             .onChange(of: activeSearchIndex) { _, index in
                 guard let index, searchResults.items.indices.contains(index) else { return }
@@ -115,23 +128,10 @@ extension SettingsView {
 
     @ViewBuilder
     func searchResultRows(_ searchResults: SearchResultsSnapshot) -> some View {
-        if searchResults.groups.isEmpty {
-            let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-            Text(String(format: FeatureStrings.homebrewTab(l10n.language).noOnlineFormat, trimmed))
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 24)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-        } else {
-            ForEach(searchResults.groups, id: \.pageItem.id) { group in
-                searchPageRow(group, searchResults: searchResults)
-                ForEach(group.suggestions) { suggestion in
-                    searchSuggestionRow(suggestion, searchResults: searchResults)
-                }
+        ForEach(searchResults.groups, id: \.pageItem.id) { group in
+            searchPageRow(group, searchResults: searchResults)
+            ForEach(group.suggestions) { suggestion in
+                searchSuggestionRow(suggestion, searchResults: searchResults)
             }
         }
     }
