@@ -146,9 +146,9 @@ struct ScreenRecorderSettings: View {
                     Picker(copy(.gifQuality), selection: Binding(
                         get: { RecorderSupport.nearestGIFScalePreset(gifScalePercent) },
                         set: { gifScalePercent = $0 })) {
-                        Text(copy(.low) + " (50%)").tag(50)
-                        Text(copy(.standard) + " (75%)").tag(75)
-                        Text(copy(.best) + " (100%)").tag(100)
+                        Text(copy(.low)).tag(50)
+                        Text(copy(.standard)).tag(75)
+                        Text(copy(.best)).tag(100)
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()

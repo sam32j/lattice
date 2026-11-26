@@ -29,6 +29,10 @@ enum Upstream344SettingsTests {
         let revealed = snapping.components(separatedBy: "if edgeSnapEnabled {").dropFirst().first ?? ""
         suite.expect(revealed.prefix(2_500).contains("isOn: $edgeSnapRestoreOnDrag"),
                      "restore-on-drag is revealed with the edge snapping follow-ups")
+        let switchRow = snapping.components(separatedBy: "SettingsControlRow(title: text.edgeSnapSection").dropFirst().first ?? ""
+        suite.expect(switchRow.prefix(600).contains("SettingsStatusDot(status: systemTilingStatus)")
+                     && snapping.components(separatedBy: "if systemTilingEnabled {").count == 2,
+                     "a macOS tiling conflict shows as a status icon beside the edge snapping switch, like Super Key's")
         let tab = source("Sources/Lattice/UI/Settings/AppUninstallerTab.swift")
         let panel = source("Sources/Lattice/UI/MenuPanel/PanelUninstallerView.swift")
         suite.expect(tab.contains("uninstaller.setAllIncluded(") && panel.contains("uninstaller.setAllIncluded(")

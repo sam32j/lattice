@@ -5,11 +5,26 @@ extension WindowLayoutSettings {
         edgeSnapDisabledZones.isEmpty && (edgeSnapZoneActions.isEmpty || WindowEdgeSnapLayout(storageValue: edgeSnapZoneActions) == .standard)
     }
 
+    /// macOS tiling takes the same edges, so Lattice's snapping waits for it
+    /// to be turned off in Desktop & Dock.
+    private var systemTilingStatus: SettingsFeatureStatus {
+        SettingsFeatureStatus(color: .red,
+                              message: edgeSnapEnabled
+                                  ? text.edgeSnapSystemConflict + " " + text.edgeSnapWaitingForSystem
+                                  : text.edgeSnapSystemConflict)
+    }
+
     var edgeSnapControls: some View {
         // The follow-up groups sit at different gaps under the switch, so
         // each carries its own and rolls it up with itself.
         VStack(alignment: .leading, spacing: 0) {
             SettingsControlRow(title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
+                // A conflict reads the way Super Key's and the Spaces
+                // switch's do: a red status icon beside the switch, the
+                // explanation in its hint.
+                if systemTilingEnabled {
+                    SettingsStatusDot(status: systemTilingStatus)
+                }
                 PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
@@ -50,33 +65,6 @@ extension WindowLayoutSettings {
                     .padding(.top, 9)
                 }
                 .padding(.top, 17)
-                .transition(.settingsReveal)
-            }
-            if systemTilingEnabled {
-                // The same notice shape as secure input and permission rows:
-                // an attention icon beside plain text, the detail as a caption,
-                // and the fix as a small button underneath.
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundStyle(.orange)
-                            .accessibilityHidden(true)
-                        Text(text.edgeSnapSystemConflict)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if edgeSnapEnabled {
-                        Text(text.edgeSnapWaitingForSystem)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .transition(.settingsReveal)
-                    }
-                    Button(text.edgeSnapOpenSystemSettings) {
-                        NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
-                    }
-                    .controlSize(.small)
-                }
-                .padding(.top, 13)
                 .transition(.settingsReveal)
             }
         }
@@ -218,3 +206,4 @@ struct WindowLayoutShortcutsSettings: View {
         .settingsExpansionAnimation(value: [permissions.accessibility, holdToCycleDisplayEnabled])
     }
 }
+

@@ -69,7 +69,7 @@ struct RecorderExportOptionsMenu: View {
                 get: { model.document.resolvedGIFScalePercent },
                 set: { model.setGIFScalePercent($0) })) {
                 ForEach(Self.gifSizePresets, id: \.self) { percent in
-                    Text(gifTitle(percent) + " (\(percent)%)").tag(percent)
+                    Text(gifTitle(percent)).tag(percent)
                 }
                 if !Self.gifSizePresets.contains(model.document.resolvedGIFScalePercent) {
                     Text(formatStrings.customSize + " (\(model.document.resolvedGIFScalePercent)%)")

@@ -154,11 +154,6 @@ struct SwitcherSettingsSection: View {
                 .pickerStyle(.menu)
                 .fixedSize()
             }
-
-            SettingsControlRow(title: l10n.s.switcherIgnoreHoverSelection) {
-                Toggle(l10n.s.switcherIgnoreHoverSelection, isOn: $switcherIgnoreHoverSelection)
-                    .labelsHidden()
-            }
         }
     }
 
@@ -193,6 +188,11 @@ struct SwitcherSettingsSection: View {
                     }
 
                     VStack(alignment: .leading, spacing: 13) {
+                        SettingsControlRow(title: l10n.s.switcherIgnoreHoverSelection) {
+                            Toggle(l10n.s.switcherIgnoreHoverSelection, isOn: $switcherIgnoreHoverSelection)
+                                .labelsHidden()
+                        }
+
                         SettingsControlRow(title: l10n.s.minimalWindowPreviews) {
                             Toggle(l10n.s.minimalWindowPreviews, isOn: $minimalPreviews)
                                 .labelsHidden()
