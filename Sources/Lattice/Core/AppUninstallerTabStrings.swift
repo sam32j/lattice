@@ -378,7 +378,7 @@ extension AppUninstallerTabStrings {
         appCountFormat: "%d apps",
         inspect: "Analyser",
         running: "Ouverte",
-        noMatchesFormat: "Aucun résultat pour « %@ »",
+        noMatchesFormat: "Aucun résultat pour «\u{00A0}%@\u{00A0}»",
         loadingApps: "Recherche des apps installées…",
         scanningTitle: "Analyse des fichiers…",
         uninstallingFormat: "Désinstallation de %@ avec Homebrew…",

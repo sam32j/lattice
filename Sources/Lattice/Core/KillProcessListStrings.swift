@@ -735,7 +735,7 @@ extension KillProcessListStrings {
         toastCopiedPIDFormat: "PID %d copié",
         toastCouldNotStopFormat: "Impossible d’arrêter %@",
         reopen: "Rouvrir",
-        emptySearchFormat: "Aucun résultat pour « %@ »",
+        emptySearchFormat: "Aucun résultat pour «\u{00A0}%@\u{00A0}»",
         emptyScope: "Rien n’est en cours ici.",
         refresh: "Actualiser",
         moreActionsFormat: "Plus d’actions pour %@",
