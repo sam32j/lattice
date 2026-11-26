@@ -2759,6 +2759,9 @@ final class WindowLayoutService: ObservableObject {
                     ?? windowAttribute(element, kAXTopLevelUIElementAttribute as String)
             }
         }
+        // A window found through its child is a separate reference, without
+        // the child's cap: cap it before its frame is read in the mouse tap.
+        if let found = window { AXUIElementSetMessagingTimeout(found, 0.25) }
         // An AX window that does not contain the press is the wrong answer,
         // not the end of the search: ask the window server for the receiver.
         if let found = window, let foundFrame = frame(of: found),

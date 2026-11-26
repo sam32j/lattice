@@ -251,13 +251,15 @@ final class MicMuteService: ObservableObject {
         applyGeneration += 1
         let generation = applyGeneration
         halQueue.async { [weak self] in
-            let outcome = Self.sweep(muted: muted, explicitUserUnmute: explicitUserUnmute)
+            var outcome = Self.sweep(muted: muted, explicitUserUnmute: explicitUserUnmute)
             if muted {
                 // A claimed microphone that opened before its listener was in
                 // place gets the mute once more, here on the same queue, so
-                // the result this request reports is still its own.
-                if outcome.applied, self?.syncDeviceListeners(muted: true) == true {
-                    _ = Self.sweep(muted: true)
+                // the result this request reports is still its own. If that
+                // microphone stays open, the mute is partial, not a success.
+                if outcome.applied, self?.syncDeviceListeners(muted: true) == true,
+                   Self.sweep(muted: true).failed {
+                    outcome.failed = true
                 }
             } else if outcome.applied {
                 self?.syncDeviceListeners(muted: false)
