@@ -147,9 +147,26 @@ struct HomebrewTab: View {
         } else {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(1)
+                    HStack(spacing: 5) {
+                        Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                        if !showsCheckNowButton {
+                            Button {
+                                refreshAll()
+                            } label: {
+                                RefreshArrow(isSpinning: refreshing)
+                                    .font(.system(size: 10.5, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 16, height: 14)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(homebrew.isBusy || refreshing)
+                            .help(s.homebrewRefresh)
+                            .accessibilityLabel(s.homebrewRefresh)
+                        }
+                    }
                     if let version = catalog.installedVersion {
                         Text(String(format: strings.versionFormat, version))
                             .font(.caption)

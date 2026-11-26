@@ -113,15 +113,18 @@ extension LatticeHubService {
     /// opens on the App Manager's uninstaller, already scanning that app.
     func openUninstaller(for appURL: URL, anchoredBelow anchor: NSRect? = nil) {
         guard LatticeHubItem.appManager.isAvailable(), NotchAppDrop.canUninstall(appURL) else { return }
-        MainActor.assumeIsolated { AppManagerPanelState.shared.tab = .uninstaller }
-        AppUninstaller.shared.select(appURL: appURL)
         if isVisible {
             opensUtilityDirectly = true
             activeUtility = .appManager
             panel?.makeKey()
-            return
+        } else {
+            // Open the floating Hub (and collapse any expanded Island Hub)
+            // before selecting the incoming app so the Island's collapse
+            // teardown doesn't immediately reset the new uninstaller target.
+            show(forceFloating: true, anchoredBelow: anchor, initialUtility: .appManager)
         }
-        show(forceFloating: true, anchoredBelow: anchor, initialUtility: .appManager)
+        MainActor.assumeIsolated { AppManagerPanelState.shared.tab = .uninstaller }
+        AppUninstaller.shared.select(appURL: appURL)
     }
 
     /// Hides the floating Hub for an editor opened from Recent Captures and

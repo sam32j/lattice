@@ -87,7 +87,7 @@ final class NotchLockHandoff {
             .path(in: CGRect(origin: .zero, size: rect.size)).offsetBy(dx: rect.minX, dy: rect.minY).cgPath
     }
 
-    func morph(to frame: CGRect) {
+    func morph(to frame: CGRect, duration: CFTimeInterval = 0.32) {
         generation += 1
         let previous = shape.presentation()?.path ?? shape.path
         let destination = path(for: frame)
@@ -97,11 +97,11 @@ final class NotchLockHandoff {
         contentMask.path = destination
         shape.removeAnimation(forKey: "handoff")
         contentMask.removeAnimation(forKey: "handoff")
-        if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+        if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, duration > 0 {
             let animation = CABasicAnimation(keyPath: "path")
             animation.fromValue = previous
             animation.toValue = destination
-            animation.duration = 0.32
+            animation.duration = duration
             animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1, 0.36, 1)
             shape.add(animation, forKey: "handoff")
             contentMask.add(animation, forKey: "handoff")
@@ -151,7 +151,7 @@ final class NotchLockHandoff {
             finalize()
             return
         }
-        morph(to: retractionFrame ?? frame)
+        morph(to: retractionFrame ?? frame, duration: remaining)
         let token = generation
         DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
             guard let self, self.generation == token else { return }

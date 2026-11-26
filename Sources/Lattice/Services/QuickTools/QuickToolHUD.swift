@@ -46,7 +46,7 @@ enum QuickToolHUD {
                             .strokeBorder(Color.primary.opacity(0.2), lineWidth: 0.5)
                     )
             } else {
-                Image(systemName: icon)
+                LatticeSymbol(icon)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(isMutedMic ? Color.red : Color.accentColor)
             }

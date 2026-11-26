@@ -351,6 +351,7 @@ extension ButtonStyle where Self == AppManagerButtonStyle {
 /// name and a detail line, and the button's capsule.
 struct AppManagerListSkeleton: View {
     var rows = 5
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dim = false
 
     var body: some View {
@@ -369,7 +370,10 @@ struct AppManagerListSkeleton: View {
             }
         }
         .foregroundStyle(Color.primary.opacity(dim ? 0.05 : 0.1))
-        .onAppear { withAnimation(.easeInOut(duration: 0.9).repeatForever()) { dim = true } }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever()) { dim = true }
+        }
         .accessibilityHidden(true)
     }
 }
