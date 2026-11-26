@@ -2758,6 +2758,12 @@ final class WindowLayoutService: ObservableObject {
                     ?? windowAttribute(element, kAXTopLevelUIElementAttribute as String)
             }
         }
+        // An AX window that does not contain the press is the wrong answer,
+        // not the end of the search: ask the window server for the receiver.
+        if let found = window, let foundFrame = frame(of: found),
+           !CGRect(origin: foundFrame.origin, size: foundFrame.size).contains(point) {
+            window = nil
+        }
         if window == nil {
             // Custom-drawn content may expose no AX child at the press point.
             // Resolve the exact click receiver, never a focused or covered window.
