@@ -28,7 +28,7 @@ extension AppUpdateStrings {
         frequencyDaily: "Ежедневно",
         frequencyWeekly: "Еженедельно",
         nextCheckFormat: "Следующая проверка %@",
-        notifyToggle: "Сообщать, когда у приложения есть обновление",
+        notifyToggle: "Уведомлять о наличии новых обновлений",
         includeStoreToggle: "Включать приложения из App Store",
         includeStoreCaption: "Проверяет версии в магазине с учётом региона этого Mac. Эти обновления устанавливает Apple.",
         packageMissing: "Homebrew не установлен, поэтому обновлять приложения отсюда пока нельзя.",

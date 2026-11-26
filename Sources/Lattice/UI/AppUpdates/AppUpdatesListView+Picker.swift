@@ -56,10 +56,17 @@ struct UpdatesHeading: View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: showsDetail ? 2 : 0) {
                 HStack(spacing: 6) {
-                    Text(title)
-                        .font(.system(size: compact ? 11.5 : 12, weight: .semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                    if isChecking && count == 0 {
+                        AnimatedEllipsisText(base: text.checking)
+                            .font(.system(size: compact ? 11.5 : 12, weight: .semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    } else {
+                        Text(title)
+                            .font(.system(size: compact ? 11.5 : 12, weight: .semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
                     Button(action: onCheck) {
                         RefreshArrow(isSpinning: isChecking)
                             .font(.system(size: compact ? 11 : 12, weight: .medium))
