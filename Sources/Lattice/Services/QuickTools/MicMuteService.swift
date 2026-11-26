@@ -29,6 +29,10 @@ final class MicMuteService: ObservableObject {
     /// a call starts cannot undo the mute. Device IDs go stale when hardware
     /// leaves, and the next sweep replaces this list from scratch.
     private var deviceListeners: [DeviceListener] = []
+    /// One re-check per user mute once the device listeners are in place: a
+    /// control raised between the sweep's check and the listener's
+    /// registration fires no notification. Only touched on `halQueue`.
+    private var listenerRecheckArmed = false
     /// Reading or writing a device property can block for as long as the audio
     /// daemon holds the device (a headset connecting, an interface waking),
     /// and that is exactly the moment the listeners fire. Sweeping every
@@ -136,6 +140,7 @@ final class MicMuteService: ObservableObject {
     }
 
     func setMuted(_ muted: Bool) {
+        if muted { halQueue.async { self.listenerRecheckArmed = true } }
         apply(muted: muted, announce: true, explicitUserUnmute: !muted)
     }
 
@@ -248,7 +253,12 @@ final class MicMuteService: ObservableObject {
         halQueue.async { [weak self] in
             let outcome = Self.sweep(muted: muted, explicitUserUnmute: explicitUserUnmute)
             if muted {
-                if outcome.applied { self?.syncDeviceListeners(muted: true) }
+                // A claimed microphone that opened before its listener was in
+                // place gets the mute once more, here on the same queue, so
+                // the result this request reports is still its own.
+                if outcome.applied, self?.syncDeviceListeners(muted: true) == true {
+                    _ = Self.sweep(muted: true)
+                }
             } else if outcome.applied {
                 self?.syncDeviceListeners(muted: false)
             }
@@ -520,12 +530,22 @@ final class MicMuteService: ObservableObject {
                 // Check the final state after all writes. Later writes can
                 // affect earlier controls through a driver's master/channel
                 // aliases. Missing or unreadable controls stay ours to retry.
-                let restored = !snapshot.isEmpty && addresses.count == snapshot.count
-                    && addresses.allSatisfy { address in
-                        guard let expected = snapshot[controlKey(address)],
-                              let current = controlValue(of: device.id, at: address) else { return false }
-                        return controlValuesMatch(current, expected)
-                    }
+                // The HAL may accept a write and apply it a moment later, so a
+                // first read can still see the muted values. Read again for a
+                // short, bounded while before calling the restore failed.
+                func matchesSnapshot() -> Bool {
+                    !snapshot.isEmpty && addresses.count == snapshot.count
+                        && addresses.allSatisfy { address in
+                            guard let expected = snapshot[controlKey(address)],
+                                  let current = controlValue(of: device.id, at: address) else { return false }
+                            return controlValuesMatch(current, expected)
+                        }
+                }
+                var restored = matchesSnapshot()
+                for _ in 0..<MicMuteSupport.restoreVerificationRetries where !restored {
+                    usleep(MicMuteSupport.restoreVerificationPauseMicroseconds)
+                    restored = matchesSnapshot()
+                }
                 if restored {
                     outcome.applied = true
                     outcome.savedControls.removeValue(forKey: device.uid)
@@ -548,6 +568,10 @@ final class MicMuteService: ObservableObject {
                 outcome.savedVolumes.removeValue(forKey: device.uid)
                 outcome.savedChannelVolumes.removeValue(forKey: device.uid)
             case .unreadable:
+                // Nothing was restored: keep the claim and the levels for the
+                // next attempt, and do not report this device as unmuted.
+                attempted = true
+                outcome.failed = true
                 outcome.mutedDevices.append(device.uid)
             case .restore(let clearMute, let restoreVolume):
                 attempted = true
@@ -946,9 +970,12 @@ final class MicMuteService: ObservableObject {
 
     /// Runs on `halQueue`. Drops stale device listeners and, while muted,
     /// watches the mute and volume of every input we can see.
-    private func syncDeviceListeners(muted: Bool) {
+    /// True when a claimed microphone was found open right after the
+    /// listeners went in, on the one re-check a user mute arms.
+    @discardableResult
+    private func syncDeviceListeners(muted: Bool) -> Bool {
         removeDeviceListeners()
-        guard muted else { return }
+        guard muted else { return false }
         for device in Self.inputDevices() {
             let elements = Self.inputElements(of: device.id)
             for selector in Self.watchedDeviceSelectors {
@@ -972,6 +999,13 @@ final class MicMuteService: ObservableObject {
                 }
             }
         }
+        // Now that changes notify, check the claimed microphones once more.
+        // Once per user mute, so a microphone that refuses to go quiet cannot
+        // start a loop; the caller reasserts the mute.
+        guard listenerRecheckArmed else { return false }
+        listenerRecheckArmed = false
+        let claimed = Set(UserDefaults.standard.stringArray(forKey: DefaultsKey.micMuteMutedDevices) ?? [])
+        return Self.inputDevices().contains { claimed.contains($0.uid) && !Self.isSilenced($0.id) }
     }
 
     private func removeDeviceListeners() {

@@ -21,6 +21,10 @@ enum MicMuteSupport {
     /// Below this, a level is treated as silence. Matching the older volume
     /// save check keeps unmute from restoring a zero it never meant to keep.
     static let silenceThreshold: Float = 0.01
+    /// A restore the HAL completes asynchronously is read back this many
+    /// more times, this far apart, before it counts as failed (~100 ms).
+    static let restoreVerificationRetries = 5
+    static let restoreVerificationPauseMicroseconds: useconds_t = 20_000
     /// Devices without a readable stream layout still get the stereo pair
     /// tried, the way the mute used to.
     static let minimumChannelCount = 2
