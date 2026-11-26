@@ -49,6 +49,8 @@ enum LinearScrollTapTests {
         var lastGesturePhaseTimestamp: UInt64?
     }
     final class Inverter {
+        /// The tap's own running state, which `directionApplied` reads.
+        static let shared = Inverter()
         typealias UserDefaults = StandardDefaults
         typealias Permissions = LinearScrollTapTests.Permissions
         typealias SmoothScrollService = LinearScrollTapTests.Smooth
@@ -212,6 +214,11 @@ enum LinearScrollTapTests {
         configure(invert: false)
         suite.expect(Inverter.directionApplied(to: notch) === notch,
                      "session taps read the wheel unturned while Scroll Direction is off")
+        configure(invert: true)
+        Inverter.shared.isRunning = true
+        suite.expect(Inverter.directionApplied(to: notch) === notch,
+                     "session taps read the wheel as it came while the HID-stage tap already turned it")
+        Inverter.shared.isRunning = false
 
         // Scroll Direction turned the side wheel at the HID stage before
         // Mouse button shortcuts saw it, so saved shortcuts hold the turned

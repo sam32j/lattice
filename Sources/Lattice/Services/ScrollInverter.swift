@@ -28,12 +28,15 @@ final class ScrollInverter: ObservableObject {
     /// This process's own id, compared against the one every event carries.
     private static let ownProcessID = Int64(getpid())
 
-    /// The wheel the way this tap would turn it, for this app's session taps:
-    /// they run before this tap and consume the wheel, so it never comes here.
-    /// Only the flip, on a copy; anything that is not a mouse wheel, came from
-    /// a remote screen or sits over an app excepted from Scroll Direction
-    /// comes back as it was.
+    /// The wheel the way Scroll Direction turns it, for this app's session
+    /// taps that keep the wheel for themselves. While this tap runs it has
+    /// already turned the wheel at the HID stage, ahead of them, so the event
+    /// comes back as it is; turning it again would undo the direction. Only
+    /// when the tap is not running is the flip applied, on a copy. Anything
+    /// that is not a mouse wheel or came from a remote screen comes back as
+    /// it was.
     static func directionApplied(to event: CGEvent) -> CGEvent {
+        guard !shared.isRunning else { return event }
         let traits = ScrollWheelEventTraits(
             isContinuous: event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0,
             momentumPhase: event.getIntegerValueField(.scrollWheelEventMomentumPhase),

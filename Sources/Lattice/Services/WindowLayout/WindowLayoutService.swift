@@ -1388,7 +1388,8 @@ final class WindowLayoutService: ObservableObject {
         guard var session = directionalSession else { return Unmanaged.passUnretained(event) }
 
         if type == .scrollWheel {
-            // Read the wheel as Scroll Direction delivers it everywhere else.
+            // Read the wheel as Scroll Direction delivers it everywhere else:
+            // already turned when its HID-stage tap runs, turned here if not.
             let wheel = ScrollInverter.directionApplied(to: event)
             let deltaY = wheel.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
             let fixedDeltaY = wheel.getIntegerValueField(.scrollWheelEventDeltaAxis1)
