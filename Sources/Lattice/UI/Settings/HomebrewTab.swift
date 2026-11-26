@@ -262,7 +262,7 @@ struct HomebrewTab: View {
 
     /// The search field with its filter inside it, as Process Manager's.
     private var searchBar: some View {
-        AppManagerSearchField(placeholder: searchPlaceholder, text: $query, busy: catalog.isSearching) { filterMenu }
+        AppManagerSearchField(placeholder: searchPlaceholder, text: $query) { filterMenu }
     }
 
     private var activeFilter: Filter {
@@ -438,7 +438,7 @@ struct HomebrewTab: View {
                 if homebrew.isLoadingInstalled && homebrew.installed.isEmpty {
                     AppManagerListSkeleton()
                 } else if rows.isEmpty {
-                    Text(strings.noPackagesMatch)
+                    Text(trimmedQuery.isEmpty ? strings.noPackagesMatch : String(format: strings.noOnlineFormat, trimmedQuery))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)

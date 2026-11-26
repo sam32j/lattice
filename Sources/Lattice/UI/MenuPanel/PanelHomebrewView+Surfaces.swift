@@ -594,7 +594,7 @@ extension PanelHomebrewView {
                 }
             }
         } else if installed.isEmpty {
-            Text(strings.noPackagesMatch)
+            Text(String(format: strings.noOnlineFormat, trimmedQuery))
                 .font(.system(size: 11.5))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
