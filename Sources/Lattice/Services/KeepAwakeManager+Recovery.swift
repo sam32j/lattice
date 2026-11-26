@@ -55,7 +55,9 @@ extension KeepAwakeManager {
 
     func finishRecovery(_ completion: (() -> Void)?) {
         guard !isTerminating else { return }
+        let firstRecovery = !recoveryCompleted
         recoveryCompleted = true
+        if firstRecovery { restoreSessionIfNeeded() }
         completion?()
         syncWithPreferences()
     }

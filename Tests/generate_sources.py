@@ -2629,6 +2629,8 @@ def main():
         "    func startDefault(",
         "    func resumeAfterSystemTeardown(",
         "    private func activate(end:",
+        "    func saveManualSession(",
+        "    func restoreSessionIfNeeded(",
         "    func deactivate(reason:",
         "    func syncWithPreferences(",
         "    private func syncSessionWithScreenLock(",
