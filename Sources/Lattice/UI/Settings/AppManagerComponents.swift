@@ -429,3 +429,28 @@ struct SearchFilterMenuLabel: View {
             .contentShape(Rectangle())
     }
 }
+
+/// Renders a label with a gently cycling `...` suffix (`.`, `..`, `...`) while
+/// reserving the full width of three dots so pill buttons never jitter.
+struct AnimatedEllipsisText: View {
+    let base: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if reduceMotion {
+            Text(base + "…")
+        } else {
+            TimelineView(.periodic(from: .now, by: 0.42)) { context in
+                let step = Int(context.date.timeIntervalSinceReferenceDate / 0.42) % 3
+                let dots = String(repeating: ".", count: step + 1)
+                ZStack(alignment: .leading) {
+                    Text(base + "...")
+                        .hidden()
+                        .accessibilityHidden(true)
+                    Text(base + dots)
+                }
+            }
+            .accessibilityLabel(base + "…")
+        }
+    }
+}

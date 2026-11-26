@@ -151,7 +151,7 @@ struct HomebrewTab: View {
                         Text(outdated.isEmpty ? strings.upToDate : String(format: strings.packageUpdatesFormat, outdated.count))
                             .font(.system(size: 13, weight: .semibold))
                             .lineLimit(1)
-                        if !showsCheckNowButton {
+                        if !showsCheckNowButton && !isCheckingStatus {
                             Button {
                                 refreshAll()
                             } label: {
@@ -181,10 +181,12 @@ struct HomebrewTab: View {
                             cleanupButton
                                 .fixedSize()
                         } else if showsCheckingButton {
-                            Button(FeatureStrings.appUpdates(l10n.language).checking + "…") {}
-                                .buttonStyle(.appManager(.neutral))
-                                .disabled(true)
-                                .fixedSize()
+                            Button {} label: {
+                                AnimatedEllipsisText(base: FeatureStrings.appUpdates(l10n.language).checking)
+                            }
+                            .buttonStyle(.appManager(.neutral))
+                            .disabled(true)
+                            .fixedSize()
                         } else if showsCheckNowButton {
                             Button(FeatureStrings.appUpdates(l10n.language).checkNow) {
                                 refreshAll()

@@ -58,9 +58,15 @@ extension AppUpdatesListView {
             let hasError = updates.lastError?.isEmpty == false
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(updates.isChecking ? text.checking + "…" : statusHeadline)
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(1)
+                    if updates.isChecking {
+                        AnimatedEllipsisText(base: text.checking)
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                    } else {
+                        Text(statusHeadline)
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                    }
                     Text(updates.isChecking ? text.checking + "…" : statusDetail)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -68,8 +74,14 @@ extension AppUpdatesListView {
                 }
                 Spacer(minLength: 8)
                 if !allSourcesOff && AppFeature.appUpdates.isAvailable {
-                    Button(updates.isChecking ? text.checking + "…" : (hasError ? text.retry : text.checkNow)) {
+                    Button {
                         updates.check()
+                    } label: {
+                        if updates.isChecking {
+                            AnimatedEllipsisText(base: text.checking)
+                        } else {
+                            Text(hasError ? text.retry : text.checkNow)
+                        }
                     }
                     .buttonStyle(.appManager(hasError && !updates.isChecking ? .accent : .neutral))
                     .disabled(isBusy)
