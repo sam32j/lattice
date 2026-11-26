@@ -69,7 +69,7 @@ final class HomebrewOnlineCatalog: ObservableObject {
             } else {
                 guard !Task.isCancelled else { return }
                 self.source = .fallback
-                self.results = await Self.brewSearch(trimmed, kind: kind ?? .cask, excluding: installed)
+                self.results = await Self.brewSearch(trimmed, kind: kind, excluding: installed)
             }
             self.isSearching = false
         }
@@ -83,6 +83,10 @@ final class HomebrewOnlineCatalog: ObservableObject {
 
     // MARK: Matching
 
+    nonisolated static func installedKey(kind: HomebrewPackageKind, name: String) -> String {
+        "\(kind.rawValue):\(name.lowercased())"
+    }
+
     /// Ranked as a person typing a name expects: an exact name, then names
     /// that start with the query, then names containing it, then descriptions.
     nonisolated static func matches(_ query: String, in index: [Entry], kind: HomebrewPackageKind?,
@@ -90,7 +94,7 @@ final class HomebrewOnlineCatalog: ObservableObject {
         var scored: [(entry: Entry, score: Int)] = []
         for entry in index where kind == nil || entry.kind == kind {
             let name = entry.name.lowercased()
-            guard !installed.contains(name) else { continue }
+            guard !installed.contains(installedKey(kind: entry.kind, name: name)) else { continue }
             let display = entry.displayName.lowercased()
             let score: Int
             if name == query || display == query { score = 100 }
@@ -174,15 +178,33 @@ final class HomebrewOnlineCatalog: ObservableObject {
 
     // MARK: Fallback
 
-    nonisolated private static func brewSearch(_ query: String, kind: HomebrewPackageKind,
+    nonisolated private static func brewSearch(_ query: String, kind: HomebrewPackageKind?,
                                                excluding installed: Set<String>) async -> [Entry] {
         guard let brewPath = HomebrewManager.shared.brewPath ?? HomebrewManager.shared.detectBrewPath() else {
             return []
         }
+        if let kind {
+            return brewSearchEntries(query, kind: kind, brewPath: brewPath)
+                .filter { !installed.contains(installedKey(kind: $0.kind, name: $0.name)) }
+                .prefix(resultLimit)
+                .map { $0 }
+        }
+        async let casks = Task.detached(priority: .userInitiated) {
+            brewSearchEntries(query, kind: .cask, brewPath: brewPath)
+        }.value
+        async let formulae = Task.detached(priority: .userInitiated) {
+            brewSearchEntries(query, kind: .formula, brewPath: brewPath)
+        }.value
+        let combined = await casks + formulae
+        return matches(query, in: combined, kind: nil, excluding: installed)
+    }
+
+    nonisolated private static func brewSearchEntries(_ query: String, kind: HomebrewPackageKind,
+                                                      brewPath: String) -> [Entry] {
         let command = HomebrewCommandBuilder.search(brewPath: brewPath, kind: kind, query: query)
         let output = run(command.executable, command.arguments)
         let packages = HomebrewParser.parseSearchOutput(output ?? "", kind: kind, installed: [])
-        return packages.filter { !installed.contains($0.name.lowercased()) }.prefix(resultLimit).map {
+        return packages.map {
             Entry(kind: $0.kind, name: $0.name, displayName: $0.displayName,
                   version: $0.stableVersion ?? "", desc: $0.desc ?? "")
         }

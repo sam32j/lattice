@@ -331,7 +331,10 @@ struct HomebrewTab: View {
     private func runSearch() {
         guard searchesOnline else { catalog.clear(); return }
         let kind: HomebrewPackageKind? = activeFilter == .cask ? .cask : activeFilter == .formula ? .formula : nil
-        catalog.search(query, kind: kind, installed: Set(homebrew.installed.map { $0.name.lowercased() }))
+        catalog.search(query, kind: kind,
+                       installed: Set(homebrew.installed.map {
+                           HomebrewOnlineCatalog.installedKey(kind: $0.kind, name: $0.name)
+                       }))
     }
 
     // MARK: Online catalog
