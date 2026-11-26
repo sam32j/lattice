@@ -29,6 +29,10 @@ enum LinearScrollTapTests {
         static let shared = Permissions()
         var accessibility = false
     }
+    final class Smooth {
+        static let shared = Smooth()
+        var isRunning = false
+    }
     final class Session {
         static let shared = Session()
         let isActive = true
@@ -47,6 +51,7 @@ enum LinearScrollTapTests {
     final class Inverter {
         typealias UserDefaults = StandardDefaults
         typealias Permissions = LinearScrollTapTests.Permissions
+        typealias SmoothScrollService = LinearScrollTapTests.Smooth
         typealias MouseAppExceptions = Exceptions
         typealias ScrollWheelTarget = Target
         typealias SessionActivity = Session
@@ -244,6 +249,12 @@ enum LinearScrollTapTests {
                         && ownSpeed?.flags.contains(.maskAlternate) == true,
                      "own windows skip modifier-held speed")
         Target.shared.isOwn = false
+        configure(speedKey: .option, speedFactor: 4)
+        Smooth.shared.isRunning = true
+        let forGlide = deliver(wheel(line: 2, fixed: 2, point: 20, flags: .maskAlternate))
+        Smooth.shared.isRunning = false
+        suite.expect(forGlide?.flags.contains(.maskAlternate) == true,
+                     "with smooth scrolling running the speed key stays on the wheel for the glide to apply")
         configure(linear: false, speedKey: .option, speedFactor: 4)
         let trackpadSpeed = wheel(continuous: true, line: 0, fixed: 4, point: 40, flags: .maskAlternate)
         trackpadSpeed.setIntegerValueField(.scrollWheelEventScrollPhase, value: 1)

@@ -205,11 +205,10 @@ final class ScrollInverter: ObservableObject {
         guard ScrollWheelHIDStage.shared.passed(event) else {
             return Unmanaged.passUnretained(event)
         }
-        // Smooth scrolling swallows the wheel before this tap and already
-        // turned its glide around, so flipping the glide here would cancel
-        // that out and inverting would look broken while both are on. The
-        // process id is checked too: the only scroll events this app posts
-        // are those glide frames.
+        // Smooth scrolling posts its glide frames back through the system;
+        // flipping them here would cancel the turn the glide already made, so
+        // they pass untouched. The process id is checked too: the only scroll
+        // events this app posts are those glide frames.
         let sourceProcessID = event.getIntegerValueField(.eventSourceUnixProcessID)
         guard event.getIntegerValueField(.eventSourceUserData) != ScrollWheelSupport.syntheticTag,
               sourceProcessID != Self.ownProcessID else {
@@ -239,8 +238,13 @@ final class ScrollInverter: ObservableObject {
         let directionApplies = direction.isEnabled
         let horizontalModifier = directionApplies ? direction.horizontalModifier : nil
         let speed = ScrollSpeedPreferences(defaults: defaults)
-        let speedKey = speed.matchingModifier(for: event, horizontalModifier: horizontalModifier,
-            targetsOwnWindow: ScrollWheelTarget.shared.contains(event.location))
+        // This HID-stage tap runs before smooth scrolling's session tap. When
+        // the glide is running it owns the speed key, so the key stays on the
+        // wheel and the glide applies the boost; consuming it here would lose
+        // the boost once linear scrolling caps the notch.
+        let speedKey = SmoothScrollService.shared.isRunning ? nil
+            : speed.matchingModifier(for: event, horizontalModifier: horizontalModifier,
+                                     targetsOwnWindow: ScrollWheelTarget.shared.contains(event.location))
         let speedMultiplier = speedKey == nil ? 1 : speed.multiplier
         if let speedKey { event.flags.remove(speedKey.flag) }
         // Control-wheel is native zoom. A Control speed claim already consumed
