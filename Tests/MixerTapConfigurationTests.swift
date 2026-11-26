@@ -179,23 +179,23 @@ enum MixerTapConfigurationTests {
     @available(macOS 14.4, *)
     private static func tapDescriptions(_ suite: TestSuite) {
         let objects: [NSNumber] = [41, 42]
-        let mix = VorssaintPrivateTapDescription(.stereoMixdown, objects, nil, "Levels", .unmuted)
+        let mix = LatticePrivateTapDescription(.stereoMixdown, objects, nil, "Levels", .unmuted)
         // Read the ObjC properties. The Swift processes and stream accessors
         // come from the same optional overlay as the convenience initializers.
         suite.expect(mix?.isMixdown == true && mix?.isMono == false && mix?.isExclusive == false
                         && (mix?.value(forKey: "processes") as? [NSNumber]) == objects
                         && mix?.isPrivate == true && mix?.name == "Levels" && mix?.muteBehavior == .unmuted,
                      "a private stereo tap includes only the requested processes and leaves them audible")
-        let global = VorssaintPrivateTapDescription(.stereoGlobalExcluding, objects, nil, "Recorder", .unmuted)
+        let global = LatticePrivateTapDescription(.stereoGlobalExcluding, objects, nil, "Recorder", .unmuted)
         suite.expect(global?.isMixdown == true && global?.isExclusive == true
                         && (global?.value(forKey: "processes") as? [NSNumber]) == objects,
                      "whole-system recording excludes the supplied processes")
-        let device = VorssaintPrivateTapDescription(.deviceStream, objects, "test-output", nil, .mutedWhenTapped)
+        let device = LatticePrivateTapDescription(.deviceStream, objects, "test-output", nil, .mutedWhenTapped)
         suite.expect(device?.deviceUID == "test-output" && (device?.value(forKey: "stream") as? NSNumber)?.intValue == 0
                         && (device?.value(forKey: "processes") as? [NSNumber]) == objects
                         && device?.isPrivate == true && device?.muteBehavior == .mutedWhenTapped,
                      "the mixer targets stream zero of its output and mutes only while tapped")
-        suite.expect(VorssaintPrivateTapDescription(.deviceStream, objects, nil, nil, .mutedWhenTapped) == nil,
+        suite.expect(LatticePrivateTapDescription(.deviceStream, objects, nil, nil, .mutedWhenTapped) == nil,
                      "a missing output UID cannot become a device tap")
     }
 
