@@ -92,6 +92,9 @@ struct KillProcessView: View {
                 }
                 .padding(.horizontal, compact ? 10 : 18)
                 .padding(.vertical, compact ? HubScrollEdge.inset : 14)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: scopeRaw)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: service.hasLoadedOnce)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: sections.isEmpty)
             }
             .scrollBounceBehavior(.basedOnSize)
             // In the Hub and the island, rows scroll out under soft edges.
@@ -164,9 +167,6 @@ struct KillProcessView: View {
                     query = ""
                     return .handled
                 }
-            if service.isRefreshing && !service.hasLoadedOnce {
-                ProgressView().controlSize(.small)
-            }
             Rectangle()
                 .fill(Color.primary.opacity(0.18))
                 .frame(width: 1, height: compact ? 12 : 14)
@@ -208,19 +208,23 @@ struct KillProcessView: View {
     private var content: some View {
         let sections = sections
         if !service.hasLoadedOnce && service.items.isEmpty {
-            ProgressView().controlSize(.small)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
+            Group {
+                if surface == .settings {
+                    SettingsCard {
+                        AppManagerListSkeleton(rows: 6)
+                    }
+                } else {
+                    AppManagerListSkeleton(rows: surface == .island ? 4 : 6)
+                        .padding(.horizontal, 4)
+                }
+            }
+            .transition(reduceMotion ? .identity : .opacity)
         } else if sections.isEmpty {
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            Text(trimmed.isEmpty || surface == .island
-                 ? strings.emptyScope
-                 : String(format: strings.emptySearchFormat, trimmed))
-                .font(.system(size: compact ? 11.5 : 12.5))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
+            emptyStateCard(message: trimmed.isEmpty
+                           ? strings.emptyScope
+                           : String(format: strings.emptySearchFormat, trimmed))
+                .transition(reduceMotion ? .identity : .opacity)
         } else {
             ForEach(Array(sections.enumerated()), id: \.element.scope) { position, section in
                 sectionHeader(section)
@@ -234,6 +238,37 @@ struct KillProcessView: View {
                             expandedByQuery: section.expandedByQuery.contains(item.pid))
                 }
             }
+            .transition(reduceMotion ? .identity : .opacity)
+        }
+    }
+
+    @ViewBuilder
+    private func emptyStateCard(message: String) -> some View {
+        switch surface {
+        case .settings:
+            Text(message)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity, minHeight: 140)
+                .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .settingsClipsWhileResizing(to: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        case .hud:
+            Text(message)
+                .font(.system(size: 11.5))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, minHeight: 96)
+                .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        case .island:
+            Text(message)
+                .font(.system(size: 11.5))
+                .foregroundStyle(.white.opacity(0.65))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, minHeight: 96)
+                .modifier(NotchControlSurface(cornerRadius: 14, interactive: false))
         }
     }
 

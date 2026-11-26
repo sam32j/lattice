@@ -419,14 +419,21 @@ struct SearchFilterMenuLabel: View {
     /// room at its end as its target; elsewhere (the island's toolbar) it is
     /// the text alone, so it lines up with what sits beside it.
     var fillsField = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        (Text(title + " ") + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
-            .foregroundStyle(color)
-            .padding(.leading, fillsField ? 4 : 0)
-            .padding(.trailing, fillsField ? 10 : 0)
-            .padding(.vertical, fillsField ? 8 : 0)
-            .contentShape(Rectangle())
+        HStack(spacing: 4) {
+            Text(title)
+                .contentTransition(.opacity)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 8, weight: .bold))
+        }
+        .foregroundStyle(color)
+        .padding(.leading, fillsField ? 4 : 0)
+        .padding(.trailing, fillsField ? 10 : 0)
+        .padding(.vertical, fillsField ? 8 : 0)
+        .contentShape(Rectangle())
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: title)
     }
 }
 
