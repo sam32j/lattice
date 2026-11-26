@@ -441,6 +441,7 @@ extension PanelHomebrewView {
                 hubFooter
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: filter)
             .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: activeOrHomebrewStatus?.targetID)
             .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: activeOrHomebrewStatus?.result)
             .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: showsHubIdleFooter)

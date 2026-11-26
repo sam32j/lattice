@@ -85,6 +85,7 @@ struct HomebrewTab: View {
         .onChange(of: homebrew.operationStatus?.targetID) { _, _ in
             homebrew.setOperationDetailsExpanded(false)
         }
+        .animation(.easeInOut(duration: 0.2), value: activeFilter)
         .animation(.easeInOut(duration: 0.2), value: activeOrHomebrewStatus?.targetID)
         .animation(.easeInOut(duration: 0.2), value: activeOrHomebrewStatus?.result)
         .animation(.easeInOut(duration: 0.2), value: showsCleanupButton)
