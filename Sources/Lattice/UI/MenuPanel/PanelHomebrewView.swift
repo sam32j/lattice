@@ -57,13 +57,11 @@ struct PanelHomebrewView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear {
             PanelInteractionState.shared.viewKeepsPopoverOpen = true
-            if !HomebrewSimulator.shared.isSimulating {
-                if homebrew.installed.isEmpty {
-                    homebrew.refreshInstalled()
-                }
-                catalog.checkVersion()
-                homebrew.refreshCleanupEstimate()
+            if homebrew.installed.isEmpty {
+                homebrew.refreshInstalled()
             }
+            catalog.checkVersion()
+            homebrew.refreshCleanupEstimate()
             rebuildInstalledSnapshot()
             runSearch()
         }
@@ -83,7 +81,7 @@ struct PanelHomebrewView: View {
             runSearch()
         }
         .onChange(of: AppFeature.homebrew.isAvailable) { _, available in
-            guard available, !HomebrewSimulator.shared.isSimulating else { return }
+            guard available else { return }
             if homebrew.installed.isEmpty && !homebrew.isLoadingInstalled {
                 homebrew.refreshInstalled()
             }
@@ -217,10 +215,6 @@ struct PanelHomebrewView: View {
     }
 
     func refreshAll() {
-        if HomebrewSimulator.shared.isSimulating {
-            HomebrewSimulator.shared.refreshCurrent()
-            return
-        }
         homebrew.refreshInstalled()
         catalog.checkVersion(force: true)
         homebrew.refreshCleanupEstimate(force: true)
@@ -309,12 +303,15 @@ struct PanelHomebrewView: View {
                 .accessibilityLabel(s.actionClear)
             }
             if !compactNotch {
-                Rectangle()
-                    .fill(Color.primary.opacity(0.18))
-                    .frame(width: 1, height: 13)
-                    .accessibilityHidden(true)
-                filterMenu
-                    .font(.system(size: 11))
+                HStack(spacing: 7) {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.18))
+                        .frame(width: 1, height: 13)
+                        .accessibilityHidden(true)
+                    filterMenu
+                        .font(.system(size: 11))
+                }
+                .fixedSize()
             }
         }
         .padding(.leading, 10)

@@ -159,6 +159,7 @@ struct KillProcessView: View {
                 .accessibilityHidden(true)
             TextField(strings.searchPlaceholder(scope), text: $query)
                 .textFieldStyle(.plain)
+                .clipped()
                 .focused($searchFocused)
                 .onKeyPress(.escape) {
                     // The first Escape clears the search; the next one reaches
@@ -167,12 +168,15 @@ struct KillProcessView: View {
                     query = ""
                     return .handled
                 }
-            Rectangle()
-                .fill(Color.primary.opacity(0.18))
-                .frame(width: 1, height: compact ? 12 : 14)
-                .accessibilityHidden(true)
-            KillProcessScopeMenu(surface: surface)
-                .font(.system(size: compact ? 10.5 : 11.5))
+            HStack(spacing: 8) {
+                Rectangle()
+                    .fill(Color.primary.opacity(0.18))
+                    .frame(width: 1, height: compact ? 12 : 14)
+                    .accessibilityHidden(true)
+                KillProcessScopeMenu(surface: surface)
+                    .font(.system(size: compact ? 10.5 : 11.5))
+            }
+            .fixedSize()
         }
         .font(.system(size: compact ? 12 : 13))
         .padding(.leading, 10)

@@ -393,13 +393,17 @@ struct AppManagerSearchField<Menu: View>: View {
                 .accessibilityHidden(true)
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
+                .clipped()
             if busy { ProgressView().controlSize(.small) }
-            Rectangle()
-                .fill(Color.primary.opacity(0.18))
-                .frame(width: 1, height: 14)
-                .accessibilityHidden(true)
-            menu()
-                .font(.system(size: 11.5))
+            HStack(spacing: 8) {
+                Rectangle()
+                    .fill(Color.primary.opacity(0.18))
+                    .frame(width: 1, height: 14)
+                    .accessibilityHidden(true)
+                menu()
+                    .font(.system(size: 11.5))
+            }
+            .fixedSize()
         }
         .font(.system(size: 13))
         .padding(.leading, 10)
@@ -419,12 +423,12 @@ struct SearchFilterMenuLabel: View {
     /// room at its end as its target; elsewhere (the island's toolbar) it is
     /// the text alone, so it lines up with what sits beside it.
     var fillsField = true
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 4) {
             Text(title)
-                .contentTransition(.opacity)
+                .lineLimit(1)
+                .fixedSize()
             Image(systemName: "chevron.down")
                 .font(.system(size: 8, weight: .bold))
         }
@@ -433,7 +437,6 @@ struct SearchFilterMenuLabel: View {
         .padding(.trailing, fillsField ? 10 : 0)
         .padding(.vertical, fillsField ? 8 : 0)
         .contentShape(Rectangle())
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: title)
     }
 }
 
