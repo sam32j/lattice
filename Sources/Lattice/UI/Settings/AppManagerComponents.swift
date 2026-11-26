@@ -404,6 +404,7 @@ struct AppManagerSearchField<Menu: View>: View {
                     .font(.system(size: 11.5))
             }
             .fixedSize()
+            .transaction { $0.animation = nil }
         }
         .font(.system(size: 13))
         .padding(.leading, 10)

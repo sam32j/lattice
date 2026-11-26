@@ -290,9 +290,6 @@ struct PanelHomebrewView: View {
                     query = ""
                     return .handled
                 }
-            if catalog.isSearching {
-                ProgressView().controlSize(.mini)
-            }
             if !query.isEmpty {
                 Button { query = "" } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -312,6 +309,7 @@ struct PanelHomebrewView: View {
                         .font(.system(size: 11))
                 }
                 .fixedSize()
+                .transaction { $0.animation = nil }
             }
         }
         .padding(.leading, 10)

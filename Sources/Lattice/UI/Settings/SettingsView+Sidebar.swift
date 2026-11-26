@@ -115,10 +115,23 @@ extension SettingsView {
 
     @ViewBuilder
     func searchResultRows(_ searchResults: SearchResultsSnapshot) -> some View {
-        ForEach(searchResults.groups, id: \.pageItem.id) { group in
-            searchPageRow(group, searchResults: searchResults)
-            ForEach(group.suggestions) { suggestion in
-                searchSuggestionRow(suggestion, searchResults: searchResults)
+        if searchResults.groups.isEmpty {
+            let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+            Text(String(format: FeatureStrings.homebrewTab(l10n.language).noOnlineFormat, trimmed))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 24)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+        } else {
+            ForEach(searchResults.groups, id: \.pageItem.id) { group in
+                searchPageRow(group, searchResults: searchResults)
+                ForEach(group.suggestions) { suggestion in
+                    searchSuggestionRow(suggestion, searchResults: searchResults)
+                }
             }
         }
     }

@@ -177,6 +177,7 @@ struct KillProcessView: View {
                     .font(.system(size: compact ? 10.5 : 11.5))
             }
             .fixedSize()
+            .transaction { $0.animation = nil }
         }
         .font(.system(size: compact ? 12 : 13))
         .padding(.leading, 10)
