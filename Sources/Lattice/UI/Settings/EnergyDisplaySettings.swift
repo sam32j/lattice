@@ -74,7 +74,7 @@ struct EnergyDisplaySettings: View {
                         .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
                 }
             } else {
-                ForEach(shownDisplays) { display in displayRow(display) }
+                ForEach(shownDisplays) { display in BrightnessDisplayRow(display: display) }
             }
             if brightnessEnabled, let failure = brightness.displayControlFailure {
                 Text(displayControlFailureText(failure, strings: strings))
@@ -125,32 +125,52 @@ struct EnergyDisplaySettings: View {
         }
     }
 
-    private func displayRow(_ display: BrightnessDisplay) -> some View {
-        HStack(spacing: 12) {
-            Text(display.name)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .frame(minWidth: 80, alignment: .leading)
-            if display.isActive, display.method != nil {
-                Spacer(minLength: 12)
-                SettingsValueSlider(title: display.name, value: Binding(get: { display.brightness },
-                                                  set: { BrightnessService.shared.setBrightness($0, for: display.id) }),
-                                    range: 0...1, step: 0.01,
-                                    readout: "\(Int((display.brightness * 100).rounded()))%",
-                                    usesSystemAppearance: true)
-                    .frame(width: 140)
-                    .disabled(brightness.isDisplayPending(display.id))
-                    .accessibilityLabel(display.name)
-            } else {
-                Spacer()
-                if !display.isActive {
-                    Text(FeatureStrings.brightness(l10n.language).displayOff)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 52, alignment: .trailing)
-                }
+
+}
+
+/// One display's brightness row. A readable DDC monitor can offer two dimming
+/// choices; when they do not fit beside the slider at the minimum Settings
+/// width, they move to a second line instead of squeezing the name.
+struct BrightnessDisplayRow: View {
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var brightness = BrightnessService.shared
+    let display: BrightnessDisplay
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                nameAndLevel
+                SoftwareDimmingButton(display: display)
             }
-            SoftwareDimmingButton(display: display)
+            VStack(alignment: .trailing, spacing: 6) {
+                HStack(spacing: 12) { nameAndLevel }
+                HStack(spacing: 10) { SoftwareDimmingButton(display: display) }
+            }
         }
     }
 
+    @ViewBuilder private var nameAndLevel: some View {
+        Text(display.name)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .frame(minWidth: 80, alignment: .leading)
+        if display.isActive, display.method != nil {
+            Spacer(minLength: 12)
+            SettingsValueSlider(title: display.name, value: Binding(get: { display.brightness },
+                                              set: { BrightnessService.shared.setBrightness($0, for: display.id) }),
+                                range: 0...1, step: 0.01,
+                                readout: "\(Int((display.brightness * 100).rounded()))%",
+                                usesSystemAppearance: true)
+                .frame(width: 140)
+                .disabled(brightness.isDisplayPending(display.id))
+                .accessibilityLabel(display.name)
+        } else {
+            Spacer()
+            if !display.isActive {
+                Text(FeatureStrings.brightness(l10n.language).displayOff)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 52, alignment: .trailing)
+            }
+        }
+    }
 }
