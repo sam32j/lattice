@@ -99,6 +99,27 @@ extension MixerInputVolumeContract {
         suite.expect(!UserDefaults.standard.bool(forKey: DefaultsKey.micMuteActive)
                      && !notified.isMuted && notified.inputVolumeAdjustmentLifetime != nil,
                      "a notification between unmute sweep and publication cannot cancel the user's completion")
+
+        // A partial unmute: one microphone opens, the other refuses, and the
+        // opened one's own notification arrives before the sweep publishes.
+        HAL.reset()
+        HAL.devices = [10, 20]
+        HAL.mute = [10: 0, 20: 0]
+        let partial = MicMuteService.shared
+        partial.setMuted(true)
+        DispatchQueue.drain()
+        suite.expect(partial.isMuted && HAL.mute[10] == 1 && HAL.mute[20] == 1,
+                     "both microphones are muted before the partial unmute")
+        HAL.writeFails = [HAL.key(20, 0, kAudioDevicePropertyMute)]
+        partial.setMuted(false)
+        partial.halQueue.run()
+        partial.reapplyIfNeeded()
+        DispatchQueue.drain()
+        suite.expect(HAL.mute[10] == 0 && HAL.mute[20] == 1
+                     && !partial.isMuted && !UserDefaults.standard.bool(forKey: DefaultsKey.micMuteActive),
+                     "a partial unmute publishes the microphone it opened even when its notification lands first")
+        suite.expect(UserDefaults.standard.stringArray(forKey: DefaultsKey.micMuteMutedDevices) == ["device-20"],
+                     "the microphone that refused stays claimed for the next attempt")
         HAL.reset()
     }
 

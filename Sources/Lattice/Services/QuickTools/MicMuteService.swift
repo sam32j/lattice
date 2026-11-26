@@ -42,6 +42,12 @@ final class MicMuteService: ObservableObject {
     /// A sweep that finished after a newer one started must not publish what
     /// it saw.
     private var applyGeneration = 0
+    /// A sweep is out and has not published yet. A device notification that
+    /// arrives meanwhile, often the sweep's own write echoing back, waits for
+    /// it: superseding it would drop a change that already happened, along
+    /// with its HUD. Main thread only, like the generation.
+    private var applyInFlight = false
+    private var reapplyAfterApply = false
     private var muteReadGeneration = 0
     /// What the last request asked for, kept from the moment it is queued.
     /// `isMuted` and the persisted flag only follow once the sweep has
@@ -171,6 +177,8 @@ final class MicMuteService: ObservableObject {
         // Any sweep still in flight loses its right to publish, and this one
         // runs behind it on the same serial queue.
         applyGeneration += 1
+        applyInFlight = false
+        reapplyAfterApply = false
         wantsMute = false
         _ = halQueue.sync {
             let outcome = Self.sweep(muted: false)
@@ -195,6 +203,10 @@ final class MicMuteService: ObservableObject {
     }
 
     private func reapplyIfNeeded() {
+        guard !applyInFlight else {
+            reapplyAfterApply = true
+            return
+        }
         if wantsMute {
             apply(muted: true, announce: false)
         } else if hasOutstandingClaims {
@@ -250,6 +262,7 @@ final class MicMuteService: ObservableObject {
         }
         applyGeneration += 1
         let generation = applyGeneration
+        applyInFlight = true
         halQueue.async { [weak self] in
             var outcome = Self.sweep(muted: muted, explicitUserUnmute: explicitUserUnmute)
             if muted {
@@ -306,6 +319,15 @@ final class MicMuteService: ObservableObject {
     /// Main thread. Publishes one sweep.
     private func finish(_ outcome: MuteOutcome, muted: Bool, announce: Bool, generation: Int) {
         guard generation == applyGeneration else { return }
+        applyInFlight = false
+        // A notification held back while this sweep ran is answered once the
+        // result is out, so nothing it reported is lost either.
+        defer {
+            if reapplyAfterApply {
+                reapplyAfterApply = false
+                reapplyIfNeeded()
+            }
+        }
         if outcome.applied {
             if isMuted != muted { isMuted = muted }
             UserDefaults.standard.set(muted, forKey: DefaultsKey.micMuteActive)
