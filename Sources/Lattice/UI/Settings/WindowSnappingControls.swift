@@ -53,14 +53,22 @@ extension WindowLayoutSettings {
                 .transition(.settingsReveal)
             }
             if systemTilingEnabled {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                // The same notice shape as secure input and permission rows:
+                // an attention icon beside plain text, the detail as a caption,
+                // and the fix as a small button underneath.
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundStyle(.orange)
+                            .accessibilityHidden(true)
+                        Text(text.edgeSnapSystemConflict)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     if edgeSnapEnabled {
                         Text(text.edgeSnapWaitingForSystem)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                             .transition(.settingsReveal)
                     }
                     Button(text.edgeSnapOpenSystemSettings) {
