@@ -308,11 +308,19 @@ final class MicMuteService: ObservableObject {
             if isMuted != muted { isMuted = muted }
             UserDefaults.standard.set(muted, forKey: DefaultsKey.micMuteActive)
             syncListeners()
-        } else {
+        } else if muted {
             // Nothing was reached, so the request is dropped as it always was:
             // the published state stays what it is, and so does the wanted one.
             wantsMute = isMuted
             inputVolumeLock.withLock { inputVolumeBlocked = isMuted }
+        } else {
+            // An unmute that could not be confirmed is still what the user
+            // asked for. The HAL may finish an accepted restore after the
+            // read-back gave up; turning the wanted state back to muted would
+            // let that restore's own notification mute the microphone again.
+            // The claims stay, so the next device change retries the unmute,
+            // and the published state waits for a sweep that confirms it.
+            inputVolumeLock.withLock { inputVolumeBlocked = false }
         }
         guard announce else { return }
         if outcome.failed, outcome.applied {

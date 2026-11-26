@@ -251,7 +251,9 @@ enum WindowActivator {
                         windowOwnerPID: windowOwnerPID,
                         generation: generation,
                         writeGuard: writeGuard,
-                        sourcePID: sourcePID)
+                        // The handoff app counts as the source too, so a
+                        // session with no source item still recovers.
+                        sourcePID: retrySourcePID)
             let retryDelays = retry
                 ? Self.fullscreenFocusRetryDelays
                 : [Self.fullscreenFocusRetryDelays[0]]
@@ -278,7 +280,7 @@ enum WindowActivator {
                     windowOwnerPID: windowOwnerPID,
                     generation: generation,
                     writeGuard: writeGuard,
-                    sourcePID: sourcePID)
+                    sourcePID: retrySourcePID)
         // The first staging of an activation has nothing to skip yet, and no
         // foreground observation: the source app is the one in front.
         scheduleSourceStaging(targetWindowID: windowID,
