@@ -334,6 +334,7 @@ struct AppUninstallerTab: View {
                 uninstaller.setAllIncluded(uninstaller.bulkSelection.nextInclude)
                 armed = false
             }
+            .fixedSize()
             VStack(alignment: .leading, spacing: 1) {
                 Text(String(format: s.uninstallerSelectedFormat,
                             uninstaller.items.filter(\.include).count, uninstaller.items.count))
