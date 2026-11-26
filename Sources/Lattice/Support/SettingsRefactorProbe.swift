@@ -41,6 +41,27 @@ enum SettingsRefactorProbe {
             var dimmable = BrightnessDisplay(id: 2, name: "Studio Monitor", isBuiltIn: false, method: .ddc,
                                              isActive: true, brightness: 0.5, readable: true)
             dimmable.canChooseDimming = true
+            // Uninstaller results with some optional rows unchecked (U6).
+            MainActor.assumeIsolated {
+                let uninstaller = AppUninstaller.shared
+                uninstaller.target = AppUninstaller.Target(name: "Sample", bundleID: "com.example.sample",
+                                                           url: URL(fileURLWithPath: "/Applications/Sample.app"),
+                                                           icon: NSWorkspace.shared.icon(for: .applicationBundle))
+                func leftover(_ path: String, _ category: AppUninstaller.Category, _ size: Int64,
+                              _ match: UninstallerSupport.LeftoverMatch, include: Bool, _ inode: UInt64) -> AppUninstaller.Leftover {
+                    AppUninstaller.Leftover(url: URL(fileURLWithPath: path), category: category, size: size,
+                                            ownerBundleID: "com.example.sample", ownerGroupID: nil, evidenceBundleID: nil,
+                                            confidence: match, fileIdentity: .init(device: 1, inode: inode), include: include)
+                }
+                uninstaller.items = [
+                    leftover("/Applications/Sample.app", .app, 1_120_000_000, .exact, include: true, 1),
+                    leftover(NSHomeDirectory() + "/Library/Application Support/Sample", .support, 815_000_000, .related, include: false, 2),
+                    leftover(NSHomeDirectory() + "/Library/Application Support/com.example.sample", .support, 4_000, .exact, include: true, 3),
+                    leftover(NSHomeDirectory() + "/Library/Caches/com.example.sample", .caches, 64_000_000, .exact, include: true, 4),
+                ]
+                uninstaller.phase = .results
+            }
+            FeatureRuntime.shared.setAvailable([.uninstaller], true)
             let width: CGFloat = 560
             for language in [AppLanguage.enUS, .de] {
                 L10n.shared.language = language
@@ -57,7 +78,11 @@ enum SettingsRefactorProbe {
                         ("u32-dimming", AnyView(BrightnessDisplayRow(display: dimmable)
                             .padding(.leading, settingsRowTextInset).padding(20)), 110),
                     ]
-                    for (name, view, height) in surfaces {
+                    let uninstallerSurfaces: [(String, AnyView, CGFloat)] = [
+                        ("u6-uninstaller-settings", AnyView(AppUninstallerTab()), 900),
+                        ("u6-uninstaller-compact", AnyView(PanelUninstallerView().frame(width: 388).padding(12)), 440),
+                    ]
+                    for (name, view, height) in surfaces + uninstallerSurfaces {
                         render("\(name)-\(suffix)", view: view, size: CGSize(width: width, height: height),
                                output: output, failures: &failures, colorScheme: scheme)
                     }
