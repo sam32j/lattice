@@ -138,6 +138,10 @@ enum SwitcherActivationTests {
                 return element
             }
         }
+        static func sourceStillFrontmost(_ sourcePID: pid_t?) -> Bool {
+            guard let sourcePID, let frontmostPID else { return false }
+            return frontmostPID == sourcePID
+        }
         static func isActivationTargetFrontmost(_ app: App, windowOwnerPID: pid_t) -> Bool {
             guard let frontmostPID else { return false }
             if frontmostPID == app.processIdentifier || frontmostPID == windowOwnerPID { return true }
@@ -511,6 +515,13 @@ enum SwitcherActivationTests {
         Activator.activationMainQueue.drain()
         suite.expect(!events.contains("activate:20:false"),
                      "a manual foreground change suppresses delayed cooperative activation")
+        reset(raise: false)
+        Activator.activateApp(app, plan: windowPlan, windowID: 77, windowOwnerPID: 20, sourcePID: 50)
+        Activator.activationAXQueue.drain()
+        Activator.frontmostPID = 50
+        Activator.activationMainQueue.drain()
+        suite.expect(events.contains("activate:20:false"),
+                     "a front request that did not take, leaving the source in front, still recovers cooperatively")
         reset(raise: false); App.bundleIdentifiers[20] = "com.example.host"
         App.bundleIdentifiers[21] = "com.example.host"
         select()

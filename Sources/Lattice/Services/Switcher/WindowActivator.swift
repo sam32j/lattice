@@ -153,6 +153,10 @@ enum WindowActivator {
             }
             return
         }
+        // Track input from the moment the selection is committed, before the
+        // first remote call: a click elsewhere during the minimized-state read
+        // or preparation must still stop the queued focus from taking over.
+        let writeGuard = SwitcherActivationWriteGuard()
         // The list's own answer is a hint, not evidence. The state is read
         // fresh on every switch, including when the list already said the
         // window is minimized: the list was taken when the switch began, and
@@ -226,10 +230,9 @@ enum WindowActivator {
         // focus pass restores and focuses the window once the app is front.
         if !targetStartedMinimized {
             prepareWindowForActivation(windowID: windowID, pid: windowOwnerPID,
-                                       generation: generation,
+                                       generation: generation, writeGuard: writeGuard,
                                        target: targetWindow)
         }
-        let writeGuard = SwitcherActivationWriteGuard()
         if sourceWasFullscreen || item.isFullscreen {
             let retryState = SwitcherWindowFocusRetryState(
                 targetWindowID: windowID,
@@ -247,7 +250,8 @@ enum WindowActivator {
                         windowID: windowID,
                         windowOwnerPID: windowOwnerPID,
                         generation: generation,
-                        writeGuard: writeGuard)
+                        writeGuard: writeGuard,
+                        sourcePID: sourcePID)
             let retryDelays = retry
                 ? Self.fullscreenFocusRetryDelays
                 : [Self.fullscreenFocusRetryDelays[0]]
@@ -273,7 +277,8 @@ enum WindowActivator {
                     windowID: windowID,
                     windowOwnerPID: windowOwnerPID,
                     generation: generation,
-                    writeGuard: writeGuard)
+                    writeGuard: writeGuard,
+                    sourcePID: sourcePID)
         // The first staging of an activation has nothing to skip yet, and no
         // foreground observation: the source app is the one in front.
         scheduleSourceStaging(targetWindowID: windowID,
@@ -743,7 +748,8 @@ enum WindowActivator {
                                     windowID: CGWindowID? = nil,
                                     windowOwnerPID: pid_t? = nil,
                                     generation: UInt64? = nil,
-                                    writeGuard: SwitcherActivationWriteGuard? = nil) {
+                                    writeGuard: SwitcherActivationWriteGuard? = nil,
+                                    sourcePID: pid_t? = nil) {
         func isCurrent() -> Bool {
             (generation.map { isCurrentActivation($0) } ?? true)
                 && (writeGuard?.isActive ?? true)
@@ -760,8 +766,12 @@ enum WindowActivator {
                                           writeGuard: writeGuard)
                 guard !focused, fallsBackToCooperativeActivation, isCurrent() else { return }
                 activationMainQueue.async {
+                    // A front request the window server accepted may still not
+                    // have taken, leaving the session source in front; recover
+                    // then too. Any other app in front is the user's choice.
                     guard isCurrent(),
-                          isActivationTargetFrontmost(app, windowOwnerPID: ownerPID) else { return }
+                          isActivationTargetFrontmost(app, windowOwnerPID: ownerPID)
+                            || sourceStillFrontmost(sourcePID) else { return }
                     activateAppCooperatively(app,
                                               allWindows: false)
                 }
@@ -824,6 +834,11 @@ enum WindowActivator {
         if !activated {
             app.activate(options: options)
         }
+    }
+
+    private static func sourceStillFrontmost(_ sourcePID: pid_t?) -> Bool {
+        guard let sourcePID else { return false }
+        return NSWorkspace.shared.frontmostApplication?.processIdentifier == sourcePID
     }
 
     private static func isActivationTargetFrontmost(_ app: NSRunningApplication,
@@ -1705,6 +1720,9 @@ enum WindowActivator {
                 return true
             }
         }
+        // The visible-focus check can take long enough for a newer switch to
+        // start; never write focus for this one after that.
+        guard isCurrent() else { return false }
 
         if makeAppFrontmost {
             AXUIElementSetAttributeValue(axApp,

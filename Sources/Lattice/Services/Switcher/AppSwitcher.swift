@@ -252,13 +252,14 @@ final class AppSwitcher: ObservableObject {
             installTap()
             // A live tap can pick up a shortcut change without rebuilding;
             // apply here so the native hotkeys follow immediately.
+            // Custom shortcuts give macOS its own keys back, but secure input
+            // still hides them from the tap, so the Carbon stand-ins are
+            // watched for whenever a session can start.
             if !Self.replacesNativeHotkeys(appsShortcut: shortcut, windowShortcut: windowShortcut) {
-                secureInputWatch.stop()
-                restoreNativeHotkeys()
-            } else {
-                secureInputWatch.start()
-                applyNativeHotkeySuppressionIfTapLive()
+                SystemShortcutTakeover.setWanted([], for: SystemShortcutTakeover.switcherSource)
             }
+            secureInputWatch.start()
+            applyNativeHotkeySuppressionIfTapLive()
             // Build the panel and its SwiftUI tree now: the first hosting-view
             // render costs hundreds of milliseconds, far too slow to pay on
             // the first ⌘Tab.
@@ -2387,7 +2388,11 @@ final class AppSwitcher: ObservableObject {
         // on the previous last icon, and that must not cancel this step.
         iconRowEdgeHoverIndex = nextIcon
         iconRowFirstVisibleIndex = nextFirst
-        if let nextSelection = selectionIndex(forIconRowIndex: nextIcon) {
+        // With hover selection ignored the row still pages, but the
+        // keyboard's choice stays what releasing the shortcut opens.
+        if SwitcherSupport.hoverMovesSelection(
+            ignoreHoverSelection: UserDefaults.standard.bool(forKey: DefaultsKey.switcherIgnoreHoverSelection)),
+           let nextSelection = selectionIndex(forIconRowIndex: nextIcon) {
             userNavigated = true
             selectedIndex = nextSelection
         }

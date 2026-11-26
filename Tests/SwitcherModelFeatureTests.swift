@@ -6140,9 +6140,9 @@ enum SwitcherModelFeatureTests {
         let secureInputSuspend = sourceBody(of: secureInputSwitcher, from: "func suspend() {",
                                             to: "\n    }")
         suite.expect(secureInputSuspend.contains("secureInputWatch.stop()")
-               && secureInputSwitcher.components(separatedBy: "secureInputWatch.stop()").count == 4
+               && secureInputSwitcher.components(separatedBy: "secureInputWatch.stop()").count == 3
                && secureInputSwitcher.components(separatedBy: "secureInputWatch.start()").count == 2,
-               "the secure input watch runs only while the switcher takes macOS's keys over")
+               "the secure input watch runs whenever the switcher can start a session, custom shortcuts included")
 
         // The shared take-over works on raw WindowServer ids. Same transition
         // rule as the switcher had: suppress only what is enabled now, restore

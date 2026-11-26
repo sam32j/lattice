@@ -129,8 +129,11 @@ enum WindowEnumerator {
     /// app keeps an entry before any app gets a second one.
     private static let maximumCount = 48
     /// AX calls normally return in a few milliseconds. A process that cannot
-    /// answer within this ceiling must not hold the switcher behind it.
-    private static let messagingTimeout: Float = 0.1
+    /// answer within this ceiling must not hold the switcher behind it. It
+    /// stays at Lattice's 200 ms: a slower ceiling only costs time for apps
+    /// that are slow anyway, and a shorter one drops a windowless app whose
+    /// empty answer arrives late from "Show apps without windows".
+    private static let messagingTimeout: Float = 0.2
     /// Aggregate worker cap across every concurrent Dock, preview, Command Bar,
     /// and Switcher Accessibility batch.
     private static let maximumConcurrentQueries = 24
