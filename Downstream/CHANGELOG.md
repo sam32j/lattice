@@ -2,6 +2,90 @@
 
 ## [Unreleased]
 
+## [3.4.4-d.1] - 2026-11-27
+
+### Added
+- **Uninstaller**: Add a select-all checkbox to the results (#3704)
+- **Settings**: Load preferences from a read-only XDG file (#3620)
+- **Clipboard**: Remember the history window position (#3736)
+- **Window Layout**: Restore size when dragging a snapped window away (#3653)
+- **Switcher**: Add option to ignore hover selection (#3731)
+- **Display**: Let readable ddc monitors dim the picture instead (#3837)
+- **Scroll**: Speed up the mouse wheel while a modifier is held (#3769)
+
+### Changed
+- **Recorder**: Speed up GIF exports with sequential decoding and GPU encoding (#3859)
+- **Switcher**: Reuse key labels during secure shortcut registration
+- **Switcher**: Reduce quick-switch latency and minimized-window flashes (#3570)
+
+### Fixed
+- **Window Layout**: Disable and turn off edge snapping switch during macOS tiling conflict
+- **L10n**: Rewrite scroll speed caption in Lattice's tone and sync sideways scroll captions
+- **Settings**: Make local media logo restoration idempotent across launches
+- **Audio**: Read the latest service priority list when committing reorders
+- **Window Layout**: Cancel stale drag restore and release snap after mid-drag placement
+- **Recorder**: Decode render-after-decode GIF frames at encodedPixels
+- **Settings**: Preserve watermark text off-state, settle empty island openings, and restage uninstaller probe
+- **Audio**: Guard delayed priority reorder commits and reset cancelled drags
+- **Window Layout**: Keep restore baselines, settled state, and delayed restores consistent
+- **Recorder**: Harden GIF blur framing, fallback privacy, and clipboard save/cancel races
+- **Settings**: Shorten the macOS tiling conflict and grey out edge snapping follow-ups while it lasts
+- **Audio**: Drag priority rows in place and keep reorders off the Shelf
+- **Settings**: Show the macOS tiling conflict like Super Key's, drop GIF preset percentages, and move Ignore hover selection
+- **Window Layout**: Show the macOS tiling conflict as a standard notice
+- **Uninstaller**: Keep the Select all box from stretching the footer
+- **Settings**: Drop the Ignore hover caption and shorten restore on drag
+- **Display**: Move both dimming choices under the slider when they do not fit
+- **L10n**: Finish the 3.4.4 copy in Lattice's tone
+- **Recorder**: Recheck GIF copy cancellation and reuse the export plan
+- **Recorder**: Improve gif export quality and add export controls (#3766)
+- **Settings**: Preserve local preferences when loading partial configuration
+- **Cleaner**: Protect domain-named support folders of installed apps (#3857)
+- **Media**: Use one scroll region in compact workspaces (#3822)
+- **Command Bar**: Convert mixed feet and inches (#3980)
+- **Command Bar**: Outline the selected row so it reads on dark surfaces (#3835)
+- **Agents**: Stop the Claude activity timer on local context resets (#3871)
+- **Recorder**: Stop compiling GPU programs for every exported frame (#3648)
+- **Notch**: Keep the scrubbed bar under the pointer (#3753)
+- **Notch**: Open the notice that received the click (#3927)
+- **Notch**: Remember notification center focus during banner detection
+- **Notch**: Keep the opening center's list out of the island (#3709)
+- **Notch**: Explain which desktop alerts the island can mirror (#3991)
+- **Notch**: Hide mirrored banners before they draw (#3665)
+- **Notch**: Hide the native banner on macOS 26 as well (#3720)
+- **Window Layout**: Require a drag before restoring a snapped window
+- **Mic Mute**: Let a sweep publish before a device notification reapplies
+- **Review**: Report a failed corrective mute and cap the window found through its child
+- **Scroll**: Stop smooth scrolling from flipping the wheel a second time
+- **Review**: Keep a failed unmute wanted and let the handoff source recover activation
+- **Window Layout**: Fall back to the window server when AX misses the press
+- **Switcher**: Tighten activation guards and secure input coverage
+  - Watch secure input whenever a session can start, custom shortcuts too.
+  - Start the write guard when the selection is committed and pass it to
+  - Recover cooperatively when the session source is still in front after a
+  - Recheck cancellation before fallback focus writes.
+  - Keep the 200 ms Accessibility timeout so late empty answers still list
+  - With Ignore hover selection on, edge paging no longer moves the selection.
+- **Super Key**: Read the live lock for queued solo toggles from other sources
+- **Scroll**: Let the glide own the speed key while smooth scrolling runs
+- **Mic Mute**: Verify restores after HAL completion and close the listener gap
+- **Switcher**: Keep the shortcut working under secure input (#3643)
+- **Keep Awake**: Restore manual sessions on relaunch
+- **Keep Awake**: Respect docked sessions when restoring lid sleep (#3860)
+- **Display**: Defer disabling the built-in panel until unlock (#4022)
+- **Display**: Cancel pending hardware writes when software dimming takes over
+- **Display**: Include the host address in the DDC read checksum (#3708)
+- **Scroll**: Keep native wheel distance in app panels (#3872)
+- **Window Layout**: Resolve gesture targets when child hit tests fail (#3773)
+- **Mouse**: Focus without raising again when the no-raise path fails (#3737)
+- **Super Key**: Keep the HID client alive while checking keyboards
+- **Shortcuts**: Recognize Super Key chords while recording starts (#3994)
+- **Super Key**: Preserve Caps Lock after a solo tap (#3870)
+- **Mic Mute**: Restore channel levels across upgrades and reconnects
+- **Mic Mute**: Zero input volume so capture actually stops (#3772)
+- **Mixer**: Slide the volume across a block instead of stepping it (#3538)
+- **Audio**: Let Vorssaint launch on early macOS Sonoma (#3982)
+
 ## [3.4.3-d.4] - 2026-11-26
 
 ### Added
