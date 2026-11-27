@@ -24,6 +24,12 @@ struct PriorityDeviceList: View {
     /// A released row is settling into its slot; a new drag waits for it, so
     /// every released drag commits its own move.
     @State private var settling = false
+    /// Mirrors the latest priority list so delayed settle commits and
+    /// accessibility actions never overwrite newer device changes.
+    @State private var livePriorityUIDs: [String]?
+    /// Tracks whether SwiftUI's drag gesture is still active so system-cancelled
+    /// drags (window focus loss, view disappearance) reset displaced rows.
+    @GestureState private var gestureActive = false
     /// Rows differ in height (a status line makes one taller), so slots come
     /// from each row's measured height.
     @State private var rowHeights: [String: CGFloat] = [:]
@@ -32,12 +38,16 @@ struct PriorityDeviceList: View {
     private static let rowSpacing: CGFloat = 2
     private static let space = "audioPriorityList"
 
-    private var visibleUIDs: [String] {
-        AudioPriorityPresentation.visibleUIDs(priorityUIDs, isAvailable: isAvailable, displayName: displayName)
+    private func visibleUIDs(in allUIDs: [String]) -> [String] {
+        AudioPriorityPresentation.visibleUIDs(allUIDs, isAvailable: isAvailable, displayName: displayName)
     }
 
-    private func reorderVisible(_ uids: [String]) {
-        onMove(AudioPriorityPresentation.mergingVisibleOrder(uids, into: priorityUIDs))
+    private var visibleUIDs: [String] {
+        visibleUIDs(in: priorityUIDs)
+    }
+
+    private func reorderVisible(_ uids: [String], into allUIDs: [String]) {
+        onMove(AudioPriorityPresentation.mergingVisibleOrder(uids, into: allUIDs))
     }
 
     var body: some View {
@@ -66,6 +76,23 @@ struct PriorityDeviceList: View {
                 }
                 .padding(.horizontal, 1)
                 .coordinateSpace(name: Self.space)
+            }
+        }
+        .onAppear {
+            livePriorityUIDs = priorityUIDs
+        }
+        .onChange(of: priorityUIDs) { _, updated in
+            livePriorityUIDs = updated
+        }
+        .onChange(of: gestureActive) { _, active in
+            guard !active else { return }
+            // Defer one main-loop turn so a normal release's onEnded can enter
+            // settling before cancelled-gesture cleanup resets the drag state.
+            DispatchQueue.main.async {
+                if !settling && draggingUID != nil {
+                    draggingUID = nil
+                    dragTranslation = 0
+                }
             }
         }
     }
@@ -219,6 +246,9 @@ struct PriorityDeviceList: View {
 
     private func reorderGesture(for uid: String, index: Int, in uids: [String]) -> some Gesture {
         DragGesture(minimumDistance: 3, coordinateSpace: .named(Self.space))
+            .updating($gestureActive) { _, state, _ in
+                state = true
+            }
             .onChanged { value in
                 guard !settling else { return }
                 if draggingUID != uid {
@@ -240,11 +270,12 @@ struct PriorityDeviceList: View {
                     var transaction = Transaction()
                     transaction.disablesAnimations = true
                     withTransaction(transaction) {
-                        if target != start {
+                        let currentAll = livePriorityUIDs ?? priorityUIDs
+                        if target != start, visibleUIDs(in: currentAll) == uids {
                             var reordered = uids
                             reordered.move(fromOffsets: IndexSet(integer: start),
                                            toOffset: target > start ? target + 1 : target)
-                            reorderVisible(reordered)
+                            reorderVisible(reordered, into: currentAll)
                         }
                         if draggingUID == uid {
                             draggingUID = nil
@@ -257,11 +288,13 @@ struct PriorityDeviceList: View {
     }
 
     private func move(_ uid: String, by offset: Int) {
-        guard let index = visibleUIDs.firstIndex(of: uid) else { return }
+        let currentAll = livePriorityUIDs ?? priorityUIDs
+        let currentVisible = visibleUIDs(in: currentAll)
+        guard let index = currentVisible.firstIndex(of: uid) else { return }
         let destination = index + offset
-        guard visibleUIDs.indices.contains(destination) else { return }
-        var reordered = visibleUIDs
+        guard currentVisible.indices.contains(destination) else { return }
+        var reordered = currentVisible
         reordered.swapAt(index, destination)
-        reorderVisible(reordered)
+        reorderVisible(reordered, into: currentAll)
     }
 }
