@@ -642,10 +642,46 @@ enum SettingsFeatureTests {
             DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue,
             DefaultsKey.mediaImageWatermarkText: "Caption",
         ]
-        suite.expect(SettingsBackupSupport.keepingLocalMediaLogos(incomingDisabledWithCaption,
-                                                                  local: localEmptyTextAndLogo)[DefaultsKey.mediaImageWatermarkKind] as? String
-                == MediaImageWatermarkKind.logo.rawValue,
-               "restoring a local logo onto an off incoming watermark does not enable incoming text")
+        let firstDisabledApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingDisabledWithCaption,
+                                                                              local: localEmptyTextAndLogo)
+        let secondDisabledApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingDisabledWithCaption,
+                                                                               local: firstDisabledApply)
+        suite.expect(firstDisabledApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.logo.rawValue
+                     && secondDisabledApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.logo.rawValue
+                     && secondDisabledApply[DefaultsKey.mediaImageWatermarkText] as? String == "Caption",
+               "restoring a local logo onto an off incoming watermark does not enable incoming text and stays stable across launches")
+        let localOldTextAndLogo: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.textAndLogo.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Old",
+        ]
+        let incomingBlankText: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.text.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "",
+        ]
+        let firstBlankApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingBlankText,
+                                                                           local: localOldTextAndLogo)
+        let secondBlankApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingBlankText,
+                                                                            local: firstBlankApply)
+        suite.expect(firstBlankApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondBlankApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondBlankApply[DefaultsKey.mediaImageWatermarkText] as? String == "",
+               "restoring a local logo when the file clears watermark text survives repeated launches")
+        let localCaptionTextAndLogo: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.textAndLogo.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Caption",
+        ]
+        let incomingCaptionText: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.text.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Caption",
+        ]
+        let firstCaptionApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingCaptionText,
+                                                                             local: localCaptionTextAndLogo)
+        let secondCaptionApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingCaptionText,
+                                                                              local: firstCaptionApply)
+        suite.expect(firstCaptionApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondCaptionApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondCaptionApply[DefaultsKey.mediaImageWatermarkText] as? String == "Caption",
+               "a plain textAndLogo round-trip stays stable across launches")
         suite.expect(SettingsBackupSupport.keepingLocalMediaLogos(
                     [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue],
                     local: [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue])[DefaultsKey.mediaImageWatermarkKind] as? String
@@ -660,18 +696,40 @@ enum SettingsFeatureTests {
             incomingOptions.watermark.kind = .off
             incomingOptions.watermark.text = "Caption"
             incomingOptions.watermark.logoPath = ""
-            let localProfiles = [MediaImageProfile(id: "p1", name: "Blog", options: localOptions)]
-            let incomingProfiles = [MediaImageProfile(id: "p1", name: "Blog", options: incomingOptions)]
+            var localOldOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            localOldOptions.watermark.kind = .textAndLogo
+            localOldOptions.watermark.text = "Old"
+            localOldOptions.watermark.logoPath = "/Users/example/logo2.png"
+            var incomingBlankOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            incomingBlankOptions.watermark.kind = .text
+            incomingBlankOptions.watermark.text = ""
+            incomingBlankOptions.watermark.logoPath = ""
+            let localProfiles = [
+                MediaImageProfile(id: "p1", name: "Blog", options: localOptions),
+                MediaImageProfile(id: "p2", name: "Docs", options: localOldOptions),
+            ]
+            let incomingProfiles = [
+                MediaImageProfile(id: "p1", name: "Blog", options: incomingOptions),
+                MediaImageProfile(id: "p2", name: "Docs", options: incomingBlankOptions),
+            ]
             if let localData = try? JSONEncoder().encode(localProfiles),
                let incomingData = try? JSONEncoder().encode(incomingProfiles),
                let localJSON = String(data: localData, encoding: .utf8),
                let incomingJSON = String(data: incomingData, encoding: .utf8) {
-                let restoredJSON = MediaSupport.restoringProfileLogos(incomingJSON, local: localJSON)
-                let decoded = try? JSONDecoder().decode([MediaImageProfile].self, from: Data(restoredJSON.utf8))
-                suite.expect(decoded?.first?.options.watermark.kind == .logo
-                             && decoded?.first?.options.watermark.logoPath == "/Users/example/logo.png"
-                             && decoded?.first?.options.watermark.text == "Caption",
-                             "restoring a profile logo onto an off incoming watermark keeps text disabled")
+                let firstRestored = MediaSupport.restoringProfileLogos(incomingJSON, local: localJSON)
+                let secondRestored = MediaSupport.restoringProfileLogos(incomingJSON, local: firstRestored)
+                let decoded1 = try? JSONDecoder().decode([MediaImageProfile].self, from: Data(firstRestored.utf8))
+                let decoded2 = try? JSONDecoder().decode([MediaImageProfile].self, from: Data(secondRestored.utf8))
+                suite.expect(decoded1?.first?.options.watermark.kind == .logo
+                             && decoded2?.first?.options.watermark.kind == .logo
+                             && decoded2?.first?.options.watermark.logoPath == "/Users/example/logo.png"
+                             && decoded2?.first?.options.watermark.text == "Caption",
+                             "restoring a profile logo onto an off incoming watermark keeps text disabled and stays stable")
+                suite.expect(decoded1?.last?.options.watermark.kind == .textAndLogo
+                             && decoded2?.last?.options.watermark.kind == .textAndLogo
+                             && decoded2?.last?.options.watermark.logoPath == "/Users/example/logo2.png"
+                             && decoded2?.last?.options.watermark.text == "",
+                             "restoring a profile logo when the file clears watermark text survives repeated launches")
             } else {
                 suite.expect(false, "profile logo test fixture encodes")
             }

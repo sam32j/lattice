@@ -197,6 +197,32 @@ enum MediaImageWatermarkKind: String, CaseIterable, Codable, Identifiable {
         case .logo, .textAndLogo: return self
         }
     }
+
+    /// Normalizes a logo-less watermark kind so `text` with blank text compares
+    /// equal to `off`, matching what `withoutLogo(text:)` produces on re-apply.
+    func normalizedPortable(text: String) -> Self {
+        let portable = withoutLogo(text: text)
+        if portable == .text, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return .off
+        }
+        return portable
+    }
+
+    /// Whether an incoming portable kind matches this local watermark's
+    /// logo-less form, stably across repeated launches even when the file
+    /// changes watermark text between blank and non-blank.
+    func matchesPortable(_ incoming: Self, localText: String, incomingText: String) -> Bool {
+        switch self {
+        case .logo:
+            return incoming == .off
+        case .textAndLogo:
+            let normalizedIncoming = incoming.normalizedPortable(text: incomingText)
+            return normalizedIncoming == withoutLogo(text: localText)
+                || normalizedIncoming == withoutLogo(text: incomingText)
+        case .off, .text:
+            return false
+        }
+    }
 }
 
 enum MediaImageWatermarkPosition: String, CaseIterable, Codable, Identifiable {
@@ -803,7 +829,9 @@ enum MediaSupport {
             let id = profiles[index].id
             guard !id.isEmpty, incomingIDs[id]?.count == 1, let matches = byID[id], matches.count == 1,
                   let original = matches.first?.options.watermark, original.usesLogo,
-                  profiles[index].options.watermark.kind == original.kind.withoutLogo(text: original.text)
+                  original.kind.matchesPortable(profiles[index].options.watermark.kind,
+                                                localText: original.text,
+                                                incomingText: profiles[index].options.watermark.text)
             else { continue }
             profiles[index].options.watermark.kind = profiles[index].options.watermark.kind.withLogo()
             profiles[index].options.watermark.logoPath = original.logoPath
