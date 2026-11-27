@@ -26,15 +26,17 @@ enum Upstream344SettingsTests {
         suite.expect(switcher.contains("Toggle(l10n.s.switcherIgnoreHoverSelection"),
                      "ignore hover selection sits on the Window Switcher page")
         let snapping = source("Sources/Lattice/UI/Settings/WindowSnappingControls.swift")
-        let revealed = snapping.components(separatedBy: "if edgeSnapEnabled {").dropFirst().first ?? ""
+        let revealed = snapping.components(separatedBy: "if !systemTilingEnabled && edgeSnapEnabled {").dropFirst().first ?? ""
         suite.expect(revealed.prefix(2_500).contains("isOn: $edgeSnapRestoreOnDrag"),
                      "restore-on-drag is revealed with the edge snapping follow-ups")
         let switchRow = snapping.components(separatedBy: "SettingsControlRow(title: text.edgeSnapSection").dropFirst().first ?? ""
         suite.expect(switchRow.prefix(600).contains("SettingsStatusDot(status: systemTilingStatus)")
                      && snapping.components(separatedBy: "if systemTilingEnabled {").count == 2,
                      "a macOS tiling conflict shows as a status icon beside the edge snapping switch, like Super Key's")
-        suite.expect(snapping.contains(".disabled(systemTilingEnabled)"),
-                     "the edge snapping follow-ups grey out while macOS tiling holds the edges")
+        suite.expect(switchRow.prefix(600).contains("isOn: edgeSnapToggleBinding")
+                     && switchRow.prefix(600).contains(".disabled(systemTilingEnabled)")
+                     && snapping.contains("get: { !systemTilingEnabled && edgeSnapEnabled }"),
+                     "the edge snapping switch is disabled and shown off while macOS tiling holds the edges")
         let tab = source("Sources/Lattice/UI/Settings/AppUninstallerTab.swift")
         let panel = source("Sources/Lattice/UI/MenuPanel/PanelUninstallerView.swift")
         suite.expect(tab.contains("uninstaller.setAllIncluded(") && panel.contains("uninstaller.setAllIncluded(")
