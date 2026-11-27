@@ -57,7 +57,6 @@ struct CaptureSettings: View {
         FeatureStrings.recorder(l10n.language)
     }
 
-    private var workflow: CaptureWorkflowStrings { .localized(l10n.language) }
     private var copy: CaptureInterfaceStrings { .localized(l10n.language) }
 
     var body: some View {

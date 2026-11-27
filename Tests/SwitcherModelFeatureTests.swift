@@ -2645,23 +2645,6 @@ enum SwitcherModelFeatureTests {
                                                         visibleFrame: CGRect(x: 0, y: 0,
                                                                              width: 1470, height: 300)).maxY == 300,
                "a screen too short for the panel still shows its top")
-        suite.expect(MenuBarSpacingSupport.keepAwakeSignals(active: true)
-                     && MenuBarSpacingSupport.keepAwakeSignals(active: true),
-               "an active Keep Awake brings back the glyph that shows it")
-        suite.expect(!MenuBarSpacingSupport.keepAwakeSignals(active: false)
-                     && MenuBarSpacingSupport.keepAwakeSignals(active: true),
-               "the inactive glyph can hide, but the active bolt stays visible even without tint")
-        // Both hide decisions and the title's leading space ask it, and an open
-        // panel holds it: the returning glyph widens the item, and a separate
-        // main item coming back shifts the metric item the panel hangs from.
-        let keepAwakeHoldCode = stripCommentLines((statusControllerSource
-            .components(separatedBy: "func setMicBadgeHeld(_ held: Bool) {").last ?? "")
-            .components(separatedBy: "\n    }").first ?? "")
-        suite.expect(keepAwakeHoldCode.contains("heldKeepAwakeSignal = currentKeepAwakeSignal")
-                     && keepAwakeHoldCode.contains("heldKeepAwakeSignal = nil")
-                     && keepAwakeHoldCode.contains("refresh()")
-                     && statusControllerSource.contains("heldKeepAwakeSignal ?? currentKeepAwakeSignal"),
-               "starting or stopping Keep Awake from an open panel does not bring the glyph back under it")
 
         // Dynamic Island may take the icon's place, but only while it runs:
         // with the island off or removed, nothing else on screen would lead
@@ -2942,55 +2925,6 @@ enum SwitcherModelFeatureTests {
                                                                   isApplication: true)) == "com.apple.finder",
                "the log names the sender by bundle identifier, or by executable without its path")
 
-        // macOS 26 lets the person switch an app's menu bar items off per app,
-        // and remembers the choice in Control Center's group container. The
-        // app cannot override it, so recovery must recognise it and say so
-        // instead of resetting the item's identity for nothing.
-        func tracked(_ bundleID: String, allowed: Bool?) -> [[String: Any]] {
-            var entry: [String: Any] = ["location": ["bundle": ["_0": bundleID]],
-                                        "menuItemLocations": [["bundle": ["_0": bundleID]]]]
-            if let allowed { entry["isAllowed"] = allowed }
-            return [["bundle": ["_0": bundleID]], entry]
-        }
-        let trackedApplications: [Any] = tracked("com.lowtechguys.Clop", allowed: true)
-            + tracked("io.github.sam32j.lattice", allowed: false)
-            + tracked("io.github.sam32j.lattice.dev", allowed: true)
-            + tracked("com.example.legacy", allowed: nil)
-        suite.expect(MenuBarAllowanceSupport.allowance(forBundleID: "io.github.sam32j.lattice",
-                                                       trackedApplications: trackedApplications) == .disallowed,
-               "an app switched off under Allow in the Menu Bar reads as disallowed")
-        suite.expect(MenuBarAllowanceSupport.allowance(forBundleID: "io.github.sam32j.lattice.dev",
-                                                       trackedApplications: trackedApplications) == .allowed,
-               "a sibling bundle id with its own entry does not bleed over")
-        suite.expect(MenuBarAllowanceSupport.allowance(forBundleID: "com.example.legacy",
-                                                       trackedApplications: trackedApplications) == .unknown,
-               "an entry without the flag is unknown, never a verdict")
-        suite.expect(MenuBarAllowanceSupport.allowance(forBundleID: "com.example.absent",
-                                                       trackedApplications: trackedApplications) == .unknown,
-               "an app Control Center has never tracked is unknown")
-        suite.expect(MenuBarAllowanceSupport.allowance(forBundleID: "io.github.sam32j.lattice",
-                                                       trackedApplications: ["garbage", 3]) == .unknown,
-               "a malformed store is unknown rather than a crash or a verdict")
-        // The on-disk shape: an outer plist whose trackedApplications value is
-        // itself a binary plist, serialized as data.
-        let innerData = try? PropertyListSerialization.data(fromPropertyList: trackedApplications,
-                                                            format: .binary, options: 0)
-        let outerData = innerData.flatMap {
-            try? PropertyListSerialization.data(fromPropertyList: ["trackedApplications": $0,
-                                                                   "showSpotlight": false],
-                                                format: .binary, options: 0)
-        }
-        suite.expect(outerData.map {
-                MenuBarAllowanceSupport.allowance(forBundleID: "io.github.sam32j.lattice", groupContainerPlist: $0)
-            } == .disallowed,
-               "the nested Control Center store decodes down to the per-app verdict")
-        suite.expect(MenuBarAllowanceSupport.allowance(forBundleID: "io.github.sam32j.lattice",
-                                                       groupContainerPlist: Data([0x00, 0x01])) == .unknown,
-               "an unreadable store is unknown")
-        suite.expect(!Strings.enUS.menuBarIconDisallowedBody.isEmpty
-                    && !Strings.ptBR.menuBarIconDisallowedBody.isEmpty
-                    && Strings.enUS.menuBarIconDisallowedBody.contains("Allow in the Menu Bar"),
-               "the hint names the System Settings switch by its own label")
         suite.expect(registeredDefaults[DefaultsKey.brightnessControlEnabled] as? Bool == false,
                "brightness control arrives switched off")
         suite.expect(registeredDefaults[DefaultsKey.brightnessKeysEnabled] as? Bool == false,

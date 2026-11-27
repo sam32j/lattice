@@ -36,7 +36,6 @@ enum ScreenshotScrollingCapture {
     }
 
     private static let sampleInterval: TimeInterval = 0.08
-    private static let settleInterval: TimeInterval = 0.22
     private static let finishGraceInterval: TimeInterval = 0.85
 
     // MARK: - Header & Footer Detection

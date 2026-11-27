@@ -1810,12 +1810,6 @@ enum ClipboardFeatureTests {
         suite.expect((hideBody.range(of: "captureIfChanged(historyPanelClosing: true)")?.lowerBound ?? hideBody.endIndex)
                         < (hideBody.range(of: "orderOut")?.lowerBound ?? hideBody.startIndex),
                "the history window reads a copy made in it as its own before it leaves the screen")
-        let panelClipboardSource = (try? String(
-            contentsOfFile: "Sources/Lattice/UI/MenuPanel/PanelClipboardView.swift",
-            encoding: .utf8)) ?? ""
-        suite.expect(panelClipboardSource.contains("if inNotch { confirmClearAboveIsland(ids) } else { clearingIDs = ids }")
-                     && panelClipboardSource.contains("NSAlert.confirmAboveIsland("),
-               "inside the island the clipboard panel asks above it instead of hanging a sheet from it")
         for (terminated, trusted, expected) in [
             (true, true, ["beep"]),
             (false, false, ["activate", "prompt", "activate", "beep"]),

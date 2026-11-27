@@ -119,12 +119,6 @@ enum MenuBarSpacingSupport {
         }
     }
 
-    /// A running session always needs its bolt visible, including when the
-    /// user chooses an untinted menu-bar indicator.
-    static func keepAwakeSignals(active: Bool) -> Bool {
-        active
-    }
-
     /// Whether Dynamic Island takes the glyph's place (user request). The
     /// island itself opens Settings and the panel, so the glyph may go for as
     /// long as the island runs. If the island hides in fullscreen, the icon

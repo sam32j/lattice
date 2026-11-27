@@ -435,7 +435,6 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchMusicSwipeController.swift
         Sources/Lattice/Services/Notch/NotchGestureSupport.swift
         Sources/Lattice/Services/Notch/NotchCaptureTrackpadGesture.swift
-        Sources/Lattice/Services/Notch/NotchSectionPaging.swift
         Sources/Lattice/Services/Notch/NotchSliderEditing.swift
         Sources/Lattice/Services/Notch/NotchNotificationSupport.swift
         Sources/Lattice/Services/Notch/NotchNotificationReaderCore.swift
@@ -498,7 +497,6 @@ if (( TEST )); then
         Sources/Lattice/Core/PermissionActivationSupport.swift
         Sources/Lattice/Core/DeferredPermissionActivation.swift
         Sources/Lattice/Core/NotchVisualizerActivation.swift
-        Sources/Lattice/Core/SystemAudioPermissionProbe.swift
         Sources/Lattice/Core/SystemAudioAuthorization.swift
         Sources/Lattice/Core/PermissionRevocationPolicy.swift
         Sources/Lattice/Core/PermissionRevocationTracker.swift
@@ -593,9 +591,6 @@ if (( TEST )); then
         Sources/Lattice/Core/KillProcessStrings.swift
         Sources/Lattice/Core/KillProcessListStrings.swift
         Sources/Lattice/Core/ReleaseNotes.swift
-        Sources/Lattice/Core/ReleaseDigest.swift
-        Sources/Lattice/Core/ReleaseChangeAliases.swift
-        Sources/Lattice/Core/WhatsNewStrings.swift
         Sources/Lattice/Core/URLCleaning.swift
         Sources/Lattice/Core/URLSanitizerRules.swift
         Sources/Lattice/Core/URLSanitizerSiteDraft.swift
@@ -655,7 +650,6 @@ if (( TEST )); then
         Sources/Lattice/UI/Settings/SettingsSidebarSupport.swift
         Sources/Lattice/UI/Settings/FeatureVisibilitySupport.swift
         Sources/Lattice/UI/Settings/SettingsRouter.swift
-        Sources/Lattice/UI/Onboarding/WhatsNewSupport.swift
         Sources/Lattice/UI/Settings/SettingsWindow.swift
         Sources/Lattice/UI/Settings/SettingsDetailViewport.swift
         Sources/Lattice/UI/Settings/ReleaseNotesSettings.swift
@@ -664,7 +658,6 @@ if (( TEST )); then
         Sources/Lattice/Core/SettingsNavigationStrings.swift
         Sources/Lattice/Core/SettingsOrganizationStrings.swift
         Sources/Lattice/App/MenuBarSpacingSupport.swift
-        Sources/Lattice/App/MenuBarAllowanceSupport.swift
         Sources/Lattice/App/ReopenRequestSupport.swift
         Sources/Lattice/App/StatusItemAnchorSupport.swift
         Sources/Lattice/Services/DockClick/DockClickSupport.swift
@@ -817,7 +810,6 @@ if (( TEST )); then
         Sources/Lattice/Services/WindowLayout/WindowGestureSupport.swift
         Sources/Lattice/Core/WindowDirectionalStrings.swift
         Sources/Lattice/Core/PointerDisplayStrings.swift
-        Sources/Lattice/Core/NotchLowBatteryStrings.swift
         Sources/Lattice/Services/CleaningMode/CleaningUnlockCounter.swift
         Sources/Lattice/Services/CleaningMode/CleaningMouseReleaseGate.swift
         Sources/Lattice/Services/Display/ExtraBrightnessSupport.swift

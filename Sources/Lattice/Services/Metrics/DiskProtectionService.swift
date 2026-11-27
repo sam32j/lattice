@@ -105,15 +105,6 @@ final class DiskProtectionService: ObservableObject {
                       Unmanaged.passRetained(context).toOpaque())
     }
 
-    private func uniqueEjectableDisks(from disks: [DiskDeviceReading]) -> [DiskDeviceReading] {
-        var seen = Set<String>()
-        return disks.filter { disk in
-            guard disk.canEject, let id = disk.ejectBSDName else { return false }
-            guard !isExcluded(disk: disk) else { return false }
-            return seen.insert(id).inserted
-        }
-    }
-
     fileprivate func complete(diskID: String, state: DiskEjectState) {
         DispatchQueue.main.async {
             self.states[diskID] = state

@@ -127,7 +127,6 @@ enum DefaultsKey {
     static let switcherPreviewSize = "switcherPreviewSize" // app switcher thumbnail size
     static let autoCheckUpdates = "autoCheckUpdates"
     static let includeBetaUpdates = "includeBetaUpdates"
-    static let releaseNotesOnUpdate = "releaseNotesOnUpdate" // show What's New after an update
     static let lastUpdateCheckTime = "lastUpdateCheckTime"
     static let appVolumes = "appVolumes"                  // [bundle id: 0...2]
     static let appVolumesArePositions = "appVolumesArePositions" // appVolumes hold slider positions, not gains; travels with them so an older backup converts on restore
@@ -357,7 +356,6 @@ enum DefaultsKey {
     static let monitorAlertBatteryPercent = "monitorAlertBatteryPercent"
     static let monitorAlertCooldownMinutes = "monitorAlertCooldownMinutes"
     static let updateLastInstallFailure = "updateLastInstallFailure" // last installer step that failed (fail-copy etc.)
-    static let windowLayoutHiddenActions = "windowLayoutHiddenActions" // comma-separated action ids hidden from the grid
     static let windowLayoutWindowGap = "windowLayoutWindowGap" // px between adjacent snapped windows
     static let windowLayoutScreenGap = "windowLayoutScreenGap" // px between a snapped window and the visible frame edge
     static let windowReserveStageManagerSpace = "windowReserveStageManagerSpace"
@@ -374,14 +372,11 @@ enum DefaultsKey {
     static let mediaVideoEnd = "mediaVideoEnd"
     static let mediaVideoQuality = "mediaVideoQuality"
     static let mediaVideoMaxDimension = "mediaVideoMaxDimension"
-    static let mediaVideoFPS = "mediaVideoFPS"
-    static let mediaVideoKeepAudio = "mediaVideoKeepAudio"
     static let mediaVideoCodec = "mediaVideoCodec"
     static let mediaVideoSizing = "mediaVideoSizing"
     static let mediaVideoTargetMegabytes = "mediaVideoTargetMegabytes"
     static let mediaGIFStart = "mediaGIFStart"
     static let mediaGIFEnd = "mediaGIFEnd"
-    static let mediaGIFQuality = "mediaGIFQuality"
     static let mediaGIFWidth = "mediaGIFWidth"
     static let mediaGIFFPS = "mediaGIFFPS"
     static let mediaGIFLoops = "mediaGIFLoops"
@@ -409,7 +404,6 @@ enum DefaultsKey {
     static let mediaImageProfiles = "mediaImageProfiles"
     static let mediaImageSelectedProfileID = "mediaImageSelectedProfileID"
     static let mediaTextAccurate = "mediaTextAccurate"
-    static let mediaTextLanguageCorrection = "mediaTextLanguageCorrection"
 
     // Clipboard history — text only, opt-in and local.
     static let clipboardHistoryEnabled = "clipboardHistoryEnabled"
@@ -1017,7 +1011,6 @@ enum Defaults {
         DefaultsKey.switcherPreviewSize: "normal",
         DefaultsKey.autoCheckUpdates: true,
         DefaultsKey.includeBetaUpdates: false,
-        DefaultsKey.releaseNotesOnUpdate: true,
         DefaultsKey.lastUpdateCheckTime: 0.0,
         DefaultsKey.volumeMixerEnabled: true,
         DefaultsKey.microphoneLevelControlEnabled: true,
@@ -1284,7 +1277,6 @@ enum Defaults {
         DefaultsKey.menuBarMetricSpacing: "compact",  // owner's call: compact by default in 3.1.8
         DefaultsKey.menuBarMetricAppearance: "values",
         DefaultsKey.menuBarIconSymbol: "",
-        DefaultsKey.windowLayoutHiddenActions: "",
         DefaultsKey.windowLayoutWindowGap: 0,
         DefaultsKey.windowLayoutScreenGap: 0,
         DefaultsKey.windowReserveStageManagerSpace: false,
@@ -1325,14 +1317,11 @@ enum Defaults {
         DefaultsKey.mediaVideoEnd: 0.0,
         DefaultsKey.mediaVideoQuality: 0.68,
         DefaultsKey.mediaVideoMaxDimension: 1280,
-        DefaultsKey.mediaVideoFPS: 30.0,
-        DefaultsKey.mediaVideoKeepAudio: true,
         DefaultsKey.mediaVideoCodec: MediaVideoCodec.h264.rawValue,
         DefaultsKey.mediaVideoSizing: MediaSizingMode.resolution.rawValue,
         DefaultsKey.mediaVideoTargetMegabytes: 20,
         DefaultsKey.mediaGIFStart: 0.0,
         DefaultsKey.mediaGIFEnd: 0.0,
-        DefaultsKey.mediaGIFQuality: 0.74,
         DefaultsKey.mediaGIFWidth: 720,
         DefaultsKey.mediaGIFFPS: 12.0,
         DefaultsKey.mediaGIFLoops: true,
@@ -1360,7 +1349,6 @@ enum Defaults {
         DefaultsKey.mediaImageProfiles: "[]",
         DefaultsKey.mediaImageSelectedProfileID: "",
         DefaultsKey.mediaTextAccurate: true,
-        DefaultsKey.mediaTextLanguageCorrection: true,
         DefaultsKey.clipboardHistoryEnabled: false,
         DefaultsKey.clipboardHistoryLimit: 50,
         DefaultsKey.clipboardHistoryRetentionDays: 0,

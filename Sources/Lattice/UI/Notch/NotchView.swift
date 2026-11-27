@@ -487,11 +487,6 @@ struct NotchView: View {
         }
     }
 
-    private var updateOffered: Bool {
-        if case .available = updates.state { return true }
-        return false
-    }
-
     @ViewBuilder private func bandLeading(_ band: NotchBand) -> some View {
         if showsDetail {
             NotchBandBackButton(title: FeatureStrings.notch(l10n.language).system, action: service.goBack)

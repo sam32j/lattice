@@ -94,68 +94,6 @@ struct CPUCoreGroup: Equatable {
     }
 }
 
-struct CPUCoreSegment {
-    let group: CPUCoreGroup
-    let width: Double
-    /// Every bar shares one scale, so a class that wraps onto a row of its
-    /// own never gets wider bars than faster cores.
-    var barWidth: Double = 14
-}
-
-enum CPUCoreLayout {
-    /// Packs groups side by side into rows of `width` points, splitting a group
-    /// that cannot keep 14 pt bars into balanced chunks. Groups sit 12 pt apart
-    /// and bars 4 pt apart; spare width goes to groups by weighted core count,
-    /// and the tightest group sets the bar scale for all of them.
-    static func rows(groups: [CPUCoreGroup], width: Double) -> [[CPUCoreSegment]] {
-        guard width.isFinite, width >= 70 else { return [] }
-        func minimum(_ group: CPUCoreGroup) -> Double {
-            max(70, Double(group.indices.count) * 14 * group.weight + Double(group.indices.count - 1) * 4)
-        }
-        var packed: [[CPUCoreGroup]] = []
-        var row: [CPUCoreGroup] = []
-        var used = 0.0
-        for group in groups where !group.indices.isEmpty {
-            let limit = min(12, max(1, Int((width + 4) / (14 * group.weight + 4))))
-            let chunkCount = (group.indices.count + limit - 1) / limit
-            let baseCount = group.indices.count / chunkCount
-            let remainder = group.indices.count % chunkCount
-            var offset = 0
-            for part in 0..<chunkCount {
-                let count = baseCount + (part < remainder ? 1 : 0)
-                let chunk = CPUCoreGroup(name: group.name, indices: Array(group.indices[offset..<(offset + count)]))
-                offset += count
-                let required = minimum(chunk)
-                if !row.isEmpty, used + 12 + required > width {
-                    packed.append(row)
-                    row = []
-                    used = 0
-                }
-                used += (row.isEmpty ? 0 : 12) + required
-                row.append(chunk)
-            }
-        }
-        if !row.isEmpty { packed.append(row) }
-        let sized = packed.map { row in
-            let available = width - Double(row.count - 1) * 12
-            let minimums = row.map(minimum)
-            let extra = max(0, available - minimums.reduce(0, +))
-            let weights = row.map { Double($0.indices.count) * $0.weight }
-            let total = weights.reduce(0, +)
-            return row.indices.map { index in
-                CPUCoreSegment(group: row[index], width: minimums[index] + extra * weights[index] / total)
-            }
-        }
-        let scale = sized.joined().map { segment -> Double in
-            let count = Double(segment.group.indices.count)
-            return (segment.width - (count - 1) * 4) / count / (14 * segment.group.weight)
-        }.min() ?? 1
-        return sized.map { row in
-            row.map { CPUCoreSegment(group: $0.group, width: $0.width, barWidth: 14 * $0.group.weight * scale) }
-        }
-    }
-}
-
 enum CPUCoreTopology {
     /// Read once. Anything that does not add up falls back to one "CPU" group
     /// rather than guessing which core belongs to which class.

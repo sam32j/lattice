@@ -38,7 +38,6 @@ final class StatusItemController {
     /// it. Recovery leaves such an item alone.
     private(set) var mainItemHiddenByChoice = false
     private var heldMicBadgeActive: Bool?
-    private var heldKeepAwakeSignal: Bool?
     /// A settings reply already waiting for the next turn of the run loop.
     private var settingsSyncScheduled = false
     /// How many readings in a row each metric has failed to render, so an
@@ -73,14 +72,6 @@ final class StatusItemController {
         let focusMetric: MenuBarMetric
         let title: String
     }
-
-    /// Cached so the countdown tooltip doesn't allocate a DateFormatter (expensive)
-    /// on every refresh while a keep-awake session is active.
-    private static let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter
-    }()
 
     var button: NSStatusBarButton? { statusItem.button }
 
@@ -315,30 +306,17 @@ final class StatusItemController {
         heldMicBadgeActive ?? currentMicBadgeActive
     }
 
-    private var currentKeepAwakeSignal: Bool {
-        MenuBarSpacingSupport.keepAwakeSignals(active: KeepAwakeManager.shared.isActive)
-    }
-
-    /// Whether a running Keep Awake session brings back the glyph the
-    /// metrics option hides. Held with the mic badge while a panel is open.
-    private var keepAwakeSignal: Bool {
-        heldKeepAwakeSignal ?? currentKeepAwakeSignal
-    }
-
-    /// Keeps the variable-width mic badge, and whether Keep Awake brings the
-    /// hidden glyph back, unchanged while any status item is anchoring an
-    /// open panel: either one would resize or show an item and move the
-    /// panel with it. The current state is rendered after it closes.
+    /// Keeps the variable-width mic badge unchanged while any status item is
+    /// anchoring an open panel: resizing an item would shift the panel with it.
+    /// The current state is rendered after it closes.
     func setMicBadgeHeld(_ held: Bool) {
         if held {
             guard heldMicBadgeActive == nil else { return }
             heldMicBadgeActive = currentMicBadgeActive
-            heldKeepAwakeSignal = currentKeepAwakeSignal
             return
         }
         guard heldMicBadgeActive != nil else { return }
         heldMicBadgeActive = nil
-        heldKeepAwakeSignal = nil
         // The title's leading space follows the glyph, so the whole refresh
         // runs, not just the icon; refresh() ends with updateIconAppearance().
         refresh()
