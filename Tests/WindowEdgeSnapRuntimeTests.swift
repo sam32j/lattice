@@ -306,6 +306,7 @@ enum WindowEdgeSnapRuntimeTests {
         var edgeSnapLastResolveAt: TimeInterval = 0
         var edgeSnapDrag: WindowEdgeSnapDrag?
         var edgeSnapSequenceGeneration = 0
+        var placementGeneration = 0
         var edgeSnapResolving = false
         var edgeSnapLastPointer: CGPoint?
         var edgeSnapTrail = WindowEdgeSnapPointerTrail()
@@ -748,9 +749,9 @@ enum WindowEdgeSnapRuntimeTests {
         let nativePosition = snappedFrame.origin.applying(CGAffineTransform(translationX: 60, y: 50))
         let positionConfirmed = CGRect(origin: nativePosition, size: restoreSize)
         suite.expect(currentFrame == positionConfirmed
-                && refusedPosition.edgeSnapDrag?.initialFrame == positionConfirmed
-                && refusedPosition.restoreFrames[restoreKey] == nil,
-                     "a refused position after a successful resize records the confirmed frame, not the requested anchor")
+                && refusedPosition.edgeSnapDrag?.restorePending == true
+                && refusedPosition.restoreFrames[restoreKey] != nil,
+                     "a refused position after a successful resize keeps restoration pending without consuming the saved baseline")
         send(refusedPosition, .leftMouseUp, edgePoint)
         suite.expect(refusedPosition.placements.last == WindowLayoutFrame(origin: nativePosition, size: restoreSize),
                      "snapping after a refused position preserves only the frame that actually existed")
@@ -768,6 +769,49 @@ enum WindowEdgeSnapRuntimeTests {
         suite.expect(currentFrame.size == restoreSize && delayed.restoreFrames[restoreKey] == nil
                 && positionWrites.count == 1 && sizeWrites.count == 1,
                      "release observes a late resize without repeating it and completes restoration away from edges")
+
+        reset()
+        let delayedRefusedPosition = Host()
+        prepareRestore(delayedRefusedPosition)
+        resizeResponse = .delayed
+        let delayedRefusedPoint = pullRestorable(delayedRefusedPosition)
+        releaseOnly(delayedRefusedPosition, at: delayedRefusedPoint)
+        currentFrame.size = pendingSize!
+        positionAccepted = false
+        DispatchQueue.main.drain()
+        suite.expect(delayedRefusedPosition.restoreFrames[restoreKey] != nil
+                && delayedRefusedPosition.lastActions[restoreKey] == .leftHalf
+                && delayedRefusedPosition.settledFrames[restoreKey]?.actual == WindowLayoutFrame(origin: currentFrame.origin, size: currentFrame.size)
+                && positionWrites.count == 1,
+                     "a refused reposition during delayed release restore keeps the saved baseline for retry")
+
+        reset()
+        let delayedSuperseded = Host()
+        prepareRestore(delayedSuperseded)
+        resizeResponse = .delayed
+        let delayedSupersededPoint = pullRestorable(delayedSuperseded)
+        releaseOnly(delayedSuperseded, at: delayedSupersededPoint)
+        currentFrame.size = pendingSize!
+        // A keyboard or panel placement during the 40 ms grace bumps placementGeneration.
+        delayedSuperseded.placementGeneration += 1
+        DispatchQueue.main.drain()
+        suite.expect(positionWrites.isEmpty
+                && delayedSuperseded.restoreFrames[restoreKey] != nil
+                && delayedSuperseded.lastActions[restoreKey] == .leftHalf,
+                     "a placement made during the 40 ms delayed restore cancels the stale restore completion")
+
+        if let layoutSource = try? String(contentsOfFile: "Sources/Lattice/Services/WindowLayout/WindowLayoutService.swift", encoding: .utf8) {
+            suite.expect(layoutSource.contains("let clearRestore = !isSnapped(target)")
+                         && layoutSource.contains("if clearRestore { restoreFrames.removeValue(forKey: target.key) }"),
+                         "display transfer from an unsnapped window clears stale restore baselines")
+            suite.expect(layoutSource.contains("if placement.frame == target.frame {\n            let wasSnapped = isSnapped(target)\n            if !wasSnapped { restoreFrames.removeValue(forKey: target.key) }"),
+                         "no-op placement on an unsnapped window clears stale restore baselines before updating settled state")
+            suite.expect(layoutSource.contains("let previousSettled = settledFrames[windowKey]")
+                         && layoutSource.contains("settledFrames[context.windowKey] = context.previousSettled"),
+                         "late settle rollback restores the previous settled record when re-applying the original frame")
+        } else {
+            suite.expect(false, "WindowLayoutService.swift is readable for placement state checks")
+        }
 
         for disableSnapping in [false, true] {
             reset()

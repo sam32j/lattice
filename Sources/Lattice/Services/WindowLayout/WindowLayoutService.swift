@@ -72,6 +72,9 @@ final class WindowLayoutService: ObservableObject {
     private var edgeSnapLastResolveAt: TimeInterval = 0
     private var edgeSnapDrag: WindowEdgeSnapDrag?
     private var edgeSnapSequenceGeneration = 0
+    /// Bumped on every placement entry point so a delayed post-drag size
+    /// restore cannot overwrite a keyboard or panel placement made in between.
+    private var placementGeneration = 0
     private var edgeSnapResolving = false
     private var edgeSnapLastPointer: CGPoint?
     private var edgeSnapTrail = WindowEdgeSnapPointerTrail()
@@ -247,6 +250,7 @@ final class WindowLayoutService: ObservableObject {
                                                           current: target.frame) else {
                 return finish(.failure(.noRestore))
             }
+            placementGeneration += 1
             if setFrame(previous, on: target.window, windowKey: target.key) {
                 lastActions.removeValue(forKey: target.key)
                 restoreFrames.removeValue(forKey: target.key)
@@ -257,6 +261,7 @@ final class WindowLayoutService: ObservableObject {
         }
 
         if action == .fullScreen {
+            placementGeneration += 1
             // A placement still settling must never write its old frame over
             // the native full-screen transition that replaces it.
             cancelSettle(for: target.windowID)
@@ -294,9 +299,12 @@ final class WindowLayoutService: ObservableObject {
                                                    movingForward: action == .nextDisplay) else {
                 return finish(.failure(.failed))
             }
+            placementGeneration += 1
             let rect = WindowLayoutGeometry.rectForDisplay(current: currentRect,
                                                            sourceVisibleFrame: screen.windowLayoutVisibleFrame,
                                                            destinationVisibleFrame: destination.windowLayoutVisibleFrame)
+            let previousRestoreFrame = restoreFrames[target.key]
+            let clearRestore = !isSnapped(target)
             frameHistory.record(target.frame, for: target.key)
             if setFrame(axFrame(fromAppKit: rect),
                         targetRect: rect,
@@ -304,10 +312,12 @@ final class WindowLayoutService: ObservableObject {
                         action: action,
                         on: target.window,
                         windowKey: target.key) {
+                if clearRestore { restoreFrames.removeValue(forKey: target.key) }
                 lastActions[target.key] = action
                 return finish(.success(restored: false))
             }
             frameHistory.discardLatest(for: target.key)
+            restoreFrames[target.key] = previousRestoreFrame
             return finish(.failure(.failed))
         }
         let sideRepeatCyclesThirds = true || WindowLayoutSideRepeat.cyclesThirds
@@ -410,6 +420,7 @@ final class WindowLayoutService: ObservableObject {
         guard let screen = bestScreen(for: target.frame, screens: screens) else {
             return finish(.failure(.failed))
         }
+        placementGeneration += 1
         let visible = screen.windowLayoutVisibleFrame
         let targetRect = WindowLayoutGeometry.rect(for: normalizedRect, visibleFrame: visible)
         frameHistory.record(target.frame, for: target.key)
@@ -467,6 +478,7 @@ final class WindowLayoutService: ObservableObject {
                                 historyFrame: WindowLayoutFrame? = nil,
                                 cyclesRepeatedAction: Bool = true,
                                 sideRepeatCyclesThirds: Bool = false) -> WindowLayoutResult {
+        placementGeneration += 1
         let currentRect = appKitFrame(fromAX: target.frame)
         let previousAction = cyclesRepeatedAction ? lastActions[target.key] : nil
         let cyclePress = WindowLayoutGeometry.sideCyclePress(for: action,
@@ -491,6 +503,8 @@ final class WindowLayoutService: ObservableObject {
                                   current: target.frame,
                                   visibleFrame: visibleFrame)
         if placement.frame == target.frame {
+            let wasSnapped = isSnapped(target)
+            if !wasSnapped { restoreFrames.removeValue(forKey: target.key) }
             lastActions[target.key] = effectiveAction
             if cyclePress != nil || UserDefaults.standard.bool(forKey: DefaultsKey.windowEdgeSnapRestoreOnDrag) {
                 settledFrames[target.key] = WindowLayoutSettledFrame(requested: target.frame,
@@ -700,6 +714,7 @@ final class WindowLayoutService: ObservableObject {
         assistiveModeSuspensions[windowID] = EnhancedUserInterfaceSuspension.suspend(forAppOf: window)
 
         let original = self.frame(of: window)
+        let previousSettled = settledFrames[windowKey]
         settledFrames.removeValue(forKey: windowKey)
         if attempt(frame, targetRect: targetRect, visibleFrame: screenVisibleFrame, action: action, on: window) {
             assistiveModeSuspensions.removeValue(forKey: windowID)?.resume()
@@ -740,6 +755,7 @@ final class WindowLayoutService: ObservableObject {
                                      original: original,
                                      previousAction: lastActions[windowKey],
                                      previousRestoreFrame: restoreFrames[windowKey],
+                                     previousSettled: previousSettled,
                                      cyclePress: cyclePress,
                                      windowKey: windowKey,
                                      resultGeneration: resultGeneration + 1),
@@ -847,10 +863,12 @@ final class WindowLayoutService: ObservableObject {
             }
             return
         }
-        settledFrames.removeValue(forKey: context.windowKey)
         restoreFrames[context.windowKey] = context.previousRestoreFrame
         if let original = context.original {
             applyFrame(original, on: context.window)
+            settledFrames[context.windowKey] = context.previousSettled
+        } else {
+            settledFrames.removeValue(forKey: context.windowKey)
         }
         if context.action == .restore {
             frameHistory.record(context.frame, for: context.windowKey)
@@ -1937,8 +1955,11 @@ final class WindowLayoutService: ObservableObject {
                                        pointer: CGPoint) {
         guard drag.restorePending || target != nil else { return }
         let generation = edgeSnapSequenceGeneration
+        let placement = placementGeneration
         let finish = { [weak self] in
-            guard let self, generation == self.edgeSnapSequenceGeneration else { return }
+            guard let self,
+                  generation == self.edgeSnapSequenceGeneration,
+                  placement == self.placementGeneration else { return }
             var completed = drag
             if completed.restorePending,
                (!self.edgeSnapCanTrack || !self.edgeSnapWindowIsEligible(completed)) { return }
@@ -2198,8 +2219,8 @@ final class WindowLayoutService: ObservableObject {
                                                        pointerStart: drag.pointerStart,
                                                        pointerNow: pointer,
                                                        screenFrame: drag.quartzScreenFrames.first { $0.contains(pointer) })
-        _ = setPosition(rect.origin, on: drag.window)
-        guard let confirmed = frame(of: drag.window) else { return }
+        guard setPosition(rect.origin, on: drag.window),
+              let confirmed = frame(of: drag.window) else { return }
         lastActions.removeValue(forKey: drag.key)
         settledFrames.removeValue(forKey: drag.key)
         restoreFrames.removeValue(forKey: drag.key)
@@ -3444,6 +3465,7 @@ private struct SettleContext {
     let original: WindowLayoutFrame?
     let previousAction: WindowLayoutAction?
     let previousRestoreFrame: WindowLayoutFrame?
+    let previousSettled: WindowLayoutSettledFrame?
     /// The side key recorded for the size cycle, nil for other placements.
     /// Opt-in drag restoration also uses the settled frame without a side key.
     let cyclePress: WindowLayoutAction?
