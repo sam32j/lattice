@@ -618,6 +618,10 @@ final class RecorderExporter {
         generator.requestedTimeToleranceBefore = .zero
         generator.requestedTimeToleranceAfter = .zero
         generator.maximumSize = composer == nil ? canvas : (renderAfterDecode ? sourceSize : .zero)
+        // Request the encoded raster when composing after decode so clean
+        // aperture cropping and non-square pixel aspect ratio cannot shift the
+        // image relative to blur coordinates derived from sourceSize.
+        if renderAfterDecode { generator.apertureMode = .encodedPixels }
         if let composer, !renderAfterDecode {
             guard let composition = await RecorderComposer.videoComposition(
                 track: timelineVideo,
@@ -765,8 +769,9 @@ final class RecorderExporter {
         try writer.finish()
     }
 
-    /// Scale a decoded generator image into the raster coordinate space the
-    /// export plan uses when pixel aspect ratio changes its presentation width.
+    /// Scale a decoded generator image into the export plan's raster space.
+    /// With `.encodedPixels` the decoded extent normally already equals
+    /// `sourceSize`, leaving this a no-op safety net for any remaining mismatch.
     static func framedForPlan(_ image: CIImage, sourceSize: CGSize) -> CIImage {
         let extent = image.extent
         guard extent.width > 0, extent.height > 0,

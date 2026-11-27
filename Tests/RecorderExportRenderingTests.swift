@@ -21,15 +21,20 @@ enum RecorderExportRenderingTests {
         if let source = try? String(contentsOfFile: "Sources/Lattice/Services/Recorder/RecorderExporter.swift", encoding: .utf8),
            let loopStart = source.range(of: "var previousPicture: CGImage?"),
            let loopEnd = source.range(of: "guard previousPicture != nil", range: loopStart.upperBound..<source.endIndex) {
+            suite.expect(source.contains("if renderAfterDecode { generator.apertureMode = .encodedPixels }"),
+                         "render-after-decode GIF generator requests encoded pixels so clean aperture and PAR match blur coordinates")
             let fallbackLoop = String(source[loopStart.lowerBound..<loopEnd.lowerBound])
             let hasSingleRender = fallbackLoop.components(separatedBy: "composer.render(").count == 2
             let reuseLoop = fallbackLoop.range(of: "for _ in (index - missing)...index")
             let renderPos = fallbackLoop.range(of: "composer.render(")
             let rendersBeforeReuse = reuseLoop != nil && renderPos != nil
                 && renderPos!.upperBound < reuseLoop!.lowerBound
-            suite.expect(hasSingleRender && rendersBeforeReuse
+            let updatesPreviousAfterAppend = fallbackLoop.range(of: "previousPicture = picture").map {
+                reuseLoop != nil && $0.lowerBound > reuseLoop!.upperBound
+            } ?? false
+            suite.expect(hasSingleRender && rendersBeforeReuse && updatesPreviousAfterAppend
                          && fallbackLoop.contains("try writer.append(picture)"),
-                         "GIF fallback loop composes each decoded frame once at its own time and reuses the composed picture")
+                         "GIF fallback loop composes each decoded frame once at its own time, appends it through its own index, and only reuses that published picture")
         } else {
             suite.expect(false, "RecorderExporter.swift contains the compose-once GIF fallback loop")
         }
