@@ -41,7 +41,6 @@ struct NotchEditorStrings {
     let closeTimeHint: String
     let enableFeatureFormat: String
     let enableSettingFormat: String
-    let showPageFormat: String
     let keyboardLightUnavailable: String
     let hideMenuBarIcon: String
     let hideMenuBarIconHint: String
@@ -71,7 +70,6 @@ struct NotchEditorStrings {
 
     func enableFeature(_ title: String) -> String { String(format: enableFeatureFormat, title) }
     func enableSetting(_ title: String) -> String { String(format: enableSettingFormat, title) }
-    func showPage(_ title: String) -> String { String(format: showPageFormat, title) }
 
     /// One line on what a section of the island shows.
     func summary(_ module: NotchModule) -> String {
@@ -139,7 +137,6 @@ extension FeatureStrings {
             closeTimeHint: "Wait this long after the pointer leaves the island before closing it.",
             enableFeatureFormat: "Enable “%@” in Features.",
             enableSettingFormat: "Enable “%@” in its settings.",
-            showPageFormat: "Show “%@” on the Widget tab.",
             keyboardLightUnavailable: "Keyboard backlight control is unavailable on this Mac.",
             hideMenuBarIcon: "Hide the menu bar icon",
             hideMenuBarIconHint: "Settings and the app panel open from Dynamic Island. The icon returns when the island is off or hidden in full screen, or when an update is ready or the microphone is muted.",
@@ -205,7 +202,6 @@ extension FeatureStrings {
             closeTimeHint: "Aguarde esse tempo depois que o ponteiro sair da ilha antes de fechá-la.",
             enableFeatureFormat: "Ative “%@” em Recursos.",
             enableSettingFormat: "Ative “%@” nas configurações do recurso.",
-            showPageFormat: "Mostre “%@” na aba Widgets.",
             keyboardLightUnavailable: "O controle da luz do teclado não está disponível neste Mac.",
             hideMenuBarIcon: "Ocultar o ícone da barra de menus",
             hideMenuBarIconHint: "Os Ajustes e o painel do app abrem pela Dynamic Island. O ícone volta quando a ilha está desligada ou oculta em tela cheia, ou quando há atualização pronta ou microfone silenciado.",
@@ -271,7 +267,6 @@ extension FeatureStrings {
             closeTimeHint: "Espera este tiempo después de que el puntero salga de la isla antes de cerrarla.",
             enableFeatureFormat: "Activa “%@” en Funciones.",
             enableSettingFormat: "Activa “%@” en sus ajustes.",
-            showPageFormat: "Muestra “%@” en la pestaña Widgets.",
             keyboardLightUnavailable: "El control de la luz del teclado no está disponible en este Mac.",
             hideMenuBarIcon: "Ocultar el icono de la barra de menús",
             hideMenuBarIconHint: "Los Ajustes y el panel de la app se abren desde Dynamic Island. El icono vuelve cuando la isla está desactivada u oculta en pantalla completa, o cuando hay una actualización lista o el micrófono está silenciado.",
@@ -337,7 +332,6 @@ extension FeatureStrings {
             closeTimeHint: "Po odchode kurzora z Dynamic Island počkajte takto dlho, kým sa zatvorí.",
             enableFeatureFormat: "Zapnite „%@“ vo Funkciách.",
             enableSettingFormat: "Zapnite „%@“ v jeho nastaveniach.",
-            showPageFormat: "Zobrazte „%@“ na karte Widgety.",
             keyboardLightUnavailable: "Ovládanie podsvietenia klávesnice nie je na tomto Macu k dispozícii.",
             hideMenuBarIcon: "Skryť ikonu v lište",
             hideMenuBarIconHint: "Nastavenia a panel aplikácie sa otvárajú z Dynamic Island. Ikona sa vráti, keď je Dynamic Island vypnutý alebo skrytý v režime celej obrazovky, alebo keď je pripravená aktualizácia či stlmený mikrofón.",
@@ -403,7 +397,6 @@ extension FeatureStrings {
             closeTimeHint: "Wartet nach dem Verlassen der Insel mit dem Zeiger so lange, bevor sie sich schließt.",
             enableFeatureFormat: "Aktiviere „%@“ unter Funktionen.",
             enableSettingFormat: "Aktiviere „%@“ in den zugehörigen Einstellungen.",
-            showPageFormat: "Blende „%@“ im Tab Widgets ein.",
             keyboardLightUnavailable: "Die Tastaturbeleuchtung lässt sich auf diesem Mac nicht steuern.",
             hideMenuBarIcon: "Menüleistensymbol ausblenden",
             hideMenuBarIconHint: "Einstellungen und das App-Panel öffnen sich über die Dynamic Island. Das Symbol kehrt zurück, wenn Dynamic Island ausgeschaltet oder im Vollbild ausgeblendet ist, oder wenn ein Update bereitsteht oder das Mikrofon stummgeschaltet ist.",
@@ -469,7 +462,6 @@ extension FeatureStrings {
             closeTimeHint: "Après que le pointeur a quitté l’île, attendre cette durée avant de la fermer.",
             enableFeatureFormat: "Activez « %@ » dans Fonctionnalités.",
             enableSettingFormat: "Activez « %@ » dans ses réglages.",
-            showPageFormat: "Affichez « %@ » dans l’onglet Widgets.",
             keyboardLightUnavailable: "Le contrôle du rétroéclairage du clavier est indisponible sur ce Mac.",
             hideMenuBarIcon: "Masquer l’icône de la barre des menus",
             hideMenuBarIconHint: "Les Réglages et le panneau de l’app s’ouvrent depuis Dynamic Island. L’icône revient quand Dynamic Island est désactivée ou masquée en plein écran, ou quand une mise à jour est prête ou que le micro est coupé.",
@@ -535,7 +527,6 @@ extension FeatureStrings {
             closeTimeHint: "Dopo che il puntatore lascia l’isola, attendi questo tempo prima di chiuderla.",
             enableFeatureFormat: "Attiva “%@” in Funzioni.",
             enableSettingFormat: "Attiva “%@” nelle relative impostazioni.",
-            showPageFormat: "Mostra “%@” nella scheda Widget.",
             keyboardLightUnavailable: "Il controllo della retroilluminazione della tastiera non è disponibile su questo Mac.",
             hideMenuBarIcon: "Nascondi l’icona nella barra dei menu",
             hideMenuBarIconHint: "Le Impostazioni e il pannello dell’app si aprono da Dynamic Island. L’icona torna quando Dynamic Island è disattivata o nascosta a schermo intero, oppure quando è pronto un aggiornamento o il microfono è silenziato.",
@@ -601,7 +592,6 @@ extension FeatureStrings {
             closeTimeHint: "После того как указатель покинет остров, ждать столько времени перед закрытием.",
             enableFeatureFormat: "Включите «%@» в разделе функций.",
             enableSettingFormat: "Включите «%@» в соответствующих настройках.",
-            showPageFormat: "Покажите «%@» на вкладке виджетов.",
             keyboardLightUnavailable: "Управление подсветкой клавиатуры недоступно на этом Mac.",
             hideMenuBarIcon: "Скрывать значок в строке меню",
             hideMenuBarIconHint: "Настройки и панель приложения открываются из Dynamic Island. Значок возвращается, когда Dynamic Island выключена или скрыта в полноэкранном режиме, а также когда готово обновление или выключен микрофон.",
@@ -667,7 +657,6 @@ extension FeatureStrings {
             closeTimeHint: "İmleç adadan ayrıldıktan sonra kapatmadan önce bu süre kadar bekleyin.",
             enableFeatureFormat: "Özellikler’de “%@” özelliğini etkinleştirin.",
             enableSettingFormat: "İlgili ayarlarda “%@” seçeneğini etkinleştirin.",
-            showPageFormat: "Araçlar sekmesinde “%@” sayfasını gösterin.",
             keyboardLightUnavailable: "Bu Mac’te klavye aydınlatması denetimi kullanılamıyor.",
             hideMenuBarIcon: "Menü çubuğu simgesini gizle",
             hideMenuBarIconHint: "Ayarlar ve uygulama paneli Dynamic Island’dan açılır. Dynamic Island kapatıldığında veya tam ekranda gizlendiğinde ya da bir güncelleme hazır olduğunda veya mikrofon sessize alındığında simge geri döner.",
@@ -733,7 +722,6 @@ extension FeatureStrings {
             closeTimeHint: "ポインタが島から離れてからこの時間が経つと閉じます。",
             enableFeatureFormat: "機能で「%@」を有効にしてください。",
             enableSettingFormat: "該当する設定で「%@」を有効にしてください。",
-            showPageFormat: "ウィジェットタブで「%@」を表示してください。",
             keyboardLightUnavailable: "このMacではキーボードのバックライトを制御できません。",
             hideMenuBarIcon: "メニューバーのアイコンを隠す",
             hideMenuBarIconHint: "設定とアプリのパネルはDynamic Islandから開けます。Dynamic Islandがオフかフルスクリーンで非表示のとき、またはアップデートの準備ができたときやマイクを消音したときは、アイコンが戻ります。",
@@ -799,7 +787,6 @@ extension FeatureStrings {
             closeTimeHint: "포인터가 섬을 벗어난 후 이 시간이 지나면 닫힙니다.",
             enableFeatureFormat: "기능에서 “%@”을(를) 활성화하세요.",
             enableSettingFormat: "해당 설정에서 “%@”을(를) 활성화하세요.",
-            showPageFormat: "위젯 탭에서 “%@”을(를) 표시하세요.",
             keyboardLightUnavailable: "이 Mac에서는 키보드 백라이트를 제어할 수 없습니다.",
             hideMenuBarIcon: "메뉴 막대 아이콘 숨기기",
             hideMenuBarIconHint: "설정과 앱 패널은 Dynamic Island에서 열 수 있습니다. Dynamic Island를 끄거나 전체 화면에서 숨기거나, 업데이트가 준비되거나 마이크를 음소거하면 아이콘이 다시 나타납니다.",
@@ -865,7 +852,6 @@ extension FeatureStrings {
             closeTimeHint: "指针离开岛后等待此时长再关闭。",
             enableFeatureFormat: "在功能中启用“%@”。",
             enableSettingFormat: "在相应设置中启用“%@”。",
-            showPageFormat: "在小组件标签页中显示“%@”。",
             keyboardLightUnavailable: "此 Mac 无法控制键盘背光。",
             hideMenuBarIcon: "隐藏菜单栏图标",
             hideMenuBarIconHint: "设置和 App 面板可从 Dynamic Island 打开。关闭 Dynamic Island、在全屏模式下隐藏它，或有更新就绪或麦克风静音时，图标会自动回来。",
@@ -931,7 +917,6 @@ extension FeatureStrings {
             closeTimeHint: "指標離開島後等待此時間再關閉。",
             enableFeatureFormat: "在功能中啟用「%@」。",
             enableSettingFormat: "在對應設定中啟用「%@」。",
-            showPageFormat: "在小工具標籤頁中顯示「%@」。",
             keyboardLightUnavailable: "此 Mac 無法控制鍵盤背光。",
             hideMenuBarIcon: "隱藏選單列圖示",
             hideMenuBarIconHint: "設定和 App 面板可從 Dynamic Island 開啟。關閉 Dynamic Island、在全螢幕模式下隱藏它，或有更新就緒或麥克風靜音時，圖示會自動回來。",
@@ -997,7 +982,6 @@ extension FeatureStrings {
             closeTimeHint: "指標離開島後等待此時間再關閉。",
             enableFeatureFormat: "在功能中啟用「%@」。",
             enableSettingFormat: "在相應設定中啟用「%@」。",
-            showPageFormat: "在小工具標籤頁中顯示「%@」。",
             keyboardLightUnavailable: "此 Mac 無法控制鍵盤背光。",
             hideMenuBarIcon: "隱藏選單列圖示",
             hideMenuBarIconHint: "設定和 App 面板可從 Dynamic Island 開啟。關閉 Dynamic Island、在全螢幕模式下隱藏它，或有更新就緒或麥克風靜音時，圖示會自動回來。",
@@ -1063,7 +1047,6 @@ extension FeatureStrings {
             closeTimeHint: "Після того як вказівник покине острівець, чекати стільки часу перед закриттям.",
             enableFeatureFormat: "Увімкніть «%@» у Функціях.",
             enableSettingFormat: "Увімкніть «%@» у налаштуваннях функції.",
-            showPageFormat: "Покажіть «%@» на вкладці Віджети.",
             keyboardLightUnavailable: "Керування підсвічуванням клавіатури недоступне на цьому Mac.",
             hideMenuBarIcon: "Ховати значок на смузі меню",
             hideMenuBarIconHint: "Налаштування й панель програми відкриваються з Dynamic Island. Значок повертається, коли Dynamic Island вимкнено або приховано в повноекранному режимі, а також коли готове оновлення чи вимкнено мікрофон.",
