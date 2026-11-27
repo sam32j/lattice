@@ -455,7 +455,7 @@ private final class RecorderVideoCompositor: NSObject, AVVideoCompositing, @unch
                                                      kCVPixelFormatType_32BGRA],
     ]
     let requiredPixelBufferAttributesForRenderContext: [String: any Sendable] = [
-        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+        kCVPixelBufferPixelFormatTypeKey as String: [kCVPixelFormatType_32BGRA],
     ]
 
     func renderContextChanged(_ newRenderContext: AVVideoCompositionRenderContext) {}

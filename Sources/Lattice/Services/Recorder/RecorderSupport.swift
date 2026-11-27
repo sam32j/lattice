@@ -778,7 +778,8 @@ enum RecorderSupport {
     /// The Settings default shows a value from an older build or a settings
     /// file as its nearest preset, without rewriting it.
     static func nearestGIFScalePreset(_ percent: Int) -> Int {
-        [50, 75, 100].min { abs($0 - percent) < abs($1 - percent) } ?? 75
+        let clamped = min(100, max(1, percent))
+        return [50, 75, 100].min { abs($0 - clamped) < abs($1 - clamped) } ?? 75
     }
 
     static func sanitizedGIFFrameRate(_ raw: Int) -> Int {

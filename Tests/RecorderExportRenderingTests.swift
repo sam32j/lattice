@@ -9,6 +9,30 @@ import ImageIO
 
 enum RecorderExportRenderingTests {
     static func run(_ suite: TestSuite) {
+        let anamorphic = CIImage(color: .white).cropped(to: CGRect(x: 0, y: 0, width: 640, height: 480))
+        let planSize = CGSize(width: 720, height: 480)
+        let rescaled = RecorderExporter.framedForPlan(anamorphic, sourceSize: planSize)
+        suite.expect(rescaled.extent.size == planSize,
+                     "anamorphic decoded frames scale to the export plan's raster size before blurring")
+        let matching = CIImage(color: .white).cropped(to: CGRect(origin: .zero, size: planSize))
+        let untouched = RecorderExporter.framedForPlan(matching, sourceSize: planSize)
+        suite.expect(untouched === matching && untouched.extent.size == planSize,
+                     "decoded frames already matching the plan's raster size pass through untouched")
+        if let source = try? String(contentsOfFile: "Sources/Lattice/Services/Recorder/RecorderExporter.swift", encoding: .utf8),
+           let loopStart = source.range(of: "var previousPicture: CGImage?"),
+           let loopEnd = source.range(of: "guard previousPicture != nil", range: loopStart.upperBound..<source.endIndex) {
+            let fallbackLoop = String(source[loopStart.lowerBound..<loopEnd.lowerBound])
+            let hasSingleRender = fallbackLoop.components(separatedBy: "composer.render(").count == 2
+            let reuseLoop = fallbackLoop.range(of: "for _ in (index - missing)...index")
+            let renderPos = fallbackLoop.range(of: "composer.render(")
+            let rendersBeforeReuse = reuseLoop != nil && renderPos != nil
+                && renderPos!.upperBound < reuseLoop!.lowerBound
+            suite.expect(hasSingleRender && rendersBeforeReuse
+                         && fallbackLoop.contains("try writer.append(picture)"),
+                         "GIF fallback loop composes each decoded frame once at its own time and reuses the composed picture")
+        } else {
+            suite.expect(false, "RecorderExporter.swift contains the compose-once GIF fallback loop")
+        }
         let done = DispatchSemaphore(value: 0)
         Task.detached {
             do {

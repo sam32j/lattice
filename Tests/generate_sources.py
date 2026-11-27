@@ -3051,15 +3051,15 @@ def main():
     write("RecorderExportControls.swift", "import Foundation\nimport CoreGraphics\nimport UniformTypeIdentifiers\n"
           + declaration(recorder, "struct RecorderEditorExportSelection")
           + declaration(recorder, "final class RecorderClipboardPublication:")
-          + "final class RecorderExportControlsFixture {\nvar document = RecorderEditDocument()\nvar isExporting = false\nvar sourceSize = CGSize(width: 1920, height: 1080)\n"
+          + "final class RecorderExportControlsFixture {\nvar document = RecorderEditDocument()\nvar initialDocument: RecorderEditDocument? = RecorderEditDocument()\nvar isModified: Bool { document != initialDocument }\nfunc markSaved(_ savedDocument: RecorderEditDocument) { initialDocument = savedDocument }\nvar isExporting = false\nvar sourceSize = CGSize(width: 1920, height: 1080)\n"
           + "struct Take { let startedAt = Date(timeIntervalSinceReferenceDate: 0) }\nlet take = Take()\n"
           + "".join(declaration(recorder, prefix) for prefix in [
               "    var exportSize:", "    var exportCanvasSize:", "    func exportSize(for",
               "    func setExportFormat(", "    func setGIFScalePercent(", "    func setGIFFrameRate(",
               "    func beginClipboardPublication()", "    func completeClipboardPublication(", "    func cancelExport()"])
           + "var clipboardPublication: RecorderClipboardPublication?\nvar exporter: RecorderExporter?\nvar shareTask: Task<Void, Never>?\n"
-          + "var request: (RecorderExporter.Output, URL)?\nvar completion: ((RecorderExporter.Failure?) -> Void)?\n"
-          + "func export(_ output: RecorderExporter.Output, to destination: URL, rememberDestination: Bool, completion: @escaping (RecorderExporter.Failure?) -> Void) { request = (output, destination); self.completion = completion }\n"
+          + "var request: (RecorderExporter.Output, URL)?\nvar lastMarksSaved = true\nvar completion: ((RecorderExporter.Failure?) -> Void)?\n"
+          + "func export(_ output: RecorderExporter.Output, to destination: URL, rememberDestination: Bool, marksSaved: Bool = true, completion: @escaping (RecorderExporter.Failure?) -> Void) { request = (output, destination); lastMarksSaved = marksSaved; self.completion = completion }\n"
           + "}\nfinal class RecorderExportActionFixture {\n"
           + "let model = RecorderExportControlsFixture()\nvar preservedExportURL: URL?\nvar confirmedClose = false\n"
           + "final class Window { var closes = 0; func close() { closes += 1 } }\nvar window: Window? = Window()\n"

@@ -649,32 +649,41 @@ final class RecorderExporter {
                 // Use the generator as well as ImageIO on fallback. It applies
                 // display geometry, preserves alpha and recovers individual
                 // images after damaged stretches that stop a sequential reader.
-                var previous: CGImage?
+                // Each decoded frame is composed once at its own edit time so a
+                // reused frame keeps the privacy blurs from when it was decoded.
+                var previousPicture: CGImage?
                 var missing = 0
                 for index in 0..<frameCount {
                     if cancelled.isCancelled { return .cancelled }
                     let seconds = Double(index) / Double(fps)
                     let time = CMTime(seconds: seconds, preferredTimescale: 600)
                     let decoded = try? await generator.image(at: time).image
-                    if let frame = decoded ?? previous {
-                        for outputIndex in (index - missing)...index {
+                    let picture: CGImage?
+                    if let decoded {
+                        if let renderContext, let composer {
+                            let editTime = document.exportTiming.sourceTime(forOutputTime: seconds)
+                            let framed = Self.framedForPlan(CIImage(cgImage: decoded), sourceSize: sourceSize)
+                            let rendered = composer.render(framed, at: editTime)
+                            guard let composed = renderContext.createCGImage(rendered, from: CGRect(origin: .zero, size: canvas))
+                            else { return .readFailed }
+                            picture = composed
+                        } else {
+                            picture = decoded
+                        }
+                    } else {
+                        picture = previousPicture
+                    }
+                    if let picture {
+                        for _ in (index - missing)...index {
                             if cancelled.isCancelled { return .cancelled }
-                            if let renderContext, let composer {
-                                let editTime = document.exportTiming.sourceTime(forOutputTime: Double(outputIndex) / Double(fps))
-                                let rendered = composer.render(CIImage(cgImage: frame), at: editTime)
-                                guard let picture = renderContext.createCGImage(rendered, from: CGRect(origin: .zero, size: canvas))
-                                else { return .readFailed }
-                                try writer.append(picture)
-                            } else {
-                                try writer.append(frame)
-                            }
+                            try writer.append(picture)
                         }
                         missing = 0
-                        previous = frame
+                        previousPicture = picture
                     } else { missing += 1 }
                     frameProgress.report(min(0.99, Double(index + 1) / Double(frameCount)))
                 }
-                guard previous != nil else { return .readFailed }
+                guard previousPicture != nil else { return .readFailed }
                 if cancelled.isCancelled { return .cancelled }
                 try writer.finish()
             }
@@ -725,20 +734,24 @@ final class RecorderExporter {
         var nextSample = frames.copyNextSampleBuffer()
         for index in 0..<frameCount {
             let seconds = Double(index) / Double(fps)
-            let time = CMTime(seconds: seconds, preferredTimescale: 600)
             try autoreleasepool {
                 if cancelled.isCancelled { throw RecorderFastGIFWriter.Failure.cancelled }
-                while let sample = nextSample, CMSampleBufferGetPresentationTimeStamp(sample) <= time {
+                while let sample = nextSample,
+                      CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample)) <= seconds {
                     currentSample = sample
                     nextSample = frames.copyNextSampleBuffer()
                     if cancelled.isCancelled { throw RecorderFastGIFWriter.Failure.cancelled }
                 }
                 guard reader.status != .failed, let sample = currentSample,
-                      CMTimeAdd(CMSampleBufferGetPresentationTimeStamp(sample),
-                                CMSampleBufferGetDuration(sample)) > time,
                       let pixel = CMSampleBufferGetImageBuffer(sample),
                       CGSize(width: CVPixelBufferGetWidth(pixel), height: CVPixelBufferGetHeight(pixel)) == naturalSize
                 else { throw RecorderFastGIFWriter.Failure.unavailable }
+                let samplePTS = CMSampleBufferGetPresentationTimeStamp(sample)
+                let sampleDuration = CMSampleBufferGetDuration(sample)
+                if sampleDuration.isNumeric,
+                   CMTimeGetSeconds(CMTimeAdd(samplePTS, sampleDuration)) <= seconds {
+                    throw RecorderFastGIFWriter.Failure.unavailable
+                }
                 let source = CIImage(cvPixelBuffer: pixel).transformed(by: imageTransform)
                 let rendered = composer?.render(source, at: timing.sourceTime(forOutputTime: seconds))
                     ?? source.transformed(by: CGAffineTransform(scaleX: canvas.width / geometry.size.width,
@@ -750,6 +763,22 @@ final class RecorderExporter {
             progress.report(min(0.99, Double(index + 1) / Double(frameCount)))
         }
         try writer.finish()
+    }
+
+    /// Scale a decoded generator image into the raster coordinate space the
+    /// export plan uses when pixel aspect ratio changes its presentation width.
+    static func framedForPlan(_ image: CIImage, sourceSize: CGSize) -> CIImage {
+        let extent = image.extent
+        guard extent.width > 0, extent.height > 0,
+              sourceSize.width > 0, sourceSize.height > 0,
+              extent.size != sourceSize else { return image }
+        let normalized = extent.origin == .zero
+            ? image
+            : image.transformed(by: CGAffineTransform(translationX: -extent.origin.x, y: -extent.origin.y))
+        return normalized.transformed(by: CGAffineTransform(
+            scaleX: sourceSize.width / extent.width,
+            y: sourceSize.height / extent.height
+        ))
     }
 
     static func supportsFastGIF(_ formats: [CMFormatDescription]) -> Bool {

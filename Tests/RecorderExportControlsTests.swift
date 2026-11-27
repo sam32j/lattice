@@ -74,8 +74,13 @@ enum RecorderExportControlsTests {
                      "successful save still marks a recording safely exported")
         let lane = RecorderExportActionFixture.GeneralPasteboardAccess.shared
         let cancelledCopy = RecorderExportActionFixture()
+        cancelledCopy.model.document.exportSpeed = 2
         cancelledCopy.startGIFCopy(true)
+        suite.expect(!cancelledCopy.model.lastMarksSaved,
+                     "GIF clipboard export defers marking the document saved until publication succeeds")
         cancelledCopy.model.completion?(nil)
+        suite.expect(cancelledCopy.model.isModified,
+                     "completing the GIF encode does not mark the edit saved before clipboard publication")
         let cancelledWork = lane.pending.removeFirst()
         suite.expect(cancelledCopy.model.isExporting,
                      "GIF publication remains busy while queued")
@@ -88,28 +93,57 @@ enum RecorderExportControlsTests {
                      "cancelled queued GIF work never touches the clipboard")
         cancelledWork.completion(queuedResult)
         cancelledWork.completion(true)
-        suite.expect(!(cancelledCopy.preservedExportURL != nil) && !cancelledCopy.confirmedClose && cancelledCopy.window?.closes == 0,
-                     "late GIF publication success after cancellation cannot mark safe or close and delete")
+        suite.expect(!(cancelledCopy.preservedExportURL != nil) && !cancelledCopy.confirmedClose
+            && cancelledCopy.window?.closes == 0 && cancelledCopy.model.isModified,
+                     "late GIF publication success after cancellation cannot mark saved, mark safe, or close and delete")
+
+        let committedCopy = RecorderExportActionFixture()
+        committedCopy.model.document.exportSpeed = 2
+        committedCopy.startGIFCopy(true)
+        committedCopy.model.completion?(nil)
+        let committedWork = lane.pending.removeFirst()
+        let committedResult = committedWork.work() // Claims commit before cancel arrives.
+        committedCopy.model.cancelExport()
+        suite.expect(committedResult && committedCopy.model.isExporting,
+                     "a cancel after the pasteboard commit is claimed does not suppress the publication")
+        committedWork.completion(committedResult)
+        suite.expect(!committedCopy.model.isExporting && committedCopy.preservedExportURL != nil
+            && committedCopy.confirmedClose && committedCopy.window?.closes == 1
+            && !committedCopy.model.isModified,
+                     "a committed GIF publication still completes and marks the exported snapshot saved")
 
         let staleCopy = RecorderExportActionFixture()
         staleCopy.startGIFCopy(true)
         staleCopy.model.completion?(nil)
         let firstWork = lane.pending.removeFirst()
-        _ = firstWork.work() // Simulates an AppKit operation already running when cancelled.
         staleCopy.model.cancelExport()
+        _ = firstWork.work()
         staleCopy.model.isExporting = true // A later encoder now owns busy state.
         firstWork.completion(true)
         suite.expect(staleCopy.model.isExporting && !(staleCopy.preservedExportURL != nil) && staleCopy.window?.closes == 0,
                      "stale publication completion cannot clear a later export's busy state or close it")
 
         let normalCopy = RecorderExportActionFixture()
+        normalCopy.model.document.exportSpeed = 2
         normalCopy.startGIFCopy(true)
+        normalCopy.model.document.exportSpeed = 3 // Edit made while export is in flight.
         normalCopy.model.completion?(nil)
         let normalWork = lane.pending.removeFirst()
         normalWork.completion(normalWork.work())
         suite.expect(!normalCopy.model.isExporting && (normalCopy.preservedExportURL != nil)
-            && normalCopy.confirmedClose && normalCopy.window?.closes == 1,
-                     "uncancelled GIF publication still completes copy and delete")
+            && normalCopy.confirmedClose && normalCopy.window?.closes == 1
+            && normalCopy.model.isModified && normalCopy.model.initialDocument?.exportSpeed == 2,
+                     "uncancelled GIF publication marks the exported snapshot saved, not later edits")
+
+        let failedCopy = RecorderExportActionFixture()
+        failedCopy.model.document.exportSpeed = 2
+        failedCopy.startGIFCopy(false)
+        failedCopy.model.completion?(nil)
+        let failedWork = lane.pending.removeFirst()
+        _ = failedWork.work()
+        failedWork.completion(false)
+        suite.expect(failedCopy.model.isModified && failedCopy.preservedExportURL == nil,
+                     "failed GIF clipboard publication leaves the document modified")
         actions.finishClipboardPublication(false, url: nil, deletesRecording: true)
         suite.expect(!(actions.preservedExportURL != nil) && !actions.confirmedClose && actions.window?.closes == 0,
                      "failed clipboard publication never marks a source safe or closes and deletes it")

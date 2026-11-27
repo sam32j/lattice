@@ -630,9 +630,11 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
         return publication
     }
 
-    /// Only the current, uncancelled publication owns the editor's busy state.
+    /// Only the current publication that was not cancelled before committing
+    /// owns the editor's busy state.
     func completeClipboardPublication(_ publication: RecorderClipboardPublication) -> Bool {
-        guard clipboardPublication === publication, !publication.isCancelled else { return false }
+        guard clipboardPublication === publication,
+              publication.isCommitted || !publication.isCancelled else { return false }
         clipboardPublication = nil
         isExporting = false
         return true
@@ -1369,6 +1371,7 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
     func export(_ output: RecorderExporter.Output,
                 to destination: URL,
                 rememberDestination: Bool = true,
+                marksSaved: Bool = true,
                 completion: @escaping (RecorderExporter.Failure?) -> Void) {
         guard !isExporting else { return }
         pause()
@@ -1392,7 +1395,7 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
             self.isExporting = false
             self.exporter = nil
             if failure == nil {
-                self.markSaved(document)
+                if marksSaved { self.markSaved(document) }
                 if rememberDestination { self.lastExportedURL = destination }
             }
             completion(failure)
@@ -1467,8 +1470,7 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
     }
 
     func cancelExport() {
-        if let publication = clipboardPublication {
-            publication.cancel()
+        if let publication = clipboardPublication, publication.cancel() {
             clipboardPublication = nil
             isExporting = false
         }
@@ -1678,17 +1680,19 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
             QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
             return
         }
-        run(.gif, to: destination, rememberDestination: false) { [weak self] url in
+        let snapshot = model.document
+        run(.gif, to: destination, rememberDestination: false, marksSaved: false) { [weak self] url in
             guard let self else { return }
             let publication = self.model.beginClipboardPublication()
             // A long recording's GIF takes a while to check, so it goes on
             // the pasteboard's own lane instead of the main thread.
             GeneralPasteboardAccess.shared.async({
                 guard !publication.isCancelled else { return false }
-                return RecorderGIFClipboard.publish(fileURL: url) { !publication.isCancelled }
+                return RecorderGIFClipboard.publish(fileURL: url) { publication.claimCommit() }
             }) { [weak self] published in
                 guard let self, self.model.completeClipboardPublication(publication) else { return }
-                self.finishClipboardPublication(published, url: url, deletesRecording: deletesRecording)
+                self.finishClipboardPublication(published, url: url, savedDocument: snapshot,
+                                                deletesRecording: deletesRecording)
             }
         }
     }
@@ -1722,23 +1726,28 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
             QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
             return
         }
-        run(.video, to: destination, rememberDestination: false) { [weak self] url in
+        let snapshot = model.document
+        run(.video, to: destination, rememberDestination: false, marksSaved: false) { [weak self] url in
             guard let self else { return }
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             let published = pasteboard.writeObjects([url as NSURL])
             if published { pasteboard.declareLatticeSource() }
-            self.finishClipboardPublication(published, url: url, deletesRecording: deletesRecording)
+            self.finishClipboardPublication(published, url: url, savedDocument: snapshot,
+                                            deletesRecording: deletesRecording)
         }
     }
 
     /// A copy counts as kept only once it reached the clipboard.
-    private func finishClipboardPublication(_ published: Bool, url: URL?, deletesRecording: Bool) {
+    private func finishClipboardPublication(_ published: Bool, url: URL?,
+                                            savedDocument: RecorderEditDocument? = nil,
+                                            deletesRecording: Bool) {
         guard published else {
             NSSound.beep()
             QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
             return
         }
+        if let savedDocument { model.markSaved(savedDocument) }
         preservedExportURL = url
         QuickToolHUD.show(icon: "doc.on.doc", message: strings.copiedHUD)
         if deletesRecording {
@@ -1791,9 +1800,11 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
     private func run(_ output: RecorderExporter.Output,
                      to destination: URL,
                      rememberDestination: Bool = true,
+                     marksSaved: Bool = true,
                      reserved: Bool = false,
                      onSuccess: ((URL) -> Void)? = nil) {
-        model.export(output, to: destination, rememberDestination: rememberDestination) {
+        model.export(output, to: destination, rememberDestination: rememberDestination,
+                     marksSaved: marksSaved) {
             [weak self] failure in
             if failure != nil && reserved { try? FileManager.default.removeItem(at: destination) }
             guard let self else { return }
@@ -2004,11 +2015,12 @@ struct RecorderEditorExportSelection {
 }
 
 /// Cancellation crosses from the editor's main thread to the pasteboard lane.
-/// An AppKit call already in progress may finish, but cannot complete the
-/// cancelled editor operation or interfere with a later export.
+/// Cancellation and the pasteboard write compete for a single commit so a
+/// cancel cannot race past the check while the clipboard is being replaced.
 final class RecorderClipboardPublication: @unchecked Sendable {
     private let lock = NSLock()
     private var cancelled = false
+    private var committed = false
 
     var isCancelled: Bool {
         lock.lock()
@@ -2016,9 +2028,30 @@ final class RecorderClipboardPublication: @unchecked Sendable {
         return cancelled
     }
 
-    func cancel() {
+    var isCommitted: Bool {
         lock.lock()
+        defer { lock.unlock() }
+        return committed
+    }
+
+    /// Claims the right to replace the clipboard. Returns false if the
+    /// publication was already cancelled.
+    func claimCommit() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !cancelled else { return false }
+        committed = true
+        return true
+    }
+
+    /// Cancels the publication unless the pasteboard commit has already been
+    /// claimed. Returns true when cancellation took effect.
+    @discardableResult
+    func cancel() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !committed else { return false }
         cancelled = true
-        lock.unlock()
+        return true
     }
 }

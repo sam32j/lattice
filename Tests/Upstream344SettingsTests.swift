@@ -79,8 +79,12 @@ enum Upstream344SettingsTests {
                      "an old GIF size maps to its percentage preset")
         suite.expect(RecorderSupport.nearestGIFScalePreset(40) == 50
                      && RecorderSupport.nearestGIFScalePreset(90) == 100
-                     && RecorderSupport.nearestGIFScalePreset(75) == 75,
-                     "Settings shows an odd saved size as its nearest preset")
+                     && RecorderSupport.nearestGIFScalePreset(75) == 75
+                     && RecorderSupport.nearestGIFScalePreset(64) == 75
+                     && RecorderSupport.nearestGIFScalePreset(0) == 50
+                     && RecorderSupport.nearestGIFScalePreset(Int.min) == 50
+                     && RecorderSupport.nearestGIFScalePreset(Int.max) == 100,
+                     "Settings shows an odd or extreme saved size as its nearest preset without overflowing")
 
         // Section D: nothing the audit rejected arrives in shipped copy.
         for language in AppLanguage.allCases {
