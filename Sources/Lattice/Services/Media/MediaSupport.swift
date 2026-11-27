@@ -187,6 +187,16 @@ enum MediaImageWatermarkKind: String, CaseIterable, Codable, Identifiable {
         case .off, .text: return self
         }
     }
+
+    /// Restores a local logo onto a portable watermark kind without enabling
+    /// text that the portable value leaves disabled.
+    func withLogo() -> Self {
+        switch self {
+        case .off: return .logo
+        case .text: return .textAndLogo
+        case .logo, .textAndLogo: return self
+        }
+    }
 }
 
 enum MediaImageWatermarkPosition: String, CaseIterable, Codable, Identifiable {
@@ -795,7 +805,7 @@ enum MediaSupport {
                   let original = matches.first?.options.watermark, original.usesLogo,
                   profiles[index].options.watermark.kind == original.kind.withoutLogo(text: original.text)
             else { continue }
-            profiles[index].options.watermark.kind = original.kind
+            profiles[index].options.watermark.kind = profiles[index].options.watermark.kind.withLogo()
             profiles[index].options.watermark.logoPath = original.logoPath
             restored = true
         }

@@ -634,6 +634,48 @@ enum SettingsFeatureTests {
                     local: localLogo)[DefaultsKey.mediaImageWatermarkKind] as? String
                 == MediaImageWatermarkKind.text.rawValue,
                "a watermark the file chose itself still wins over the local logo")
+        let localEmptyTextAndLogo: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.textAndLogo.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "",
+        ]
+        let incomingDisabledWithCaption: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Caption",
+        ]
+        suite.expect(SettingsBackupSupport.keepingLocalMediaLogos(incomingDisabledWithCaption,
+                                                                  local: localEmptyTextAndLogo)[DefaultsKey.mediaImageWatermarkKind] as? String
+                == MediaImageWatermarkKind.logo.rawValue,
+               "restoring a local logo onto an off incoming watermark does not enable incoming text")
+        suite.expect(SettingsBackupSupport.keepingLocalMediaLogos(
+                    [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue],
+                    local: [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue])[DefaultsKey.mediaImageWatermarkKind] as? String
+                == MediaImageWatermarkKind.off.rawValue,
+               "an off local watermark stays off when the file is also off")
+        do {
+            var localOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            localOptions.watermark.kind = .textAndLogo
+            localOptions.watermark.text = ""
+            localOptions.watermark.logoPath = "/Users/example/logo.png"
+            var incomingOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            incomingOptions.watermark.kind = .off
+            incomingOptions.watermark.text = "Caption"
+            incomingOptions.watermark.logoPath = ""
+            let localProfiles = [MediaImageProfile(id: "p1", name: "Blog", options: localOptions)]
+            let incomingProfiles = [MediaImageProfile(id: "p1", name: "Blog", options: incomingOptions)]
+            if let localData = try? JSONEncoder().encode(localProfiles),
+               let incomingData = try? JSONEncoder().encode(incomingProfiles),
+               let localJSON = String(data: localData, encoding: .utf8),
+               let incomingJSON = String(data: incomingData, encoding: .utf8) {
+                let restoredJSON = MediaSupport.restoringProfileLogos(incomingJSON, local: localJSON)
+                let decoded = try? JSONDecoder().decode([MediaImageProfile].self, from: Data(restoredJSON.utf8))
+                suite.expect(decoded?.first?.options.watermark.kind == .logo
+                             && decoded?.first?.options.watermark.logoPath == "/Users/example/logo.png"
+                             && decoded?.first?.options.watermark.text == "Caption",
+                             "restoring a profile logo onto an off incoming watermark keeps text disabled")
+            } else {
+                suite.expect(false, "profile logo test fixture encodes")
+            }
+        }
         // A backup file can be edited by hand, and a value of the wrong shape
         // would reach code that trusts its own settings.
         let wrongShapes: [String: Any] = [

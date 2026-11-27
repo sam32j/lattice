@@ -44,7 +44,7 @@ struct NotchNotificationInbox {
     private var primed = false
     private var opening: ArrivalCheck?
 
-    var arrivalCheck: ArrivalCheck? { pendingItems.isEmpty ? nil : opening }
+    var arrivalCheck: ArrivalCheck? { opening }
 
     mutating func windowCreated(at now: TimeInterval) {
         opening = ArrivalCheck(id: UUID(), openedAt: now)

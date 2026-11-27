@@ -273,6 +273,28 @@ enum NotchNotificationReaderTests {
         suite.expect(inbox.settleArrivals(later, centerFocused: reader.centerWasFocused(since: later.openedAt),
                                          checkedAt: access.time)?.map(\.id) == [second.id],
                      "observing focus during an older opening does not suppress a later banner")
+        do {
+            // An opening that produced no pending arrivals must still settle,
+            // otherwise a later banner on a reused Notification Center window
+            // inherits the stale opening and is discarded by an older focus.
+            var emptyOpeningInbox = NotchNotificationInbox()
+            _ = emptyOpeningInbox.update([])
+            emptyOpeningInbox.windowCreated(at: 30)
+            _ = emptyOpeningInbox.update([])
+            guard let emptyCheck = emptyOpeningInbox.arrivalCheck else {
+                suite.expect(false, "an opening with no pending arrivals still exposes an arrivalCheck so it can settle")
+                return
+            }
+            let settledEmpty = emptyOpeningInbox.settleArrivals(emptyCheck, centerFocused: true, checkedAt: 30.4)
+            suite.expect(settledEmpty?.isEmpty == true && emptyOpeningInbox.arrivalCheck == nil,
+                         "settling an empty opening clears it cleanly")
+            let laterBanner = NotchSystemNotification(id: UUID(), content: first.content,
+                                                      received: first.received, canOpen: true)
+            let published = emptyOpeningInbox.update([laterBanner])
+            suite.expect(published.map(\.id) == [laterBanner.id]
+                         && emptyOpeningInbox.items.map(\.id) == [laterBanner.id],
+                         "a later banner on a reused window publishes directly instead of inheriting an old focused opening")
+        }
         for focused in [false, true] {
             inbox = NotchNotificationInbox()
             _ = inbox.update([])

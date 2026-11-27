@@ -334,8 +334,11 @@ enum SettingsBackupSupport {
         let kindKey = DefaultsKey.mediaImageWatermarkKind
         let text = local[DefaultsKey.mediaImageWatermarkText] as? String ?? ""
         if let raw = local[kindKey] as? String, let kind = MediaImageWatermarkKind(rawValue: raw),
-           settings[kindKey] as? String == kind.withoutLogo(text: text).rawValue {
-            result[kindKey] = raw
+           kind == .logo || kind == .textAndLogo,
+           let incomingRaw = settings[kindKey] as? String,
+           let incoming = MediaImageWatermarkKind(rawValue: incomingRaw),
+           incoming == kind.withoutLogo(text: text) {
+            result[kindKey] = incoming.withLogo().rawValue
         }
         let profilesKey = DefaultsKey.mediaImageProfiles
         if let portable = settings[profilesKey] as? String, let saved = local[profilesKey] as? String {
