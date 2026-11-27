@@ -152,12 +152,8 @@ extension Strings {
 /// both translations to be provided.
 struct Strings {
     // MARK: Menu bar & context menu
-    let statusIdleTooltip: String
-    let statusActiveUntil: String      // + time
-    let statusActiveIndefinite: String
     let menuEnableAwake: String
     let menuDisableAwake: String
-    let menuActivateFor: String
     let menuSettings: String
     let menuAbout: String
     let menuQuit: String
@@ -173,12 +169,8 @@ struct Strings {
     /// Named actions an icon-only control borrows so it can say what it
     /// does. No feature owns these, because half a dozen already share them.
     let actionClear: String
-    let actionRemove: String
-    let actionBack: String
-    let actionSearch: String
     let actionMute: String
     let actionUnmute: String
-    let actionPlay: String
     let actionPause: String
     let menuCut: String
     let menuCopy: String
@@ -200,24 +192,18 @@ struct Strings {
     let indefinite: String
 
     // MARK: Panel — header & footer
-    let panelSettings: String
     let panelQuit: String
-    let panelHotkeyHint: String
 
     // MARK: Panel — keep awake card
     let keepAwakeTitle: String
     let keepAwakeEndsIn: String        // + remaining
     let keepAwakeUntilDisabled: String
-    let keepAwakeUntilLabel: String
-    let keepAwakeUntilStart: String
-    let durationLabel: String
 
     // MARK: Panel — system monitor
     let temperatures: String
     let cpuLabel: String
     let gpuLabel: String
     let batteryLabel: String
-    let usageSection: String
     let memorySection: String
     let memoryPressure: String
     let memorySwapUsed: String
@@ -227,7 +213,6 @@ struct Strings {
     let pressureWarning: String
     let pressureCritical: String
     let monitorUnavailable: String
-    let energyAppsTitle: String
     let energyAppsIdle: String
 
     // MARK: Notifications
@@ -237,7 +222,6 @@ struct Strings {
     let notifyBatteryBody: String
 
     // MARK: Administrator prompts (shown by macOS password dialogs)
-    let adminPromptClamshellOn: String
     let adminPromptClamshellOff: String
     let adminPromptRecover: String
     let adminPromptUpdate: String
@@ -258,16 +242,10 @@ struct Strings {
     let previewSizeNormal: String
     let previewSizeLarge: String
     let previewSizeXLarge: String
-    let settingsGroupFeatures: String
 
     // MARK: Settings — advanced
-    let advancedResetDescription: String
     let advancedClearButton: String
-    let advancedCleared: String
     let advancedClearFailed: String
-    let advancedClearConfirmTitle: String
-    let advancedClearConfirmBody: String
-    let advancedUninstallSection: String
     let advancedUninstallDescription: String
     let advancedUninstallButton: String
     let advancedUninstallConfirmTitle: String
@@ -278,35 +256,23 @@ struct Strings {
     // MARK: Settings — general
     let launchAtLogin: String
     let languageLabel: String
-    let menuBarSection: String
-    let globalHotkeySection: String
     let hotkeyToggle: String
 
     // MARK: Settings — energy
-    let sessionSection: String
-    let batteryProtectionSection: String
     let batteryNever: String
-    let clamshellSection: String
     let configuring: String
     let sudoersFailed: String
 
     // MARK: Settings — mouse
-    let scrollSection: String
     let invertMouseScroll: String
-    let invertMouseScrollCaption: String
     let scrollTrackpadNote: String
-    let scrollActiveNow: String
-    let mouseNavigationActiveNow: String
     let smoothScrollName: String
     let smoothScrollCaption: String
     let smoothScrollStepLabel: String
-    let mouseNavigationSection: String
     let mouseNavigationEnable: String
-    let mouseNavigationCaption: String
     let middleClickSection: String
     let middleClickEnable: String
     let middleClickEnableCaption: String
-    let middleClickDragConflict: String
     let middleClickNoTrackpad: String
     let middleClickTapPicker: String
     let middleClickTapOff: String
@@ -319,9 +285,6 @@ struct Strings {
     let ocrNoText: String
     let colorPickerName: String
     let colorPickerCaption: String
-    let colorPickerFormatLabel: String
-    let colorPickerBareHexToggle: String
-    let colorPickerPickNow: String
     let micMuteName: String
     let micUnmuteName: String
     let micMuteCaption: String
@@ -330,35 +293,24 @@ struct Strings {
     let micMutePartialHUD: String
     let micUnmutePartialHUD: String
     let micMuteMenuBarToggle: String
-    let micMuteMenuBarCaption: String
     let pastePlainName: String
     let pastePlainCaption: String
     let launcherName: String
-    let launcherCaption: String
-    let launcherEditHint: String
-    let launcherEmptyState: String
-    let launcherAddSection: String
-    let launcherKeysHint: String
 
     // MARK: Settings — switcher
     let switcherSection: String
-    let switcherEnable: String
-    let switcherEnableCaption: String
-    let switcherUsageHint: String
     let switcherNoWindows: String
     let switcherIconRowMode: String
     let switcherIconRowModeCaption: String
     let switcherSimpleModeCaption: String
     let switcherShortcutHintApps: String
     let switcherShortcutHintWindows: String
-    let switcherWindowShortcutCaption: String
     let switcherAppearanceDelay: String
     let switcherAppearanceDelayCaption: String
     let switcherMaxColumns: String
     let switcherMaxColumnsCaption: String
     let switcherMaxColumnsAuto: String
     let switcherInstantSelection: String
-    let switcherInstantSelectionCaption: String
     let switcherIgnoreHoverSelection: String
     let switcherMergeTabs: String
     let switcherMergeTabsCaption: String
@@ -368,7 +320,6 @@ struct Strings {
     let switcherOtherDesktop: String
     let dockPreviewName: String
     let dockPreviewEnable: String
-    let dockPreviewEnableCaption: String
     let dockPreviewCurrentSpaceOnly: String
     let dockPreviewCurrentSpaceOnlyCaption: String
     let dockPreviewCurrentSpaceOnlyInfo: String
@@ -385,12 +336,8 @@ struct Strings {
     let dockPreviewOrderByCreation: String
     let dockPreviewOrderByCreationCaption: String
     let dockClickMinimize: String
-    let dockClickMinimizeCaption: String
     let dockClickCycleWindows: String
-    let dockClickCycleWindowsCaption: String
-    let dockPreviewActiveNow: String
     let dockPreviewDockUnavailable: String
-    let dockPreviewAutohideBeta: String
     let dockPreviewOpenWindow: String
     let dockPreviewCloseWindow: String
     let dockPreviewMinimizeWindow: String
@@ -409,24 +356,14 @@ struct Strings {
     let autoQuitName: String
     let autoQuitEnable: String
     let autoQuitEnableCaption: String
-    let autoQuitOngoingWorkNote: String
     let autoQuitExceptionsTitle: String
-    let autoQuitAddApp: String
 
     // MARK: Feature — complete app uninstaller
     let uninstallerName: String
-    let uninstallerEnableCaption: String
-    let uninstallerStep1: String
-    let uninstallerStep2: String
-    let uninstallerStep3: String
-    let uninstallerMenuItem: String
-    let uninstallerDropTitle: String
-    let uninstallerDropSubtitle: String
     let uninstallerChoose: String
     let uninstallerPickerTitle: String
     let uninstallerPickerSearch: String
     let uninstallerPickerEmpty: String
-    let uninstallerEmptyNote: String
     let uninstallerFDANote: String
     let uninstallerFDAGrant: String
     let uninstallerFDAHint: String
@@ -454,8 +391,6 @@ struct Strings {
     let uninstallerCatState: String
     let uninstallerCatOther: String
     let uninstallerCommandBarBrowseTitle: String
-    let uninstallerCommandBarToggle: String
-    let uninstallerCommandBarCaption: String
     let uninstallerCommandBarFinderTitle: String
     let uninstallerSelectionUnavailable: String
 
@@ -475,7 +410,6 @@ struct Strings {
 
     // MARK: Feature — Homebrew manager
     let homebrewName: String
-    let homebrewEnableCaption: String
     let homebrewMissingTitle: String
     let homebrewMissingBody: String
     let homebrewInstallHomebrew: String
@@ -486,26 +420,13 @@ struct Strings {
     let homebrewShellSetupButton: String
     let homebrewShellSetupOpened: String
     let homebrewRefresh: String
-    let homebrewCheckPackages: String
     let homebrewTrustTitle: String
     let homebrewTrustCaption: String
     let homebrewTrustButton: String
-    let homebrewSearchPlaceholder: String
-    let homebrewKeyboardHint: String
-    let homebrewSearchButton: String
-    let homebrewSearchResults: String
     let homebrewInstalled: String
     let homebrewAll: String
-    let homebrewFormulas: String
-    let homebrewCasks: String
     let homebrewNoPackages: String
-    let homebrewDependencies: String
     let homebrewGroupDependencies: String
-    let homebrewOrphans: String
-    let homebrewOrphansNote: String
-    let homebrewDependencyUpdatesFormat: String
-    let homebrewNoSelection: String
-    let homebrewDetailsTitle: String
     let homebrewInstall: String
     let homebrewUninstall: String
     let homebrewUpgrade: String
@@ -515,22 +436,12 @@ struct Strings {
     let homebrewOpenTerminal: String
     let homebrewCancelOperation: String
     let homebrewClearLog: String
-    let homebrewLogTitle: String
-    let homebrewVersion: String
-    let homebrewDescription: String
     let homebrewHomepage: String
-    let homebrewPopularity: String
     let homebrewPopularityFormat: String
     let homebrewInstalledBadge: String
-    let homebrewNotInstalledBadge: String
-    let homebrewUpdates: String
-    let homebrewUpdateAvailableBadge: String
-    let homebrewLatestVersion: String
-    let homebrewConfirmInstallTitle: String
     let homebrewConfirmInstallBodyFormat: String
     let homebrewConfirmUninstallTitle: String
     let homebrewConfirmUninstallBodyFormat: String
-    let homebrewConfirmUpgradeTitle: String
     let homebrewConfirmUpgradeBodyFormat: String
     let homebrewConfirmUpgradeAllTitle: String
     let homebrewConfirmUpgradeAllBody: String
@@ -538,7 +449,6 @@ struct Strings {
     let homebrewConfirmUpdateHomebrewBody: String
     let homebrewTerminalFallback: String
     let homebrewLoading: String
-    let homebrewSearchEmpty: String
     let homebrewOperationInstallFormat: String
     let homebrewOperationUninstallFormat: String
     let homebrewOperationUpgradeFormat: String
@@ -567,7 +477,6 @@ struct Strings {
 
     // MARK: Feature — local media tools
     let mediaName: String
-    let mediaEnableCaption: String
     let mediaLocalNote: String
     let mediaToolVideo: String
     let mediaToolGIF: String
@@ -602,16 +511,12 @@ struct Strings {
     let mediaMegabytesSuffix: String
     let mediaWidth: String
     let mediaFPS: String
-    let mediaKeepAudio: String
-    let mediaCodec: String
     let mediaFormat: String
     let mediaStripMetadata: String
     let mediaLoopGIF: String
     let mediaOCRMode: String
     let mediaOCRAccurate: String
     let mediaOCRFast: String
-    let mediaLanguageCorrection: String
-    let mediaTextOutputNote: String
     let mediaRunning: String
     let mediaCompleted: String
     let mediaCancelled: String
@@ -630,17 +535,11 @@ struct Strings {
     // MARK: Feature — temporary shelf
     let shelfName: String
     let shelfEnable: String
-    let shelfEnableCaption: String
-    let shelfHowTitle: String
-    let shelfStep1: String
-    let shelfStep2: String
-    let shelfStep3: String
     let shelfShakeToggle: String
     let shelfShakeCaption: String
     let shelfDropZoneToggle: String
     let shelfDropZoneCaption: String
     let shelfDropZoneCaptionTopCenter: String
-    let shelfDropZoneLabel: String
     let shelfDockPlacement: String
     let shelfDockMenuBar: String
     let shelfDockTopCenter: String
@@ -660,10 +559,7 @@ struct Strings {
     let extraBrightnessCaption: String
     let extraBrightnessLevelLabel: String
     let extraBrightnessUnsupported: String
-    let shelfHotkeyLabel: String
     let shelfOpenNow: String
-    let shelfNoPermission: String
-    let shelfMenuItem: String
     let shelfTitle: String
     let shelfEmpty: String
     let shelfClearAll: String
@@ -704,53 +600,35 @@ struct Strings {
     let mixerEmpty: String
     let mixerUnavailable: String
     let mixerPermissionBody: String
-    let mixerResetTooltip: String
     let mixerOutputDefault: String
-    let mixerOutputCurrent: String
     let mixerOutputUnavailable: String
-    let mixerOutputFallback: String
     let mixerBypassedCaption: String
-    let mixerOutputTooltip: String
-    let mixerAirPlayChooseSpeaker: String
     let mixerSystemOutputTitle: String
     let mixerSystemOutputNoDevices: String
-    let mixerSystemOutputTooltip: String
-    let mixerSystemOutputErrorFormat: String
     let mixerLowerOnHeadphonesDisconnect: String
     let mixerLowerOnHeadphonesDisconnectCaption: String
     let mixerHeadphonesDisconnectVolume: String
     let volumeMixerEnable: String
-    let preciseVolumeRollerEnable: String
-    let preciseVolumeRollerCaption: String
     let preciseVolumeRollerTapFailed: String
     let soundOutputSwitcherTitle: String
     let soundOutputSwitcherEnable: String
     let soundOutputSwitcherCaption: String
-    let soundOutputSwitcherDevices: String
-    let soundOutputSwitcherNoAvailableSelection: String
     let mixerInputTitle: String
     let mixerInputNoDevices: String
     let mixerInputUnavailable: String
-    let mixerInputFallback: String
     let mixerInputTooltip: String
     let mixerInputErrorFormat: String
     let microphoneControlEnable: String
     let mixerInputLevelLabel: String
     let mixerInputSourceLabel: String
     let muteAudioInputSubtitle: String
-    let showInMenuBarLabel: String
     let manageAudioInputPriorityTitle: String
     let manageAudioOutputPriorityTitle: String
     let mixerOutputLevelLabel: String
-    let sliderUnavailable: String
     let screenshotEnable: String
     let screenRecorderEnable: String
-    let mixerVisibleApps: String
-    let mixerAllShown: String
-    let mixerHideFromList: String
 
     // MARK: Panel — audio device priority
-    let audioPrioritySection: String
     let audioPriorityOutputEnable: String
     let audioPriorityInputEnable: String
     let audioPriorityOutputList: String
@@ -773,7 +651,6 @@ struct Strings {
     let audioPrioritySkipCycling: String
     let audioPrioritySetOutput: String
     let audioPrioritySetInput: String
-    let audioPriorityCaption: String
 
     // MARK: Settings — updates
     let updatesSection: String
@@ -790,7 +667,6 @@ struct Strings {
     let updateInstallFailedBody: String
     let updateNeedsApplicationsTitle: String
     let updateNeedsApplicationsBody: String
-    let menuCheckUpdates: String
 
     // MARK: Permissions
     let permissionRequired: String
@@ -819,7 +695,6 @@ struct Strings {
 
     // MARK: Settings — monitor / menu bar metrics
     let tabMonitor: String
-    let monitorMenuBarCaption: String
     let monitorSeparateMenuBarMetrics: String
     let monitorSeparateMenuBarMetricsCaption: String
     let monitorNetworkUploadFirst: String
@@ -827,56 +702,22 @@ struct Strings {
     let monitorShowMemory: String
     let monitorShowNetwork: String
     let monitorShowPowerLabel: String
-    let panelNavigationMode: String
-    let panelNavigationCaption: String
-    let panelFooterSections: String
-    let panelFooterList: String
     let betaBadge: String
     let betaFeatureWarning: String
 
     // MARK: Panel — network
     let networkSection: String
-    let networkLocalIP: String
-    let networkDownload: String
-    let networkUpload: String
-    let networkThisSession: String
-    let networkMeasuring: String
     let networkApps: String
     let networkAppsIdle: String
 
     // MARK: Panel — disk
     let diskSection: String
-    let diskUsed: String
-    let diskFree: String
     let diskMenuBarStyleLabel: String
     let diskMenuBarUsedPercentage: String
     let diskMenuBarAvailableSpace: String
     let diskMenuBarUsedSpace: String
     let diskAvailable: String
     let diskPurgeable: String
-    let diskInternal: String
-    let diskExternal: String
-    let diskSelect: String
-    let diskRead: String
-    let diskWrite: String
-    let diskSMARTStatus: String
-    let diskSMARTUnavailable: String
-    let diskTotalRead: String
-    let diskTotalWritten: String
-    let diskTemperature: String
-    let diskHealth: String
-    let diskPowerCycles: String
-    let diskPowerOnHours: String
-    let diskUnsafeShutdowns: String
-    let diskMediaErrors: String
-    let diskEject: String
-    let diskEjectAll: String
-    let diskEjecting: String
-    let diskReadyToRemove: String
-    let diskEjectFailed: String
-    let diskProtectionCaption: String
-    let diskNoExternal: String
-    let diskOpenInFinder: String
     let diskStorageSettings: String
     let diskNoDisks: String
 
@@ -892,65 +733,37 @@ struct Strings {
     let monitorShowGPUTemperature: String
     let monitorShowBatteryTemperature: String
     let monitorShowPeripheralBattery: String
-    let peripheralBatteryNoDevices: String
 
     // MARK: Update notification + menu bar setup
     let updateBannerTitle: String
-    let updateBannerAction: String
-    let monitorMenuBarPresetLabel: String
-    let menuBarPresetReadable: String
-    let menuBarPresetDense: String
     let menuBarSpacingLabel: String
     let menuBarSpacingStandard: String
     let menuBarSpacingCompact: String
-    let monitorLabelStyleLabel: String
-    let menuBarLabelStyleCompact: String
-    let menuBarLabelStyleClassic: String
-    let monitorMemoryStyleLabel: String
     let monitorMemoryPressureDot: String
-    let memoryStyleDot: String
-    let memoryStylePercent: String
-    let memoryStyleBoth: String
     // MARK: System uptime, battery health, speed test
     let systemUptime: String
     let powerCycles: String
     let speedTestRun: String
-    let speedTestAgain: String
-    let speedTestLatency: String
-    let speedTestTesting: String
-    let speedTestFailed: String
 
     // MARK: Per-item panel config
     let disclosureExpanded: String
     let disclosureCollapsed: String
-    let panelHideItem: String
-    let panelShowItem: String
     let panelHiddenItem: String
     let monitorItemDiskUsage: String
     let monitorItemDiskActivity: String
-    let monitorPanelConfigHint: String
-    let monitorOrderHint: String
 
     // MARK: Cleaning mode
     let cleaningMenuItem: String
-    let utilitiesSection: String
-    let quickControlsSection: String
-    let panelCategoryWindows: String
-    let panelCategoryInput: String
-    let panelCategoryFiles: String
     let windowMaximizeName: String
     let windowMaximizeCaption: String
     let keyDebounceName: String
     let keyDebounceEnable: String
     let keyDebounceCaption: String
-    let keyDebounceActiveNow: String
     let keyDebounceGlobalWindow: String
     let keyDebouncePerKeySection: String
     let keyDebouncePerKeyCaption: String
     let keyDebounceKeyLabel: String
-    let keyDebounceWindowLabel: String
     let keyDebounceAddKey: String
-    let keyDebounceNoOverrides: String
     let keyDebounceRemoveKey: String
     let cleaningPanelCaption: String
     let cleaningOverlayTitle: String
@@ -963,7 +776,6 @@ struct Strings {
     // MARK: Support / donate
     let shortcutsPageTitle: String
     let settingsSearchPlaceholder: String
-    let donateThanks: String
     /// A quiet line under the donation button inviting a GitHub star instead.
     let doneButton: String
     let homebrewOfficialIntroTitle: String
@@ -972,11 +784,6 @@ struct Strings {
     let homebrewOfficialIntroMigrationTitle: String
     let homebrewOfficialIntroMigrationMessage: String
     let homebrewOfficialIntroCopyButton: String
-    let showMenuBarIcon: String
-    let menuBarIconStillHiddenTitle: String
-    let menuBarIconStillHiddenBody: String
-    let menuBarIconManagerHintFormat: String  // + manager name (twice)
-    let menuBarIconDisallowedBody: String
 
     // MARK: Configurable shortcuts
     let shortcutRecording: String
@@ -993,17 +800,12 @@ struct Strings {
     let shortcutTakeOverCaption: String
     let shortcutTakeOverDismiss: String
     let shortcutUnavailable: String
-    let switcherUsageHintFormat: String
 
     // MARK: Media keys
     let musicBlockSection: String
     let musicBlockTitle: String
     let musicBlockCaption: String
     let musicBlockUnavailable: String
-    let musicBlockReplacementLabel: String
-    let musicBlockReplacementNone: String
-    let musicBlockReplacementBlocked: String
-    let musicBlockChooseApp: String
     let musicBlockPlayReplacement: String
 
     // MARK: Cleaner
@@ -1029,11 +831,9 @@ struct Strings {
     let cleanerScreenshotsSettingCaption: String
     let cleanerScreenshotsAfterFormat: String
     let cleanerNothingFound: String
-    let cleanerClean: String
     let cleanerDoneNote: String
     let cleanerAgain: String
     let cleanerRevealInFinder: String
-    let cleanerPanelCaption: String
     let cleanerSafeSection: String
     let cleanerOptionalSection: String
     let cleanerCatOtherCaches: String
@@ -1127,12 +927,8 @@ struct Strings {
 
 extension Strings {
     static let ptBR = Strings(
-        statusIdleTooltip: "Lattice: suspensão normal",
-        statusActiveUntil: "Lattice: ativo até",
-        statusActiveIndefinite: "Lattice: ativo indefinidamente",
         menuEnableAwake: "Ativar manter acordado",
         menuDisableAwake: "Desativar manter acordado",
-        menuActivateFor: "Ativar por…",
         menuSettings: "Ajustes…",
         menuAbout: "Sobre o Lattice",
         menuQuit: "Sair do Lattice",
@@ -1143,12 +939,8 @@ extension Strings {
         menuUndo: "Desfazer",
         menuRedo: "Refazer",
         actionClear: "Limpar",
-        actionRemove: "Remover",
-        actionBack: "Voltar",
-        actionSearch: "Buscar",
         actionMute: "Silenciar",
         actionUnmute: "Reativar som",
-        actionPlay: "Reproduzir",
         actionPause: "Pausar",
         menuCut: "Recortar",
         menuCopy: "Copiar",
@@ -1168,22 +960,16 @@ extension Strings {
         indefinitely: "Indefinidamente",
         indefinite: "Indefinida",
 
-        panelSettings: "Ajustes",
         panelQuit: "Sair",
-        panelHotkeyHint: "Atalho alterna",
 
         keepAwakeTitle: "Ficar acordado",
         keepAwakeEndsIn: "Termina em",
         keepAwakeUntilDisabled: "Ativo até você desativar",
-        keepAwakeUntilLabel: "Até",
-        keepAwakeUntilStart: "Iniciar",
-        durationLabel: "Duração",
 
         temperatures: "Temperaturas",
         cpuLabel: "CPU",
         gpuLabel: "GPU",
         batteryLabel: "Bateria",
-        usageSection: "Uso de hardware",
         memorySection: "Memória",
         memoryPressure: "Pressão",
         memorySwapUsed: "Swap em uso",
@@ -1193,14 +979,12 @@ extension Strings {
         pressureWarning: "Atenção",
         pressureCritical: "Crítico",
         monitorUnavailable: "Sensores indisponíveis neste Mac",
-        energyAppsTitle: "Uso significativo de energia",
         energyAppsIdle: "Sem uso significativo de energia",
 
         notifySessionEndedTitle: "Sessão encerrada",
         notifySessionEndedBody: "O tempo acabou. O Mac voltará a suspender normalmente.",
         notifyBatteryTitle: "Lattice desativado",
         notifyBatteryBody: "Bateria baixa. A suspensão normal foi restaurada para proteger a carga.",
-        adminPromptClamshellOn: "O Lattice precisa da sua senha para manter o Mac ativo com a tampa fechada.",
         adminPromptClamshellOff: "O Lattice precisa da sua senha para reativar a suspensão normal do Mac.",
         adminPromptRecover: "O Lattice foi encerrado com a suspensão do Mac desativada. Digite a senha para restaurar a suspensão normal.",
         adminPromptUpdate: "O Lattice precisa da sua senha para instalar a atualização.",
@@ -1220,14 +1004,8 @@ extension Strings {
         previewSizeNormal: "Normal",
         previewSizeLarge: "Grande",
         previewSizeXLarge: "Extra grande",
-        settingsGroupFeatures: "Recursos",
-        advancedResetDescription: "Redefina permissões e desative o início de sessão. As outras configurações são mantidas.",
         advancedClearButton: "Limpar todas as permissões",
-        advancedCleared: "Redefinição solicitada. O início de sessão está desativado. Os controles de entrada ficam pausados até reiniciar o Lattice. Confira as permissões restantes nos Ajustes do Sistema.",
         advancedClearFailed: "Redefinição incompleta. Os controles de entrada continuam pausados. Reinicie o Lattice e confira as permissões e os Itens de Início nos Ajustes do Sistema.",
-        advancedClearConfirmTitle: "Limpar todas as permissões?",
-        advancedClearConfirmBody: "Redefinir permissões e desativar o início de sessão? As outras configurações são mantidas. Os controles de entrada ficam pausados até reiniciar o Lattice.",
-        advancedUninstallSection: "Desinstalar Lattice",
         advancedUninstallDescription: "Remova o Lattice e suas configurações do seu Mac.",
         advancedUninstallButton: "Desinstalar o Lattice",
         advancedUninstallConfirmTitle: "Desinstalar o Lattice?",
@@ -1237,33 +1015,21 @@ extension Strings {
 
         launchAtLogin: "Iniciar junto com o Mac",
         languageLabel: "Idioma",
-        menuBarSection: "Barra de menus",
-        globalHotkeySection: "Atalho global",
         hotkeyToggle: "Ativar atalho para “Manter acordado”",
 
-        sessionSection: "Sessão",
-        batteryProtectionSection: "Proteção de bateria",
         batteryNever: "Nunca",
-        clamshellSection: "Tampa fechada",
         configuring: "Configurando…",
         sudoersFailed: "Não foi possível ativar a tampa fechada. Tente de novo.",
 
-        scrollSection: "Rolagem",
         invertMouseScroll: "Inverter rolagem do mouse",
-        invertMouseScrollCaption: "Inverte a direção da roda do mouse.",
         scrollTrackpadNote: "O trackpad não muda: continua com a rolagem natural do macOS.",
-        scrollActiveNow: "Invertendo a rolagem do mouse agora",
-        mouseNavigationActiveNow: "Botões laterais ativos agora",
         smoothScrollName: "Rolagem suave",
         smoothScrollCaption: "Transforma cada passo da rodinha do mouse em um deslize curto e macio. O trackpad não muda.",
         smoothScrollStepLabel: "Velocidade da rolagem",
-        mouseNavigationSection: "Navegação",
         mouseNavigationEnable: "Navegação com botões laterais",
-        mouseNavigationCaption: "Ative a navegação para voltar e avançar com os botões laterais do mouse.",
         middleClickSection: "Botão do meio no trackpad",
         middleClickEnable: "Gesto de clique do meio",
         middleClickEnableCaption: "Use o trackpad para as ações do clique do meio do mouse.",
-        middleClickDragConflict: "O arrastar com três dedos do macOS está ativado e usa três dedos, então clique com quatro dedos para o clique do meio. Para usar três, desative-o nos Ajustes do Sistema em Acessibilidade, Controle do Cursor, Opções do Trackpad.",
         middleClickNoTrackpad: "Não é possível ler os toques no trackpad. Conecte um trackpad compatível.",
         middleClickTapPicker: "Tocar com",
         middleClickTapOff: "Desligado",
@@ -1276,9 +1042,6 @@ extension Strings {
         ocrNoText: "Nenhum texto encontrado",
         colorPickerName: "Conta-gotas de cor",
         colorPickerCaption: "Capture a cor de qualquer pixel da tela e copie no formato que preferir.",
-        colorPickerFormatLabel: "Formato copiado",
-        colorPickerBareHexToggle: "Copiar sem o prefixo #",
-        colorPickerPickNow: "Capturar cor",
         micMuteName: "Silenciar microfone",
         micUnmuteName: "Reativar microfone",
         micMuteCaption: "Corta o microfone do Mac com um clique ou atalho, valendo para qualquer app.",
@@ -1287,34 +1050,23 @@ extension Strings {
         micMutePartialHUD: "Alguns microfones não puderam ser silenciados",
         micUnmutePartialHUD: "Alguns microfones continuam silenciados",
         micMuteMenuBarToggle: "Mostrar estado de silêncio na barra de menus",
-        micMuteMenuBarCaption: "Um microfone cortado em vermelho aparece ao lado do ícone do app na barra de menus enquanto este recurso o silencia.",
         pastePlainName: "Colar como texto puro",
         pastePlainCaption: "Cola o que foi copiado sem cores, fontes ou formatação. O conteúdo original continua no clipboard.",
         launcherName: "Lattice Hub",
-        launcherCaption: "Um painel flutuante com suas ferramentas favoritas, aberto por atalho de qualquer lugar.",
-        launcherEditHint: "Use o botão de ajustes para escolher, ocultar e arrastar as ferramentas.",
-        launcherEmptyState: "Todas as ferramentas estão ocultas. Use o botão de ajustes para trazê-las de volta.",
-        launcherAddSection: "Adicionar de volta",
-        launcherKeysHint: "Setas navegam, Enter abre, 1 a 9 abrem direto",
 
         switcherSection: "Alternador de apps",
-        switcherEnable: "Ativar o alternador de apps",
-        switcherEnableCaption: "Troque de app ou janela, inclusive janelas minimizadas e várias janelas do mesmo app.",
-        switcherUsageHint: "Segure o atalho para navegar; solte para ativar a janela. Shift ou ← volta; W fecha a janela; Q encerra o app; Esc cancela.",
         switcherNoWindows: "Nenhuma janela aberta",
         switcherIconRowMode: "Mostrar %@ com ícones grandes",
         switcherIconRowModeCaption: "Mostra um ícone por app com os previews das janelas do app acima.",
         switcherSimpleModeCaption: "Mostra ícones de apps e títulos das janelas, sem previews nem captura da tela pelo alternador.",
         switcherShortcutHintApps: "Apps",
         switcherShortcutHintWindows: "Janelas",
-        switcherWindowShortcutCaption: "Abre um seletor das janelas do app em primeiro plano. Com o seletor aberto, pula entre as janelas do app selecionado.",
         switcherAppearanceDelay: "Atraso ao segurar",
         switcherAppearanceDelayCaption: "Quanto tempo o atalho precisa ficar pressionado antes de o alternador aparecer.",
         switcherMaxColumns: "Máximo de colunas",
         switcherMaxColumnsCaption: "Quebra para mais linhas depois desse número de itens. Útil em monitores ultrawide.",
         switcherMaxColumnsAuto: "Automático",
         switcherInstantSelection: "Seleção instantânea",
-        switcherInstantSelectionCaption: "Move o destaque e a rolagem imediatamente ao navegar por apps e janelas.",
         switcherIgnoreHoverSelection: "Ignorar seleção ao passar o cursor",
         switcherMergeTabs: "Agrupar janelas por app",
         switcherMergeTabsCaption: "Uma entrada por app em vez de uma por janela.",
@@ -1324,7 +1076,6 @@ extension Strings {
         switcherOtherDesktop: "Outra Mesa",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Pré-visualizar janelas no Dock",
-        dockPreviewEnableCaption: "Passe o cursor sobre o ícone do app para ver e alternar entre as janelas.",
         dockPreviewCurrentSpaceOnly: "Mostrar apenas janelas da mesa atual",
         dockPreviewCurrentSpaceOnlyCaption: "Ocultar janelas de outras mesas.",
         dockPreviewCurrentSpaceOnlyInfo: "Selecionar uma janela em outra mesa alterna automaticamente para ela.",
@@ -1341,12 +1092,8 @@ extension Strings {
         dockPreviewOrderByCreation: "Mostrar janelas mais antigas primeiro",
         dockPreviewOrderByCreationCaption: "Listar janelas na ordem em que foram abertas, em vez de por atividade recente.",
         dockClickMinimize: "Clicar no Dock minimiza",
-        dockClickMinimizeCaption: "As janelas do app ativo são minimizadas ao clicar no ícone dele no Dock. Clique de novo para trazê-las de volta.",
         dockClickCycleWindows: "Clicar no Dock alterna janelas",
-        dockClickCycleWindowsCaption: "Clique no ícone do Dock do app ativo para alternar entre suas janelas.",
-        dockPreviewActiveNow: "Ativo no Dock",
         dockPreviewDockUnavailable: "Não foi possível ler os itens do Dock.",
-        dockPreviewAutohideBeta: "Beta. Você pode encontrar alguns bugs.",
         dockPreviewOpenWindow: "Abrir janela",
         dockPreviewCloseWindow: "Fechar janela",
         dockPreviewMinimizeWindow: "Minimizar janela",
@@ -1363,23 +1110,13 @@ extension Strings {
         autoQuitName: "Encerrar o app quando nenhuma janela estiver aberta",
         autoQuitEnable: "Encerrar o app ao fechar a última janela",
         autoQuitEnableCaption: "Fechar a última janela de um app também o encerra.",
-        autoQuitOngoingWorkNote: "Alguns apps fecham a última janela e continuam trabalhando, como um gravador de tela depois que a captura começa. Esses também são encerrados, a menos que estejam na lista de exceções.",
         autoQuitExceptionsTitle: "Exceções",
-        autoQuitAddApp: "Adicionar app…",
 
         uninstallerName: "Desinstalador",
-        uninstallerEnableCaption: "Remove um app junto com os caches, preferências, logs e resíduos que ele deixa para trás.",
-        uninstallerStep1: "Arraste um app para os Ajustes ou escolha um da lista.",
-        uninstallerStep2: "Revise os arquivos encontrados e quanto espaço ocupam.",
-        uninstallerStep3: "Mova o que quiser para a Lixeira. Nada é apagado de forma definitiva.",
-        uninstallerMenuItem: "Desinstalar um app…",
-        uninstallerDropTitle: "Arraste um app aqui",
-        uninstallerDropSubtitle: "ou escolha um para analisar",
         uninstallerChoose: "Escolher app…",
         uninstallerPickerTitle: "Escolher app",
         uninstallerPickerSearch: "Buscar apps",
         uninstallerPickerEmpty: "Nenhum app encontrado",
-        uninstallerEmptyNote: "Nada é removido sem a sua confirmação.",
         uninstallerFDANote: "Conceda Acesso Total ao Disco para uma análise mais completa.",
         uninstallerFDAGrant: "Conceder acesso…",
         uninstallerFDAHint: "Ative o Lattice na lista. Se ele não aparecer, clique no + e escolha o Lattice em Aplicativos. O acesso só vale depois de reabrir o app.",
@@ -1407,8 +1144,6 @@ extension Strings {
         uninstallerCatState: "Estado salvo",
         uninstallerCatOther: "Outros",
         uninstallerCommandBarBrowseTitle: "Desinstalar aplicativo",
-        uninstallerCommandBarToggle: "Mostrar na Barra de Comandos",
-        uninstallerCommandBarCaption: "Permite escolher e desinstalar aplicativos pela Barra de Comandos.",
         uninstallerCommandBarFinderTitle: "Desinstalar aplicativo selecionado no Finder",
         uninstallerSelectionUnavailable: "Selecione um aplicativo que possa ser removido no Finder ou escolha outro na lista.",
 
@@ -1426,7 +1161,6 @@ extension Strings {
         urlCleanerCopied: "Copiado.",
 
         homebrewName: "Homebrew",
-        homebrewEnableCaption: "Pesquise, instale e remova fórmulas e casks.",
         homebrewMissingTitle: "Homebrew não encontrado",
         homebrewMissingBody: "O Lattice pode abrir o instalador oficial do Homebrew no seu terminal. Ele mostra os passos e pede sua senha se precisar.",
         homebrewInstallHomebrew: "Instalar Homebrew",
@@ -1437,26 +1171,13 @@ extension Strings {
         homebrewShellSetupButton: "Configurar terminal",
         homebrewShellSetupOpened: "Comando aberto no seu terminal. Depois volte aqui e clique em Atualizar.",
         homebrewRefresh: "Atualizar",
-        homebrewCheckPackages: "Verificar pacotes",
         homebrewTrustTitle: "Tap ainda não confiável",
         homebrewTrustCaption: "O Homebrew agora pede sua confirmação antes de usar taps de terceiros. Confie em %@ para continuar.",
         homebrewTrustButton: "Confiar e continuar",
-        homebrewSearchPlaceholder: "Pesquisar pacotes",
-        homebrewKeyboardHint: "Espaço ou Enter fecham o painel do macOS. Use o botão de busca.",
-        homebrewSearchButton: "Pesquisar",
-        homebrewSearchResults: "Resultados",
         homebrewInstalled: "Instalados",
         homebrewAll: "Todos",
-        homebrewFormulas: "Fórmulas",
-        homebrewCasks: "Casks",
         homebrewNoPackages: "Nenhum pacote encontrado",
-        homebrewDependencies: "Dependências",
         homebrewGroupDependencies: "Agrupar dependências",
-        homebrewOrphans: "Não são mais necessárias",
-        homebrewOrphansNote: "Instaladas como dependências, mas nenhum pacote instalado precisa mais delas.",
-        homebrewDependencyUpdatesFormat: "Atualizações de dependências: %d",
-        homebrewNoSelection: "Selecione um pacote instalado ou pesquise um novo.",
-        homebrewDetailsTitle: "Detalhes do pacote",
         homebrewInstall: "Instalar",
         homebrewUninstall: "Desinstalar",
         homebrewUpgrade: "Atualizar",
@@ -1466,22 +1187,12 @@ extension Strings {
         homebrewOpenTerminal: "Abrir terminal",
         homebrewCancelOperation: "Cancelar",
         homebrewClearLog: "Limpar log",
-        homebrewLogTitle: "Log",
-        homebrewVersion: "Versão",
-        homebrewDescription: "Tipo",
         homebrewHomepage: "Abrir site",
-        homebrewPopularity: "Popularidade",
         homebrewPopularityFormat: "%@ instalações em %@ dias",
         homebrewInstalledBadge: "Instalado",
-        homebrewNotInstalledBadge: "Não instalado",
-        homebrewUpdates: "Atualizações",
-        homebrewUpdateAvailableBadge: "Atualização disponível",
-        homebrewLatestVersion: "Mais recente",
-        homebrewConfirmInstallTitle: "Instalar pelo Homebrew?",
         homebrewConfirmInstallBodyFormat: "O Homebrew vai baixar e instalar %@. Dependências também podem ser instaladas.",
         homebrewConfirmUninstallTitle: "Desinstalar pelo Homebrew?",
         homebrewConfirmUninstallBodyFormat: "O Homebrew vai desinstalar %@. Arquivos de configuração podem permanecer no sistema.",
-        homebrewConfirmUpgradeTitle: "Atualizar pelo Homebrew?",
         homebrewConfirmUpgradeBodyFormat: "O Homebrew vai baixar e aplicar a versão mais recente de %@. Dependências também podem ser atualizadas.",
         homebrewConfirmUpgradeAllTitle: "Atualizar todos pelo Homebrew?",
         homebrewConfirmUpgradeAllBody: "O Homebrew vai baixar e aplicar as versões mais recentes dos pacotes com atualização disponível. Dependências também podem ser atualizadas.",
@@ -1489,7 +1200,6 @@ extension Strings {
         homebrewConfirmUpdateHomebrewBody: "O Homebrew vai buscar as informações mais recentes e depois recarregar seus pacotes.",
         homebrewTerminalFallback: "Esta operação precisa do seu terminal para pedir a senha de administrador. O Lattice não captura senhas.",
         homebrewLoading: "Carregando…",
-        homebrewSearchEmpty: "Nenhum resultado",
         homebrewOperationInstallFormat: "Instalando %@",
         homebrewOperationUninstallFormat: "Desinstalando %@",
         homebrewOperationUpgradeFormat: "Atualizando %@",
@@ -1517,7 +1227,6 @@ extension Strings {
         homebrewOperationProgressUnknown: "O Homebrew ainda não informou uma porcentagem.",
 
         mediaName: "Compressão de mídia",
-        mediaEnableCaption: "Comprima vídeos, converta e processe imagens, crie GIFs e extraia texto localmente.",
         mediaLocalNote: "Local. Sem rede.",
         mediaToolVideo: "Vídeo",
         mediaToolGIF: "GIF",
@@ -1552,16 +1261,12 @@ extension Strings {
         mediaMegabytesSuffix: " MB",
         mediaWidth: "Largura",
         mediaFPS: "FPS",
-        mediaKeepAudio: "Manter áudio",
-        mediaCodec: "Codec",
         mediaFormat: "Formato",
         mediaStripMetadata: "Remover metadados",
         mediaLoopGIF: "Repetir GIF",
         mediaOCRMode: "OCR",
         mediaOCRAccurate: "Preciso",
         mediaOCRFast: "Rápido",
-        mediaLanguageCorrection: "Correção de idioma",
-        mediaTextOutputNote: "O texto extraído pode ser copiado e salvo em TXT.",
         mediaRunning: "Processando",
         mediaCompleted: "Concluído",
         mediaCancelled: "Cancelado.",
@@ -1579,17 +1284,11 @@ extension Strings {
 
         shelfName: SettingsOwnershipStrings.text(.fileCache, .ptBR),
         shelfEnable: "Área temporária para arrastar arquivos",
-        shelfEnableCaption: "Um espaço flutuante para juntar arquivos, imagens e textos e arrastá-los depois para qualquer app.",
-        shelfHowTitle: "Como usar",
-        shelfStep1: "Abra a área com o atalho ou sacudindo o mouse durante um arraste.",
-        shelfStep2: "Solte arquivos, imagens, links ou texto sobre ela para guardá-los.",
-        shelfStep3: "Arraste cada item de volta para qualquer app quando precisar.",
         shelfShakeToggle: "Abrir sacudindo o mouse durante o arraste",
         shelfShakeCaption: "Sacuda o ponteiro rapidamente segurando um item para chamar a área perto do cursor.",
         shelfDropZoneToggle: "Guardar arquivos na barra de menus ao arrastar",
         shelfDropZoneCaption: "Ao arrastar um arquivo, a área aparece embaixo do ícone na barra de menus. O que você soltar fica guardado ali, num botão que você encolhe e abre com um clique e que some quando a área fica vazia.",
         shelfDropZoneCaptionTopCenter: "Ao arrastar um arquivo, a área aparece como um selo no topo, no centro da tela. O que você soltar fica guardado ali, num selo que você abre com um clique e que some quando a área fica vazia.",
-        shelfDropZoneLabel: "Solte aqui",
         shelfDockPlacement: "Posição",
         shelfDockMenuBar: "Embaixo do ícone da barra de menus",
         shelfDockTopCenter: "No topo, no centro da tela",
@@ -1609,10 +1308,7 @@ extension Strings {
         extraBrightnessCaption: "Usa a reserva HDR da tela para passar do brilho máximo. Consome mais bateria e o Mac pode esquentar.",
         extraBrightnessLevelLabel: "Intensidade",
         extraBrightnessUnsupported: "Disponível apenas em telas XDR, como as dos MacBook Pro de 14 e 16 polegadas.",
-        shelfHotkeyLabel: "Atalho",
         shelfOpenNow: "Abrir agora",
-        shelfNoPermission: "Não requer nenhuma permissão.",
-        shelfMenuItem: "Abrir área temporária",
         shelfTitle: SettingsOwnershipStrings.text(.fileCache, .ptBR),
         shelfEmpty: "Arraste itens aqui",
         shelfClearAll: "Limpar tudo",
@@ -1646,51 +1342,33 @@ extension Strings {
         mixerEmpty: "Apps que usam áudio aparecem aqui",
         mixerUnavailable: "Disponível a partir do macOS 14.4",
         mixerPermissionBody: "Para ajustar o volume por app, permita “Gravação de Tela e Áudio do Sistema” nos Ajustes do Sistema. O áudio nunca é gravado.",
-        mixerResetTooltip: "Voltar para 100%",
         mixerOutputDefault: "Padrão",
-        mixerOutputCurrent: "atual",
         mixerOutputUnavailable: "Saída indisponível",
-        mixerOutputFallback: "Usando o padrão até esse dispositivo voltar.",
         mixerBypassedCaption: "Este app controla o próprio áudio.",
-        mixerOutputTooltip: "Escolher saída",
-        mixerAirPlayChooseSpeaker: "Escolher alto-falante AirPlay…",
         mixerSystemOutputTitle: "Saída",
         mixerSystemOutputNoDevices: "Nenhuma saída encontrada",
-        mixerSystemOutputTooltip: "Escolher saída do sistema",
-        mixerSystemOutputErrorFormat: "Não foi possível trocar: %@",
         mixerLowerOnHeadphonesDisconnect: "Baixar volume ao desconectar fones",
         mixerLowerOnHeadphonesDisconnectCaption: "Ajusta a saída quando fones com fio ou Bluetooth desconectam.",
         mixerHeadphonesDisconnectVolume: "Volume ao desconectar",
         volumeMixerEnable: "Controle de saída de áudio",
-        preciseVolumeRollerEnable: "Volume mais preciso no controle",
-        preciseVolumeRollerCaption: "Transforma roletes e teclas de volume em passos menores.",
         preciseVolumeRollerTapFailed: "Não foi possível ouvir as teclas de volume.",
         soundOutputSwitcherTitle: "Alternador de saída",
         soundOutputSwitcherEnable: "Alternar com atalho",
         soundOutputSwitcherCaption: "Use o atalho para alternar entre os dispositivos de saída.",
-        soundOutputSwitcherDevices: "Saídas no ciclo",
-        soundOutputSwitcherNoAvailableSelection: "Selecione pelo menos uma saída disponível.",
         mixerInputTitle: "Microfone",
         mixerInputNoDevices: "Nenhum microfone encontrado",
         mixerInputUnavailable: "Microfone indisponível",
-        mixerInputFallback: "Usando o padrão até esse microfone voltar.",
         mixerInputTooltip: "Escolher microfone",
         mixerInputErrorFormat: "Não foi possível trocar: %@",
         microphoneControlEnable: "Controle de entrada de áudio",
         mixerInputLevelLabel: "Nível de entrada",
         mixerInputSourceLabel: "Fonte de entrada de áudio",
         muteAudioInputSubtitle: "Silenciar entrada de áudio",
-        showInMenuBarLabel: "Mostrar na barra de menus",
         manageAudioInputPriorityTitle: "Gerenciar preferência de entrada de áudio",
         manageAudioOutputPriorityTitle: "Gerenciar preferência de saída de áudio",
         mixerOutputLevelLabel: "Volume de saída",
-        sliderUnavailable: "(indisponível)",
         screenshotEnable: "Ativar captura de tela",
         screenRecorderEnable: "Ativar gravação de tela",
-        mixerVisibleApps: "Apps na lista",
-        mixerAllShown: "Todos",
-        mixerHideFromList: "Esconder da lista",
-        audioPrioritySection: "Prioridade dos dispositivos de áudio",
         audioPriorityOutputEnable: "Trocar automaticamente para a saída de áudio com maior prioridade",
         audioPriorityInputEnable: "Trocar automaticamente para o microfone de maior prioridade",
         audioPriorityOutputList: "Prioridade das saídas de áudio",
@@ -1713,7 +1391,6 @@ extension Strings {
         audioPrioritySkipCycling: "Pular ao alternar",
         audioPrioritySetOutput: "Definir como saída de áudio",
         audioPrioritySetInput: "Definir como entrada de áudio",
-        audioPriorityCaption: "Os dispositivos são selecionados por ordem de prioridade. Quando um dispositivo de maior prioridade é conectado, ele passa a ser usado. Quando o dispositivo ativo é desconectado, o próximo disponível é selecionado.",
 
         updatesSection: "Atualizações",
         betaBadgeLabel: "Beta",
@@ -1729,7 +1406,6 @@ extension Strings {
         updateInstallFailedBody: "A atualização foi baixada, mas não pôde ser aplicada. Baixe a versão mais recente na página de releases do GitHub e arraste o app por cima do atual.",
         updateNeedsApplicationsTitle: "Mova o Lattice para Aplicativos",
         updateNeedsApplicationsBody: "O app está rodando de um lugar que não dá para atualizar, como a imagem de disco ou uma área temporária do sistema. Arraste o Lattice para a pasta Aplicativos, abra de lá e tente de novo.",
-        menuCheckUpdates: "Procurar atualizações…",
 
         permissionRequired: "Permissão necessária",
         permissionAccessibility: "Controle de Dispositivos e Acesso a Dados",
@@ -1751,7 +1427,6 @@ extension Strings {
         releaseNotesFallback: "Esta atualização inclui as correções e melhorias mais recentes.",
 
         tabMonitor: "Monitor do Sistema",
-        monitorMenuBarCaption: "Escolha o que aparece ao lado do ícone na barra de menus.",
         monitorSeparateMenuBarMetrics: "Mostrar leituras separadas",
         monitorSeparateMenuBarMetricsCaption: "Separa os blocos ativos na barra de menus e mantém uso e temperatura juntos quando combinar estiver ativo.",
         monitorNetworkUploadFirst: "Upload acima do download",
@@ -1759,54 +1434,20 @@ extension Strings {
         monitorShowMemory: "Memória",
         monitorShowNetwork: "Rede",
         monitorShowPowerLabel: "Energia",
-        panelNavigationMode: "Navegar por seções no painel",
-        panelNavigationCaption: "Mostra uma seção por vez. Escolha Lista para ver tudo em uma rolagem contínua.",
-        panelFooterSections: "Seções",
-        panelFooterList: "Lista",
         betaBadge: "BETA",
         betaFeatureWarning: "Beta. Você pode encontrar alguns bugs.",
 
         networkSection: "Rede",
-        networkLocalIP: "IPv4 local",
-        networkDownload: "Download",
-        networkUpload: "Upload",
-        networkThisSession: "Nesta sessão",
-        networkMeasuring: "Medindo…",
         networkApps: "Apps usando rede",
         networkAppsIdle: "Nenhum app usando rede agora",
 
         diskSection: "Discos",
-        diskUsed: "usado",
-        diskFree: "livre",
         diskMenuBarStyleLabel: "Exibição do disco",
         diskMenuBarUsedPercentage: "Porcentagem usada",
         diskMenuBarAvailableSpace: "Espaço disponível",
         diskMenuBarUsedSpace: "Espaço usado",
         diskAvailable: "disponível",
         diskPurgeable: "purgável",
-        diskInternal: "Interno",
-        diskExternal: "Externo",
-        diskSelect: "Selecionar disco",
-        diskRead: "Leitura",
-        diskWrite: "Escrita",
-        diskSMARTStatus: "Status",
-        diskSMARTUnavailable: "SMART indisponível para este disco",
-        diskTotalRead: "Total lido",
-        diskTotalWritten: "Total escrito",
-        diskTemperature: "Temperatura",
-        diskHealth: "Saúde",
-        diskPowerCycles: "Ciclos",
-        diskPowerOnHours: "Horas ligado",
-        diskUnsafeShutdowns: "Desligamentos inseguros",
-        diskMediaErrors: "Erros de mídia",
-        diskEject: "Ejetar",
-        diskEjectAll: "Ejetar todos",
-        diskEjecting: "Ejetando…",
-        diskReadyToRemove: "Pronto para remover",
-        diskEjectFailed: "Não foi possível ejetar",
-        diskProtectionCaption: "Ejete antes de desconectar.",
-        diskNoExternal: "Nenhum disco externo pronto para ejeção.",
-        diskOpenInFinder: "Abrir",
         diskStorageSettings: "Armazenamento",
         diskNoDisks: "Nenhum disco montado encontrado.",
 
@@ -1821,61 +1462,33 @@ extension Strings {
         monitorShowGPUTemperature: "Temperatura da GPU",
         monitorShowBatteryTemperature: "Temperatura da bateria",
         monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .ptBR),
-        peripheralBatteryNoDevices: "Nenhum periférico encontrado",
 
         updateBannerTitle: "Atualização disponível",
-        updateBannerAction: "Atualizar",
-        monitorMenuBarPresetLabel: "Estilo",
-        menuBarPresetReadable: "Legível",
-        menuBarPresetDense: "Denso",
         menuBarSpacingLabel: "Espaçamento na barra",
         menuBarSpacingStandard: "Padrão",
         menuBarSpacingCompact: "Compacto",
-        monitorLabelStyleLabel: "Rótulos",
-        menuBarLabelStyleCompact: "Compactos",
-        menuBarLabelStyleClassic: "Clássicos",
-        monitorMemoryStyleLabel: "Mostrar memória como",
         monitorMemoryPressureDot: "Ponto de pressão",
-        memoryStyleDot: "Ponto",
-        memoryStylePercent: "%",
-        memoryStyleBoth: "Ambos",
         systemUptime: "Ativo há",
         powerCycles: "Ciclos",
         speedTestRun: "Testar velocidade",
-        speedTestAgain: "Testar de novo",
-        speedTestLatency: "Latência",
-        speedTestTesting: "Testando…",
-        speedTestFailed: "Falha no teste",
 
         disclosureExpanded: "Expandido",
         disclosureCollapsed: "Recolhido",
-        panelHideItem: "Ocultar do painel",
-        panelShowItem: "Mostrar no painel",
         panelHiddenItem: "Oculto",
         monitorItemDiskUsage: "Uso do disco",
         monitorItemDiskActivity: "Atividade ao vivo",
-        monitorPanelConfigHint: "Abra um bloco para escolher o que ele mostra.",
-        monitorOrderHint: "Arraste para reordenar as seções do painel e use o olho para mostrar ou ocultar cada uma.",
 
         cleaningMenuItem: "Modo de limpeza",
-        utilitiesSection: "Utilidades",
-        quickControlsSection: "Controles",
-        panelCategoryWindows: "Janelas",
-        panelCategoryInput: "Mouse e teclado",
-        panelCategoryFiles: "Arquivos",
         windowMaximizeName: "Maximizar janelas",
         windowMaximizeCaption: "Use os controles de janela do macOS para maximizar a janela sem movê-la para um Espaço em tela cheia separado.",
         keyDebounceName: "Proteção contra teclas duplicadas",
         keyDebounceEnable: "Ignorar digitação dupla",
         keyDebounceCaption: "Filtra toques duplicados muito rápidos.",
-        keyDebounceActiveNow: "Filtro ativo",
         keyDebounceGlobalWindow: "Intervalo do filtro de repetição",
         keyDebouncePerKeySection: "Teclas específicas",
         keyDebouncePerKeyCaption: "Valores por tecla substituem a janela global. Use 0 ms para não filtrar uma tecla.",
         keyDebounceKeyLabel: "Tecla",
-        keyDebounceWindowLabel: "Janela",
         keyDebounceAddKey: "Adicionar tecla",
-        keyDebounceNoOverrides: "Nenhuma tecla específica configurada.",
         keyDebounceRemoveKey: "Remover tecla",
         cleaningPanelCaption: "Bloqueia o teclado para limpar com segurança.",
         cleaningOverlayTitle: "Teclado bloqueado para limpeza",
@@ -1886,7 +1499,6 @@ extension Strings {
         cleaningNeedsAxBody: "Para bloquear o teclado com segurança, o Lattice precisa da permissão de Acessibilidade. Conceda em Ajustes do Sistema e tente de novo.",
         shortcutsPageTitle: "Atalhos de teclado",
         settingsSearchPlaceholder: "Buscar ajustes",
-        donateThanks: "Obrigado por estar aqui. 🖤",
         doneButton: "Concluir",
         homebrewOfficialIntroTitle: "Agora no catálogo oficial do Homebrew",
         homebrewOfficialIntroMessage: "O Lattice agora pode ser instalado direto do catálogo oficial do Homebrew.",
@@ -1894,11 +1506,6 @@ extension Strings {
         homebrewOfficialIntroMigrationTitle: "Usava o tap antigo?",
         homebrewOfficialIntroMigrationMessage: "Remova o tap uma vez. O app e seus ajustes continuam no lugar.",
         homebrewOfficialIntroCopyButton: "Copiar comando",
-        showMenuBarIcon: "Mostrar ícone na barra de menus",
-        menuBarIconStillHiddenTitle: "O ícone continua escondido",
-        menuBarIconStillHiddenBody: "O ícone foi recriado, mas o macOS não deu um lugar visível a ele. A barra de menus provavelmente está sem espaço: remova alguns ícones da barra (ou feche apps com menus longos) e tente de novo.",
-        menuBarIconManagerHintFormat: "O %@ está aberto e pode estar guardando o ícone na seção oculta dele. Procure o Lattice lá, ou configure o %@ para sempre mostrar o Lattice.",
-        menuBarIconDisallowedBody: "O macOS está impedindo o Lattice de aparecer na barra de menus. Abra Ajustes do Sistema > Barra de Menus, encontre o Lattice na lista de apps e ative “Permitir na Barra de Menus” (Allow in the Menu Bar). O ícone aparece assim que a opção é ligada.",
         shortcutRecording: "Pressione o novo atalho",
         shortcutReset: "Redefinir",
         shortcutNone: "Nenhum",
@@ -1913,15 +1520,10 @@ extension Strings {
         shortcutTakeOverCaption: "O macOS recupera a tecla sempre que o Lattice não estiver aberto ou este recurso estiver desligado.",
         shortcutTakeOverDismiss: "Não assumir",
         shortcutUnavailable: "O macOS recusou este atalho. Escolha outro.",
-        switcherUsageHintFormat: "Segure %@ para navegar; solte para ativar a janela. Shift ou ← volta; W fecha a janela; Q encerra o app; Esc cancela.",
         musicBlockSection: "Desativar tecla de mídia",
         musicBlockTitle: "Impedir que o Música abra sozinho",
         musicBlockCaption: "Impede que a tecla de mídia abra o app de música padrão",
         musicBlockUnavailable: "Esta proteção está indisponível agora. Desligue e ligue a opção para tentar novamente.",
-        musicBlockReplacementLabel: "Abrir no lugar",
-        musicBlockReplacementNone: "Nenhum",
-        musicBlockReplacementBlocked: "O Música e o iTunes são os apps bloqueados, então não podem abrir no lugar. Escolha outro app.",
-        musicBlockChooseApp: "Escolher app…",
         musicBlockPlayReplacement: "Reproduzir após abrir o app substituto",
         cleanerName: "Limpeza",
         cleanerIntroTitle: "Limpe o lixo do Mac",
@@ -1945,11 +1547,9 @@ extension Strings {
         cleanerScreenshotsSettingCaption: "A varredura lista, desmarcadas e com o tamanho total, as capturas de tela que você não abre há esse tempo.",
         cleanerScreenshotsAfterFormat: "Após %d dias",
         cleanerNothingFound: "Nada para limpar. Seu Mac está em ordem.",
-        cleanerClean: "Limpar",
         cleanerDoneNote: "Os itens foram para a Lixeira e podem ser recuperados de lá.",
         cleanerAgain: "Verificar de novo",
         cleanerRevealInFinder: "Mostrar no Finder",
-        cleanerPanelCaption: "Restos de apps, caches e logs",
         cleanerSafeSection: "Limpeza segura",
         cleanerOptionalSection: "Opcional, revise antes",
         cleanerCatOtherCaches: "Outros caches",
@@ -2044,12 +1644,8 @@ extension Strings {
 
 extension Strings {
     static let enUS = Strings(
-        statusIdleTooltip: "Lattice: normal sleep",
-        statusActiveUntil: "Lattice: awake until",
-        statusActiveIndefinite: "Lattice: awake indefinitely",
         menuEnableAwake: "Enable keep awake",
         menuDisableAwake: "Disable keep awake",
-        menuActivateFor: "Activate for…",
         menuSettings: "Settings…",
         menuAbout: "About Lattice",
         menuQuit: "Quit Lattice",
@@ -2060,12 +1656,8 @@ extension Strings {
         menuUndo: "Undo",
         menuRedo: "Redo",
         actionClear: "Clear",
-        actionRemove: "Remove",
-        actionBack: "Back",
-        actionSearch: "Search",
         actionMute: "Mute",
         actionUnmute: "Unmute",
-        actionPlay: "Play",
         actionPause: "Pause",
         menuCut: "Cut",
         menuCopy: "Copy",
@@ -2085,22 +1677,16 @@ extension Strings {
         indefinitely: "Indefinitely",
         indefinite: "Indefinite",
 
-        panelSettings: "Settings",
         panelQuit: "Quit",
-        panelHotkeyHint: "Shortcut toggles",
 
         keepAwakeTitle: "Stay Awake",
         keepAwakeEndsIn: "Ends in",
         keepAwakeUntilDisabled: "Active until you turn it off",
-        keepAwakeUntilLabel: "Until",
-        keepAwakeUntilStart: "Start",
-        durationLabel: "Duration",
 
         temperatures: "Temperatures",
         cpuLabel: "CPU",
         gpuLabel: "GPU",
         batteryLabel: "Battery",
-        usageSection: "Hardware usage",
         memorySection: "Memory",
         memoryPressure: "Pressure",
         memorySwapUsed: "Swap used",
@@ -2110,14 +1696,12 @@ extension Strings {
         pressureWarning: "Caution",
         pressureCritical: "Critical",
         monitorUnavailable: "Sensors unavailable on this Mac",
-        energyAppsTitle: "Apps using significant energy",
         energyAppsIdle: "No significant energy use",
 
         notifySessionEndedTitle: "Session ended",
         notifySessionEndedBody: "Time is up. The Mac will sleep normally again.",
         notifyBatteryTitle: "Lattice disabled",
         notifyBatteryBody: "Low battery. Normal sleep was restored to protect the charge.",
-        adminPromptClamshellOn: "Lattice needs your password to keep the Mac going with the lid closed.",
         adminPromptClamshellOff: "Lattice needs your password to restore the Mac’s normal sleep.",
         adminPromptRecover: "Lattice quit while the Mac’s sleep was disabled. Enter the password to restore normal sleep.",
         adminPromptUpdate: "Lattice needs your password to install the update.",
@@ -2137,14 +1721,8 @@ extension Strings {
         previewSizeNormal: "Normal",
         previewSizeLarge: "Large",
         previewSizeXLarge: "Extra large",
-        settingsGroupFeatures: "Features",
-        advancedResetDescription: "Reset permissions and disable Launch at login. Other settings are kept.",
         advancedClearButton: "Clear all permissions",
-        advancedCleared: "Reset requested. Launch at login is off. Input controls are paused until you restart Lattice. Review remaining grants in System Settings.",
         advancedClearFailed: "Reset incomplete. Input controls remain paused. Restart Lattice and review permissions and Login Items in System Settings.",
-        advancedClearConfirmTitle: "Clear all permissions?",
-        advancedClearConfirmBody: "Reset permissions and disable Launch at login? Other settings are kept. Input controls will stay paused until you restart Lattice.",
-        advancedUninstallSection: "Uninstall Lattice",
         advancedUninstallDescription: "Remove Lattice and its settings from your Mac.",
         advancedUninstallButton: "Uninstall Lattice",
         advancedUninstallConfirmTitle: "Uninstall Lattice?",
@@ -2154,33 +1732,21 @@ extension Strings {
 
         launchAtLogin: "Launch at login",
         languageLabel: "Language",
-        menuBarSection: "Menu Bar",
-        globalHotkeySection: "Global shortcut",
         hotkeyToggle: "Enable shortcut for “Keep awake”",
 
-        sessionSection: "Session",
-        batteryProtectionSection: "Battery protection",
         batteryNever: "Never",
-        clamshellSection: "Closed lid",
         configuring: "Configuring…",
         sudoersFailed: "Couldn’t turn on closed-lid mode. Try again.",
 
-        scrollSection: "Scrolling",
         invertMouseScroll: "Invert mouse scrolling",
-        invertMouseScrollCaption: "Reverses the mouse wheel direction.",
         scrollTrackpadNote: "Applies to the mouse wheel. Trackpad scrolling stays unchanged.",
-        scrollActiveNow: "Inverting mouse scrolling right now",
-        mouseNavigationActiveNow: "Side buttons active right now",
         smoothScrollName: "Smooth scrolling",
         smoothScrollCaption: "Smooths mouse-wheel scrolling. Trackpad scrolling stays unchanged.",
         smoothScrollStepLabel: "Scrolling speed",
-        mouseNavigationSection: "Navigation",
         mouseNavigationEnable: "Side Button Navigation",
-        mouseNavigationCaption: "Enable back and forward navigation with mouse thumb buttons.",
         middleClickSection: "Trackpad Gestures",
         middleClickEnable: "Middle-click gesture",
         middleClickEnableCaption: "Trigger mouse middle-click actions with trackpad.",
-        middleClickDragConflict: "macOS three-finger drag is turned on and uses three fingers, so click with four fingers for the middle click. To use three, turn three-finger drag off in System Settings under Accessibility, Pointer Control, Trackpad Options.",
         middleClickNoTrackpad: "Can’t read trackpad touches. Connect a supported trackpad.",
         middleClickTapPicker: "Tap with",
         middleClickTapOff: "Off",
@@ -2193,9 +1759,6 @@ extension Strings {
         ocrNoText: "No text found",
         colorPickerName: "Color picker",
         colorPickerCaption: "Grab the color of any pixel on screen and copy it in your favorite format.",
-        colorPickerFormatLabel: "Copied format",
-        colorPickerBareHexToggle: "Copy without the # prefix",
-        colorPickerPickNow: "Pick color",
         micMuteName: "Mute Microphone",
         micUnmuteName: "Unmute Microphone",
         micMuteCaption: "Cuts the Mac’s microphone with a click or shortcut, across every app.",
@@ -2204,34 +1767,23 @@ extension Strings {
         micMutePartialHUD: "Some microphones could not be muted",
         micUnmutePartialHUD: "Some microphones are still muted",
         micMuteMenuBarToggle: "Show mute status in menu bar",
-        micMuteMenuBarCaption: "A red crossed-out mic appears beside the app’s icon in the menu bar while this feature mutes it.",
         pastePlainName: "Paste as plain text",
         pastePlainCaption: "Pastes what you copied without colors, fonts or formatting. The original stays on the clipboard.",
         launcherName: "Lattice Hub",
-        launcherCaption: "A floating panel with your favorite tools, summoned by a shortcut from anywhere.",
-        launcherEditHint: "Use the tune button to choose, hide and drag the tools around.",
-        launcherEmptyState: "All tools are hidden. Use the tune button to add them back.",
-        launcherAddSection: "Available Tools",
-        launcherKeysHint: "Arrows navigate, Enter opens, 1 to 9 open directly",
 
         switcherSection: "App Switcher",
-        switcherEnable: "Enable the App Switcher",
-        switcherEnableCaption: "Switch between apps and windows, including minimized windows and multiple windows from the same app.",
-        switcherUsageHint: "Hold the shortcut to navigate; release to activate the window. Shift or ← goes back; W closes the window; Q quits the app; Esc cancels.",
         switcherNoWindows: "No open windows",
         switcherIconRowMode: "Show %@ with large icons",
         switcherIconRowModeCaption: "Shows one icon per app with that app’s window previews above it.",
         switcherSimpleModeCaption: "Shows app icons and window titles, without previews or screen capture by the switcher.",
         switcherShortcutHintApps: "Apps",
         switcherShortcutHintWindows: "Windows",
-        switcherWindowShortcutCaption: "Opens a switcher for the frontmost app’s windows. While the switcher is open, jumps between the selected app’s windows.",
         switcherAppearanceDelay: "Hold delay",
         switcherAppearanceDelayCaption: "How long the shortcut must be held before the switcher appears.",
         switcherMaxColumns: "Maximum columns",
         switcherMaxColumnsCaption: "Wraps onto more rows after this many items. Useful on ultrawide displays.",
         switcherMaxColumnsAuto: "Auto",
         switcherInstantSelection: "Instant selection",
-        switcherInstantSelectionCaption: "Moves the highlight and scroll position immediately as you browse apps and windows.",
         switcherIgnoreHoverSelection: "Ignore hover selection",
         switcherMergeTabs: "Group windows by app",
         switcherMergeTabsCaption: "One entry per app instead of one per window.",
@@ -2241,7 +1793,6 @@ extension Strings {
         switcherOtherDesktop: "Other desktop",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Enable Dock Preview",
-        dockPreviewEnableCaption: "Hover over app icon to view and switch between windows.",
         dockPreviewCurrentSpaceOnly: "Only show windows from current desktop",
         dockPreviewCurrentSpaceOnlyCaption: "Hide windows from other desktops.",
         dockPreviewCurrentSpaceOnlyInfo: "Selecting a window on another desktop automatically switches to it.",
@@ -2258,12 +1809,8 @@ extension Strings {
         dockPreviewOrderByCreation: "Show oldest windows first",
         dockPreviewOrderByCreationCaption: "List windows in the order they were opened rather than by recent activity.",
         dockClickMinimize: "Click the dock tile to minimize",
-        dockClickMinimizeCaption: "The active app’s windows minimize when you click its dock tile. Click again to bring them back.",
         dockClickCycleWindows: "Click the dock tile to cycle windows",
-        dockClickCycleWindowsCaption: "Click an active app’s dock tile to rotate through its windows",
-        dockPreviewActiveNow: "Active in the Dock",
         dockPreviewDockUnavailable: "Could not read Dock items.",
-        dockPreviewAutohideBeta: "Beta. You may run into some bugs.",
         dockPreviewOpenWindow: "Open window",
         dockPreviewCloseWindow: "Close window",
         dockPreviewMinimizeWindow: "Minimize window",
@@ -2280,23 +1827,13 @@ extension Strings {
         autoQuitName: "Quit Inactive Apps",
         autoQuitEnable: "Quit an app when its last window closes",
         autoQuitEnableCaption: "Quit apps when the last window is closed",
-        autoQuitOngoingWorkNote: "Some apps close their last window while they keep working, such as a screen recorder once capture starts. Those are quit too, unless they are on the Exceptions list.",
         autoQuitExceptionsTitle: "Exceptions",
-        autoQuitAddApp: "Add app…",
 
         uninstallerName: "Uninstaller",
-        uninstallerEnableCaption: "Removes an app together with the caches, preferences, logs and leftovers it leaves behind.",
-        uninstallerStep1: "Drag an app onto Settings, or pick one from the list.",
-        uninstallerStep2: "Review the files found and how much space they take.",
-        uninstallerStep3: "Move what you want to the Trash. Nothing is deleted permanently.",
-        uninstallerMenuItem: "Uninstall an app…",
-        uninstallerDropTitle: "Drag an app here",
-        uninstallerDropSubtitle: "or choose one to scan",
         uninstallerChoose: "Choose app…",
         uninstallerPickerTitle: "Choose app",
         uninstallerPickerSearch: "Search apps",
         uninstallerPickerEmpty: "No apps found",
-        uninstallerEmptyNote: "Nothing is removed without your confirmation.",
         uninstallerFDANote: "Grant Full Disk Access for a more thorough scan.",
         uninstallerFDAGrant: "Grant access…",
         uninstallerFDAHint: "Turn Lattice on in the list. If it isn’t there, click + and pick Lattice from Applications. Access only applies after you reopen the app.",
@@ -2324,8 +1861,6 @@ extension Strings {
         uninstallerCatState: "Saved state",
         uninstallerCatOther: "Other",
         uninstallerCommandBarBrowseTitle: "Uninstall Application",
-        uninstallerCommandBarToggle: "Show in Command Bar",
-        uninstallerCommandBarCaption: "Choose and uninstall apps in the Command Bar.",
         uninstallerCommandBarFinderTitle: "Uninstall app selected in Finder",
         uninstallerSelectionUnavailable: "Select an app that can be removed in Finder, or choose another from the list.",
 
@@ -2343,7 +1878,6 @@ extension Strings {
         urlCleanerCopied: "Copied.",
 
         homebrewName: "Homebrew",
-        homebrewEnableCaption: "Search, install and remove formulae and casks.",
         homebrewMissingTitle: "Homebrew not found",
         homebrewMissingBody: "Lattice can open the official Homebrew installer in your terminal. It shows the steps and asks for your password if needed.",
         homebrewInstallHomebrew: "Install Homebrew",
@@ -2354,26 +1888,13 @@ extension Strings {
         homebrewShellSetupButton: "Set up terminal",
         homebrewShellSetupOpened: "Command opened in your terminal. Then come back here and click Refresh.",
         homebrewRefresh: "Refresh",
-        homebrewCheckPackages: "Check packages",
         homebrewTrustTitle: "Tap not trusted yet",
         homebrewTrustCaption: "Homebrew now asks for your confirmation before using third party taps. Trust %@ to continue.",
         homebrewTrustButton: "Trust and continue",
-        homebrewSearchPlaceholder: "Search packages",
-        homebrewKeyboardHint: "Space or Return closes the macOS panel. Use the search button.",
-        homebrewSearchButton: "Search",
-        homebrewSearchResults: "Results",
         homebrewInstalled: "Installed",
         homebrewAll: "All",
-        homebrewFormulas: "Formulae",
-        homebrewCasks: "Casks",
         homebrewNoPackages: "No packages found",
-        homebrewDependencies: "Dependencies",
         homebrewGroupDependencies: "Group dependencies",
-        homebrewOrphans: "No longer needed",
-        homebrewOrphansNote: "Installed as dependencies, but no installed package needs them any more.",
-        homebrewDependencyUpdatesFormat: "Dependency updates: %d",
-        homebrewNoSelection: "Select an installed package or search for a new one.",
-        homebrewDetailsTitle: "Package details",
         homebrewInstall: "Install",
         homebrewUninstall: "Uninstall",
         homebrewUpgrade: "Update",
@@ -2383,22 +1904,12 @@ extension Strings {
         homebrewOpenTerminal: "Open terminal",
         homebrewCancelOperation: "Cancel",
         homebrewClearLog: "Clear log",
-        homebrewLogTitle: "Log",
-        homebrewVersion: "Version",
-        homebrewDescription: "Type",
         homebrewHomepage: "Open website",
-        homebrewPopularity: "Popularity",
         homebrewPopularityFormat: "%@ installs in %@ days",
         homebrewInstalledBadge: "Installed",
-        homebrewNotInstalledBadge: "Not installed",
-        homebrewUpdates: "Updates",
-        homebrewUpdateAvailableBadge: "Update available",
-        homebrewLatestVersion: "Latest",
-        homebrewConfirmInstallTitle: "Install with Homebrew?",
         homebrewConfirmInstallBodyFormat: "Homebrew will download and install %@. Dependencies may also be installed.",
         homebrewConfirmUninstallTitle: "Uninstall with Homebrew?",
         homebrewConfirmUninstallBodyFormat: "Homebrew will uninstall %@. Configuration files may remain on the system.",
-        homebrewConfirmUpgradeTitle: "Update with Homebrew?",
         homebrewConfirmUpgradeBodyFormat: "Homebrew will download and apply the latest version of %@. Dependencies may also be updated.",
         homebrewConfirmUpgradeAllTitle: "Update all with Homebrew?",
         homebrewConfirmUpgradeAllBody: "Homebrew will download and apply the latest versions for packages with updates available. Dependencies may also be updated.",
@@ -2406,7 +1917,6 @@ extension Strings {
         homebrewConfirmUpdateHomebrewBody: "Homebrew will fetch the latest information and then reload your packages.",
         homebrewTerminalFallback: "This operation needs your terminal to ask for the administrator password. Lattice does not capture passwords.",
         homebrewLoading: "Loading…",
-        homebrewSearchEmpty: "No results",
         homebrewOperationInstallFormat: "Installing %@",
         homebrewOperationUninstallFormat: "Uninstalling %@",
         homebrewOperationUpgradeFormat: "Updating %@",
@@ -2434,7 +1944,6 @@ extension Strings {
         homebrewOperationProgressUnknown: "Homebrew has not reported a percentage yet.",
 
         mediaName: "Media Compression",
-        mediaEnableCaption: "Compress videos, convert and process images, make GIFs and extract text locally.",
         mediaLocalNote: "Local. No network.",
         mediaToolVideo: "Video",
         mediaToolGIF: "GIF",
@@ -2469,16 +1978,12 @@ extension Strings {
         mediaMegabytesSuffix: " MB",
         mediaWidth: "Width",
         mediaFPS: "FPS",
-        mediaKeepAudio: "Keep audio",
-        mediaCodec: "Codec",
         mediaFormat: "Format",
         mediaStripMetadata: "Remove metadata",
         mediaLoopGIF: "Loop GIF",
         mediaOCRMode: "OCR",
         mediaOCRAccurate: "Accurate",
         mediaOCRFast: "Fast",
-        mediaLanguageCorrection: "Language correction",
-        mediaTextOutputNote: "Extracted text can be copied and saved as TXT.",
         mediaRunning: "Processing",
         mediaCompleted: "Done",
         mediaCancelled: "Cancelled.",
@@ -2496,17 +2001,11 @@ extension Strings {
 
         shelfName: SettingsOwnershipStrings.text(.fileCache, .enUS),
         shelfEnable: "Temporary area for dragging files",
-        shelfEnableCaption: "A floating spot to gather files, images and text, then drag them anywhere later.",
-        shelfHowTitle: "How to use",
-        shelfStep1: "Open it with the shortcut, or by shaking the mouse during a drag.",
-        shelfStep2: "Drop files, images, links or text onto it to hold them.",
-        shelfStep3: "Drag each item back out to any app when you need it.",
         shelfShakeToggle: "Open by shaking the mouse while dragging",
         shelfShakeCaption: "Shake the pointer quickly while holding an item to summon it near the cursor.",
         shelfDropZoneToggle: "Keep dragged files in the menu bar",
         shelfDropZoneCaption: "While you drag a file, the File Cache appears below the menu bar icon. Whatever you drop is kept right there, in a button you shrink and open with a click that goes away once the File Cache is empty.",
         shelfDropZoneCaptionTopCenter: "While you drag a file, the File Cache appears as a badge at the top center of the screen. Whatever you drop is kept right there, in a badge you open with a click that goes away once the File Cache is empty.",
-        shelfDropZoneLabel: "Drop here",
         shelfDockPlacement: "Position",
         shelfDockMenuBar: "Below the menu bar icon",
         shelfDockTopCenter: "Top center of the screen",
@@ -2526,10 +2025,7 @@ extension Strings {
         extraBrightnessCaption: "Uses the display’s HDR headroom to go past the maximum brightness. Uses more battery and the Mac can run warm.",
         extraBrightnessLevelLabel: "Intensity",
         extraBrightnessUnsupported: "Available only on XDR displays, such as the ones on the 14 and 16 inch MacBook Pro.",
-        shelfHotkeyLabel: "Shortcut",
         shelfOpenNow: "Open now",
-        shelfNoPermission: "Requires no permissions.",
-        shelfMenuItem: "Open File Cache",
         shelfTitle: SettingsOwnershipStrings.text(.fileCache, .enUS),
         shelfEmpty: "Drag items here",
         shelfClearAll: "Clear all",
@@ -2563,51 +2059,33 @@ extension Strings {
         mixerEmpty: "Apps that use audio show up here",
         mixerUnavailable: "Available on macOS 14.4 and later",
         mixerPermissionBody: "To adjust per-app volume, allow “Screen & System Audio Recording” in System Settings. Audio is never recorded.",
-        mixerResetTooltip: "Reset to 100%",
         mixerOutputDefault: "Default",
-        mixerOutputCurrent: "current",
         mixerOutputUnavailable: "Output unavailable",
-        mixerOutputFallback: "Using default until this device returns.",
         mixerBypassedCaption: "This app manages its own audio.",
-        mixerOutputTooltip: "Choose output",
-        mixerAirPlayChooseSpeaker: "Choose AirPlay speaker…",
         mixerSystemOutputTitle: "Output",
         mixerSystemOutputNoDevices: "No outputs found",
-        mixerSystemOutputTooltip: "Choose system output",
-        mixerSystemOutputErrorFormat: "Could not switch: %@",
         mixerLowerOnHeadphonesDisconnect: "Lower volume when headphones disconnect",
         mixerLowerOnHeadphonesDisconnectCaption: "Adjusts output when wired or Bluetooth headphones disconnect.",
         mixerHeadphonesDisconnectVolume: "Volume after disconnect",
         volumeMixerEnable: "Audio Output Control",
-        preciseVolumeRollerEnable: "Use finer volume steps",
-        preciseVolumeRollerCaption: "Turns volume wheels and keys into smaller system volume steps.",
         preciseVolumeRollerTapFailed: "Could not listen for volume keys.",
         soundOutputSwitcherTitle: "Output switcher",
         soundOutputSwitcherEnable: "Cycle through with shortcut",
         soundOutputSwitcherCaption: "Use the shortcut to cycle through output devices.",
-        soundOutputSwitcherDevices: "Outputs in cycle",
-        soundOutputSwitcherNoAvailableSelection: "Select at least one available output.",
         mixerInputTitle: "Microphone",
         mixerInputNoDevices: "No microphones found",
         mixerInputUnavailable: "Microphone unavailable",
-        mixerInputFallback: "Using default until this microphone returns.",
         mixerInputTooltip: "Choose microphone",
         mixerInputErrorFormat: "Could not switch: %@",
         microphoneControlEnable: "Audio Input Control",
         mixerInputLevelLabel: "Input Level",
         mixerInputSourceLabel: "Audio input source",
         muteAudioInputSubtitle: "Mute Audio Input",
-        showInMenuBarLabel: "Show in menu bar",
         manageAudioInputPriorityTitle: "Manage Audio Input Preference",
         manageAudioOutputPriorityTitle: "Manage Audio Output Preference",
         mixerOutputLevelLabel: "Output volume",
-        sliderUnavailable: "(unavailable)",
         screenshotEnable: "Enable Screenshot",
         screenRecorderEnable: "Enable Screen Recording",
-        mixerVisibleApps: "Apps in the list",
-        mixerAllShown: "All",
-        mixerHideFromList: "Hide from the list",
-        audioPrioritySection: "Audio priority",
         audioPriorityOutputEnable: "Automatically switch to the highest-priority output",
         audioPriorityInputEnable: "Automatically switch to the highest-priority microphone",
         audioPriorityOutputList: "Output priority",
@@ -2630,7 +2108,6 @@ extension Strings {
         audioPrioritySkipCycling: "Skip when cycling",
         audioPrioritySetOutput: "Set as audio output",
         audioPrioritySetInput: "Set as audio input",
-        audioPriorityCaption: "Devices are selected in priority order. When a higher-priority device connects, it becomes active. When the active one disconnects, the next available takes over.",
 
         updatesSection: "Updates",
         betaBadgeLabel: "Beta",
@@ -2646,7 +2123,6 @@ extension Strings {
         updateInstallFailedBody: "The update was downloaded but could not be applied. Download the latest version from the GitHub releases page and drag the app over the current one.",
         updateNeedsApplicationsTitle: "Move Lattice to Applications",
         updateNeedsApplicationsBody: "The app is running from a place that cannot be updated, such as the disk image or a temporary system location. Drag Lattice to the Applications folder, open it from there and try again.",
-        menuCheckUpdates: "Check for updates…",
 
         permissionRequired: "Permission required",
         permissionAccessibility: "Device Control and Data Access",
@@ -2668,7 +2144,6 @@ extension Strings {
         releaseNotesFallback: "This update includes the latest fixes and improvements.",
 
         tabMonitor: "System Monitor",
-        monitorMenuBarCaption: "Choose what appears next to the icon in the menu bar.",
         monitorSeparateMenuBarMetrics: "Show readings separately",
         monitorSeparateMenuBarMetricsCaption: "Separates active blocks in the menu bar and keeps usage and temperature together when combine is on.",
         monitorNetworkUploadFirst: "Upload above download",
@@ -2676,54 +2151,20 @@ extension Strings {
         monitorShowMemory: "Memory",
         monitorShowNetwork: "Network",
         monitorShowPowerLabel: "Power",
-        panelNavigationMode: "Navigate panel by sections",
-        panelNavigationCaption: "Shows one section at a time. Choose List to see everything in one continuous scroll.",
-        panelFooterSections: "Sections",
-        panelFooterList: "List",
         betaBadge: "BETA",
         betaFeatureWarning: "Beta. You may run into some bugs.",
 
         networkSection: "Network",
-        networkLocalIP: "Local IPv4",
-        networkDownload: "Download",
-        networkUpload: "Upload",
-        networkThisSession: "This session",
-        networkMeasuring: "Measuring…",
         networkApps: "Apps using network",
         networkAppsIdle: "No apps using network now",
 
         diskSection: "Disks",
-        diskUsed: "used",
-        diskFree: "free",
         diskMenuBarStyleLabel: "Disk display",
         diskMenuBarUsedPercentage: "Used percentage",
         diskMenuBarAvailableSpace: "Available space",
         diskMenuBarUsedSpace: "Used space",
         diskAvailable: "available",
         diskPurgeable: "purgeable",
-        diskInternal: "Internal",
-        diskExternal: "External",
-        diskSelect: "Select disk",
-        diskRead: "Read",
-        diskWrite: "Write",
-        diskSMARTStatus: "Status",
-        diskSMARTUnavailable: "SMART unavailable for this disk",
-        diskTotalRead: "Total read",
-        diskTotalWritten: "Total written",
-        diskTemperature: "Temperature",
-        diskHealth: "Health",
-        diskPowerCycles: "Power cycles",
-        diskPowerOnHours: "Power on hours",
-        diskUnsafeShutdowns: "Unsafe shutdowns",
-        diskMediaErrors: "Media errors",
-        diskEject: "Eject",
-        diskEjectAll: "Eject all",
-        diskEjecting: "Ejecting…",
-        diskReadyToRemove: "Ready to remove",
-        diskEjectFailed: "Could not eject",
-        diskProtectionCaption: "Eject before unplugging.",
-        diskNoExternal: "No external disk ready to eject.",
-        diskOpenInFinder: "Open",
         diskStorageSettings: "Storage",
         diskNoDisks: "No mounted disks found.",
 
@@ -2738,61 +2179,33 @@ extension Strings {
         monitorShowGPUTemperature: "GPU temperature",
         monitorShowBatteryTemperature: "Battery temperature",
         monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .enUS),
-        peripheralBatteryNoDevices: "No devices found",
 
         updateBannerTitle: "Update available",
-        updateBannerAction: "Update",
-        monitorMenuBarPresetLabel: "Style",
-        menuBarPresetReadable: "Readable",
-        menuBarPresetDense: "Dense",
         menuBarSpacingLabel: "Menu bar spacing",
         menuBarSpacingStandard: "Standard",
         menuBarSpacingCompact: "Compact",
-        monitorLabelStyleLabel: "Labels",
-        menuBarLabelStyleCompact: "Compact",
-        menuBarLabelStyleClassic: "Classic",
-        monitorMemoryStyleLabel: "Show memory as",
         monitorMemoryPressureDot: "Pressure dot",
-        memoryStyleDot: "Dot",
-        memoryStylePercent: "%",
-        memoryStyleBoth: "Both",
         systemUptime: "Up for",
         powerCycles: "Cycles",
         speedTestRun: "Speed test",
-        speedTestAgain: "Test again",
-        speedTestLatency: "Latency",
-        speedTestTesting: "Testing…",
-        speedTestFailed: "Test failed",
 
         disclosureExpanded: "Expanded",
         disclosureCollapsed: "Collapsed",
-        panelHideItem: "Hide from panel",
-        panelShowItem: "Show in panel",
         panelHiddenItem: "Hidden",
         monitorItemDiskUsage: "Disk usage",
         monitorItemDiskActivity: "Live activity",
-        monitorPanelConfigHint: "Open a block to choose what it shows.",
-        monitorOrderHint: "Drag to reorder the panel sections and use the eye to show or hide each one.",
 
         cleaningMenuItem: "Cleaning Mode",
-        utilitiesSection: "Utilities",
-        quickControlsSection: "Controls",
-        panelCategoryWindows: "Windows",
-        panelCategoryInput: "Mouse and keyboard",
-        panelCategoryFiles: "Files",
         windowMaximizeName: "Maximize Windows",
         windowMaximizeCaption: "Use macOS window controls to maximize the window without moving it to a separate full-screen Space.",
         keyDebounceName: "Duplicate Key Protection",
         keyDebounceEnable: "Ignore double typing",
         keyDebounceCaption: "Ignore accidental key repeats from a single press.",
-        keyDebounceActiveNow: "Filter active",
         keyDebounceGlobalWindow: "Repeat filter interval",
         keyDebouncePerKeySection: "Customize by key",
         keyDebouncePerKeyCaption: "Per-key values override the global window. Use 0 ms to stop filtering a key.",
         keyDebounceKeyLabel: "Key",
-        keyDebounceWindowLabel: "Window",
         keyDebounceAddKey: "Add key",
-        keyDebounceNoOverrides: "No specific keys configured.",
         keyDebounceRemoveKey: "Remove",
         cleaningPanelCaption: "Locks the keyboard so you can clean safely.",
         cleaningOverlayTitle: "Keyboard locked for cleaning",
@@ -2803,7 +2216,6 @@ extension Strings {
         cleaningNeedsAxBody: "To lock the keyboard safely, Lattice needs Accessibility permission. Grant it in System Settings and try again.",
         shortcutsPageTitle: "Keyboard Shortcuts",
         settingsSearchPlaceholder: "Search settings",
-        donateThanks: "Thank you for being here. 🖤",
         doneButton: "Done",
         homebrewOfficialIntroTitle: "Now in the official Homebrew catalog",
         homebrewOfficialIntroMessage: "Lattice can now be installed directly from the official Homebrew catalog.",
@@ -2811,11 +2223,6 @@ extension Strings {
         homebrewOfficialIntroMigrationTitle: "Used the old tap?",
         homebrewOfficialIntroMigrationMessage: "Remove the tap once. The app and your settings stay in place.",
         homebrewOfficialIntroCopyButton: "Copy command",
-        showMenuBarIcon: "Show menu bar icon",
-        menuBarIconStillHiddenTitle: "The icon is still hidden",
-        menuBarIconStillHiddenBody: "The icon was rebuilt, but macOS did not give it a visible spot. The menu bar is probably out of room: remove some menu bar icons (or close apps with long menus) and try again.",
-        menuBarIconManagerHintFormat: "%@ is open and may be keeping the icon in its hidden section. Look for Lattice there, or set %@ to always show Lattice.",
-        menuBarIconDisallowedBody: "macOS is keeping Lattice out of the menu bar. Open System Settings > Menu Bar, find Lattice in the app list and turn on “Allow in the Menu Bar”. The icon appears as soon as the switch is on.",
         shortcutRecording: "Press the new shortcut",
         shortcutReset: "Reset",
         shortcutNone: "None",
@@ -2830,15 +2237,10 @@ extension Strings {
         shortcutTakeOverCaption: "macOS gets the key back whenever Lattice is not running or this feature is off.",
         shortcutTakeOverDismiss: "Don’t take over",
         shortcutUnavailable: "macOS rejected this shortcut. Choose another one.",
-        switcherUsageHintFormat: "Hold %@ to navigate; release to activate the window. Shift or ← goes back; W closes the window; Q quits the app; Esc cancels.",
         musicBlockSection: "Disable media key",
         musicBlockTitle: "Stop Music from opening on its own",
         musicBlockCaption: "Stop using the media key to start up the default music app",
         musicBlockUnavailable: "This protection is unavailable right now. Turn it off and on to try again.",
-        musicBlockReplacementLabel: "Open instead",
-        musicBlockReplacementNone: "None",
-        musicBlockReplacementBlocked: "Music and iTunes are the apps being blocked, so they can’t open instead. Choose another app.",
-        musicBlockChooseApp: "Choose app…",
         musicBlockPlayReplacement: "Play after opening replacement",
         cleanerName: "Cleaner",
         cleanerIntroTitle: "Clean up your Mac",
@@ -2862,11 +2264,9 @@ extension Strings {
         cleanerScreenshotsSettingCaption: "The scan lists the screenshots you have not opened for this long, unchecked, with their total size.",
         cleanerScreenshotsAfterFormat: "After %d days",
         cleanerNothingFound: "Nothing to clean. Your Mac is tidy.",
-        cleanerClean: "Clean",
         cleanerDoneNote: "Items went to the Trash and can be recovered from there.",
         cleanerAgain: "Scan again",
         cleanerRevealInFinder: "Reveal in Finder",
-        cleanerPanelCaption: "App leftovers, caches and logs",
         cleanerSafeSection: "Safe cleanup",
         cleanerOptionalSection: "Optional, review first",
         cleanerCatOtherCaches: "Other caches",
