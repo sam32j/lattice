@@ -14,6 +14,9 @@ struct PriorityDeviceList: View {
     let emptyText: String
     let onMove: ([String]) -> Void
     var canCycle: Bool = true
+    /// Reads the authoritative priority list from the backing service at commit
+    /// time so a delayed settle cannot drop a device added before SwiftUI syncs.
+    var latestPriorityUIDs: (() -> [String])? = nil
 
     /// The row being dragged, the slot it started from, and how far the
     /// pointer has moved in the list's own space. The order itself stays put
@@ -270,7 +273,7 @@ struct PriorityDeviceList: View {
                     var transaction = Transaction()
                     transaction.disablesAnimations = true
                     withTransaction(transaction) {
-                        let currentAll = livePriorityUIDs ?? priorityUIDs
+                        let currentAll = latestPriorityUIDs?() ?? livePriorityUIDs ?? priorityUIDs
                         if target != start, visibleUIDs(in: currentAll) == uids {
                             var reordered = uids
                             reordered.move(fromOffsets: IndexSet(integer: start),
@@ -288,7 +291,7 @@ struct PriorityDeviceList: View {
     }
 
     private func move(_ uid: String, by offset: Int) {
-        let currentAll = livePriorityUIDs ?? priorityUIDs
+        let currentAll = latestPriorityUIDs?() ?? livePriorityUIDs ?? priorityUIDs
         let currentVisible = visibleUIDs(in: currentAll)
         guard let index = currentVisible.firstIndex(of: uid) else { return }
         let destination = index + offset
