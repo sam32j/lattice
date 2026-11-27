@@ -11,6 +11,18 @@ extension WindowLayoutSettings {
         SettingsFeatureStatus(color: .red, message: text.edgeSnapSystemConflict)
     }
 
+    /// Shows the switch off while macOS tiling holds the screen edges without
+    /// discarding the user's saved preference once the conflict is cleared.
+    private var edgeSnapToggleBinding: Binding<Bool> {
+        Binding(
+            get: { !systemTilingEnabled && edgeSnapEnabled },
+            set: { newValue in
+                guard !systemTilingEnabled else { return }
+                edgeSnapEnabled = newValue
+            }
+        )
+    }
+
     var edgeSnapControls: some View {
         // The follow-up groups sit at different gaps under the switch, so
         // each carries its own and rolls it up with itself.
@@ -22,14 +34,15 @@ extension WindowLayoutSettings {
                 if systemTilingEnabled {
                     SettingsStatusDot(status: systemTilingStatus)
                 }
-                PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
+                PermissionGatedToggle(text.edgeSnapSection, isOn: edgeSnapToggleBinding)
                     .labelsHidden()
                     .toggleStyle(.switch)
+                    .disabled(systemTilingEnabled)
                     .onChange(of: edgeSnapEnabled) { _, _ in
                         WindowLayoutService.shared.syncWithPreferences()
                     }
             }
-            if edgeSnapEnabled {
+            if !systemTilingEnabled && edgeSnapEnabled {
                 VStack(alignment: .leading, spacing: 8) {
                     // Reset sits under the switch: its top level with the
                     // zone picker's, its right edge with the switch's, at
@@ -62,9 +75,6 @@ extension WindowLayoutSettings {
                     .padding(.top, 9)
                 }
                 .padding(.top, 17)
-                // Nothing here takes effect while macOS holds the edges, so
-                // the follow-ups grey out, as Super Key's options do.
-                .disabled(systemTilingEnabled)
                 .transition(.settingsReveal)
             }
         }
