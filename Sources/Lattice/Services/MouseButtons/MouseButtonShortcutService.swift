@@ -541,10 +541,10 @@ final class MouseButtonShortcutService: ObservableObject {
         guard ScrollWheelSupport.isMouseWheel(
             traits,
             secondsSinceLastGesturePhase: secondsSinceGesturePhase) else { return nil }
-        // Scroll Direction's tap used to turn the wheel at the HID stage,
-        // ahead of this one, so the directions Settings recorded, and the
-        // ones that fired, are the turned ones. Reading the same here keeps
-        // every saved shortcut on the direction it had.
+        // Scroll Direction's tap turns the wheel at the HID stage, ahead of
+        // this one, so the directions Settings recorded, and the ones that
+        // fire, are the turned ones. The copy is turned only when that tap
+        // is not running, so a saved shortcut keeps its direction either way.
         let wheel = ScrollInverter.directionApplied(to: event)
         return MouseButtonShortcutSupport.sideWheelInput(
             isContinuous: traits.isContinuous,

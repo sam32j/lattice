@@ -15,6 +15,7 @@ extension KeepAwakeLidSleepContract {
         static let keepAwakePauseWhenLocked = "pause"
         static let dimmedDisplaySavedBrightness = "dimmedDisplaySavedBrightness"
         static let defaultDuration = "defaultDuration"
+        static let keepAwakeSessionEnd = "keepAwakeSessionEnd"
     }
     enum UserDefaults {
         static let standard = Store()
@@ -22,14 +23,16 @@ extension KeepAwakeLidSleepContract {
             var values: [String: Bool] = [:]
             var doubles: [String: Double] = [:]
             var integers: [String: Int] = [:]
+            var records: [String: [String: Any]] = [:]
             func bool(forKey key: String) -> Bool { values[key] ?? false }
             func set(_ value: Bool, forKey key: String) { values[key] = value }
             func set(_ value: Double, forKey key: String) { doubles[key] = value }
             func set(_ value: Int, forKey key: String) { integers[key] = value }
+            func set(_ value: [String: Any], forKey key: String) { records[key] = value }
             func integer(forKey key: String) -> Int { integers[key] ?? 0 }
             func double(forKey key: String) -> Double { doubles[key] ?? 0 }
-            func object(forKey key: String) -> Any? { doubles[key] }
-            func removeObject(forKey key: String) { doubles[key] = nil }
+            func object(forKey key: String) -> Any? { doubles[key] ?? records[key] }
+            func removeObject(forKey key: String) { doubles[key] = nil; records[key] = nil }
         }
     }
     enum Thread {
@@ -140,6 +143,35 @@ enum KeepAwakeClamshellTests {
                "a preset replacing an end-time session selects that preset")
         switching.deactivate(reason: .manual); C.drain()
 
+        typealias SessionKey = KeepAwakeLidSleepContract.DefaultsKey
+        let sessions = KeepAwakeLidSleepContract.UserDefaults.standard
+        let resumable = C.reset()
+        resumable.activate(minutes: 30)
+        expect(sessions.records[SessionKey.keepAwakeSessionEnd]?["minutes"] as? Int == 30,
+               "a manual session records its preset so a relaunch can resume it")
+        resumable.deactivate(reason: .quit); C.drain()
+        expect(sessions.records[SessionKey.keepAwakeSessionEnd] != nil, "quitting keeps the running session's record")
+        let relaunched = C.reset()
+        relaunched.restoreSessionIfNeeded()
+        expect(relaunched.isActive && relaunched.sessionMinutes == 30
+               && relaunched.endDate.map { $0.timeIntervalSinceNow > 29 * 60 } == true,
+               "the next launch resumes the session with its original end and preset")
+        relaunched.deactivate(reason: .manual); C.drain()
+        expect(sessions.records[SessionKey.keepAwakeSessionEnd] == nil, "stopping a session ends it for good")
+        sessions.set(["end": Date().addingTimeInterval(-60).timeIntervalSinceReferenceDate, "minutes": 15],
+                     forKey: SessionKey.keepAwakeSessionEnd)
+        let expired = C.reset()
+        expired.restoreSessionIfNeeded()
+        expect(!expired.isActive && sessions.records[SessionKey.keepAwakeSessionEnd] == nil,
+               "a session whose end passed while the app was closed stays ended")
+        sessions.set(["end": 0.0, "minutes": 0], forKey: SessionKey.keepAwakeSessionEnd)
+        let indefinite = C.reset()
+        indefinite.restoreSessionIfNeeded()
+        expect(indefinite.isActive && indefinite.endDate == nil && indefinite.sessionMinutes == 0,
+               "an indefinite session resumes indefinitely")
+        indefinite.deactivate(reason: .timer); C.drain()
+        expect(sessions.records[SessionKey.keepAwakeSessionEnd] == nil, "a timed end clears the record")
+
         typealias prefs = KeepAwakeLidSleepContract.UserDefaults
         typealias Key = KeepAwakeLidSleepContract.DefaultsKey
         let defaultPick = C.reset()
@@ -242,6 +274,29 @@ enum KeepAwakeClamshellTests {
                "quit restores the system and ends the session before requesting lid sleep synchronously")
         expect(!C.UserDefaults.standard.bool(forKey: C.DefaultsKey.sleepDisabledFlag) && C.AdminShell.prompts == 0,
                "successful quit clears recovery before returning and never asks for a password")
+
+        for policy in [true, false, nil] as [Bool?] {
+            let cutoff = active()
+            C.connectedToPower = false
+            C.externalDisplay = nil
+            C.policy = policy
+            cutoff.deactivate(reason: .battery)
+            C.drain()
+            let expectedCalls = policy == true ? 1 : 0
+            expect(!C.Sudoers.disabled && C.calls == expectedCalls,
+                   "with an unreadable display list the battery cutoff follows the lid policy \(String(describing: policy))")
+        }
+
+        for display in [true, false, nil] as [Bool?] {
+            let timed = active()
+            C.connectedToPower = nil
+            C.externalDisplay = display
+            timed.deactivate(reason: .timer)
+            C.drain()
+            let expectedCalls = display == false ? 1 : 0
+            expect(!C.Sudoers.disabled && C.calls == expectedCalls,
+                   "with unknown power the timer needs a confirmed absence of external displays, got \(String(describing: display))")
+        }
 
         for lid in [false, nil] as [Bool?] {
             let service = active(); C.BrightnessService.lid = lid

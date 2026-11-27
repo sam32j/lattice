@@ -121,16 +121,14 @@ extension KeepAwakeManager {
         automationSuppressedUntilConditionsClear = false
         let minutes = Defaults.sanitizedDefaultDuration(minutes)
         let end = minutes > 0 ? Date().addingTimeInterval(TimeInterval(minutes) * 60) : nil
-        activate(end: end, trigger: .manual)
-        sessionMinutes = isActive ? minutes : nil
+        activate(end: end, trigger: .manual, minutes: minutes)
     }
 
     func activate(until date: Date) {
         guard date > Date() else { return }
         automationSuppressedUntilConditionsClear = false
-        activate(end: date, trigger: .manual)
         // An end time replaces any running preset, so no duration chip stays selected.
-        sessionMinutes = nil
+        activate(end: date, trigger: .manual)
     }
 
     /// Starts the default duration, the one setting the shortcut, the menu
@@ -141,7 +139,7 @@ extension KeepAwakeManager {
             UserDefaults.standard.integer(forKey: DefaultsKey.defaultDuration)))
     }
 
-    func activate(end: Date?, trigger: SessionTrigger) {
+    func activate(end: Date?, trigger: SessionTrigger, minutes: Int? = nil) {
         guard !isTerminating, AppFeature.keepAwake.isAvailable else { return }
         lidSleepGeneration &+= 1
         lidSleepAttemptsRemaining = 0
@@ -164,6 +162,7 @@ extension KeepAwakeManager {
         }
         stoppingSession = false
         sessionTrigger = trigger
+        sessionMinutes = minutes
         if trigger == .manual {
             activeAutomationConditions.removeAll()
         }
@@ -177,7 +176,13 @@ extension KeepAwakeManager {
         } else {
             endDate = nil
         }
+        if trigger == .manual {
+            saveManualSession()
+        } else {
+            UserDefaults.standard.removeObject(forKey: DefaultsKey.keepAwakeSessionEnd)
+        }
         if !sessionPausedForScreenLock { startBatteryWatch() }
+        guard isActive else { return }
         syncMouseJiggleTimer()
         if clamshellPreferred, !sessionPausedForScreenLock {
             applyClamshellPreference()
@@ -189,6 +194,35 @@ extension KeepAwakeManager {
         let newEnd = HubStayAwakeSupport.durationEnd(minutes: minutes, isTimed: true, end: current, now: Date())
         endDate = newEnd
         scheduleEnd(at: newEnd)
+        if sessionTrigger == .manual { saveManualSession() }
+    }
+
+    /// Records the running manual session so a relaunch, restart or crash
+    /// can pick it up. The default duration can change while it runs, so the
+    /// preset is stored with it.
+    func saveManualSession() {
+        var record: [String: Any] = ["end": endDate?.timeIntervalSinceReferenceDate ?? 0.0]
+        if let sessionMinutes { record["minutes"] = sessionMinutes }
+        UserDefaults.standard.set(record, forKey: DefaultsKey.keepAwakeSessionEnd)
+    }
+
+    /// Picks up the manual session that was running when the app last quit,
+    /// restarted or crashed. A timed one resumes with the time it has left;
+    /// one whose end passed while the app was closed stays ended.
+    func restoreSessionIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard let saved = defaults.object(forKey: DefaultsKey.keepAwakeSessionEnd) else { return }
+        guard AppFeature.keepAwake.isAvailable, !isActive,
+              let record = saved as? [String: Any], let stored = record["end"] as? Double,
+              stored == 0 || (stored > Date.timeIntervalSinceReferenceDate
+                              && stored <= Date.distantFuture.timeIntervalSinceReferenceDate) else {
+            // A session started during recovery already wrote its own record.
+            if !isActive { defaults.removeObject(forKey: DefaultsKey.keepAwakeSessionEnd) }
+            return
+        }
+        let end = stored == 0 ? nil : Date(timeIntervalSinceReferenceDate: stored)
+        let minutes = end == nil ? 0 : record["minutes"] as? Int
+        activate(end: end, trigger: .manual, minutes: minutes)
     }
 
     func deactivate(reason: EndReason) {
@@ -202,6 +236,11 @@ extension KeepAwakeManager {
         }
         endTimer?.invalidate()
         endTimer = nil
+        // Quitting keeps the record so the next launch resumes the session;
+        // every other end, the user's own included, is final.
+        if reason != .quit {
+            UserDefaults.standard.removeObject(forKey: DefaultsKey.keepAwakeSessionEnd)
+        }
         let released = releaseAssertions()
         if released && stoppingSession { assertionFailed = false }
         stoppingSession = !released && reason != .quit

@@ -33,5 +33,14 @@ enum AudioPriorityPresentationTests {
                              "quit/close ALS titles and descriptions distinguish inclusion from exclusion in \(language)")
             }
         }
+        if let listSource = try? String(contentsOfFile: "Sources/Lattice/UI/Audio/AudioPriorityDeviceList.swift", encoding: .utf8),
+           let controlsSource = try? String(contentsOfFile: "Sources/Lattice/UI/Audio/AudioPriorityControls.swift", encoding: .utf8) {
+            suite.expect(listSource.components(separatedBy: "let currentAll = latestPriorityUIDs?() ?? livePriorityUIDs ?? priorityUIDs").count == 3
+                         && controlsSource.contains("latestPriorityUIDs: { priority.outputPriorityUIDs }")
+                         && controlsSource.contains("latestPriorityUIDs: { priority.inputPriorityUIDs }"),
+                         "priority list settle commit and accessibility moves read the latest service list before merging")
+        } else {
+            suite.expect(false, "AudioPriorityDeviceList.swift and AudioPriorityControls.swift are readable")
+        }
     }
 }

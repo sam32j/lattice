@@ -386,12 +386,12 @@ enum FeatureCatalogTests {
 
         // MARK: Features hub catalog
 
-        suite.expect(AppFeature.allCases.count == 74, "feature catalog has 74 features")
+        suite.expect(AppFeature.allCases.count == 75, "feature catalog has 75 features")
         suite.expect(Set(AppFeature.allCases.map(\.rawValue)).count == AppFeature.allCases.count,
                "feature ids are unique")
         suite.expect(AppFeature.allCases.map(\.rawValue) == [
             "switcher", "dockPreview", "dockClick", "windowMaximizer", "windowLayout", "autoQuit", "spacesOrder",
-            "scrollInverter", "scrollHorizontal", "focusFollowsMouse", "smoothScroll", "linearScroll", "mouseAcceleration", "mouseNavigation", "mouseButtonShortcuts", "middleClick",
+            "scrollInverter", "scrollHorizontal", "focusFollowsMouse", "smoothScroll", "linearScroll", "scrollSpeed", "mouseAcceleration", "mouseNavigation", "mouseButtonShortcuts", "middleClick",
             "mouseClickDebounce", "keyboardDebounce", "textSnippets", "superKey", "quitWindowProtection",
             "clipboardHistory", "pastePlain", "shelf", "urlCleaner",
             "diskImageInstaller",
@@ -592,6 +592,7 @@ enum FeatureCatalogTests {
                 },
                "every feature an update already had stays installed and every other one ships uninstalled")
         suite.expect((AppFeature.availabilityDefaults[AppFeature.linearScroll.availabilityKey] as? Bool) == false
+                && (AppFeature.availabilityDefaults[AppFeature.scrollSpeed.availabilityKey] as? Bool) == false
                 && (AppFeature.availabilityDefaults[AppFeature.focusFollowsMouse.availabilityKey] as? Bool) == false
                 && (AppFeature.availabilityDefaults[AppFeature.fanControl.availabilityKey] as? Bool) == false
                 && (AppFeature.availabilityDefaults[AppFeature.notchMascot.availabilityKey] as? Bool) == false,
@@ -2363,9 +2364,11 @@ enum FeatureCatalogTests {
         suite.expect(ddcWrite == expectedDDCWrite,
                "DDC write packet carries the set opcode, big-endian value and checksum")
         let ddcRead = BrightnessSupport.readRequestPacket(code: 0x10)
-        let expectedDDCRead: [UInt8] = [0x82, 0x01, 0x10, 0xFD]
+        // 0x6E ^ 0x51 ^ 0x82 ^ 0x01 ^ 0x10, the bytes m1ddc sends. A Samsung
+        // Odyssey G5 ignored the request without 0x51 in its checksum.
+        let expectedDDCRead: [UInt8] = [0x82, 0x01, 0x10, 0xAC]
         suite.expect(ddcRead == expectedDDCRead,
-               "DDC read request omits the sub-address from its checksum seed")
+               "DDC read request's checksum covers the source address")
         suite.expect(Array(BrightnessSupport.writePacket(code: 0x10, value: 100)[3...4]) == [0x00, 0x64],
                "DDC values split into high and low bytes")
 
@@ -2522,6 +2525,11 @@ enum FeatureCatalogTests {
         suite.expect(!SettingsBackupSupport.exportKeys().contains(
             DefaultsKey.brightnessDDCWriteOnlyPaths),
                "per-monitor DDC capability never travels in a settings backup")
+        suite.expect(SettingsBackupSupport.machineStateKeys.contains(
+            DefaultsKey.brightnessDDCReadChecksumRechecked)
+                && !SettingsBackupSupport.exportKeys().contains(
+                    DefaultsKey.brightnessDDCReadChecksumRechecked),
+               "the DDC checksum recheck marker stays on the Mac that ran it")
         suite.expect(SettingsBackupSupport.machineStateKeys.contains(
             DefaultsKey.brightnessForcedSoftwarePaths)
                 && !SettingsBackupSupport.exportKeys().contains(

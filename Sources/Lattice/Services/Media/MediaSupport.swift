@@ -179,6 +179,50 @@ enum MediaImageWatermarkKind: String, CaseIterable, Codable, Identifiable {
     static func sanitized(_ value: String) -> MediaImageWatermarkKind {
         MediaImageWatermarkKind(rawValue: value) ?? .off
     }
+
+    func withoutLogo(text: String) -> Self {
+        switch self {
+        case .logo: return .off
+        case .textAndLogo: return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .off : .text
+        case .off, .text: return self
+        }
+    }
+
+    /// Restores a local logo onto a portable watermark kind without enabling
+    /// text that the portable value leaves disabled.
+    func withLogo() -> Self {
+        switch self {
+        case .off: return .logo
+        case .text: return .textAndLogo
+        case .logo, .textAndLogo: return self
+        }
+    }
+
+    /// Normalizes a logo-less watermark kind so `text` with blank text compares
+    /// equal to `off`, matching what `withoutLogo(text:)` produces on re-apply.
+    func normalizedPortable(text: String) -> Self {
+        let portable = withoutLogo(text: text)
+        if portable == .text, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return .off
+        }
+        return portable
+    }
+
+    /// Whether an incoming portable kind matches this local watermark's
+    /// logo-less form, stably across repeated launches even when the file
+    /// changes watermark text between blank and non-blank.
+    func matchesPortable(_ incoming: Self, localText: String, incomingText: String) -> Bool {
+        switch self {
+        case .logo:
+            return incoming == .off
+        case .textAndLogo:
+            let normalizedIncoming = incoming.normalizedPortable(text: incomingText)
+            return normalizedIncoming == withoutLogo(text: localText)
+                || normalizedIncoming == withoutLogo(text: incomingText)
+        case .off, .text:
+            return false
+        }
+    }
 }
 
 enum MediaImageWatermarkPosition: String, CaseIterable, Codable, Identifiable {
@@ -762,20 +806,39 @@ enum MediaSupport {
         }
         for index in profiles.indices {
             var watermark = profiles[index].options.watermark
+            watermark.kind = watermark.kind.withoutLogo(text: watermark.text)
             watermark.logoPath = ""
-            switch watermark.kind {
-            case .logo:
-                watermark.kind = .off
-            case .textAndLogo:
-                watermark.kind = watermark.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    ? .off : .text
-            case .off, .text:
-                break
-            }
             profiles[index].options.watermark = watermark
         }
         guard let portableData = try? JSONEncoder().encode(profiles) else { return nil }
         return String(data: portableData, encoding: .utf8)
+    }
+
+    /// Only the matching profile on this Mac can supply a logo. A rename,
+    /// reorder or new profile in the portable file does not change its identity.
+    static func restoringProfileLogos(_ portable: String, local: String) -> String {
+        let decoder = JSONDecoder()
+        guard var profiles = try? decoder.decode([MediaImageProfile].self, from: Data(portable.utf8)),
+              let saved = try? decoder.decode([MediaImageProfile].self, from: Data(local.utf8)) else {
+            return portable
+        }
+        let byID = Dictionary(grouping: saved, by: \.id)
+        let incomingIDs = Dictionary(grouping: profiles, by: \.id)
+        var restored = false
+        for index in profiles.indices {
+            let id = profiles[index].id
+            guard !id.isEmpty, incomingIDs[id]?.count == 1, let matches = byID[id], matches.count == 1,
+                  let original = matches.first?.options.watermark, original.usesLogo,
+                  original.kind.matchesPortable(profiles[index].options.watermark.kind,
+                                                localText: original.text,
+                                                incomingText: profiles[index].options.watermark.text)
+            else { continue }
+            profiles[index].options.watermark.kind = profiles[index].options.watermark.kind.withLogo()
+            profiles[index].options.watermark.logoPath = original.logoPath
+            restored = true
+        }
+        guard restored, let data = try? JSONEncoder().encode(profiles) else { return portable }
+        return String(decoding: data, as: UTF8.self)
     }
 
     static func integralImageSize(width: CGFloat, height: CGFloat) -> CGSize {

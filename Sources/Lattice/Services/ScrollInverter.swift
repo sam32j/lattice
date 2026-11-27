@@ -16,13 +16,9 @@ import CoreGraphics
 /// flagged continuous are wheels only when they carry no gesture phase at all.
 /// Toggling takes effect immediately. Requires Accessibility.
 ///
-/// Apps on this feature's own exception list (issue #358) keep the direction
-/// macOS gives them. The list is separate from the smooth scrolling one on
-/// purpose, so excepting an app from the glide never leaves it scrolling
-/// backwards; when both features are on, the flip happens inside the smooth
-/// scrolling tap and honors this same list. Linear scrolling keeps a list of
-/// its own, honored the same way in both taps, so a game or a 3D tool that
-/// counts the notches itself can be left out of the cap alone.
+/// It runs ahead of every other wheel tap, smooth scrolling's included, so
+/// they all receive the wheel already turned, redirected and capped, and
+/// none of them applies those a second time.
 final class ScrollInverter: ObservableObject {
     static let shared = ScrollInverter()
 
@@ -32,12 +28,15 @@ final class ScrollInverter: ObservableObject {
     /// This process's own id, compared against the one every event carries.
     private static let ownProcessID = Int64(getpid())
 
-    /// The wheel the way this tap would turn it, for this app's session taps:
-    /// they run before this tap and consume the wheel, so it never comes here.
-    /// Only the flip, on a copy; anything that is not a mouse wheel, came from
-    /// a remote screen or sits over an app excepted from Scroll Direction
-    /// comes back as it was.
+    /// The wheel the way Scroll Direction turns it, for this app's session
+    /// taps that keep the wheel for themselves. While this tap runs it has
+    /// already turned the wheel at the HID stage, ahead of them, so the event
+    /// comes back as it is; turning it again would undo the direction. Only
+    /// when the tap is not running is the flip applied, on a copy. Anything
+    /// that is not a mouse wheel or came from a remote screen comes back as
+    /// it was.
     static func directionApplied(to event: CGEvent) -> CGEvent {
+        guard !shared.isRunning else { return event }
         let traits = ScrollWheelEventTraits(
             isContinuous: event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0,
             momentumPhase: event.getIntegerValueField(.scrollWheelEventMomentumPhase),
@@ -83,10 +82,13 @@ final class ScrollInverter: ObservableObject {
     /// Applies the persisted preference; safe to call repeatedly.
     func syncWithPreferences() {
         let direction = ScrollDirectionPreferences()
-        if SessionActivitySupport.tapShouldRun(featureWanted: direction.isEnabled || Self.linearScrollWanted,
-                                               accessibilityGranted: Permissions.shared.accessibility,
-                                               sessionIsActive: SessionActivity.shared.isActive) {
-            ScrollWheelTarget.shared.setEnabled(direction.horizontalModifier != nil)
+        let speedWanted = Self.scrollSpeedWanted
+        if SessionActivitySupport.tapShouldRun(
+            featureWanted: direction.isEnabled || Self.linearScrollWanted || speedWanted,
+            accessibilityGranted: Permissions.shared.accessibility,
+            sessionIsActive: SessionActivity.shared.isActive
+        ) {
+            ScrollWheelTarget.shared.setEnabled(direction.horizontalModifier != nil || speedWanted)
             start()
         } else {
             stop()
@@ -103,6 +105,13 @@ final class ScrollInverter: ObservableObject {
     private static var linearScrollWanted: Bool {
         AppFeature.linearScroll.isAvailable
             && UserDefaults.standard.bool(forKey: DefaultsKey.linearScrollEnabled)
+    }
+
+    /// Modifier-held speed likewise keeps the tap alive when direction and
+    /// linear scrolling are both off or uninstalled.
+    private static var scrollSpeedWanted: Bool {
+        AppFeature.scrollSpeed.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.scrollSpeedEnabled)
     }
 
     private func start() {
@@ -195,11 +204,10 @@ final class ScrollInverter: ObservableObject {
         guard ScrollWheelHIDStage.shared.passed(event) else {
             return Unmanaged.passUnretained(event)
         }
-        // Smooth scrolling swallows the wheel before this tap and already
-        // turned its glide around, so flipping the glide here would cancel
-        // that out and inverting would look broken while both are on. The
-        // process id is checked too: the only scroll events this app posts
-        // are those glide frames.
+        // Smooth scrolling posts its glide frames back through the system;
+        // flipping them here would cancel the turn the glide already made, so
+        // they pass untouched. The process id is checked too: the only scroll
+        // events this app posts are those glide frames.
         let sourceProcessID = event.getIntegerValueField(.eventSourceUnixProcessID)
         guard event.getIntegerValueField(.eventSourceUserData) != ScrollWheelSupport.syntheticTag,
               sourceProcessID != Self.ownProcessID else {
@@ -227,34 +235,39 @@ final class ScrollInverter: ObservableObject {
         let defaults = UserDefaults.standard
         let direction = ScrollDirectionPreferences(defaults: defaults)
         let directionApplies = direction.isEnabled
-        // Control-wheel is native zoom. Only the explicit Control-to-horizontal
-        // shortcut turns it into scrolling; one of our own windows leaves it
-        // as zoom too.
-        let controlRedirects = directionApplies
-            && direction.horizontalModifier == .control
-            && event.flags.intersection([.maskShift, .maskAlternate, .maskControl, .maskCommand]) == .maskControl
+        let horizontalModifier = directionApplies ? direction.horizontalModifier : nil
+        let speed = ScrollSpeedPreferences(defaults: defaults)
+        // This HID-stage tap runs before smooth scrolling's session tap. When
+        // the glide is running it owns the speed key, so the key stays on the
+        // wheel and the glide applies the boost; consuming it here would lose
+        // the boost once linear scrolling caps the notch.
+        let speedKey = SmoothScrollService.shared.isRunning ? nil
+            : speed.matchingModifier(for: event, horizontalModifier: horizontalModifier,
+                                     targetsOwnWindow: ScrollWheelTarget.shared.contains(event.location))
+        let speedMultiplier = speedKey == nil ? 1 : speed.multiplier
+        if let speedKey { event.flags.remove(speedKey.flag) }
+        // Control-wheel is native zoom. A Control speed claim already consumed
+        // its flag. Otherwise only a real Control-to-horizontal tick, outside
+        // our own windows, turns it into scrolling.
+        let controlRedirects = horizontalModifier == .control
+            && ScrollHorizontalModifier.control.isHeldAlone(in: event.flags)
             && ScrollWheelSupport.isVerticalOnly(event)
             && !ScrollWheelTarget.shared.contains(event.location)
         let nativeZoom = event.flags.contains(.maskControl) && !controlRedirects
-        if let linesPerNotch = nativeZoom ? nil : ScrollWheelSupport.linearLinesPerNotch(
+        let linesPerNotch = nativeZoom ? nil : ScrollWheelSupport.linearLinesPerNotch(
             defaults: defaults,
-            isAvailable: AppFeature.linearScroll.isAvailable) {
+            isAvailable: AppFeature.linearScroll.isAvailable)
+        if let linesPerNotch {
             // Capture both axes before any set: writing a line delta makes the
             // system rederive its point and fixed-point fields.
-            let rawVertical = ScrollWheelAxisDelta(
-                line: event.getIntegerValueField(.scrollWheelEventDeltaAxis1),
-                point: event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1),
-                fixedPoint: event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1))
-            let rawHorizontal = ScrollWheelAxisDelta(
-                line: event.getIntegerValueField(.scrollWheelEventDeltaAxis2),
-                point: event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2),
-                fixedPoint: event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2))
+            let rawVertical = ScrollWheelAxisDelta(event, axis: .vertical)
+            let rawHorizontal = ScrollWheelAxisDelta(event, axis: .horizontal)
             let linearVertical = ScrollWheelSupport.linearDelta(
                 rawVertical, isContinuous: traits.isContinuous,
-                linesPerNotch: linesPerNotch, carry: linearCarryVertical)
+                linesPerNotch: linesPerNotch, speedMultiplier: speedMultiplier, carry: linearCarryVertical)
             let linearHorizontal = ScrollWheelSupport.linearDelta(
                 rawHorizontal, isContinuous: traits.isContinuous,
-                linesPerNotch: linesPerNotch, carry: linearCarryHorizontal)
+                linesPerNotch: linesPerNotch, speedMultiplier: speedMultiplier, carry: linearCarryHorizontal)
             linearCarryVertical = linearVertical.carry
             linearCarryHorizontal = linearHorizontal.carry
             // A fraction of a notch is carried into the next event rather
@@ -278,15 +291,16 @@ final class ScrollInverter: ObservableObject {
             linearCarryHorizontal = 0
         }
 
-        // The direction features read their own availability here: linear
-        // scrolling may be what keeps this tap alive, so the tap running says
-        // nothing about whether the wheel should be turned or redirected.
-        if directionApplies {
+        // Linear scrolling already scaled the distance before rounding. A
+        // plain wheel is scaled together with its direction, preserving both
+        // precise fields through the line writes.
+        let rawMultiplier = linesPerNotch == nil ? speedMultiplier : 1
+        if directionApplies || rawMultiplier != 1 {
             ScrollWheelSupport.applyDirection(
                 to: event, isContinuous: traits.isContinuous,
-                invertVertical: direction.invertVertical,
-                invertHorizontal: direction.invertHorizontal,
-                horizontalModifier: direction.horizontalModifier,
+                invertVertical: directionApplies && direction.invertVertical,
+                invertHorizontal: directionApplies && direction.invertHorizontal,
+                horizontalModifier: horizontalModifier, speedMultiplier: rawMultiplier,
                 targetsOwnWindow: ScrollWheelTarget.shared.contains(event.location)
             )
         }

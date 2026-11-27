@@ -85,6 +85,11 @@ enum SettingsFeatureTests {
                      "a real cleanup invocation remains on its normal startup path")
         let startup = (try? String(contentsOfFile: "Sources/Lattice/main.swift", encoding: .utf8)) ?? ""
         let backupDispatch = startup.range(of: "if let command = SettingsBackupSupport.command(")
+        if let migrate = startup.range(of: "Defaults.register()"),
+           let overlay = startup.range(of: "SettingsBackup.applyConfigFileAtLaunch()") {
+            suite.expect(migrate.lowerBound < overlay.lowerBound,
+                         "local preferences migrate before applying a partial startup declaration")
+        } else { suite.expect(false, "startup runs local migrations and declarative settings") }
         suite.expect(backupDispatch != nil && ["SuperKeyMappingGuard.", "Defaults.register()",
                      "MouseAccelerationGuard.", "MouseAccelerationService.", "SelfTest.", "Uninstaller."]
             .allSatisfy { name in
@@ -296,6 +301,10 @@ enum SettingsFeatureTests {
         suite.expect(backupKeys.contains(DefaultsKey.linearScrollEnabled)
                 && backupKeys.contains(DefaultsKey.linearScrollLines),
                "linear scrolling preferences travel with the settings backup")
+        suite.expect(backupKeys.contains(DefaultsKey.scrollSpeedEnabled)
+                && backupKeys.contains(DefaultsKey.scrollSpeedModifier)
+                && backupKeys.contains(DefaultsKey.scrollSpeedMultiplier),
+               "modifier-held scroll speed preferences travel with the settings backup")
         suite.expect(MouseExceptionScope.allCases.allSatisfy { backupKeys.contains($0.defaultsKey) },
                "the apps each mouse feature leaves alone travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.clipboardHistoryIgnoredApps),
@@ -313,8 +322,10 @@ enum SettingsFeatureTests {
         suite.expect(backupKeys.contains(DefaultsKey.clipboardHistoryLayout),
                "the clipboard history layout travels with the settings backup")
         suite.expect(!backupKeys.contains(DefaultsKey.clipboardHistoryWindowWidth)
-                && !backupKeys.contains(DefaultsKey.clipboardHistoryWindowHeight),
-               "the clipboard window size stays on the display where it was chosen")
+                && !backupKeys.contains(DefaultsKey.clipboardHistoryWindowHeight)
+                && !backupKeys.contains(DefaultsKey.clipboardHistoryWindowX)
+                && !backupKeys.contains(DefaultsKey.clipboardHistoryWindowY),
+               "the clipboard window geometry stays on the display where it was chosen")
         suite.expect(backupKeys.contains(DefaultsKey.windowLayoutIgnoredApps),
                "the apps that pause window layout travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.switcherAppRules),
@@ -354,6 +365,8 @@ enum SettingsFeatureTests {
                 && !backupKeys.contains(DefaultsKey.micMuteActive)
                 && !backupKeys.contains(DefaultsKey.micMuteSavedVolumes)
                 && !backupKeys.contains(DefaultsKey.micMuteSavedChannelVolumes)
+                && !backupKeys.contains(DefaultsKey.micMuteSavedControls)
+                && !backupKeys.contains(DefaultsKey.keepAwakeSessionEnd)
                 && !backupKeys.contains(DefaultsKey.micMuteMutedDevices)
                 && !backupKeys.contains(DefaultsKey.cleanerLastAutoRun)
                 && !backupKeys.contains(DefaultsKey.statusItemPlacementGeneration)
@@ -557,12 +570,14 @@ enum SettingsFeatureTests {
                "a file without the version envelope is rejected")
         let tampered: [String: Any] = [
             SettingsBackupSupport.formatVersionKey: 1,
-            SettingsBackupSupport.settingsKey: ["evilKey": "x", DefaultsKey.autoQuitEnabled: true] as [String: Any],
+            SettingsBackupSupport.settingsKey: ["evilKey": "x", DefaultsKey.autoQuitEnabled: true,
+                                                DefaultsKey.keepAwakeSessionEnd: ["end": 0.0, "minutes": 0]] as [String: Any],
         ]
         let filteredImport = SettingsBackupSupport.sanitizedSettings(from: tampered)
         suite.expect(filteredImport?["evilKey"] == nil
+                && filteredImport?[DefaultsKey.keepAwakeSessionEnd] == nil
                 && filteredImport?[DefaultsKey.autoQuitEnabled] as? Bool == true,
-               "unknown keys are dropped on import")
+               "unknown keys and live Stay Awake sessions are dropped on import")
         suite.expect(SettingsBackupSupport.sanitizedSettings(from: [
             SettingsBackupSupport.formatVersionKey: 99,
             SettingsBackupSupport.settingsKey: [String: Any](),
@@ -582,6 +597,143 @@ enum SettingsFeatureTests {
         suite.expect(SettingsBackupSupport.sanitizedSettings(from: stringVersionBackup)?[DefaultsKey.smoothScrollStep] as? Int == 60,
                "a backup with a string-encoded format version restores correctly")
 
+        // MARK: Settings file (issue #497)
+        SettingsFileTests.run(suite)
+        let configHome = URL(fileURLWithPath: "/Users/someone", isDirectory: true)
+        let configPath: ([String: String], Bool) -> String = {
+            SettingsBackupSupport.configFileURL(environment: $0, home: configHome, isDeveloperBuild: $1).path
+        }
+        suite.expect(configPath([:], false) == "/Users/someone/.config/lattice/settings.plist",
+               "without XDG_CONFIG_HOME the settings file lives in ~/.config")
+        suite.expect(configPath(["XDG_CONFIG_HOME": "/Users/someone/dotfiles"], false)
+                == "/Users/someone/dotfiles/lattice/settings.plist",
+               "an absolute XDG_CONFIG_HOME holds the settings file")
+        suite.expect(configPath(["XDG_CONFIG_HOME": ""], false) == configPath([:], false)
+                && configPath(["XDG_CONFIG_HOME": "dotfiles"], false) == configPath([:], false),
+               "an empty or relative XDG_CONFIG_HOME is ignored, as the XDG spec asks")
+        suite.expect(configPath([:], true) == "/Users/someone/.config/lattice-dev/settings.plist",
+               "the Developer build never reads the official app's settings file")
+        let binary = "/Applications/Lattice.app/Contents/MacOS/Lattice"
+        suite.expect(SettingsBackupSupport.appliesConfigFile(arguments: [binary])
+                && SettingsBackupSupport.appliesConfigFile(arguments: [binary, "-NSDocumentRevisionsDebugMode", "YES"]),
+               "a plain launch applies the settings file")
+        suite.expect(["--uninstall", "--selftest", "--mouse-acceleration-cleanup",
+                      SuperKeyMappingGuard.cleanupArgument, SettingsBackupSupport.importFlag].allSatisfy {
+                    !SettingsBackupSupport.appliesConfigFile(arguments: [binary, $0])
+                }, "cleanup, diagnostic and backup modes never apply the settings file")
+        let localLogo: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.logo.rawValue,
+        ]
+        suite.expect(SettingsBackupSupport.keepingLocalMediaLogos(
+                    [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue],
+                    local: localLogo)[DefaultsKey.mediaImageWatermarkKind] as? String
+                == MediaImageWatermarkKind.logo.rawValue,
+               "a file exported on this Mac keeps its local logo watermark")
+        suite.expect(SettingsBackupSupport.keepingLocalMediaLogos(
+                    [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.text.rawValue],
+                    local: localLogo)[DefaultsKey.mediaImageWatermarkKind] as? String
+                == MediaImageWatermarkKind.text.rawValue,
+               "a watermark the file chose itself still wins over the local logo")
+        let localEmptyTextAndLogo: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.textAndLogo.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "",
+        ]
+        let incomingDisabledWithCaption: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Caption",
+        ]
+        let firstDisabledApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingDisabledWithCaption,
+                                                                              local: localEmptyTextAndLogo)
+        let secondDisabledApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingDisabledWithCaption,
+                                                                               local: firstDisabledApply)
+        suite.expect(firstDisabledApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.logo.rawValue
+                     && secondDisabledApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.logo.rawValue
+                     && secondDisabledApply[DefaultsKey.mediaImageWatermarkText] as? String == "Caption",
+               "restoring a local logo onto an off incoming watermark does not enable incoming text and stays stable across launches")
+        let localOldTextAndLogo: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.textAndLogo.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Old",
+        ]
+        let incomingBlankText: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.text.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "",
+        ]
+        let firstBlankApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingBlankText,
+                                                                           local: localOldTextAndLogo)
+        let secondBlankApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingBlankText,
+                                                                            local: firstBlankApply)
+        suite.expect(firstBlankApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondBlankApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondBlankApply[DefaultsKey.mediaImageWatermarkText] as? String == "",
+               "restoring a local logo when the file clears watermark text survives repeated launches")
+        let localCaptionTextAndLogo: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.textAndLogo.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Caption",
+        ]
+        let incomingCaptionText: [String: Any] = [
+            DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.text.rawValue,
+            DefaultsKey.mediaImageWatermarkText: "Caption",
+        ]
+        let firstCaptionApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingCaptionText,
+                                                                             local: localCaptionTextAndLogo)
+        let secondCaptionApply = SettingsBackupSupport.keepingLocalMediaLogos(incomingCaptionText,
+                                                                              local: firstCaptionApply)
+        suite.expect(firstCaptionApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondCaptionApply[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.textAndLogo.rawValue
+                     && secondCaptionApply[DefaultsKey.mediaImageWatermarkText] as? String == "Caption",
+               "a plain textAndLogo round-trip stays stable across launches")
+        suite.expect(SettingsBackupSupport.keepingLocalMediaLogos(
+                    [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue],
+                    local: [DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue])[DefaultsKey.mediaImageWatermarkKind] as? String
+                == MediaImageWatermarkKind.off.rawValue,
+               "an off local watermark stays off when the file is also off")
+        do {
+            var localOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            localOptions.watermark.kind = .textAndLogo
+            localOptions.watermark.text = ""
+            localOptions.watermark.logoPath = "/Users/example/logo.png"
+            var incomingOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            incomingOptions.watermark.kind = .off
+            incomingOptions.watermark.text = "Caption"
+            incomingOptions.watermark.logoPath = ""
+            var localOldOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            localOldOptions.watermark.kind = .textAndLogo
+            localOldOptions.watermark.text = "Old"
+            localOldOptions.watermark.logoPath = "/Users/example/logo2.png"
+            var incomingBlankOptions = MediaImageOptions(quality: 0.8, maxDimension: 1200, format: .png, stripMetadata: true)
+            incomingBlankOptions.watermark.kind = .text
+            incomingBlankOptions.watermark.text = ""
+            incomingBlankOptions.watermark.logoPath = ""
+            let localProfiles = [
+                MediaImageProfile(id: "p1", name: "Blog", options: localOptions),
+                MediaImageProfile(id: "p2", name: "Docs", options: localOldOptions),
+            ]
+            let incomingProfiles = [
+                MediaImageProfile(id: "p1", name: "Blog", options: incomingOptions),
+                MediaImageProfile(id: "p2", name: "Docs", options: incomingBlankOptions),
+            ]
+            if let localData = try? JSONEncoder().encode(localProfiles),
+               let incomingData = try? JSONEncoder().encode(incomingProfiles),
+               let localJSON = String(data: localData, encoding: .utf8),
+               let incomingJSON = String(data: incomingData, encoding: .utf8) {
+                let firstRestored = MediaSupport.restoringProfileLogos(incomingJSON, local: localJSON)
+                let secondRestored = MediaSupport.restoringProfileLogos(incomingJSON, local: firstRestored)
+                let decoded1 = try? JSONDecoder().decode([MediaImageProfile].self, from: Data(firstRestored.utf8))
+                let decoded2 = try? JSONDecoder().decode([MediaImageProfile].self, from: Data(secondRestored.utf8))
+                suite.expect(decoded1?.first?.options.watermark.kind == .logo
+                             && decoded2?.first?.options.watermark.kind == .logo
+                             && decoded2?.first?.options.watermark.logoPath == "/Users/example/logo.png"
+                             && decoded2?.first?.options.watermark.text == "Caption",
+                             "restoring a profile logo onto an off incoming watermark keeps text disabled and stays stable")
+                suite.expect(decoded1?.last?.options.watermark.kind == .textAndLogo
+                             && decoded2?.last?.options.watermark.kind == .textAndLogo
+                             && decoded2?.last?.options.watermark.logoPath == "/Users/example/logo2.png"
+                             && decoded2?.last?.options.watermark.text == "",
+                             "restoring a profile logo when the file clears watermark text survives repeated launches")
+            } else {
+                suite.expect(false, "profile logo test fixture encodes")
+            }
+        }
         // A backup file can be edited by hand, and a value of the wrong shape
         // would reach code that trusts its own settings.
         let wrongShapes: [String: Any] = [

@@ -2285,6 +2285,13 @@ enum PointerInputFeatureTests {
                                               longHold: true,
                                               repeated: true) == .capsLock,
                "the input-source action switches on a quick press and reserves a hold for Caps Lock")
+        suite.expect(SuperKeySupport.hasNativeCapsLock(in: nil)
+                && SuperKeySupport.hasNativeCapsLock(in: [])
+                && SuperKeySupport.hasNativeCapsLock(in: [["HIDKeyboardModifierMappingSrc": NSNumber(value: SuperKeySource.rightCommand.usage)]])
+                && !SuperKeySupport.hasNativeCapsLock(in: [["HIDKeyboardModifierMappingSrc": NSNumber(value: SuperKeySource.capsLock.usage)]])
+                && !SuperKeySupport.hasNativeCapsLock(in: [["unrecognized": 1]])
+                && !SuperKeySupport.hasNativeCapsLock(in: "unrecognized"),
+               "a keyboard must have a native Caps Lock before its lock is cleared during repair")
         suite.expect(SuperKeySupport.nextInputSourceID(currentID: "abc",
                                                  enabledIDs: ["abc", "pinyin", "kana"]) == "pinyin"
                 && SuperKeySupport.nextInputSourceID(currentID: "kana",
@@ -3641,6 +3648,8 @@ enum PointerInputFeatureTests {
             .dropFirst().first?.components(separatedBy: "Permissions.shared.$screenRecording").first ?? ""
         suite.expect(accessibilitySink.contains(".quitWindowProtection"),
                "granting Accessibility starts quit protection without a relaunch")
+        suite.expect(accessibilitySink.contains(".scrollSpeed"),
+               "an Accessibility change re-syncs speed when it is the only installed wheel feature")
         let smoothSchedulerSource = (try? String(
             contentsOfFile: "Sources/Lattice/Services/SmoothScrollService.swift",
             encoding: .utf8)) ?? ""
@@ -3661,6 +3670,17 @@ enum PointerInputFeatureTests {
                     && source.contains("tapCreationRetryWork?.cancel()"),
                    "\(name) retries tap creation once instead of polling forever")
         }
+        // The inverter turns the wheel at the HID stage, before the glide's
+        // annotated-stage tap sees it; turning it there too would cancel out.
+        suite.expect(scrollInverterSource.contains("tap: .cghidEventTap")
+                && smoothSchedulerCode.contains("tap: ScrollWheelSupport.tapLocation")
+                && ScrollWheelSupport.tapLocation == .cgAnnotatedSessionEventTap,
+               "the scroll inverter's tap runs ahead of smooth scrolling's")
+        suite.expect(!smoothSchedulerCode.contains("direction.invertVertical")
+                && !smoothSchedulerCode.contains("direction.invertHorizontal")
+                && !smoothSchedulerCode.contains("redirectVerticalScroll(")
+                && smoothSchedulerCode.contains("== ScrollWheelSupport.horizontalRedirectTag"),
+               "smooth scrolling glides the wheel as the inverter left it, without flipping or redirecting it again")
         suite.expect(smoothSchedulerCode.contains("screen.displayLink(")
                 && smoothSchedulerCode.contains("displayLink.add(to: .main, forMode: .common)")
                 && smoothSchedulerCode.contains("sender.timestamp")

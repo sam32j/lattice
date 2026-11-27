@@ -83,5 +83,20 @@ enum RecorderSaveStateTests {
             suite.expect(controller.model.isModified && controller.preservedExportURL == nil,
                          "failed or cancelled exports never mark edits saved")
         }
+        do {
+            RecorderExporter.reply = nil
+            let controller = Controller()
+            controller.model.document.exportSpeed = 2
+            var completed = false
+            controller.run(.video, to: destination, rememberDestination: false, marksSaved: false) { _ in
+                completed = true
+            }
+            wait { RecorderExporter.reply != nil }
+            RecorderExporter.reply?.resume(returning: nil)
+            RecorderExporter.reply = nil
+            wait { completed }
+            suite.expect(completed && controller.model.isModified && controller.preservedExportURL == nil,
+                         "exports with marksSaved=false leave edits unsaved until publication succeeds")
+        }
     }
 }

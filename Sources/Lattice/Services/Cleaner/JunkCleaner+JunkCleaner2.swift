@@ -84,8 +84,22 @@ extension JunkCleaner {
         return NSWorkspace.shared.urlForApplication(withBundleIdentifier: candidate) != nil
     }
 
+    static func hasLivingLeftoverOwner(_ owner: String, at url: URL, installed: Set<String>) -> Bool {
+        if hasLivingOwner(owner, installed: installed) { return true }
+        let isSupportEntry = [NSHomeDirectory() + "/Library", systemLibrary].contains { library in
+            let support = URL(fileURLWithPath: library + "/Application Support", isDirectory: true)
+            return CleanerSupport.isDirectChild(url, of: support)
+        }
+        guard isSupportEntry,
+              CleanerSupport.isOwnedSupportDomain(url.lastPathComponent, byInstalled: installed) else { return false }
+        // A confirmed file remains eligible. Keep the entry if its type cannot be read.
+        return (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != false
+    }
+
+    static let systemLibrary = "/Library"
+
     static func isDirectLeftoverRootChild(_ url: URL) -> Bool {
-        [NSHomeDirectory() + "/Library", "/Library"].contains { library in
+        [NSHomeDirectory() + "/Library", systemLibrary].contains { library in
             leftoverRoots.contains { root in
                 CleanerSupport.isDirectChild(
                     url,
@@ -97,7 +111,7 @@ extension JunkCleaner {
 
     static func scanLeftovers(installed: Set<String>) -> [Item] {
         let fm = FileManager.default
-        let libraries = [NSHomeDirectory() + "/Library", "/Library"]
+        let libraries = [NSHomeDirectory() + "/Library", systemLibrary]
         var found: [Item] = []
         for library in libraries {
             for root in leftoverRoots {
@@ -129,7 +143,7 @@ extension JunkCleaner {
             guard values?.isSymbolicLink != true else { continue }
             if let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: usesContainerMetadata) {
                 if CleanerSupport.isProtectedBundleID(owner)
-                    || hasLivingOwner(owner, installed: installed) {
+                    || hasLivingLeftoverOwner(owner, at: url, installed: installed) {
                     continue
                 }
                 guard CleanerScanPrivacy.mayRemoveTree(url, fm: fm) else { continue }

@@ -34,6 +34,7 @@ enum SmoothScrollRoutingTests {
     }
     enum Capture {
         static func steppedLoupeNeedsRawWheel(optionPressed: Bool) -> Bool { false }
+        static func isActiveLoupeWindow(_ windowNumber: Int) -> Bool { false }
     }
     /// Whether the event came in at the HID stage; false stands for a remote
     /// screen's scroll, posted further down.
@@ -249,21 +250,46 @@ enum SmoothScrollRoutingTests {
                      "a continuous wheel keeps its pixel distance and replaces the discrete tail")
         defaults.set(true, forKey: AppFeature.scrollInverter.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.scrollInverterEnabled)
+        // Scroll Direction's tap sits at the HID stage, ahead of this one, so
+        // a tick arrives already turned and the glide must not turn it back.
         let inverted = Service()
         _ = tick(inverted, wheel())
-        suite.expect(inverted.engine.remainingVertical == -40,
-                     "smoothing applies vertical inversion once before targeted delivery")
+        suite.expect(inverted.engine.remainingVertical == 40,
+                     "smoothing does not turn the wheel a second time while inversion is on")
+        let turnedTick = wheel()
+        turnedTick.setIntegerValueField(.scrollWheelEventDeltaAxis1, value: -1)
+        turnedTick.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: -1)
+        turnedTick.setIntegerValueField(.scrollWheelEventPointDeltaAxis1, value: -10)
+        let alreadyTurned = Service()
+        _ = tick(alreadyTurned, turnedTick)
+        suite.expect(alreadyTurned.engine.remainingVertical == -40,
+                     "smoothing glides a tick the inverter turned in the direction it was turned")
         defaults.set(true, forKey: AppFeature.scrollHorizontal.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.scrollHorizontalEnabled)
         defaults.set(ScrollHorizontalModifier.option.rawValue, forKey: DefaultsKey.scrollHorizontalModifier)
         defaults.set(true, forKey: DefaultsKey.scrollInverterHorizontalEnabled)
+        // The inverter redirects at the HID stage: the tick comes sideways,
+        // turned, tagged and without its modifier.
+        let sideways = wheel()
+        sideways.setIntegerValueField(.scrollWheelEventDeltaAxis1, value: 0)
+        sideways.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
+        sideways.setIntegerValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
+        sideways.setIntegerValueField(.scrollWheelEventDeltaAxis2, value: -1)
+        sideways.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: -1)
+        sideways.setIntegerValueField(.scrollWheelEventPointDeltaAxis2, value: -10)
+        sideways.setIntegerValueField(.eventSourceUserData, value: ScrollWheelSupport.horizontalRedirectTag)
         let redirected = Service()
-        _ = tick(redirected, wheel(flags: .maskAlternate))
+        _ = tick(redirected, sideways)
         frame(redirected)
         suite.expect(redirected.engine.remainingVertical == 0 && redirected.engine.remainingHorizontal < 0
+                && redirected.currentScrollRedirected
                 && posted.last?.event.flags.contains(.maskAlternate) == false
                 && posted.last!.event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2) < 0,
-                     "targeted frames retain horizontal redirection and consume its modifier once")
+                     "targeted frames keep the inverter's horizontal redirection as it came")
+        let held = Service()
+        _ = tick(held, wheel(flags: .maskAlternate))
+        suite.expect(held.engine.remainingHorizontal == 0 && held.engine.remainingVertical == 40,
+                     "smoothing does not redirect a tick itself, so the modifier is never applied twice")
         defaults.set(false, forKey: DefaultsKey.scrollInverterEnabled)
         defaults.set(false, forKey: DefaultsKey.scrollInverterHorizontalEnabled)
         defaults.set(false, forKey: DefaultsKey.scrollHorizontalEnabled)
@@ -286,11 +312,13 @@ enum SmoothScrollRoutingTests {
         suite.expect(distance == 40 && !landing.scheduled && landing.targetEvent == nil
                 && landing.targetLatch.target == nil,
                      "a complete glide delivers its full distance and releases the original receiver")
-        for path in ["Sources/Lattice/Services/SmoothScrollService.swift", "Sources/Lattice/Services/ScrollInverter.swift"] {
-            let source = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
-            suite.expect(source.contains("tap: ScrollWheelSupport.tapLocation"),
-                         "both wheel taps retain their ordering at the stage with window annotations")
-        }
+        let smoothSource = (try? String(contentsOfFile: "Sources/Lattice/Services/SmoothScrollService.swift",
+                                        encoding: .utf8)) ?? ""
+        let inverterSource = (try? String(contentsOfFile: "Sources/Lattice/Services/ScrollInverter.swift",
+                                          encoding: .utf8)) ?? ""
+        suite.expect(smoothSource.contains("tap: ScrollWheelSupport.tapLocation")
+                && inverterSource.contains("tap: .cghidEventTap"),
+                     "the inverter turns the wheel at the HID stage, ahead of the glide at the stage with window annotations")
         suite.expect(ScrollWheelSupport.tapLocation == .cgAnnotatedSessionEventTap,
                      "wheel routing starts after the window server identifies its receiver")
         // A listener is told asynchronously and could note an event after it
@@ -303,11 +331,13 @@ enum SmoothScrollRoutingTests {
                                   encoding: .utf8)) ?? ""
         let inverter = (try? String(contentsOfFile: "Sources/Lattice/Services/ScrollInverter.swift",
                                     encoding: .utf8)) ?? ""
+        // The inverter is a HID tap itself; only the glide, further down,
+        // needs the stage watched to leave remote scrolling alone.
         suite.expect(smooth.contains("ScrollWheelHIDStage.shared.setWatching(true, for: .smoothScroll)")
-                && inverter.contains("ScrollWheelHIDStage.shared.setWatching(true, for: .wheelTap)"),
-                     "both wheel taps keep the HID stage watched while they run")
-        // That stage comes after the session taps that keep the wheel for
-        // themselves, so they turn it the way Scroll Direction would.
+                && !inverter.contains("setWatching(true, for: .wheelTap)"),
+                     "the glide keeps the HID stage watched while it runs")
+        // The session taps that keep the wheel read it through the inverter's
+        // copy, which turns it only when the HID-stage tap is not running.
         let layout = (try? String(contentsOfFile: "Sources/Lattice/Services/WindowLayout/WindowLayoutService.swift",
                                   encoding: .utf8)) ?? ""
         suite.expect(layout.contains("let wheel = ScrollInverter.directionApplied(to: event)")

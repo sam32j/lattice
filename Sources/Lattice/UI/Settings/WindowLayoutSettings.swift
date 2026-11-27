@@ -11,6 +11,7 @@ struct WindowLayoutSettings: View {
     @ObservedObject var service = WindowLayoutService.shared
     @AppStorage(DefaultsKey.windowMaximizeEnabled) var maximizeEnabled = false
     @AppStorage(DefaultsKey.windowEdgeSnapEnabled) var edgeSnapEnabled = false
+    @AppStorage(DefaultsKey.windowEdgeSnapRestoreOnDrag) var edgeSnapRestoreOnDrag = false
     @AppStorage(DefaultsKey.windowEdgeSnapDisabledZones) var edgeSnapDisabledZones = ""
     @AppStorage(DefaultsKey.windowEdgeSnapZoneActions) var edgeSnapZoneActions = ""
     @AppStorage(DefaultsKey.windowGestureEnabled) var gestureEnabled = false

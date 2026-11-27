@@ -251,6 +251,7 @@ enum NotchPresentationRefreshContract {
         var musicDepartureWork: DispatchWorkItem?
         var noticeExpanded = false
         var notice: Bool?
+        var stripNotice: Bool? { notice }
         var captureSelectionInProgress = false
         var inside = false, trackingMenu = false
         func removeEventMonitors() {}

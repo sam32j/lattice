@@ -5,11 +5,23 @@ extension WindowLayoutSettings {
         edgeSnapDisabledZones.isEmpty && (edgeSnapZoneActions.isEmpty || WindowEdgeSnapLayout(storageValue: edgeSnapZoneActions) == .standard)
     }
 
+    /// macOS tiling takes the same edges, so Lattice's snapping waits for it
+    /// to be turned off in Desktop & Dock.
+    private var systemTilingStatus: SettingsFeatureStatus {
+        SettingsFeatureStatus(color: .red, message: text.edgeSnapSystemConflict)
+    }
+
     var edgeSnapControls: some View {
         // The follow-up groups sit at different gaps under the switch, so
         // each carries its own and rolls it up with itself.
         VStack(alignment: .leading, spacing: 0) {
             SettingsControlRow(title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
+                // A conflict reads the way Super Key's and the Spaces
+                // switch's do: a red status icon beside the switch, the
+                // explanation in its hint.
+                if systemTilingEnabled {
+                    SettingsStatusDot(status: systemTilingStatus)
+                }
                 PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
@@ -41,27 +53,18 @@ extension WindowLayoutSettings {
                     Text(WindowLayoutFeatureStrings.edgeSnapCustomizeHint(l10n.language))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    let restore = WindowEdgeSnapRestoreStrings.localized(l10n.language)
+                    SettingsControlRow(title: restore.title, caption: restore.caption) {
+                        Toggle(restore.title, isOn: $edgeSnapRestoreOnDrag)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+                    .padding(.top, 9)
                 }
                 .padding(.top, 17)
-                .transition(.settingsReveal)
-            }
-            if systemTilingEnabled {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    if edgeSnapEnabled {
-                        Text(text.edgeSnapWaitingForSystem)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .transition(.settingsReveal)
-                    }
-                    Button(text.edgeSnapOpenSystemSettings) {
-                        NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
-                    }
-                    .controlSize(.small)
-                }
-                .padding(.top, 13)
+                // Nothing here takes effect while macOS holds the edges, so
+                // the follow-ups grey out, as Super Key's options do.
+                .disabled(systemTilingEnabled)
                 .transition(.settingsReveal)
             }
         }
@@ -203,3 +206,4 @@ struct WindowLayoutShortcutsSettings: View {
         .settingsExpansionAnimation(value: [permissions.accessibility, holdToCycleDisplayEnabled])
     }
 }
+

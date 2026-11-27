@@ -27,6 +27,10 @@ struct MouseSettings: View {
     @AppStorage(DefaultsKey.smoothScrollStep) var smoothScrollStep = SmoothScrollSupport.defaultStep
     @AppStorage(DefaultsKey.mouseAccelerationDisabled) var mouseAccelerationDisabled = false
     @AppStorage(DefaultsKey.linearScrollEnabled) var linearScrollEnabled = false
+    @AppStorage(DefaultsKey.scrollSpeedEnabled) var scrollSpeedEnabled = false
+    @AppStorage(DefaultsKey.scrollSpeedModifier) var scrollSpeedModifier = ScrollHorizontalModifier.option
+    @AppStorage(DefaultsKey.scrollSpeedMultiplier) var scrollSpeedMultiplier =
+        ScrollWheelSupport.defaultSpeedMultiplier
     @AppStorage(DefaultsKey.linearScrollLines) var linearScrollLines =
         ScrollWheelSupport.defaultLinesPerNotch
     @AppStorage(DefaultsKey.smoothScrollResponse) var smoothScrollResponse =
@@ -73,7 +77,7 @@ struct MouseSettings: View {
         .onAppear {
             MiddleClickService.shared.refreshDragGestureConflict()
         }
-        .settingsExpansionAnimation(value: [horizontalScrollEnabled, smoothScrollEnabled, linearScrollEnabled,
+        .settingsExpansionAnimation(value: [horizontalScrollEnabled, scrollSpeedEnabled, smoothScrollEnabled, linearScrollEnabled,
             focusFollowsMouseEnabled, focusFollowsMouseRaise, mouseNavigationEnabled, mouseButtonShortcutsEnabled,
             spacesEnabled, mouseClickDebounceEnabled, middleClickEnabled, accessibilityNoteVisible])
     }
@@ -84,6 +88,8 @@ struct MouseSettings: View {
         SettingsCard(symbol: "pointer.arrow.motionlines", title: InputSettingsStrings.text(.mouseScrolling, l10n.language)) {
             VStack(alignment: .leading, spacing: 13) {
                 scrollControls.settingsSectionAnchor(.scrollDirection, cornerRadius: 12)
+                Divider()
+                scrollSpeedControls.settingsSectionAnchor(.scrollSpeed, cornerRadius: 12)
                 Divider()
                 smoothScrollControls.settingsSectionAnchor(.smoothScroll, cornerRadius: 12)
                 Divider()
@@ -124,6 +130,7 @@ struct MouseSettings: View {
             || focusFollowsMouseEnabled
             || smoothScrollEnabled
             || linearScrollEnabled
+            || scrollSpeedEnabled
             || mouseNavigationEnabled
             || ((mouseButtonShortcutsEnabled || spacesEnabled)
                 && AppFeature.mouseButtonShortcuts.isAvailable)

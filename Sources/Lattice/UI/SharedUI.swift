@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import AppKit
 import SwiftUI
 
 struct FullDiskAccessNote: View {
@@ -272,6 +273,62 @@ struct DisclosureHeaderRow<Label: View>: View {
         .buttonStyle(.plain)
         .accessibilityValue(isExpanded.wrappedValue
             ? l10n.s.disclosureExpanded : l10n.s.disclosureCollapsed)
+    }
+}
+
+/// A checkbox that can also show AppKit's mixed state, which SwiftUI's Toggle
+/// cannot draw. One control stands for a list of independently checkable rows:
+/// all checked, none, or a dash for some of each.
+struct MixedStateCheckbox: NSViewRepresentable {
+    let title: String
+    let isOn: Bool
+    let isMixed: Bool
+    var isEnabled = true
+    /// The title's point size, matched to the text around each use site.
+    var fontSize: CGFloat = 12
+    /// A box beside text that already says what it selects keeps the title
+    /// for VoiceOver alone.
+    var showsTitle = true
+
+    let onToggle: () -> Void
+
+    func makeNSView(context: Context) -> NSButton {
+        let button = NSButton(checkboxWithTitle: title, target: context.coordinator,
+                              action: #selector(Coordinator.toggled(_:)))
+        button.allowsMixedState = true
+        // Both axes: a docked footer otherwise stretches the box vertically
+        // and grows into the list above it.
+        for axis in [NSLayoutConstraint.Orientation.horizontal, .vertical] {
+            button.setContentHuggingPriority(.required, for: axis)
+            button.setContentCompressionResistancePriority(.required, for: axis)
+        }
+        return button
+    }
+
+    /// SwiftUI asks for a size it may then stretch; the box keeps its own.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView button: NSButton, context: Context) -> CGSize? {
+        button.intrinsicContentSize
+    }
+
+    func updateNSView(_ button: NSButton, context: Context) {
+        context.coordinator.onToggle = onToggle
+        button.title = showsTitle ? title : ""
+        button.setAccessibilityLabel(title)
+        button.font = .systemFont(ofSize: fontSize)
+        button.isEnabled = isEnabled
+        // The model decides the value; AppKit's own click cycling is undone
+        // here on the next render.
+        button.state = isMixed ? .mixed : (isOn ? .on : .off)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(onToggle: onToggle) }
+
+    final class Coordinator: NSObject {
+        var onToggle: () -> Void
+
+        init(onToggle: @escaping () -> Void) { self.onToggle = onToggle }
+
+        @objc func toggled(_ sender: NSButton) { onToggle() }
     }
 }
 

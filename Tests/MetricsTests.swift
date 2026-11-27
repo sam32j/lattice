@@ -34,12 +34,14 @@ struct MetricsTests {
             ("pointer-input", {
                 PointerOnDisplayContract.run(suite)
                 PointerInputFeatureTests.run(suite)
+                SmoothScrollRoutingTests.run(suite)
                 KeyboardDebounceTapTests.run(suite)
                 PointerDisplayLookupContract.run(suite)
                 SuperKeyTapContract.run(suite)
                 PointerScreenContract.run(suite)
             }),
             ("scroll-modifier", { ScrollHorizontalModifierTests.run(suite) }),
+            ("scroll-speed", { ScrollSpeedTests.run(suite) }),
             ("linear-scroll", { LinearScrollTapTests.run(suite) }),
             ("preferences", { PreferencesFeatureTests.run(suite) }),
             ("app-management", {
@@ -55,6 +57,7 @@ struct MetricsTests {
                 MixerOutputAdjustmentContract.run(suite)
                 MixerLevelCompensationContract.run(suite)
                 MixerTapConfigurationTests.run(suite)
+                MixerGainRampContract.run(suite)
                 SoundOutputSwitchContract.run(suite)
                 MixerUniversalRoutingContract.run(suite)
                 AirPlayRingBufferContract.run(suite)
@@ -113,10 +116,13 @@ struct MetricsTests {
             ("recorder", {
                 RecorderOverlayTests.run(suite)
                 RecorderGIFWriterTests.run(suite)
+                RecorderFastGIFWriterTests.run(suite)
                 RecorderFeatureTests.run(suite)
                 RecorderZoomAimingTests.run(suite)
                 RecorderExportSpeedTests.run(suite)
+                RecorderExportControlsTests.run(suite)
                 RecorderExportRenderingTests.run(suite)
+                RecorderFastGIFExportTests.run(suite)
             }),
             ("command-bar", {
                 CommandBarFeatureTests.run(suite)
@@ -166,6 +172,7 @@ struct MetricsTests {
                 SettingsWindowTests.run { suite.expect($0, $1) }
                 PermissionDetailsSheetTests.run { suite.expect($0, $1) }
                 NotchSettingsChoiceTests.run(suite)
+                Upstream344SettingsTests.run(suite)
             }),
             ("display-restoration", {
                 DisplayRestorationTests.run(suite)
@@ -229,6 +236,8 @@ struct MetricsTests {
             ("uninstaller", {
                 HomebrewOwnershipTests.run(suite)
                 UninstallerFlowTests.run(suite)
+                UninstallerBulkSelectionTests.run(suite)
+                MixedStateCheckboxTests.run(suite)
                 UninstallerCommandBarCleanupTests.run(suite)
                 SelfUninstallContract.run(suite)
                 InputEventTapTests.run(suite)

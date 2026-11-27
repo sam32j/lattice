@@ -25,6 +25,9 @@ enum DefaultsKey {
     // to match, and losing one ends the session). Issue #1587.
     static let keepAwakeAutomationRequireAll = "keepAwakeAutomationRequireAll"
     static let keepAwakePauseWhenLocked = "keepAwakePauseWhenLocked"
+    // The running manual session's end (0 = indefinite) and selected preset, if any.
+    // Absent when there is no session to resume. Live state, never backed up.
+    static let keepAwakeSessionEnd = "keepAwakeSessionEnd"
     static let keepAwakeMouseJiggleEnabled = "keepAwakeMouseJiggleEnabled"
     static let keepAwakeMouseJiggleInterval = "keepAwakeMouseJiggleIntervalMinutes"
     static let hotkeyEnabled = "hotkeyEnabled"
@@ -47,6 +50,9 @@ enum DefaultsKey {
     static let smoothScrollStep = "smoothScrollStep"      // pixels per wheel tick
     static let linearScrollEnabled = "linearScrollEnabled" // every mouse wheel notch scrolls the same lines (issue #403)
     static let linearScrollLines = "linearScrollLines"     // lines per wheel notch while linear scrolling is on
+    static let scrollSpeedEnabled = "scrollSpeedEnabled"   // hold a modifier to multiply mouse wheel distance (issue #521)
+    static let scrollSpeedModifier = "scrollSpeedModifier"
+    static let scrollSpeedMultiplier = "scrollSpeedMultiplier"
     static let mouseAccelerationDisabled = "mouseAccelerationDisabled" // sets HIDMouseAcceleration to -1 for mice
     static let smoothScrollResponse = "smoothScrollResponse" // 0...100, higher follows the wheel sooner
     static let smoothScrollCoast = "smoothScrollCoast" // 0...100, higher coasts the same distance out longer
@@ -96,6 +102,7 @@ enum DefaultsKey {
     static let switcherShowShortcutHints = "switcherShowShortcutHints" // show the shortcut bar under the large-icon switcher
     static let switcherAppearanceDelay = "switcherAppearanceDelay" // milliseconds the shortcut must be held before the panel appears (SwitcherSupport.appearanceDelayMillisecondsRange)
     static let switcherInstantSelection = "switcherInstantSelection" // skip selection and reveal animations while browsing
+    static let switcherIgnoreHoverSelection = "switcherIgnoreHoverSelection" // pointer movement does not change the highlight; click still commits
     static let switcherScreenPlacement = "switcherScreenPlacement" // SwitcherScreenPlacement raw value: which display the panel opens on
     static let switcherCurrentDisplayOnly = "switcherCurrentDisplayOnly" // list only windows on the display under the pointer (issue #1391)
     static let switcherMaxColumns = "switcherMaxColumns" // 0 = Auto, else the most items per row (SwitcherSupport.maxColumnsRange)
@@ -201,6 +208,9 @@ enum DefaultsKey {
     // Set once the paths cached before paired discovery requests have been
     // dropped, so a monitor written off then is classified again exactly once.
     static let brightnessDDCWriteOnlyPathsRechecked = "brightnessDDCWriteOnlyPathsRechecked"
+    // The read checksum fix needs its own recheck even if the paired-request
+    // migration already ran and cached the monitor as write-only again.
+    static let brightnessDDCReadChecksumRechecked = "brightnessDDCReadChecksumRechecked"
     /// A beta already installed the companion for this Command Bar user, once.
     static let notchMascotBetaInstalled = "notchMascotBetaInstalled"
     // Per-monitor connection paths a person has told this app to dim in
@@ -415,6 +425,8 @@ enum DefaultsKey {
     static let clipboardHistoryLayout = "clipboardHistoryLayout" // cards | list, how the history window shows entries
     static let clipboardHistoryWindowWidth = "clipboardHistoryWindowWidth" // the list window's chosen size
     static let clipboardHistoryWindowHeight = "clipboardHistoryWindowHeight"
+    static let clipboardHistoryWindowX = "clipboardHistoryWindowX"
+    static let clipboardHistoryWindowY = "clipboardHistoryWindowY"
     static let clipboardHistoryMenuBarPreview = "clipboardHistoryMenuBarPreview" // show latest copy next to the menu bar icon
     static let clipboardHistoryMenuBarPreviewLength = "clipboardHistoryMenuBarPreviewLength" // characters shown before truncating
 
@@ -482,6 +494,7 @@ enum DefaultsKey {
     static let micMuteSavedVolume = "micMuteSavedVolume"     // input volume to restore on unmute (pre 3.2.0 state)
     static let micMuteSavedVolumes = "micMuteSavedVolumes"   // [device uid: input volume] to restore on unmute
     static let micMuteSavedChannelVolumes = "micMuteSavedChannelVolumes" // [device uid: [channel: input volume]] to restore on unmute
+    static let micMuteSavedControls = "micMuteSavedControls" // [device uid: [selector:element: original value]] pending restoration
     static let micMuteMutedDevices = "micMuteMutedDevices"   // uids of the devices this app muted
     static let micMuteMenuBarIndicator = "micMuteMenuBarIndicator" // badge the status icon while muted
     static let quickLauncherShortcutEnabled = "quickLauncherShortcutEnabled"
@@ -593,7 +606,8 @@ enum DefaultsKey {
     static let recorderSaveFolder = "recorderSaveFolder"
     static let recorderOpenEditor = "recorderOpenEditor"
     static let recorderAutomaticZoom = "recorderAutomaticZoom"
-    static let recorderGIFSize = "recorderGIFSize"
+    static let recorderGIFSize = "recorderGIFSize" // retired; migrated to recorderGIFScalePercent
+    static let recorderGIFScalePercent = "recorderGIFScalePercent" // default GIF size for new recordings, in percent
     static let recorderGIFFrameRate = "recorderGIFFrameRate"
     static let recorderEditorPresets = "recorderEditorPresets"
     static let recorderSharingEnabled = "recorderSharingEnabled"
@@ -607,6 +621,7 @@ enum DefaultsKey {
     static let windowEdgeSnapEnabled = "windowEdgeSnapEnabled"
     static let windowEdgeSnapDisabledZones = "windowEdgeSnapDisabledZones" // comma-separated visual zone ids
     static let windowEdgeSnapZoneActions = "windowEdgeSnapZoneActions" // zone=action entries, + between split areas
+    static let windowEdgeSnapRestoreOnDrag = "windowEdgeSnapRestoreOnDrag" // dragging a snapped window away restores its earlier size
     static let windowGestureEnabled = "windowGestureEnabled"
     static let windowGestureModifiers = "windowGestureModifiers"
     static let windowGestureRaiseWindow = "windowGestureRaiseWindow"
@@ -941,6 +956,9 @@ enum Defaults {
         DefaultsKey.smoothScrollStep: 40,
         DefaultsKey.linearScrollEnabled: false,
         DefaultsKey.linearScrollLines: ScrollWheelSupport.defaultLinesPerNotch,
+        DefaultsKey.scrollSpeedEnabled: false,
+        DefaultsKey.scrollSpeedModifier: ScrollHorizontalModifier.option.rawValue,
+        DefaultsKey.scrollSpeedMultiplier: ScrollWheelSupport.defaultSpeedMultiplier,
         DefaultsKey.mouseAccelerationDisabled: false,
         DefaultsKey.smoothScrollResponse: SmoothScrollSupport.defaultResponse,
         DefaultsKey.smoothScrollCoast: SmoothScrollSupport.defaultCoast,
@@ -977,6 +995,7 @@ enum Defaults {
         DefaultsKey.switcherShowShortcutHints: true,
         DefaultsKey.switcherAppearanceDelay: SwitcherSupport.defaultAppearanceDelayMilliseconds,
         DefaultsKey.switcherInstantSelection: false,
+        DefaultsKey.switcherIgnoreHoverSelection: false,
         DefaultsKey.switcherScreenPlacement: SwitcherScreenPlacement.fallback.rawValue,
         DefaultsKey.switcherCurrentDisplayOnly: false,
         DefaultsKey.switcherMaxColumns: 0,
@@ -1433,6 +1452,7 @@ enum Defaults {
         DefaultsKey.recorderOpenEditor: true,
         DefaultsKey.recorderAutomaticZoom: true,
         DefaultsKey.recorderGIFSize: RecorderSupport.GIFSize.medium.rawValue,
+        DefaultsKey.recorderGIFScalePercent: 75,
         DefaultsKey.recorderGIFFrameRate: 12,
         DefaultsKey.recorderEditorPresets: Data(),
         DefaultsKey.recorderSharingEnabled: true,
@@ -1506,6 +1526,7 @@ enum Defaults {
         DefaultsKey.windowEdgeSnapEnabled: false,
         DefaultsKey.windowEdgeSnapDisabledZones: "",
         DefaultsKey.windowEdgeSnapZoneActions: "",
+        DefaultsKey.windowEdgeSnapRestoreOnDrag: false,
         DefaultsKey.windowGestureEnabled: false,
         DefaultsKey.windowGestureModifiers: WindowGestureSupport.defaultModifierStorageValue,
         DefaultsKey.windowGestureRaiseWindow: false,
@@ -1562,6 +1583,7 @@ enum Defaults {
         migrateExistingNotchDefaults(in: defaults)
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
+        migrateRecorderGIFScale(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
         migrateRemovedScrollExceptions(in: defaults)
         migratePowerPeripheralsVisibility(in: defaults)
@@ -1743,14 +1765,15 @@ enum Defaults {
         defaults.set(hidden.joined(separator: ","), forKey: DefaultsKey.notchHiddenControls)
     }
 
-    /// Discovery used to send one request per read, which reads a monitor that
-    /// answers only paired requests as write-only. That verdict is cached and
-    /// never re-probed, so it would outlive the fix: drop the cache once.
+    /// Both unpaired discovery requests and the old read checksum could cache
+    /// a readable monitor as write-only. Recheck after the checksum fix even
+    /// if the paired-request migration ran; keep later verdicts intact.
     static func recheckBrightnessDDCWriteOnlyPaths(in defaults: UserDefaults) {
-        guard !defaults.bool(forKey: DefaultsKey.brightnessDDCWriteOnlyPathsRechecked) else {
+        guard !defaults.bool(forKey: DefaultsKey.brightnessDDCReadChecksumRechecked) else {
             return
         }
         defaults.set(true, forKey: DefaultsKey.brightnessDDCWriteOnlyPathsRechecked)
+        defaults.set(true, forKey: DefaultsKey.brightnessDDCReadChecksumRechecked)
         defaults.removeObject(forKey: DefaultsKey.brightnessDDCWriteOnlyPaths)
     }
 
@@ -1810,6 +1833,23 @@ enum Defaults {
     /// The former single switch also reversed vertical wheel events redirected
     /// sideways with Shift. Mirror that choice once so updates and older
     /// settings backups keep the same behavior until the user separates axes.
+    /// The GIF size default moved from a fixed long edge to the editor's
+    /// percentage presets. A choice made before keeps its place in the list.
+    static func migrateRecorderGIFScale(in defaults: UserDefaults) {
+        guard defaults.object(forKey: DefaultsKey.recorderGIFScalePercent) == nil,
+              let old = defaults.string(forKey: DefaultsKey.recorderGIFSize) else { return }
+        defaults.set(gifScalePercent(fromLegacySize: old), forKey: DefaultsKey.recorderGIFScalePercent)
+    }
+
+    /// Runs before `register()`, so an absent key really means never chosen.
+    static func gifScalePercent(fromLegacySize raw: String?) -> Int {
+        switch RecorderSupport.sanitizedGIFSize(raw) {
+        case .small: return 50
+        case .medium: return 75
+        case .large: return 100
+        }
+    }
+
     static func migrateScrollInverterAxes(in defaults: UserDefaults) {
         guard defaults.object(forKey: DefaultsKey.scrollInverterHorizontalEnabled) == nil else {
             return
