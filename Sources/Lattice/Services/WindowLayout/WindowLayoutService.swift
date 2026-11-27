@@ -1953,7 +1953,7 @@ final class WindowLayoutService: ObservableObject {
     private func finishEdgeSnapRelease(_ drag: WindowEdgeSnapDrag,
                                        target: WindowEdgeSnapTarget?,
                                        pointer: CGPoint) {
-        guard drag.restorePending || target != nil else { return }
+        guard !drag.placementSuperseded, drag.restorePending || target != nil else { return }
         let generation = edgeSnapSequenceGeneration
         let placement = placementGeneration
         let finish = { [weak self] in
@@ -1964,6 +1964,7 @@ final class WindowLayoutService: ObservableObject {
             if completed.restorePending,
                (!self.edgeSnapCanTrack || !self.edgeSnapWindowIsEligible(completed)) { return }
             self.finishSnappedWindowRestore(&completed, pointer: pointer)
+            guard !completed.placementSuperseded else { return }
             if completed.restorePending,
                let actual = self.frame(of: completed.window) {
                 // A refusal must not consume the original size. Keep the
@@ -2185,6 +2186,7 @@ final class WindowLayoutService: ObservableObject {
             ?? EnhancedUserInterfaceSuspension.suspend(forAppOf: drag.window)
         defer { suspension?.resume() }
         drag.restorePending = true
+        drag.restorePlacementGeneration = placementGeneration
         // Move only after the app confirms a size. A refusal must not reposition
         // a still-large window using the width of the smaller requested frame.
         _ = setSize(restore.size, on: drag.window)
@@ -2210,7 +2212,13 @@ final class WindowLayoutService: ObservableObject {
     }
 
     private func finishSnappedWindowRestore(_ drag: inout WindowEdgeSnapDrag, pointer: CGPoint) {
-        guard drag.restorePending, canRestoreSnappedWindow(drag),
+        guard drag.restorePending else { return }
+        if drag.restorePlacementGeneration != placementGeneration {
+            drag.restorePending = false
+            drag.placementSuperseded = true
+            return
+        }
+        guard canRestoreSnappedWindow(drag),
               let actual = frame(of: drag.window),
               WindowEdgeSnapSupport.needsSizeRestore(from: drag.initialFrame.size, to: actual.size)
         else { return }
@@ -3514,6 +3522,11 @@ private struct WindowEdgeSnapDrag {
     var isMoving: Bool
     var target: WindowEdgeSnapTarget?
     var restorePending = false
+    /// The `placementGeneration` when `restorePending` was armed. If a layout
+    /// placement runs before restoration completes, both the restore and any
+    /// release-time snap for this drag are superseded.
+    var restorePlacementGeneration: Int?
+    var placementSuperseded = false
 }
 
 /// A press the tap is holding while it is still undecided. It keeps the

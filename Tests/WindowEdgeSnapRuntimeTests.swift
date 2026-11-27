@@ -800,6 +800,31 @@ enum WindowEdgeSnapRuntimeTests {
                 && delayedSuperseded.lastActions[restoreKey] == .leftHalf,
                      "a placement made during the 40 ms delayed restore cancels the stale restore completion")
 
+        reset()
+        let midDragSuperseded = Host()
+        prepareRestore(midDragSuperseded)
+        resizeResponse = .delayed
+        _ = pullRestorable(midDragSuperseded)
+        // A keyboard placement arrives while the mouse is still held and a
+        // restore is pending, changing the window's frame and placement state.
+        let placedFrame = CGRect(x: 720, y: 24, width: 720, height: 876)
+        let placedLayout = WindowLayoutFrame(origin: placedFrame.origin, size: placedFrame.size)
+        let placedSettled = WindowLayoutSettledFrame(requested: placedLayout, actual: placedLayout)
+        currentFrame = placedFrame
+        midDragSuperseded.placementGeneration += 1
+        midDragSuperseded.lastActions[restoreKey] = .rightHalf
+        midDragSuperseded.settledFrames[restoreKey] = placedSettled
+        // Release over an edge snap zone: neither the stale restore nor an edge
+        // snap may overwrite the mid-drag placement or clear its records.
+        send(midDragSuperseded, .leftMouseUp, edgePoint)
+        suite.expect(positionWrites.isEmpty
+                && midDragSuperseded.placements.isEmpty
+                && currentFrame == placedFrame
+                && midDragSuperseded.lastActions[restoreKey] == .rightHalf
+                && midDragSuperseded.settledFrames[restoreKey] == placedSettled
+                && midDragSuperseded.restoreFrames[restoreKey] != nil,
+                     "a placement made mid-drag while restore is pending cancels both the stale restore and release-time edge snap")
+
         if let layoutSource = try? String(contentsOfFile: "Sources/Lattice/Services/WindowLayout/WindowLayoutService.swift", encoding: .utf8) {
             suite.expect(layoutSource.contains("let clearRestore = !isSnapped(target)")
                          && layoutSource.contains("if clearRestore { restoreFrames.removeValue(forKey: target.key) }"),
