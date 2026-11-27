@@ -3,18 +3,6 @@
 
 import SwiftUI
 
-struct PanelRecentCapturesView: View {
-    var onClose: () -> Void
-
-    var body: some View {
-        RecentCapturesView(onClose: onClose)
-        .onAppear {
-            PanelInteractionState.shared.viewKeepsPopoverOpen = true
-        }
-        .onDisappear { PanelInteractionState.shared.viewKeepsPopoverOpen = false }
-    }
-}
-
 /// The same history surface is used by the menu panel and by the floating
 /// palette opened from editors and the Command Bar.
 struct RecentCapturesView: View {

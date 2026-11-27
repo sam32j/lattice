@@ -294,21 +294,6 @@ private struct SwitcherSelectionBackdrop: View {
     }
 }
 
-/// Drops a SwiftUI shadow when the surface is Liquid Glass: the glass casts
-/// its own, and `.shadow` would render it offscreen and frost it.
-private struct SwitcherSurfaceShadow: ViewModifier {
-    let opacity: Double
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    func body(content: Content) -> some View {
-        if HUDBackdrop.drawsLiquidGlass(reduceTransparency: reduceTransparency) {
-            content
-        } else {
-            content.shadow(color: Color.black.opacity(opacity), radius: 10, x: 0, y: 5)
-        }
-    }
-}
-
 /// A panel of the icon row. Those panels float on the desktop on their own
 /// instead of sitting inside one backdrop like the window grid, so each one
 /// draws its own: Liquid Glass when the app's setting asks for it, the solid

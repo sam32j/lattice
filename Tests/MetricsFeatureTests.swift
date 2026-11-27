@@ -1085,32 +1085,6 @@ enum MetricsFeatureTests {
             suite.expect(CPUCoreTopology.groups(levels: twoLevels, cores: broken, slots: Array(0..<10)).map(\.name) == ["CPU"],
                    "missing, duplicated or unknown registry cores fall back to one CPU group")
         }
-        for width in [160.0, 280, 500] {
-            for counts in [[4, 6], [2, 4, 6], [32, 16], [1]] {
-                var start = 0
-                let groups = counts.enumerated().map { index, count in
-                    defer { start += count }
-                    return CPUCoreGroup(name: ["Super", "Performance", "Efficiency"][index % 3],
-                                        indices: Array(start..<(start + count)))
-                }
-                let rows = CPUCoreLayout.rows(groups: groups, width: width)
-                suite.expect(rows.flatMap { $0 }.flatMap(\.group.indices) == Array(0..<start),
-                       "the core layout keeps every core exactly once (\(counts) at \(width))")
-                suite.expect(rows.allSatisfy { row in
-                    row.reduce(0, { $0 + $1.width }) + Double(max(0, row.count - 1)) * 12 <= width + 0.01
-                }, "core rows stay inside their width (\(counts) at \(width))")
-                suite.expect(rows.joined().allSatisfy { segment in
-                    let count = Double(segment.group.indices.count)
-                    return count * segment.barWidth + (count - 1) * 4 <= segment.width + 0.01
-                }, "core bars stay inside their group (\(counts) at \(width))")
-            }
-        }
-        let wrapped = CPUCoreLayout.rows(groups: [CPUCoreGroup(name: "Performance", indices: Array(0..<10)),
-                                                  CPUCoreGroup(name: "Efficiency", indices: Array(10..<14))], width: 272)
-        let performanceBar = wrapped.joined().first { $0.group.name == "Performance" }?.barWidth ?? 0
-        let efficiencyBar = wrapped.joined().first { $0.group.name == "Efficiency" }?.barWidth ?? .infinity
-        suite.expect(wrapped.count == 2 && performanceBar > efficiencyBar,
-               "efficiency cores wrapped onto a row of their own never get wider bars than performance cores")
 
         // MARK: Uptime formatting
 

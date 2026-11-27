@@ -159,29 +159,6 @@ final class SettlingSwitchState: ObservableObject {
     }
 }
 
-/// Inline owner for a feature on a shared settings page. Its children are
-/// constructed only after activation, including their ObservedObject values.
-struct FeatureActivationSection<Content: View>: View {
-    let feature: AppFeature
-    @ViewBuilder var content: () -> Content
-    @ObservedObject private var runtime = FeatureRuntime.shared
-    @ObservedObject private var l10n = L10n.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            SettingsCard {
-                FeatureActivationControl(feature: feature)
-                    .toggleStyle(.switch)
-                Text(feature.hubDescription(FeatureStrings.hub(l10n.language)))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if feature.isAvailable { content() }
-        }
-        .settingsExpansionAnimation(value: feature.isAvailable)
-    }
-}
-
 struct FeatureActivationControl: View {
     let feature: AppFeature
     /// In the title bar: let the knob finish sliding before the page swaps.

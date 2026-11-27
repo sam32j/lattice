@@ -2524,14 +2524,6 @@ final class AppVolumeMixer: ObservableObject {
         UserDefaults.standard.set(routes, forKey: DefaultsKey.appOutputDevices)
     }
 
-    private func persistOutputDeviceUIDs(_ routes: [String: String]) {
-        if routes.isEmpty {
-            UserDefaults.standard.removeObject(forKey: DefaultsKey.appOutputDevices)
-        } else {
-            UserDefaults.standard.set(routes, forKey: DefaultsKey.appOutputDevices)
-        }
-    }
-
     private func clearPermissionIfNoActiveAdjustments() {
         guard needsPermission,
               !apps.contains(where: appNeedsEngine),

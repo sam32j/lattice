@@ -1362,11 +1362,6 @@ private struct ProcessRowSkeleton: View {
         }
     }
 
-    private func primaryDisk(from reading: DiskReading?) -> DiskDeviceReading? {
-        guard let devices = reading?.devices, !devices.isEmpty else { return nil }
-        return devices.first(where: { $0.isInternal }) ?? devices.first
-    }
-
     private func diskActivity(from reading: DiskReading?) -> (read: Double, write: Double)? {
         let devices = reading?.uniqueIODevices ?? []
         guard !devices.isEmpty else { return nil }
@@ -1416,11 +1411,6 @@ private struct ProcessRowSkeleton: View {
         if power.externalConnected { return l10n.s.powerPluggedIn }
         if power.hasBattery { return l10n.s.powerOnBattery }
         return l10n.s.powerUnavailable
-    }
-
-    private func mbps(_ value: Double) -> String {
-        value >= 100 ? String(format: "%.0f", locale: MetricFormat.locale, value)
-                     : String(format: "%.1f", locale: MetricFormat.locale, value)
     }
 
     private static let memoryFormatter: ByteCountFormatter = {
