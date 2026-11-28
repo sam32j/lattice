@@ -79,17 +79,32 @@ enum SwitcherWindowTitleTests {
         DispatchQueue.main.drain()
     }
 
+    final class SessionHost {
+        var sessionActive = false
+        var sessionItems: [SwitcherItem] = []
+        var windows: [SwitcherItem] = []
+        var searchQuery = ""
+        var selectedIndex = 0
+        var hoveredWindowIndex: Int?
+        var hoverAnchor: NSPoint?
+        var isSearchActivated = false
+        var isSearchPinned = false
+        func recomputeLayouts(for items: [SwitcherItem]) {}
+        func resizePanel() {}
+        func cancelIconRowEdgeHover() {}
+    }
+
     private static func checkWindowServerTitles(_ suite: TestSuite) {
         let document = SwitcherItem.window(id: 9, title: "Draft", appName: "Editor", pid: 10, windowOwnerPID: 11,
                                            isOnScreen: true, isMinimized: false, isFullscreen: false, frame: .zero)
         var renamed = document
         renamed.title = "Budget"
-        let ownWindow = SwitcherItem.window(id: 8, title: "Settings", appName: "Vorssaint",
+        let ownWindow = SwitcherItem.window(id: 8, title: "Settings", appName: "Lattice",
                                             pid: ProcessInfo.processInfo.processIdentifier, isOnScreen: true,
                                             isMinimized: false, isFullscreen: false, frame: .zero)
         let windowless = SwitcherItem.appOnly(appName: "Finder", pid: 20)
         let healthy = AXUIElement(1, owner: 21)
-        let service = SwitcherHoverSelectionTests.Service()
+        let service = SessionHost()
         service.sessionActive = true
         service.sessionItems = [document, healthy.item, ownWindow, windowless]
         service.windows = service.sessionItems

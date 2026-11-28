@@ -446,6 +446,8 @@ def main():
                         "    static func rememberSwitcherWindows(",
                         "    static func beginSourcePrefetch(",
                         "    private struct WalkApps {",
+                        "    private static func regularBundlePaths(",
+                        "    static func appPID(forWindowOwner",
                         "    private static func walkApps(",
                         "    static func listWindowsForCommandBar(",
                         "    private static func listWindows(appRules:",
@@ -475,12 +477,24 @@ def main():
           + "extension SwitcherQuickCommitTests.HistoryFixture {\n"
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift",
                         "    func reconcile(")
+          + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    func recordSwitch(")
+              .replace("focusPID: focusPID)", "focusPID: focusPID, now: Self.now)", 1)
+          + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    func recordObservedFocus(")
+          + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    func recordDestroyedWindow(")
+          + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    private func readFocusedWindow(")
+              .replace("private func", "func", 1).replace("WindowActivator.focusedWindowID(for: ", "readAXFocus(")
           + "}\n")
     (OUTPUT / "SwitcherWindowTitles.swift").unlink(missing_ok=True)
     write("SwitcherWindowTitlesContract.swift", "import AppKit\nimport ApplicationServices\n"
           + "extension SwitcherWindowTitleTests {\n"
           + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowTitles.swift",
                         "final class SwitcherWindowTitles {")
+          + "}\nextension SwitcherWindowTitleTests.SessionHost {\n"
+          + "".join(declaration("Sources/Lattice/Services/Switcher/AppSwitcher.swift", prefix).replace("private ", "", 1)
+                    for prefix in ["    private var selectedItemID:",
+                                   "    private func appendSearchText(",
+                                   "    private func applySearchFilter(",
+                                   "    private func updateSessionTitles("])
           + "}\n")
     write("SwitcherRememberedSelection.swift", "import AppKit\nimport ApplicationServices\n"
           + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowInventory.swift",
@@ -507,10 +521,14 @@ def main():
                         "    private func observeScreenChanges(").replace("private func", "func", 1)
           + "}\nextension SwitcherRememberedSelectionTests.SessionOpening.Events {\n"
           + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowEvents.swift", "    enum Event {")
+          + "}\nextension SwitcherRememberedSelectionTests.SessionOpening.WindowEnumerator {\n"
+          + declaration("Sources/Lattice/Services/Switcher/WindowEnumerator.swift", "    static func readFrontAppSelection(")
+          + declaration("Sources/Lattice/Services/Switcher/WindowEnumerator.swift", "    private static func frontAppWindowStack(")
           + "}\nextension SwitcherRememberedSelectionTests.SessionOpening {\n"
           + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowInventory.swift",
                         "final class SwitcherWindowInventory {")
               .replace("NSWorkspace.shared", "desktop").replace("NSApp.windows", "desktop.windows")
+              .replace("private func remove(pid:", "func remove(pid:")
               .replace("CGWindowListCopyWindowInfo(", "SwitcherRememberedSelectionTests.SessionOpening.windowInfo(")
               .replace("screenObservers = observeScreenChanges()",
                        "screenObservers = observeScreenChanges(in: desktop.notificationCenter)")
