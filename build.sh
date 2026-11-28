@@ -445,6 +445,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/DoNotDisturbState.swift
         Sources/Lattice/Services/Notch/TrackpadActuator.swift
         Sources/Lattice/Services/Notch/NotchSupport.swift
+        Sources/Lattice/Services/Notch/NotchMenuBarSpace.swift
         Sources/Lattice/Services/Notch/NotchCaptureRouting.swift
         Sources/Lattice/Services/Notch/NotchAudioLevelSupport.swift
         Sources/Lattice/Services/Notch/NotchVolumeKeyGate.swift
