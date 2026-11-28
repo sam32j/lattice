@@ -478,7 +478,8 @@ def main():
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift",
                         "    func reconcile(")
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    func recordSwitch(")
-              .replace("focusPID: focusPID)", "focusPID: focusPID, now: Self.now)", 1)
+              .replace("sourceRequest: sourceRequest)", "sourceRequest: sourceRequest, now: Self.now)", 1)
+          + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    func confirmSwitchSource(")
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    func recordObservedFocus(")
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    func recordDestroyedWindow(")
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift", "    private func readFocusedWindow(")

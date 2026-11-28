@@ -46,10 +46,10 @@ enum SwitcherRememberedSelectionTests {
             var accessibility = true
         }
 
-        struct Desktop {
+        final class Desktop {
             let notificationCenter = NotificationCenter()
             let windows: [NSWindow] = []
-            let frontmostApplication: NSRunningApplication? = nil
+            var frontmostApplication: NSRunningApplication?
         }
         static let desktop = Desktop()
 
@@ -114,9 +114,15 @@ enum SwitcherRememberedSelectionTests {
             func frontAppFocus(for pid: pid_t, appPID: pid_t? = nil) -> WindowFocusHistory.FrontAppFocus {
                 Self.history.focusHistory.frontAppFocus(for: pid, appPID: appPID, now: SwitcherQuickCommitTests.HistoryFixture.now)
             }
-            func recordSwitch(to windowID: CGWindowID?, pid: pid_t, from previous: CGWindowID?, focusPID: pid_t? = nil) {
+            func recordSwitch(to windowID: CGWindowID?, pid: pid_t, from previous: CGWindowID?, focusPID: pid_t? = nil,
+                              sourceRequest: WindowFocusHistory.Request? = nil) {
                 Self.history.windowHistory = windows
-                Self.history.recordSwitch(to: windowID, pid: pid, from: previous, focusPID: focusPID)
+                Self.history.recordSwitch(to: windowID, pid: pid, from: previous, focusPID: focusPID, sourceRequest: sourceRequest)
+                Tracker.shared.history = Self.history.windowHistory
+            }
+            func confirmSwitchSource(_ window: CGWindowID, replacing previous: CGWindowID, for request: WindowFocusHistory.Request) {
+                Self.history.windowHistory = windows
+                Self.history.confirmSwitchSource(window, replacing: previous, for: request)
                 Tracker.shared.history = Self.history.windowHistory
             }
             func recordObservedFocus(windowID: CGWindowID, pid: pid_t) {
@@ -191,6 +197,11 @@ enum SwitcherRememberedSelectionTests {
                     if !focusByRead.isEmpty { WindowActivator.focusedWindow = focusByRead.removeFirst() }
                     result.capturedVisibleSpaces = SessionOpening.SpaceWindowBridge.topology()?.visibleSpaces
                     result.rejectedWindowIDs = rejectedIDs
+                }
+                if snapshot.accessibilityGranted, let owner = WindowActivator.responderPID ?? captured.first?.windowOwnerPID,
+                   let focus = WindowActivator.focusedWindow,
+                   result.items.contains(where: { $0.windowOwnerPID == owner && $0.windowID == focus }) {
+                    result.focusedWindowIDsByOwner[owner] = focus
                 }
                 let suppliedRows = !forFrontAppSession && filterPID != nil && !inventoryCaptureSequence.isEmpty
                     ? inventoryCaptureSequence.removeFirst()() : capturedRows

@@ -112,6 +112,7 @@ final class AppSwitcher: ObservableObject {
         let regularBundleIdentifier: String?
         let displayScope: WindowEnumerator.DisplayScope?
         var readingFrontApp = false
+        var groupedSource: SwitcherWindowInventory.GroupedSource?
         var removals: Set<SwitcherWindowInventory.Removal> = []
         var environmentStillCurrent: (() -> Bool)?
     }
@@ -1422,6 +1423,18 @@ final class AppSwitcher: ObservableObject {
         // context instead of keeping the previous session's.
         sessionSourceContext = source.map(SwitcherSourceContext.init)
         sessionStartWindowID = source?.windowID
+        let groupsByApp = SwitcherSupport.usesIconRowLayout(iconRowMode: iconRowModeEnabled,
+                                                            simpleMode: simpleModeEnabled)
+            || UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs)
+        if let source, pending.scope == .allApps, groupsByApp,
+           let grouped = windowInventory.groupedSource(frontmostPID: reportedFrontPID, representative: source) {
+            sessionOrigin?.groupedSource = grouped
+            windowInventory.onRemoval = { [weak self] removal in
+                guard let self, self.sessionOrigin?.generation == generation,
+                      removal.removes(source) || grouped.confirmed.map(removal.removes) == true else { return }
+                self.sessionOrigin?.removals.insert(removal)
+            }
+        }
         // The layout pass below reads usesWindowRow, which depends on the
         // session scope; teardown resets it to .allApps, so assigning it after
         // recomputeLayouts would size a window-scoped panel for the grouped
@@ -1544,8 +1557,10 @@ final class AppSwitcher: ObservableObject {
     /// Records a switch straight away instead of waiting for the window server
     /// and Accessibility to report it: a flick of the shortcut is faster than
     /// either, and it is exactly the moment the toggle has to be right.
-    private func recordUse(_ activated: SwitcherItem, previous: CGWindowID?, focusPID: pid_t?) {
-        WindowUseTracker.shared.recordSwitch(to: activated.windowID, pid: activated.pid, from: previous, focusPID: focusPID)
+    private func recordUse(_ activated: SwitcherItem, previous: CGWindowID?, focusPID: pid_t?,
+                           sourceRequest: WindowFocusHistory.Request?) {
+        WindowUseTracker.shared.recordSwitch(to: activated.windowID, pid: activated.pid, from: previous,
+                                             focusPID: focusPID, sourceRequest: sourceRequest)
     }
 
     func select(index: Int) {
@@ -2106,16 +2121,33 @@ final class AppSwitcher: ObservableObject {
             previousWindowID = source?.windowID
         }
         let windowServerSnapshot = sessionWindowServerSnapshot
+        var sourceRequest: WindowFocusHistory.Request?
+        var awaitsSourceDiscovery = false
+        if let grouped = sessionOrigin?.groupedSource, let selection, selection.pid != grouped.request.pid {
+            if let confirmed = grouped.confirmed, !removals.contains(where: { $0.removes(confirmed) }),
+               previousWindowID != nil || confirmed.id != grouped.representative.id {
+                source = SwitcherSourceContext(confirmed)
+                previousWindowID = confirmed.windowID
+            } else if previousWindowID == nil || removals.contains(where: { $0.removes(grouped.representative) }) {
+                source = nil
+                previousWindowID = nil
+            } else {
+                sourceRequest = grouped.pendingRequest
+                awaitsSourceDiscovery = grouped.awaitsDiscovery
+            }
+        }
         // The app that held the keyboard can be the source even without a listed window.
         let handoffSourcePID = sessionOrigin?.pid
         endSession()
         if let selection {
-            recordUse(selection, previous: previousWindowID, focusPID: frontAppSession ? handoffSourcePID : nil)
+            recordUse(selection, previous: previousWindowID, focusPID: frontAppSession ? handoffSourcePID : nil,
+                      sourceRequest: sourceRequest)
             WindowActivator.activate(selection,
                                      sourceWasFullscreen: source?.isFullscreen ?? false,
                                      sourcePID: source?.pid,
                                      handoffSourcePID: handoffSourcePID,
-                                     sourceWindowID: source?.isFullscreen == true ? nil : source?.windowID,
+                                     // Staging a guessed window can change the focus the inventory is about to read.
+                                     sourceWindowID: source?.isFullscreen == true || awaitsSourceDiscovery ? nil : source?.windowID,
                                      sourceWindowOwnerPID: source?.windowOwnerPID,
                                      windowServerSnapshot: windowServerSnapshot)
         }

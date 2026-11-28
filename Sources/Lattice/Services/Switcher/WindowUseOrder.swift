@@ -140,6 +140,7 @@ struct WindowFocusHistory {
     }
 
     mutating func switched(to window: CGWindowID?, pid: pid_t, previous: CGWindowID?, focusPID: pid_t? = nil,
+                           sourceRequest: Request? = nil,
                            now: TimeInterval = ProcessInfo.processInfo.systemUptime) {
         // Cross-app source windows belong in global history, outside the target app's focus pair.
         let sameApp = focusPID != nil || current?.involves(pid) == true
@@ -149,7 +150,7 @@ struct WindowFocusHistory {
         if let focusPID, focusPID != pid { invalidate(focusPID) }
         let request = Request(pid: pid, focusPID: focusPID)
         current = request
-        if let previous { promote(.window(previous)) }
+        if let previous { promote(.window(previous, sourceRequest)) }
         if let window {
             promote(.window(window, request))
             lastFocus = Observation(windowID: window, previousWindowID: sameApp && previous != window ? previous : nil,
