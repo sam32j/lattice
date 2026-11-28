@@ -46,7 +46,7 @@ extension WindowGestureFrontingRuntimeTests {
         send(stopped, .leftMouseDragged, at: CGPoint(x: 240, y: 210))
         _ = started.wait(timeout: .now() + 1)
         send(stopped, .leftMouseUp, at: CGPoint(x: 250, y: 220))
-        stopped.stopGestureTap()
+        stopped.stopGestureTracking()
         hold.signal()
         stopped.flushGestureApplies()
         suite.expect(!boundary.log.contains { $0.hasPrefix("frame:") || $0.hasPrefix("raise:") || $0 == "suspend" },
