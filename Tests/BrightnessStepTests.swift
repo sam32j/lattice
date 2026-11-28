@@ -76,7 +76,7 @@ enum BrightnessStepTests {
         func refresh(force: Bool = false) { refreshes += 1 }
         func applySoftwareDim(_ id: UInt32, value: Double) -> Bool { true }
         var beforeDDCWrite: (() -> Void)?
-        func ddcSend(to id: UInt32, service: CFTypeRef, packet: [UInt8], whileCurrent: () -> Bool) -> Bool {
+        func ddcSend(to id: UInt32, service: CFTypeRef, chip: UInt32, packet: [UInt8], whileCurrent: () -> Bool) -> Bool {
             beforeDDCWrite?()
             guard whileCurrent() else { return false }
             writes.append(UInt16(packet[3]) << 8 | UInt16(packet[4]))
@@ -88,7 +88,7 @@ enum BrightnessStepTests {
             committed.append(value)
             pendingLevels[displayID] = value
         }
-        func ddcProbeLuminance(for id: UInt32, service: CFTypeRef) -> DDCProbe {
+        func ddcProbeLuminance(for id: UInt32, service: CFTypeRef, chip: UInt32) -> DDCProbe {
             .replied(current: reply.current, maximum: reply.maximum)
         }
         func forgetWriteOnlyDDCPath(_ path: String?) {}
