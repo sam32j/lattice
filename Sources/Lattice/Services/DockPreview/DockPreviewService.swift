@@ -41,6 +41,7 @@ final class DockPreviewService: ObservableObject {
     private var dockHoldInputSource: CFRunLoopSource?
     private var pendingHover: PendingHover?
     private var pendingHide: DispatchWorkItem?
+    private var previewCaptureTask: Task<Void, Never>?
     private var lastMoveSampledAt: TimeInterval = 0
     private var pendingMove: DispatchWorkItem?
     private var pendingMovePoint: CGPoint?
@@ -796,7 +797,10 @@ final class DockPreviewService: ObservableObject {
         })
         selectedWindowID = nil
 
-        WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 420 * PreviewSizing.scale) { [weak self] windowID, image in
+        previewCaptureTask?.cancel()
+        previewCaptureTask = WindowPreviewProvider.shared.refreshPreviews(
+            for: list, maxPixelSize: 420 * PreviewSizing.scale
+        ) { [weak self] windowID, image in
             guard let self, self.isVisible, self.windows.contains(where: { $0.previewWindowID == windowID }) else { return }
             self.previews[windowID] = image
         }
@@ -814,7 +818,8 @@ final class DockPreviewService: ObservableObject {
         DockPreviewDragGhost.shared.end()
         cancelPendingHover()
         cancelPendingHide()
-        WindowPreviewProvider.shared.cancel()
+        previewCaptureTask?.cancel()
+        previewCaptureTask = nil
         // Remove the surface before publishing empty content. During a Space
         // transition, an animated dismissal can otherwise carry a blank panel.
         panel?.orderOut(nil)
@@ -1549,6 +1554,7 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     private let appPID: pid_t
     private let onClose: (UUID) -> Void
     private let previewProvider = WindowPreviewProvider()
+    private var previewCaptureTask: Task<Void, Never>?
     private var refreshTimer: Timer?
     private var pendingMinimizeConfirmations: [CGWindowID: UUID] = [:]
 
@@ -1570,7 +1576,7 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     deinit {
         refreshTimer?.invalidate()
         pendingMinimizeConfirmations.removeAll()
-        previewProvider.cancel()
+        previewCaptureTask?.cancel()
     }
 
     func preview(_ item: SwitcherItem) {
@@ -1642,7 +1648,8 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     func closePreviewPanel() {
         refreshTimer?.invalidate()
         pendingMinimizeConfirmations.removeAll()
-        previewProvider.cancel()
+        previewCaptureTask?.cancel()
+        previewCaptureTask = nil
         onClose(id)
     }
 
@@ -1790,7 +1797,10 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
                                         missingPreview: Bool) {
         guard windowIDsChanged || missingPreview else { return }
 
-        previewProvider.refreshPreviews(for: items, maxPixelSize: 420 * PreviewSizing.scale) { [weak self] windowID, image in
+        previewCaptureTask?.cancel()
+        previewCaptureTask = previewProvider.refreshPreviews(
+            for: items, maxPixelSize: 420 * PreviewSizing.scale
+        ) { [weak self] windowID, image in
             guard let self, self.windows.contains(where: { $0.previewWindowID == windowID }) else { return }
             self.previews[windowID] = image
         }

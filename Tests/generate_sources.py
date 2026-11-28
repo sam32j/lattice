@@ -700,10 +700,15 @@ def main():
           + declaration("Sources/Lattice/Services/RadialMenu/RadialNowPlayingService.swift",
                         "    static func open(", scope="enum RadialNowPlayingApplication {")
           + "}\n")
-    write("WindowServerCapture.swift", "import CoreGraphics\nimport Foundation\n"
+    preview_provider = "Sources/Lattice/Services/Switcher/WindowPreviewProvider.swift"
+    write("WindowServerCapture.swift", "import CoreGraphics\nimport CoreImage\nimport Foundation\nimport ScreenCaptureKit\n"
           + "extension WindowServerCaptureContract.Provider {\n"
-          + declaration("Sources/Lattice/Services/Switcher/WindowPreviewProvider.swift",
-                        "    static func captureViaWindowServer(")
+          + "".join(declaration(preview_provider, prefix) for prefix in [
+              "    func refreshPreviews(", "    static func captureViaWindowServer(", "    func cachedPreview(",
+              "    private func store(", "    private static func rectifiedStripCapture(",
+              "    private static func bitmapCopy(", "    private struct PreviewTarget {",
+              "    private static func bestWindowMatch(", "    private static func titlesMatch(",
+              "    private static func frameDistance("])
           + "}\n")
     write("ScreenshotAttachedCapture.swift", "import AppKit\nimport ScreenCaptureKit\n"
           + "extension ScreenshotAttachedCaptureTests {\nenum Engine {\n"
