@@ -74,6 +74,30 @@ extension JunkCleaner {
         return ids
     }
 
+    /// Audio plugins are not apps, yet they keep preferences, support data
+    /// and licenses under their own identifiers. An installed plugin is a
+    /// living owner like an app; without it, a plugin's license reads as the
+    /// leftover of an uninstalled app.
+    static func installedAudioPluginBundleIDs() -> Set<String> {
+        let extensions: Set<String> = ["component", "vst", "vst3", "clap", "aaxplugin"]
+        let roots = [NSHomeDirectory() + "/Library", systemLibrary].flatMap {
+            [$0 + "/Audio/Plug-Ins", $0 + "/Application Support/Avid/Audio/Plug-Ins"]
+        }
+        var ids = Set<String>()
+        for root in roots {
+            guard let enumerator = FileManager.default.enumerator(
+                at: URL(fileURLWithPath: root, isDirectory: true),
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { continue }
+            for case let url as URL in enumerator {
+                guard extensions.contains(url.pathExtension.lowercased()),
+                      let id = Bundle(url: url)?.bundleIdentifier else { continue }
+                ids.insert(id.lowercased())
+            }
+        }
+        return ids
+    }
+
     /// The final say on whether a candidate identifier has a living owner:
     /// the collected set (family match), the vendor namespace rule (suites
     /// and updaters share a namespace with sibling identifiers), and Launch
@@ -136,9 +160,11 @@ extension JunkCleaner {
         guard let entries = try? fm.contentsOfDirectory(at: root,
                                                         includingPropertiesForKeys: nil,
                                                         options: []) else { return }
+        let isCacheRoot = root.lastPathComponent == "Caches"
         for url in entries {
             let entry = url.lastPathComponent
             guard !entry.hasPrefix("."), CleanerScanPrivacy.mayInspect(entry) else { continue }
+            if isCacheRoot && CleanerPolicy.isExcludedCacheEntry(entry) { continue }
             let values = try? url.resourceValues(forKeys: keys)
             guard values?.isSymbolicLink != true else { continue }
             if let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: usesContainerMetadata) {
@@ -191,13 +217,13 @@ extension JunkCleaner {
         return sorted(found)
     }
 
-    static func scanCaches(excluding claimed: Set<String>) -> [Item] {
+    static func scanCaches(excluding claimed: Set<String>, audioPluginIDs: Set<String>) -> [Item] {
         let fm = FileManager.default
         let dir = NSHomeDirectory() + "/Library/Caches"
         guard let entries = try? fm.contentsOfDirectory(atPath: dir) else { return [] }
         var found: [Item] = []
         for entry in entries where !entry.hasPrefix(".") {
-            guard !CleanerPolicy.isExcludedCacheEntry(entry) else { continue }
+            guard !CleanerPolicy.isExcludedCacheEntry(entry, audioPluginIDs: audioPluginIDs) else { continue }
             let url = URL(fileURLWithPath: dir).appendingPathComponent(entry)
             guard !claimed.contains(url.standardizedFileURL.path) else { continue }
             guard CleanerScanPrivacy.mayRemoveTree(url, fm: fm) else { continue }
@@ -205,7 +231,7 @@ extension JunkCleaner {
             guard size > 0 else { continue }
             found.append(Item(url: url, category: .caches, size: size,
                               detail: entry,
-                              recommended: CleanerPolicy.precheckCacheEntry(entry)))
+                              recommended: CleanerPolicy.precheckCacheEntry(entry, audioPluginIDs: audioPluginIDs)))
         }
         return sorted(found)
     }

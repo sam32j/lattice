@@ -70,7 +70,8 @@ extension JunkCleaner {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard !cancellation.isCancelled else { return }
-            let installed = Self.installedBundleIDs()
+            let audioPluginIDs = Self.installedAudioPluginBundleIDs()
+            let installed = Self.installedBundleIDs().union(audioPluginIDs)
             // A path claimed by the leftover scan must not reappear under
             // caches or logs: one path, one row, one decision.
             var claimed = Set<String>()
@@ -81,7 +82,7 @@ extension JunkCleaner {
                     return found
                 }),
                 (.loginItems, { Self.scanOrphanedLaunchPlists(installed: installed) }),
-                (.caches, { Self.scanCaches(excluding: claimed) }),
+                (.caches, { Self.scanCaches(excluding: claimed, audioPluginIDs: audioPluginIDs) }),
                 (.logs, { Self.scanLogs(excluding: claimed) }),
                 (.developer, { Self.scanDeveloperJunk() }),
                 (.trash, { Self.scanTrash() }),
@@ -123,15 +124,13 @@ extension JunkCleaner {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let fm = FileManager.default
-            // One installed-apps oracle for the whole pass, and only when the
-            // selection can ask for it: building it walks the application
-            // folders, and `mayRemove` reads it under `.leftovers` alone, so a
-            // clean without leftover rows must not pay for the walk. Nothing
-            // can install an app mid-clean that this pass would have to
-            // respect. `stubborn` is a subset of `chosen`, so the second and
-            // third passes are covered by the same test.
-            let installed = chosen.contains { $0.category == .leftovers }
-                ? Self.installedBundleIDs() : []
+            // A plugin may have been installed since the scan, even if the
+            // only selected row was a recommended cache. Only leftovers
+            // also need the application inventory.
+            let hasLeftovers = chosen.contains { $0.category == .leftovers }
+            let needsPluginIDs = hasLeftovers || chosen.contains { $0.category == .caches }
+            let audioPluginIDs = needsPluginIDs ? Self.installedAudioPluginBundleIDs() : []
+            let installed = hasLeftovers ? Self.installedBundleIDs().union(audioPluginIDs) : []
             var freed: Int64 = 0
             var failed = 0
             var stubborn: [Item] = []
@@ -145,7 +144,7 @@ extension JunkCleaner {
             }
 
             for item in chosen where item.category != .trash {
-                guard Self.mayRemove(item, installed: installed) else {
+                guard Self.mayRemove(item, installed: installed, audioPluginIDs: audioPluginIDs) else {
                     failed += 1
                     continue
                 }
@@ -153,7 +152,7 @@ extension JunkCleaner {
                     // Retire the job first so nothing keeps running from a
                     // plist that is about to leave; then the regular move.
                     Self.bootoutUserAgent(item.url)
-                    guard Self.mayRemove(item, installed: installed) else {
+                    guard Self.mayRemove(item, installed: installed, audioPluginIDs: audioPluginIDs) else {
                         failed += 1
                         continue
                     }
@@ -175,7 +174,9 @@ extension JunkCleaner {
                 // stay put and count as failed.
                 failed += stubborn.count
             } else if !stubborn.isEmpty {
-                let stillSafe = stubborn.filter { Self.mayRemove($0, installed: installed) }
+                let stillSafe = stubborn.filter {
+                    Self.mayRemove($0, installed: installed, audioPluginIDs: audioPluginIDs)
+                }
                 failed += stubborn.count - stillSafe.count
                 Self.trashViaFinder(stillSafe.map(\.url))
                 for item in stillSafe {
@@ -198,7 +199,7 @@ extension JunkCleaner {
     /// Exact match guard against ever removing a critical root, even if a
     /// scanner bug produced one. Items are already scoped by construction;
     /// this is the last line of defense.
-    static func mayRemove(_ item: Item, installed: Set<String>) -> Bool {
+    static func mayRemove(_ item: Item, installed: Set<String>, audioPluginIDs: Set<String>) -> Bool {
         let url = item.url
         let path = url.standardizedFileURL.path
         let home = NSHomeDirectory()
@@ -215,6 +216,12 @@ extension JunkCleaner {
               !UninstallerSupport.isSymbolicLink(url),
               url.resolvingSymlinksInPath().standardizedFileURL.path == path else { return false }
         guard CleanerScanPrivacy.mayRemoveTree(url, fm: .default) else { return false }
+        let isLeftoverCache = item.category == .leftovers
+            && url.deletingLastPathComponent().lastPathComponent == "Caches"
+        if item.category == .caches || isLeftoverCache {
+            guard !CleanerPolicy.isExcludedCacheEntry(url.lastPathComponent,
+                                                      audioPluginIDs: audioPluginIDs) else { return false }
+        }
         if item.category == .leftovers {
             guard isDirectLeftoverRootChild(url),
                   CleanerSupport.isAttributableBundleID(item.detail),
