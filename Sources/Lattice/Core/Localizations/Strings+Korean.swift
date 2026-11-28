@@ -460,6 +460,7 @@ extension Strings {
         audioPriorityMoveUp: "위로 이동",
         audioPriorityMoveDown: "아래로 이동",
         audioPriorityUnavailable: "연결 끊김",
+        audioPriorityRemove: "제거",
         audioPriorityCurrent: "사용 중",
         mixerOutputDeviceLabel: "오디오 출력 장치",
         mixerSystemSoundLabel: "시스템 사운드 재생 위치",

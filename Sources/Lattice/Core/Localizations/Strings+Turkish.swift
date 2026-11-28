@@ -459,6 +459,7 @@ extension Strings {
         audioPriorityMoveUp: "Yukarı taşı",
         audioPriorityMoveDown: "Aşağı taşı",
         audioPriorityUnavailable: "Bağlantı Kesildi",
+        audioPriorityRemove: "Kaldır",
         audioPriorityCurrent: "Etkin",
         mixerOutputDeviceLabel: "Ses çıkış aygıtı",
         mixerSystemSoundLabel: "Sistem seslerini çal",

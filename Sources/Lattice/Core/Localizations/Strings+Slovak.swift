@@ -459,6 +459,7 @@ extension Strings {
         audioPriorityMoveUp: "Presunúť nahor",
         audioPriorityMoveDown: "Presunúť nadol",
         audioPriorityUnavailable: "Odpojené",
+        audioPriorityRemove: "Odstrániť",
         audioPriorityCurrent: "Používa sa",
         mixerOutputDeviceLabel: "Zvukové výstupné zariadenie",
         mixerSystemSoundLabel: "Prehrávať systémové zvuky cez",

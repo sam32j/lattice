@@ -459,6 +459,7 @@ extension Strings {
         audioPriorityMoveUp: "Subir",
         audioPriorityMoveDown: "Bajar",
         audioPriorityUnavailable: "Desconectado",
+        audioPriorityRemove: "Quitar",
         audioPriorityCurrent: "En uso",
         mixerOutputDeviceLabel: "Dispositivo de salida de audio",
         mixerSystemSoundLabel: "Reproducir sonidos del sistema en",

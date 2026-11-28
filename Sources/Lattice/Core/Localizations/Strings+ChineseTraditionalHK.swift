@@ -460,6 +460,7 @@ extension Strings {
         audioPriorityMoveUp: "上移",
         audioPriorityMoveDown: "下移",
         audioPriorityUnavailable: "已中斷連線",
+        audioPriorityRemove: "移除",
         audioPriorityCurrent: "使用中",
         mixerOutputDeviceLabel: "音訊輸出裝置",
         mixerSystemSoundLabel: "系統聲音播放於",

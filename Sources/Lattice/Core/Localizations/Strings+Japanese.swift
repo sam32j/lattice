@@ -459,6 +459,7 @@ extension Strings {
         audioPriorityMoveUp: "上へ移動",
         audioPriorityMoveDown: "下へ移動",
         audioPriorityUnavailable: "未接続",
+        audioPriorityRemove: "削除",
         audioPriorityCurrent: "使用中",
         mixerOutputDeviceLabel: "オーディオ出力装置",
         mixerSystemSoundLabel: "システムサウンドの再生先",

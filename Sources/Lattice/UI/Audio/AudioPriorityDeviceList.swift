@@ -13,6 +13,7 @@ struct PriorityDeviceList: View {
     /// A list is only empty while the Mac has no such device.
     let emptyText: String
     let onMove: ([String]) -> Void
+    var onRemove: ((String) -> Void)? = nil
     var canCycle: Bool = true
     /// Reads the authoritative priority list from the backing service at commit
     /// time so a delayed settle cannot drop a device added before SwiftUI syncs.
@@ -22,6 +23,7 @@ struct PriorityDeviceList: View {
     /// pointer has moved in the list's own space. The order itself stays put
     /// until the row is let go, so nothing reloads under the pointer.
     @State private var draggingUID: String?
+    @State private var hoveredUID: String?
     @State private var dragStartIndex = 0
     @State private var dragTranslation: CGFloat = 0
     /// A released row is settling into its slot; a new drag waits for it, so
@@ -78,6 +80,7 @@ struct PriorityDeviceList: View {
                     }
                 }
                 .padding(.horizontal, 1)
+                .animation(draggingUID != nil || reduceMotion ? nil : .easeInOut(duration: 0.18), value: uids)
                 .coordinateSpace(name: Self.space)
             }
         }
@@ -144,10 +147,31 @@ struct PriorityDeviceList: View {
                     .fixedSize()
             }
 
+            if !available, let onRemove {
+                let showRemove = hoveredUID == uid && draggingUID == nil
+                Button {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+                        onRemove(uid)
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .opacity(showRemove ? 1 : 0)
+                .allowsHitTesting(showRemove)
+                .help(l10n.s.audioPriorityRemove)
+                .accessibilityLabel(l10n.s.audioPriorityRemove)
+                .accessibilityValue(name)
+            }
+
             Image(systemName: "line.3.horizontal")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.tertiary)
-                .frame(width: 16, height: 22)
+                .frame(width: 22, height: 22)
                 .contentShape(Rectangle())
         }
         .font(.system(size: 9, weight: .semibold))
@@ -168,6 +192,13 @@ struct PriorityDeviceList: View {
                 .strokeBorder(isCurrent ? Color.accentColor.opacity(0.65) : Color.clear, lineWidth: 1)
         )
         .contentShape(Rectangle())
+        .onHover { hovering in
+            if hovering {
+                hoveredUID = uid
+            } else if hoveredUID == uid {
+                hoveredUID = nil
+            }
+        }
         .contextMenu {
             if canCycle {
                 if volumeMixerEnabled {
@@ -187,12 +218,26 @@ struct PriorityDeviceList: View {
                 }
                 .disabled(isCurrent || !available)
             }
+            if !available, let onRemove {
+                Divider()
+                Button(l10n.s.audioPriorityRemove, role: .destructive) {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+                        onRemove(uid)
+                    }
+                }
+            }
         }
         .accessibilityAction(named: Text(l10n.s.audioPriorityMoveUp)) {
             move(uid, by: -1)
         }
         .accessibilityAction(named: Text(l10n.s.audioPriorityMoveDown)) {
             move(uid, by: 1)
+        }
+        .accessibilityAction(named: Text(l10n.s.audioPriorityRemove)) {
+            guard !available, let onRemove else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+                onRemove(uid)
+            }
         }
     }
 

@@ -441,6 +441,7 @@ extension Strings {
         audioPriorityMoveUp: "Вгору",
         audioPriorityMoveDown: "Вниз",
         audioPriorityUnavailable: "Відключено",
+        audioPriorityRemove: "Видалити",
         audioPriorityCurrent: "Поточний",
         mixerOutputDeviceLabel: "Пристрій виводу звуку",
         mixerSystemSoundLabel: "Системні звуки через",

@@ -460,6 +460,7 @@ extension Strings {
         audioPriorityMoveUp: "Вверх",
         audioPriorityMoveDown: "Вниз",
         audioPriorityUnavailable: "Отключено",
+        audioPriorityRemove: "Удалить",
         audioPriorityCurrent: "Активно",
         mixerOutputDeviceLabel: "Устройство вывода звука",
         mixerSystemSoundLabel: "Системные звуки через",

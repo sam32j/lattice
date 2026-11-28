@@ -641,6 +641,7 @@ struct Strings {
     let audioPriorityMoveUp: String
     let audioPriorityMoveDown: String
     let audioPriorityUnavailable: String
+    let audioPriorityRemove: String
     let audioPriorityCurrent: String
     let mixerOutputDeviceLabel: String
     let mixerSystemSoundLabel: String
@@ -1386,6 +1387,7 @@ extension Strings {
         audioPriorityMoveUp: "Mover para cima",
         audioPriorityMoveDown: "Mover para baixo",
         audioPriorityUnavailable: "Desconectado",
+        audioPriorityRemove: "Remover",
         audioPriorityCurrent: "Em uso",
         mixerOutputDeviceLabel: "Dispositivo de saída de áudio",
         mixerSystemSoundLabel: "Tocar sons do sistema em",
@@ -2108,6 +2110,7 @@ extension Strings {
         audioPriorityMoveUp: "Move up",
         audioPriorityMoveDown: "Move down",
         audioPriorityUnavailable: "Disconnected",
+        audioPriorityRemove: "Remove",
         audioPriorityCurrent: "Current",
         mixerOutputDeviceLabel: "Audio output device",
         mixerSystemSoundLabel: "Play system sound at",
