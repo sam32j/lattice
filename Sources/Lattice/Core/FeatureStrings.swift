@@ -328,7 +328,7 @@ extension WindowLayoutFeatureStrings {
 extension MonitorAlertFeatureStrings {
     static let ko = MonitorAlertFeatureStrings(
         section: "알림",
-        caption: "값이 한도를 넘으면 알림을 받습니다.",
+        caption: "선택한 기준에 도달하면 알림이 표시됩니다. CPU 사용량과 온도 알림은 기준을 약 12초 동안 계속 넘어야 하므로 짧은 급증은 무시됩니다. 같은 볼륨의 디스크 공간 알림은 6시간 후에 반복됩니다. 여유 공간이 선택한 기준의 절반 미만으로 줄어들면 한 번 더 일찍 알립니다. 반복 설정은 그 외 알림에 각각 적용됩니다.",
         notificationsDenied: "시스템 설정에서 Lattice 알림이 꺼져 있어 경고를 표시할 수 없습니다.",
         cpu: "CPU 사용률",
         cpuTemperature: "CPU 온도",
@@ -350,7 +350,7 @@ extension MonitorAlertFeatureStrings {
         memoryTitle: "위험한 메모리",
         memoryBody: "메모리 압력이 위험 수준에 도달했습니다.",
         diskTitle: "부족한 디스크 공간",
-        diskBodyFormat: "%@의 여유 공간이 %d%% 미만입니다.",
+        diskBodyFormat: "%@의 여유 공간이 %@%% 미만입니다.",
         batteryTitle: "낮은 배터리",
         batteryBodyFormat: "배터리 잔량이 %d%%입니다.",
         batteryTemperature: "배터리 온도",
@@ -2876,7 +2876,7 @@ struct MonitorAlertFeatureStrings {
 
     static let enUS = MonitorAlertFeatureStrings(
         section: "Alerts",
-        caption: "Get a notification when a reading passes its limit.",
+        caption: "Alerts fire when their selected limits are reached. CPU use and temperature alerts ignore spikes shorter than about 12 seconds. Alerts for the same disk volume repeat after 6 hours, with one earlier alert if free space drops below half the selected limit. The repeat setting applies separately to each other alert.",
         notificationsDenied: "Notifications for Lattice are off in System Settings, so alerts cannot appear.",
         cpu: "CPU usage",
         cpuTemperature: "CPU temperature",
@@ -2898,7 +2898,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Critical memory",
         memoryBody: "Memory pressure reached the critical level.",
         diskTitle: "Low disk space",
-        diskBodyFormat: "%@ has less than %d%% free.",
+        diskBodyFormat: "%@ has less than %@%% free.",
         batteryTitle: "Low battery",
         batteryBodyFormat: "Battery is at %d%%.",
         batteryTemperature: "Battery temperature",
@@ -2908,7 +2908,7 @@ struct MonitorAlertFeatureStrings {
 
     static let ptBR = MonitorAlertFeatureStrings(
         section: "Alertas",
-        caption: "Receba uma notificação quando uma leitura passar do limite.",
+        caption: "Os alertas disparam quando os limites escolhidos são atingidos. O uso da CPU e os alertas de temperatura ignoram picos com menos de 12 segundos. O alerta de espaço para o mesmo volume se repete após 6 horas, com um aviso antecipado se o espaço livre cair abaixo da metade do limite escolhido. A opção de repetição vale separadamente para cada outro alerta.",
         notificationsDenied: "As notificações do Lattice estão desativadas nos Ajustes do Sistema, então os alertas não aparecem.",
         cpu: "Uso da CPU",
         cpuTemperature: "Temperatura da CPU",
@@ -2930,7 +2930,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Memória crítica",
         memoryBody: "A pressão de memória chegou ao nível crítico.",
         diskTitle: "Pouco espaço em disco",
-        diskBodyFormat: "%@ está com menos de %d%% livre.",
+        diskBodyFormat: "%@ está com menos de %@%% livre.",
         batteryTitle: "Bateria baixa",
         batteryBodyFormat: "A bateria está em %d%%.",
         batteryTemperature: "Temperatura da bateria",
@@ -2940,7 +2940,7 @@ struct MonitorAlertFeatureStrings {
 
     static let tr = MonitorAlertFeatureStrings(
         section: "Uyarılar",
-        caption: "Bir değer sınırını aştığında bildirim alın.",
+        caption: "Uyarılar seçilen eşiklere ulaşıldığında gönderilir. CPU kullanımı ve sıcaklık uyarıları yaklaşık 12 saniyeden kısa sıçramaları yok sayar. Aynı disk birimi için uyarılar 6 saat sonra yinelenir. Boş alan, seçilen eşiğin yarısının altına düşerse bir uyarı daha erken gönderilir. Yineleme ayarı diğer her uyarı için ayrı ayrı geçerlidir.",
         notificationsDenied: "Sistem Ayarları’nda Lattice bildirimleri kapalı, bu yüzden uyarılar görünemez.",
         cpu: "CPU kullanımı",
         cpuTemperature: "CPU sıcaklığı",
@@ -2962,7 +2962,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Kritik bellek",
         memoryBody: "Bellek basıncı kritik seviyeye ulaştı.",
         diskTitle: "Düşük disk alanı",
-        diskBodyFormat: "%@ diskinde %d%% altında boş alan var.",
+        diskBodyFormat: "%@ diskinde %@%% altında boş alan var.",
         batteryTitle: "Düşük pil",
         batteryBodyFormat: "Pil %d%% seviyesinde.",
         batteryTemperature: "Pil sıcaklığı",
@@ -2972,7 +2972,7 @@ struct MonitorAlertFeatureStrings {
 
     static let ru = MonitorAlertFeatureStrings(
         section: "Оповещения",
-        caption: "Получайте уведомление, когда показатель выходит за предел.",
+        caption: "Оповещения появляются при достижении выбранных порогов. Загрузка CPU и температурные оповещения игнорируют скачки короче примерно 12 секунд. Оповещения о месте на одном и том же томе повторяются через 6 часов. Если свободного места станет меньше половины выбранного порога, одно оповещение придёт раньше. Настройка повтора действует отдельно для каждого из остальных оповещений.",
         notificationsDenied: "Уведомления Lattice выключены в Системных настройках, поэтому оповещения не появятся.",
         cpu: "Загрузка процессора",
         cpuTemperature: "Температура процессора",
@@ -2994,7 +2994,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Критическая память",
         memoryBody: "Давление памяти достигло критического уровня.",
         diskTitle: "Мало места на диске",
-        diskBodyFormat: "На %@ осталось меньше %d%% свободного места.",
+        diskBodyFormat: "На %@ осталось меньше %@%% свободного места.",
         batteryTitle: "Низкий заряд батареи",
         batteryBodyFormat: "Заряд батареи: %d%%.",
         batteryTemperature: "Температура аккумулятора",
@@ -3004,7 +3004,7 @@ struct MonitorAlertFeatureStrings {
 
     static let es = MonitorAlertFeatureStrings(
         section: "Alertas",
-        caption: "Recibe una notificación cuando una lectura supere su límite.",
+        caption: "Las alertas aparecen cuando se alcanzan los límites elegidos. El uso de CPU y las alertas de temperatura ignoran los picos de menos de unos 12 segundos. Las alertas de espacio para un mismo volumen se repiten tras 6 horas. Si el espacio libre cae por debajo de la mitad del límite elegido, se emite un aviso antes de tiempo. El ajuste de repetición se aplica por separado a cada una de las demás alertas.",
         notificationsDenied: "Las notificaciones de Lattice están desactivadas en Ajustes del Sistema, así que las alertas no aparecen.",
         cpu: "Uso de CPU",
         cpuTemperature: "Temperatura de la CPU",
@@ -3026,7 +3026,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Memoria crítica",
         memoryBody: "La presión de memoria llegó al nivel crítico.",
         diskTitle: "Poco espacio en disco",
-        diskBodyFormat: "%@ tiene menos de %d%% libre.",
+        diskBodyFormat: "%@ tiene menos de %@%% libre.",
         batteryTitle: "Batería baja",
         batteryBodyFormat: "La batería está al %d%%.",
         batteryTemperature: "Temperatura de la batería",
@@ -3036,7 +3036,7 @@ struct MonitorAlertFeatureStrings {
 
     static let sk = MonitorAlertFeatureStrings(
         section: "Hlásenia",
-        caption: "Dostanete upozornenie, keď hodnota prekročí limit.",
+        caption: "Hlásenia sa spustia po dosiahnutí vybraných limitov. Hlásenia o vyťažení a teplote CPU ignorujú výkyvy kratšie ako približne 12 sekúnd. Upozornenia na voľné miesto na tom istom zväzku sa opakujú po 6 hodinách. Ak voľné miesto klesne pod polovicu zvoleného limitu, jedno upozornenie príde skôr. Nastavenie opakovania platí osobitne pre každé ďalšie upozornenie.",
         notificationsDenied: "Hlásenia pre Lattice sú vypnuté v Systémových nastaveniach, takže sa nemôžu zobraziť.",
         cpu: "Využitie procesora",
         cpuTemperature: "Teplota procesora",
@@ -3058,7 +3058,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Kritická pamäť",
         memoryBody: "Tlak na pamäť dosiahol kritickú úroveň.",
         diskTitle: "Málo miesta na disku",
-        diskBodyFormat: "%@ má menej ako %d%% voľného miesta.",
+        diskBodyFormat: "%@ má menej ako %@%% voľného miesta.",
         batteryTitle: "Nízka batéria",
         batteryBodyFormat: "Batéria je na %d%%.",
         batteryTemperature: "Teplota batérie",
@@ -3068,7 +3068,7 @@ struct MonitorAlertFeatureStrings {
 
     static let de = MonitorAlertFeatureStrings(
         section: "Warnungen",
-        caption: "Erhalte eine Mitteilung, wenn ein Wert sein Limit überschreitet.",
+        caption: "Warnungen erscheinen, wenn die gewählten Grenzwerte erreicht werden. CPU-Auslastung und Temperaturwarnungen ignorieren Spitzen, die kürzer als etwa 12 Sekunden dauern. Für dasselbe Volume werden Speicherplatzwarnungen nach 6 Stunden wiederholt. Fällt der freie Speicherplatz unter die Hälfte des gewählten Grenzwerts, kann eine Warnung früher erscheinen. Die Wiederholungseinstellung gilt für jede andere Warnung einzeln.",
         notificationsDenied: "Mitteilungen für Lattice sind in den Systemeinstellungen aus, daher können keine Warnungen erscheinen.",
         cpu: "CPU-Auslastung",
         cpuTemperature: "CPU-Temperatur",
@@ -3090,7 +3090,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Kritischer Speicher",
         memoryBody: "Der Speicherdruck hat den kritischen Wert erreicht.",
         diskTitle: "Wenig Speicherplatz",
-        diskBodyFormat: "%@ hat weniger als %d%% frei.",
+        diskBodyFormat: "%@ hat weniger als %@%% frei.",
         batteryTitle: "Niedriger Akkustand",
         batteryBodyFormat: "Der Akku ist bei %d%%.",
         batteryTemperature: "Batterietemperatur",
@@ -3100,7 +3100,7 @@ struct MonitorAlertFeatureStrings {
 
     static let fr = MonitorAlertFeatureStrings(
         section: "Alertes",
-        caption: "Recevez une notification quand une mesure dépasse sa limite.",
+        caption: "Les alertes apparaissent lorsque les seuils choisis sont atteints. L’utilisation du processeur et les alertes de température ignorent les pics de moins de 12 secondes environ. Pour un même volume, les alertes d’espace disque se répètent après 6 heures. Une alerte peut s’afficher plus tôt si l’espace libre passe sous la moitié du seuil choisi. Le réglage de répétition s’applique séparément à chaque autre alerte.",
         notificationsDenied: "Les notifications de Lattice sont désactivées dans Réglages Système, les alertes ne peuvent donc pas apparaître.",
         cpu: "Utilisation du processeur",
         cpuTemperature: "Température du processeur",
@@ -3122,7 +3122,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Mémoire critique",
         memoryBody: "La pression mémoire a atteint le niveau critique.",
         diskTitle: "Espace disque faible",
-        diskBodyFormat: "%@ a moins de %d%% libre.",
+        diskBodyFormat: "%@ a moins de %@%% libre.",
         batteryTitle: "Batterie faible",
         batteryBodyFormat: "La batterie est à %d%%.",
         batteryTemperature: "Température de la batterie",
@@ -3132,7 +3132,7 @@ struct MonitorAlertFeatureStrings {
 
     static let it = MonitorAlertFeatureStrings(
         section: "Avvisi",
-        caption: "Ricevi una notifica quando un valore supera il limite.",
+        caption: "Gli avvisi compaiono quando vengono raggiunte le soglie scelte. L’uso della CPU e gli avvisi di temperatura ignorano i picchi più brevi di circa 12 secondi. Gli avvisi sullo spazio libero dello stesso volume si ripetono dopo 6 ore. Se lo spazio libero scende sotto metà della soglia scelta, può comparire un avviso in anticipo. L’impostazione di ripetizione si applica separatamente a ciascun altro avviso.",
         notificationsDenied: "Le notifiche di Lattice sono disattivate in Impostazioni di Sistema, quindi gli avvisi non compaiono.",
         cpu: "Uso CPU",
         cpuTemperature: "Temperatura CPU",
@@ -3154,7 +3154,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "Memoria critica",
         memoryBody: "La pressione della memoria ha raggiunto il livello critico.",
         diskTitle: "Poco spazio su disco",
-        diskBodyFormat: "%@ ha meno del %d%% libero.",
+        diskBodyFormat: "%@ ha meno del %@%% libero.",
         batteryTitle: "Batteria scarica",
         batteryBodyFormat: "La batteria è al %d%%.",
         batteryTemperature: "Temperatura batteria",
@@ -3164,7 +3164,7 @@ struct MonitorAlertFeatureStrings {
 
     static let ja = MonitorAlertFeatureStrings(
         section: "アラート",
-        caption: "値が上限を超えると通知します。",
+        caption: "選択したしきい値に達すると通知します。CPU 使用率と温度の通知は約 12 秒未満の短い急上昇を無視します。同じボリュームの空き容量に関する通知は 6 時間後に繰り返されます。空き容量が設定したしきい値の半分を下回ると、1 回だけ早めに通知します。繰り返し設定はその他の通知に個別に適用されます。",
         notificationsDenied: "システム設定でLatticeの通知がオフのため、アラートは表示されません。",
         cpu: "CPU使用率",
         cpuTemperature: "CPU温度",
@@ -3186,7 +3186,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "メモリが深刻",
         memoryBody: "メモリ圧迫が深刻レベルに達しました。",
         diskTitle: "ディスク空き容量不足",
-        diskBodyFormat: "%@ の空き容量が %d%% 未満です。",
+        diskBodyFormat: "%@ の空き容量が %@%% 未満です。",
         batteryTitle: "バッテリー残量低下",
         batteryBodyFormat: "バッテリー残量は %d%% です。",
         batteryTemperature: "バッテリー温度",
@@ -3196,7 +3196,7 @@ struct MonitorAlertFeatureStrings {
 
     static let zhHans = MonitorAlertFeatureStrings(
         section: "提醒",
-        caption: "读数超过限值时发送通知。",
+        caption: "达到所选阈值时会发出提醒。CPU 使用率和温度提醒会忽略短于约 12 秒的短暂峰值。同一宗卷的磁盘空间提醒间隔为 6 小时。可用空间降至所选阈值的一半以下时，会提前提醒一次。重复设置分别适用于其他各项提醒。",
         notificationsDenied: "Lattice 的通知已在系统设置中关闭，警报无法显示。",
         cpu: "CPU 使用率",
         cpuTemperature: "CPU 温度",
@@ -3218,7 +3218,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "内存严重",
         memoryBody: "内存压力已达到严重级别。",
         diskTitle: "磁盘空间不足",
-        diskBodyFormat: "%@ 的可用空间低于 %d%%。",
+        diskBodyFormat: "%@ 的可用空间低于 %@%%。",
         batteryTitle: "电池电量低",
         batteryBodyFormat: "电池电量为 %d%%。",
         batteryTemperature: "电池温度",
@@ -3228,7 +3228,7 @@ struct MonitorAlertFeatureStrings {
 
     static let zhTW = MonitorAlertFeatureStrings(
         section: "提醒",
-        caption: "讀數超過限值時傳送通知。",
+        caption: "達到所選門檻時會發出提醒。CPU 使用率和溫度提醒會忽略短於約 12 秒的短暫尖峰。同一卷宗的磁碟空間提醒間隔為 6 小時。可用空間降至所選門檻的一半以下時，會提前提醒一次。重複設定分別適用於其他各項提醒。",
         notificationsDenied: "Lattice 的通知已在系統設定中關閉，警示無法顯示。",
         cpu: "CPU 使用率",
         cpuTemperature: "CPU 溫度",
@@ -3250,7 +3250,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "記憶體壓力過高",
         memoryBody: "記憶體壓力已達到嚴重等級。",
         diskTitle: "磁碟空間不足",
-        diskBodyFormat: "%@ 的可用空間低於 %d%%。",
+        diskBodyFormat: "%@ 的可用空間低於 %@%%。",
         batteryTitle: "電池電量偏低",
         batteryBodyFormat: "電池電量為 %d%%。",
         batteryTemperature: "電池溫度",
@@ -3260,7 +3260,7 @@ struct MonitorAlertFeatureStrings {
 
     static let zhHK = MonitorAlertFeatureStrings(
         section: "提示",
-        caption: "讀數超過限值時傳送通知。",
+        caption: "達到所選門檻時會發出提示。CPU 使用率和溫度提示會忽略短於約 12 秒的短暫尖峰。同一卷宗的磁碟空間提示相隔 6 小時。可用空間跌至所選門檻的一半以下時，會提早發出一次提示。重複設定分別適用於其他各項提示。",
         notificationsDenied: "Lattice 的通知已在系統設定中關閉，警示無法顯示。",
         cpu: "CPU 使用率",
         cpuTemperature: "CPU 溫度",
@@ -3282,7 +3282,7 @@ struct MonitorAlertFeatureStrings {
         memoryTitle: "記憶體壓力過高",
         memoryBody: "記憶體壓力已達至嚴重水平。",
         diskTitle: "磁碟空間不足",
-        diskBodyFormat: "%@ 的可用空間低於 %d%%。",
+        diskBodyFormat: "%@ 的可用空間低於 %@%%。",
         batteryTitle: "電池電量偏低",
         batteryBodyFormat: "電池電量為 %d%%。",
         batteryTemperature: "電池溫度",
@@ -3468,7 +3468,7 @@ extension WindowLayoutFeatureStrings {
 extension MonitorAlertFeatureStrings {
     static let uk = MonitorAlertFeatureStrings(
         section: "Сповіщення",
-        caption: "Отримуйте сповіщення, коли показник виходить за межу.",
+        caption: "Сповіщення спрацьовують, коли досягаються вибрані межі. Сповіщення про використання й температуру CPU ігнорують сплески коротші за 12 секунд. Сповіщення про вільне місце на тому самому томі повторюються через 6 годин. Якщо вільного місця залишиться менше половини вибраного порога, одне сповіщення з’явиться раніше. Налаштування повтору діє окремо для кожного іншого сповіщення.",
         notificationsDenied: "Сповіщення Lattice вимкнено в Системних параметрах, тому вони не можуть з’являтися.",
         cpu: "Навантаження процесора",
         cpuTemperature: "Температура процесора",
@@ -3490,7 +3490,7 @@ extension MonitorAlertFeatureStrings {
         memoryTitle: "Критична пам’ять",
         memoryBody: "Тиск пам’яті досяг критичного рівня.",
         diskTitle: "Мало місця на диску",
-        diskBodyFormat: "На %@ залишилося менше %d%%.",
+        diskBodyFormat: "На %@ залишилося менше %@%%.",
         batteryTitle: "Низький заряд акумулятора",
         batteryBodyFormat: "Заряд акумулятора становить %d%%.",
         batteryTemperature: "Температура акумулятора",

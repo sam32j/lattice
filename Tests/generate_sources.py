@@ -1031,6 +1031,10 @@ def main():
           + declaration("Sources/Lattice/Services/ResponsibleProcess.swift", "    static func displayName(")
           + "}\n}\n")
     disk_sampler = "Sources/Lattice/Services/Metrics/DiskSampler.swift"
+    disk_alerts = "Sources/Lattice/Services/SystemMonitor/MonitorAlertService.swift"
+    evaluate_disk = declaration(disk_alerts, "    private func evaluateDisk(").replace("private func", "func", 1)
+    if evaluate_disk.count("now: Date()") != 2:
+        raise ValueError("Expected clocks for disk evaluation and notification completion")
     write("DiskCapacity.swift", "import Foundation\nextension DiskCapacityTests {\n"
           + "final class Sampler: Fixture {\n"
           + "".join(declaration(disk_sampler, prefix).replace("    private ", "    ", 1)
@@ -1040,10 +1044,10 @@ def main():
                                    "    private static func mountedVolumes(", "    private static func importantFree(",
                                    "    private static func positiveUInt(_ value: Int?)",
                                    "    private static func positiveUInt(_ value: Int64?)"])
-          + "}\nfinal class Alerts {\n"
-          + declaration("Sources/Lattice/Services/SystemMonitor/MonitorAlertService.swift",
-                        "    private func lowDisk(").replace("private func", "func", 1)
-          + "}\n}\n")
+          + "}\n}\n"
+          + declaration(disk_alerts, "struct DiskAlertGate")
+          + "extension DiskCapacityTests.Delivery {\n"
+          + evaluate_disk.replace("now: Date()", "now: Self.now") + "}\n")
     write("SystemMonitorCPU.swift", "import Darwin\nimport Foundation\n"
           + "extension SystemMonitorCPUTests {\nfinal class Monitor: Fixture {\n"
           + declaration("Sources/Lattice/Services/SystemMonitor/SystemMonitor.swift",
