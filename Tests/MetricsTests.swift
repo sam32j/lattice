@@ -173,6 +173,7 @@ struct MetricsTests {
                 PermissionDetailsSheetTests.run { suite.expect($0, $1) }
                 NotchSettingsChoiceTests.run(suite)
                 Upstream344SettingsTests.run(suite)
+                Upstream345SettingsTests.run(suite)
             }),
             ("display-restoration", {
                 DisplayRestorationTests.run(suite)
