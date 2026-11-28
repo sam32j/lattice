@@ -166,6 +166,7 @@ struct DataPermissionsSettings: View {
         .alert(backup.configFileConfirmTitle, isPresented: $showConfigFileConfirm) {
             Button(l10n.s.uninstallerCancel, role: .cancel) {}
             Button(backup.configFileAction) {
+                ScratchpadService.shared.prepareForSettingsBackup()
                 savedConfigFile = SettingsBackup.writeConfigFile()
             }
         } message: {
