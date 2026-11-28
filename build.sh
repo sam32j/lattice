@@ -418,6 +418,8 @@ if (( TEST )); then
         Sources/Lattice/Services/AgentUsage/Harness/CodexReader.swift
         Sources/Lattice/Services/AgentUsage/Harness/OpenCodeReader.swift
         Sources/Lattice/Services/AgentUsage/Harness/CopilotReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/CursorReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/CursorTranscriptAccess.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageSummary.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageStore.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageArchive.swift
