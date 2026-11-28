@@ -149,6 +149,7 @@ struct MetricsTests {
                 FeatureCatalogTests.run(suite)
                 SettingsShortcutConsumerTests.run(suite)
                 SettingsResetAvailabilityTests.run(suite)
+                StartupGatingTests.run(suite)
             }),
             ("utilities", {
                 UtilitySettingsTests.run { suite.expect($0, $1) }

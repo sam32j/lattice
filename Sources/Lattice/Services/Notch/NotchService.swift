@@ -2445,7 +2445,7 @@ final class NotchService: ObservableObject {
             case .music: select(.music)
             case .timer: select(.timer)
             case .calendar: select(.calendar)
-            case .commandBar: perform { CommandBarService.shared.show() }
+            case .commandBar: if AppFeature.commandBar.isAvailable { perform { CommandBarService.shared.show() } }
             case .scratchpad: openScratchpad()
             case .volume, .brightness, .keyboardLight: select(.hub)
             }

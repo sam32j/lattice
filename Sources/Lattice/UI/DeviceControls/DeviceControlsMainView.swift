@@ -14,7 +14,9 @@ struct DeviceControlsMainView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            DeviceControlsBrightnessSection(brightnessControlEnabled: brightnessControlEnabled)
+            if brightnessControlEnabled || BrightnessService.keyboardLightIsSupported {
+                DeviceControlsBrightnessSection(brightnessControlEnabled: brightnessControlEnabled)
+            }
             if volumeMixerEnabled {
                 DeviceControlsAudioOutputSection()
             }
@@ -23,11 +25,13 @@ struct DeviceControlsMainView: View {
             }
         }
         .onAppear {
-            let brightness = BrightnessService.shared
-            if brightnessControlEnabled, brightness.displays.isEmpty {
-                brightness.refresh()
+            if brightnessControlEnabled || BrightnessService.keyboardLightIsSupported {
+                let brightness = BrightnessService.shared
+                if brightnessControlEnabled, brightness.displays.isEmpty {
+                    brightness.refresh()
+                }
+                brightness.refreshKeyboardLight()
             }
-            brightness.refreshKeyboardLight()
             if volumeMixerEnabled, AppVolumeMixer.shared.outputDevices.isEmpty {
                 AppVolumeMixer.shared.refreshApps()
             }
