@@ -113,6 +113,17 @@ extension JunkCleaner {
 
     // MARK: - Clean
 
+    /// Each cleanup shares one app inventory across its serial removal checks.
+    static func cachedAppLookup(_ load: @escaping () -> Set<String>) -> () -> Set<String> {
+        var cached: Set<String>?
+        return {
+            if let cached { return cached }
+            let apps = load()
+            cached = apps
+            return apps
+        }
+    }
+
     /// `escalate: false` leaves whatever the Trash move refused in place
     /// instead of handing it to Finder, which is an administrator password
     /// prompt. No default: each caller says whether someone is there to answer.
@@ -127,7 +138,7 @@ extension JunkCleaner {
             // A recommended cache or log may have lost its owning app since the scan.
             let needsPluginIDs = chosen.contains { [.leftovers, .caches, .logs].contains($0.category) }
             let audioPluginIDs = needsPluginIDs ? Self.installedAudioPluginBundleIDs() : []
-            lazy var installedApps = Self.installedBundleIDs()
+            let installedApps = Self.cachedAppLookup(Self.installedBundleIDs)
             var freed: Int64 = 0
             var failed = 0
             var stubborn: [Item] = []
@@ -196,7 +207,7 @@ extension JunkCleaner {
     /// Exact match guard against ever removing a critical root, even if a
     /// scanner bug produced one. Items are already scoped by construction;
     /// this is the last line of defense.
-    static func mayRemove(_ item: Item, installedApps: @autoclosure () -> Set<String>,
+    static func mayRemove(_ item: Item, installedApps: () -> Set<String>,
                           audioPluginIDs: Set<String>) -> Bool {
         let url = item.url
         let path = url.standardizedFileURL.path
