@@ -341,8 +341,10 @@ def main():
                              "    private func syncControls(", "    func editText(", "    func hitTest(", "    func deleteSelected()", "    func resizeHandle("])
           + "}\n}\n")
     write("ScreenshotTextDraft.swift", "import AppKit\nextension ScreenshotTextDraftTests {\nfinal class Model: State {\n"
+          + "static let undoByteBudget = 256 << 20\nstatic let undoAnnotationBytes = 512\n"
           + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
-              for prefix in ["    private func registerUndo()", "    private func applyStyleToSelection()",
+              for prefix in ["    private func registerUndo()", "    private func trimHistory(",
+                             "    private func applyStyleToSelection()",
                              "    func textSizeEditingChanged(",
                              "    func beginDrag(", "    func endDrag(", "    func commitText("])
           + "}\nfinal class Controller: ControllerState {\n"

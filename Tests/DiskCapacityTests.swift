@@ -275,7 +275,7 @@ enum DiskCapacityTests {
     }
 
     private static func alertDelivery(_ suite: TestSuite, sample: ([URL]) -> DiskReading) {
-        let domain = "com.vorssaint.tests.disk-capacity"
+        let domain = "io.github.sam32j.lattice.tests.disk-capacity"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.set(10, forKey: DefaultsKey.monitorAlertDiskFreePercent)
         let previousLocale = MetricFormat.locale

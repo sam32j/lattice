@@ -339,7 +339,7 @@ enum CleanerEligibilityTests {
         let sibling = "com.reverbco.Delay"
         let family = [synth, synth + ".state", "com.synthmaker", reverb]
         let ordinary = ["com.synthmaker.Editor", synth + "Lab", "org.paper.Canvas", "Homebrew", "com.reverbco.2026"]
-        let optional = ["ms-playwright", "PlainVendorFolder", "com.apple.Music"]
+        let optional = ["ms-playwright", "PlainVendorFolder"]
         let excluded = "CloudKit.fixture"
         let hostedLog = "io.github.compco.log"
         let caches = home.appendingPathComponent("Library/Caches", isDirectory: true)

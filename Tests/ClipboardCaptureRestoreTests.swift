@@ -199,8 +199,11 @@ enum ClipboardCaptureRestoreTests {
 
         Fixture.Lane.shared.defersDelivery = false
         defer { Fixture.UserDefaults.standard.includeImages = false }
-        let pixels = ScreenshotCanvasSupportTests.image(width: 2, height: 2)
-        guard let tiff = NSBitmapImageRep(cgImage: pixels).tiffRepresentation else {
+        guard let ctx = CGContext(data: nil, width: 2, height: 2, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+              let pixels = ctx.makeImage(),
+              let tiff = NSBitmapImageRep(cgImage: pixels).tiffRepresentation else {
             suite.expect(false, "the private clipboard image fixture encodes as TIFF")
             return
         }

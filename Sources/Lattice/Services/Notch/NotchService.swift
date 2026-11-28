@@ -2860,16 +2860,12 @@ final class NotchService: ObservableObject {
 
     func accept(_ pasteboard: NSPasteboard) -> Bool {
         defer { endFileDrop() }
-<<<<<<< ours
-        guard canAcceptFileDrop else { return false }
+        guard canAcceptFileDrop(pasteboard) else { return false }
         if let appDrop, targetsAppDrop {
             perform(appDrop)
             return true
         }
         let editor = choosingFileDropDestination && targetsEditorDrop
-=======
-        guard canAcceptFileDrop(pasteboard) else { return false }
->>>>>>> theirs
         let optimize = choosingFileDropDestination && targetsMediaDrop
         let accepted = editor ? MediaEditorFileOpener.shared.open(MediaEditorFileSupport.urls(from: pasteboard)) : optimize
             ? NotchFileToolsService.shared.openMediaDrop(pasteboard)
@@ -4261,7 +4257,9 @@ final class NotchService: ObservableObject {
             panel?.title = FeatureStrings.notch(L10n.shared.language).title
             syncGestures()
         }
-        if canAcceptFileDrop {
+        if acceptsUserInteraction
+            && (canDropOnShelf || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable
+                || AppFeature.diskImageInstaller.isAvailable || AppFeature.uninstaller.isAvailable) {
             windowHost?.setFileDropActions(NotchFileDropActions(
                 canAccept: { [weak self] pasteboard in
                     self?.canAcceptFilePayload(pasteboard) == true
