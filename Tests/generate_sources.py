@@ -1335,7 +1335,7 @@ def main():
           + "var outputDevices: [Device] = []\nvar currentOutputDeviceUID: String?\nvar switchedTo: [String] = []\n"
           + "func setUniversalOutputDeviceUID(_ uid: String) -> Bool { switchedTo.append(uid); return true }\n"
           + declaration(mixer, "    func switchToNextSoundOutput(") + "}\n}\n")
-    write("MixerOutputAdjustment.swift", "import CoreAudio\nimport Foundation\n"
+    write("MixerOutputAdjustment.swift", "import AudioToolbox\nimport CoreAudio\nimport Foundation\n"
           + "extension MixerOutputAdjustmentContract {\nfinal class Mixer {\n"
           + declaration(mixer, "    enum OutputKeyResult:")
           + declaration(mixer, "    private struct OutputKeyWrite {")
@@ -1347,17 +1347,29 @@ def main():
           + "Hardware.volumeReads += 1; if let read = Hardware.readVolume { return read() }; return Hardware.volume\n}\n"
           + "static func outputMuted(for device: AudioObjectID) -> Bool? {\n"
           + "Hardware.muteReads += 1; if let read = Hardware.readMute { return read() }; return Hardware.muted\n}\n"
-          + "static func requiresQuantizedOutputKeys(for device: AudioObjectID) -> Bool { Hardware.requiresQuantizedKeys }\n"
+          + "static func requiresQuantizedOutputKeys(for device: AudioObjectID, ifTransportUnknown: Bool = true) -> Bool { Hardware.requiresQuantizedKeys }\n"
+          + "static func hasSettableMainOutputScalar(for device: AudioObjectID) -> Bool { Hardware.supportsScalarConversion }\n"
           + "static func hasSettableScalarOutput(for device: AudioObjectID, matching volume: Double) -> Bool { Hardware.supportsScalarConversion }\n"
           + "static func quantizedOutputVolume(_ volume: Double, for device: AudioObjectID) -> Double? {\n"
           + "let value = Float32(volume); Hardware.queries.append(value)\n"
           + "if let quantizes = Hardware.quantizes { return quantizes(value).map(Double.init) }; return Double(value)\n}\n"
           + "var systemOutputVolume: Double?\nvar systemOutputMuted: Bool?\n"
-          + "var outputControlListenerDevice: AudioObjectID?\n"
+          + declaration(mixer, "    @Published private(set) var currentOutputDeviceUID:")
+            .replace("@Published private(set) var", "var", 1)
+          + "private var volumeStepsNeedNativeKeys = false\n"
+          + "private var outputControlDeviceID: AudioObjectID?\n"
+          + declaration(mixer, "    private var outputControlListenerDevice:").replace("private var", "var", 1)
           + "private var outputPublicationSuppression: (device: AudioObjectID, at: CFAbsoluteTime)?\n"
           + "private static let outputPublicationSuppressionWindow: CFAbsoluteTime = 5\n"
           + "var outputControlListenerAddresses: [AudioObjectPropertyAddress] = []\n"
-          + "var outputControlRefreshGeneration = 0\n"
+          + "var outputControlRefreshGeneration = 0\nprivate var nativeKeyReadGeneration: Int?\n"
+          + "var listenerInstalled = false\nvar acceptsControlListener: (AudioObjectPropertySelector) -> Bool = { _ in true }\n"
+          + declaration(mixer, "    private static let outputVolumeSelectors:", closing="]")
+          + "func addControlListener(_ device: AudioObjectID, _ address: UnsafePointer<AudioObjectPropertyAddress>,\n"
+          + "                        _ callback: AudioObjectPropertyListenerProc, _ client: UnsafeMutableRawPointer?) -> OSStatus {\n"
+          + "    acceptsControlListener(address.pointee.mSelector) ? noErr : -1\n}\n"
+          + "func removeControlListener(_ device: AudioObjectID, _ address: UnsafePointer<AudioObjectPropertyAddress>,\n"
+          + "                           _ callback: AudioObjectPropertyListenerProc, _ client: UnsafeMutableRawPointer?) {}\n"
           + "private var pendingOutputAdjustment: OutputAdjustment?\nprivate var outputWriteInFlight: OutputAdjustment?\n"
           + "let outputControlLock = NSLock()\nvar outputControlLifetime = UUID()\nvar outputKeyGeneration = 0\nvar nativeOutputKeyLifetime: UUID?\nlet halQueue = Queue()\n"
           + "var controlRefreshes: [AudioObjectID] = []\nvar listenerRefreshes = 0\n"
@@ -1373,13 +1385,22 @@ def main():
           + "guard Hardware.muted != nil else { return false }\n"
           + "Hardware.writes.append(.init(device: device, volume: nil, muted: value)); if Hardware.succeeds { Hardware.muted = value }; return Hardware.succeeds\n}\n"
           + "func scheduleListenerRefresh() { listenerRefreshes += 1 }\n"
-          + "func scheduleOutputControlRefresh(for device: AudioObjectID) { controlRefreshes.append(device) }\n"
-          + "func selectOutput(_ device: AudioObjectID?, volume: Double?, muted: Bool?) {\n"
-          + "removeOutputControlListeners(); outputControlListenerDevice = device; applyOutputControls(volume: volume, muted: muted)\n}\n"
+          + declaration(mixer, "    private func scheduleOutputControlRefresh(")
+            .replace("guard listenerInstalled,", "controlRefreshes.append(device)\n        guard listenerInstalled,", 1)
+          + declaration(mixer, "    private func subscribeToOutputControls(")
+            .replace("guard AudioObjectHasProperty(device, &address) else { continue }", "")
+            .replace("AudioObjectAddPropertyListener(", "addControlListener(")
+          + declaration(mixer, "    private func removeOutputControlListeners(")
+            .replace("AudioObjectRemovePropertyListener(", "removeControlListener(")
+          + "func selectOutput(_ device: AudioObjectID?, volume: Double?, muted: Bool?, uid: String = UUID().uuidString) {\n"
+          + "currentOutputDeviceUID = device == nil ? nil : uid\n"
+          + "applyOutputControlSnapshot(device: device, nativeVolumeSteps: Self.volumeStepsNeedNativeKeys(for: device),\n"
+          + "                           volume: volume, muted: muted)\n}\n"
           + "func readSnapshot(volume: Double?, muted: Bool?) { applyOutputControls(volume: volume, muted: muted) }\n"
           + "".join(declaration(mixer, prefix) for prefix in [
               "    func requestOutputAdjustment(", "    func requestOutputLevel(",
-              "    private func enqueueOutputAdjustment(", "    private func removeOutputControlListeners(",
+              "    private func enqueueOutputAdjustment(",
+              "    private func applyOutputControlSnapshot(",
               "    func requestOutputStep(", "    func requestOutputMuteToggle(",
               "    private func enqueueOutputKey(", "    private func readOutputForQueuedKeys(",
               "    private func settleQueuedOutputSteps(",
@@ -1388,6 +1409,10 @@ def main():
               "    private func confirmDirectOutputAdjustment(", "    private static func outputAdjustmentIsConfirmed(",
               "    private func beginOutputKeyAdjustment(", "    private func confirmOutputKeyAdjustment(",
               "    private func scheduleOutputKeyConfirmation(", "    private static func outputKeyVolumeTarget(",
+              "    private static func volumeStepsNeedNativeKeys(", "    func prefersNativeOutputKey(",
+              "    var currentOutputControlLifetime:", "    var currentOutputKeyGeneration:",
+              "    func refreshNativeKeyLevelIfUnobserved(", "    private func cancelUnobservedNativeKeyRead(",
+              "    private func readOutputControls(",
               "    private func isCurrentOutputAdjustment(", "    private var hasCurrentOutputAdjustment:",
               "    private func applyOutputControls(", "    private func drainOutputAdjustment(",
               "    static func setSystemOutputVolume("])
@@ -1407,8 +1432,12 @@ def main():
           + "}\n")
     write("NotchVolumeRouting.swift", "import Foundation\nimport CoreGraphics\n"
           + "extension NotchVolumeRoutingTests {\nfinal class Service: State {\n"
-          + declaration("Sources/Lattice/Services/Audio/PreciseVolumeRollerService.swift",
-                        "    private func routeNotchVolume(").replace("private func", "func", 1)
+          + "".join(declaration("Sources/Lattice/Services/Audio/PreciseVolumeRollerService.swift", prefix)
+                    .replace("private func", "func", 1) for prefix in [
+                        "    private func routeVolumeKey(", "    private func routeNativeOutputKey(",
+                        "    private func noteNativeVolumeKey(",
+                        "    private static func volumePress(",
+                        "    private func routeNotchVolume("])
           + "}\n}\n")
     write("AudioSettingsOwnership.swift", "import SwiftUI\nextension AudioSettingsOwnershipTests.InputPage {\n"
           + declaration("Sources/Lattice/UI/Settings/AudioInputSettings.swift", "    var body:", scope="struct AudioInputSettings:")
@@ -1607,6 +1636,8 @@ def main():
           + "}\nfinal class PreciseVolumeRollerService: VolumeState {\n"
           + "static let shared = PreciseVolumeRollerService()\n"
           + declaration("Sources/Lattice/Services/Audio/PreciseVolumeRollerService.swift", "    func syncWithPreferences()")
+          + declaration("Sources/Lattice/Services/Audio/PreciseVolumeRollerService.swift", "    private func renewNativeKeyDrain(")
+              .replace("private func", "func", 1)
           + "}\n}\n")
     write("NotchNotice.swift", "import AppKit\n" + declaration(notch, "struct NotchNotice:"))
     agent_view = "Sources/Lattice/UI/Notch/NotchAgentsView.swift"
@@ -1632,11 +1663,14 @@ def main():
           + "}\n}\n")
     write("NotchVolumeFeedback.swift", "import Foundation\nimport Combine\n"
           + "extension NotchVolumeFeedbackTests {\nfinal class Service: State {\n"
+          + declaration(notch, "    private struct NativeVolumeKey {")
+          + "private var pendingNativeVolumeKey: NativeVolumeKey?\n"
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
               "    private func bindVolumeEvents(", "    private func volumeChanged(",
-              "    func showCurrentVolume(",
+              "    func noteNativeVolumeKey(", "    private func confirmsNativeVolumeKey(",
               "    func noteOwnLevelAdjustment(", "    private func ownsLevelAdjustment(",
               "    func showBrightness(", "    func showKeyboardLight("])
+          + declaration(notch, "    func showCurrentVolume(").replace("    func", "    @discardableResult func", 1)
           + declaration(notch, "    func showVolume(").replace("    func", "    @discardableResult func", 1)
           + "}\n}\n")
     scratchpad_service = "Sources/Lattice/Services/QuickTools/ScratchpadService.swift"
