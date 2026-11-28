@@ -53,6 +53,10 @@ struct AudioInputSettings: View {
                                              showsUnavailableLabel: false,
                                              showsIcons: false)
 
+                    if let warning = micMute.warning {
+                        microphoneWarningRow(warning)
+                    }
+
                     VStack(alignment: .leading, spacing: 4) {
                         ShortcutPreferenceRow(role: .micMute, alignment: .center) {
                             MicMuteService.shared.syncWithPreferences()
@@ -76,8 +80,32 @@ struct AudioInputSettings: View {
                 }
                 .padding(.leading, settingsRowTextInset)
                 .transition(.settingsReveal)
+            } else if let warning = micMute.warning {
+                microphoneWarningRow(warning)
+                    .padding(.leading, settingsRowTextInset)
+                    .transition(.settingsReveal)
             }
         }
+    }
+
+    @ViewBuilder
+    private func microphoneWarningRow(_ warning: MicMuteService.Warning) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Label(warning.message, systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if warning == .manualRestore {
+                Button(l10n.s.micManualRestoreChecked) {
+                    micMute.acknowledgeManualRestore()
+                }
+                .controlSize(.regular)
+                .fixedSize()
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var inputPriorityCard: some View {

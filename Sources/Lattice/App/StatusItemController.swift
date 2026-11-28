@@ -164,7 +164,8 @@ final class StatusItemController {
             .sink { [weak self] _ in self?.updateIconAppearance() }
             .store(in: &cancellables)
 
-        MicMuteService.shared.$isMuted
+        let micMute = MicMuteService.shared
+        micMute.$isMuted.combineLatest(micMute.$warning)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateIconAppearance()
@@ -298,7 +299,7 @@ final class StatusItemController {
     }
 
     private var currentMicBadgeActive: Bool {
-        MicMuteService.shared.isMuted
+        (MicMuteService.shared.isMuted || MicMuteService.shared.warning != nil)
             && UserDefaults.standard.bool(forKey: DefaultsKey.micMuteMenuBarIndicator)
     }
 
@@ -326,7 +327,7 @@ final class StatusItemController {
     /// Reflects keep-awake state and an available update in the icon. Updates
     /// keep the blue attention glyph; an active session uses the chosen icon.
     /// With the mute indicator option on, a red slashed mic joins the glyph
-    /// while the microphone is muted, whatever the underlying state. The
+    /// while Mic Mute is on, whatever the underlying state. The
     /// glyph can also hide entirely while metrics render in the title (user
     /// option); the decision reads the button's actual title, so it must run
     /// AFTER refresh() writes it — refresh() calls this at its end.
@@ -868,15 +869,20 @@ final class StatusItemController {
         let shouldShow = renderedMicBadgeActive
         if shouldShow {
             let item = micMuteStatusItem ?? installMicMuteStatusItem()
+            let micMute = MicMuteService.shared
+            let warning = micMute.warning
             item.isVisible = true
             if let button = item.button {
-                let image = BlackHoleGlyph.micMutedStandaloneImage()
+                let image = warning != nil
+                    ? BlackHoleGlyph.micWarningStandaloneImage(description: warning?.message)
+                    : BlackHoleGlyph.micMutedStandaloneImage()
                 if button.image !== image {
                     button.image = image
                 }
                 button.imagePosition = .imageOnly
-                button.toolTip = L10n.shared.s.micUnmuteName
+                button.toolTip = warning?.message ?? L10n.shared.s.micUnmuteName
             }
+            updateMicMuteMenu(on: item)
         } else {
             micMuteStatusItem?.isVisible = false
         }
@@ -886,27 +892,55 @@ final class StatusItemController {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.autosaveName = Self.micMuteAutosaveName
         item.behavior = []
+        updateMicMuteMenu(on: item)
+        micMuteStatusItem = item
+        return item
+    }
+
+    private func updateMicMuteMenu(on item: NSStatusItem) {
+        let micMute = MicMuteService.shared
+        let strings = L10n.shared.s
         let menu = NSMenu()
         menu.autoenablesItems = false
-        let menuItem = NSMenuItem(
-            title: L10n.shared.s.micUnmuteName,
-            action: #selector(unmuteMicrophoneFromMenu),
-            keyEquivalent: ""
-        )
+        if let warning = micMute.warning {
+            let warningItem = NSMenuItem(title: warning.message, action: nil, keyEquivalent: "")
+            warningItem.isEnabled = false
+            menu.addItem(warningItem)
+            if warning == .manualRestore {
+                let checkItem = NSMenuItem(
+                    title: strings.micManualRestoreChecked,
+                    action: #selector(acknowledgeManualRestoreFromMenu),
+                    keyEquivalent: ""
+                )
+                checkItem.target = self
+                menu.addItem(checkItem)
+            }
+            menu.addItem(.separator())
+        }
+        let toggleTitle = micMute.isMuted ? strings.micUnmuteName : strings.micMuteName
+        let toggleAction = micMute.isMuted ? #selector(unmuteMicrophoneFromMenu) : #selector(muteMicrophoneFromMenu)
+        let menuItem = NSMenuItem(title: toggleTitle, action: toggleAction, keyEquivalent: "")
         menuItem.target = self
-        if let micImage = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: nil)?
+        if let micImage = NSImage(systemSymbolName: micMute.isMuted ? "mic.fill" : "mic.slash.fill",
+                                  accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: 12, weight: .regular)) {
             micImage.isTemplate = true
             menuItem.image = micImage
         }
         menu.addItem(menuItem)
         item.menu = menu
-        micMuteStatusItem = item
-        return item
     }
 
     @objc private func unmuteMicrophoneFromMenu() {
         MicMuteService.shared.setMuted(false)
+    }
+
+    @objc private func muteMicrophoneFromMenu() {
+        MicMuteService.shared.setMuted(true)
+    }
+
+    @objc private func acknowledgeManualRestoreFromMenu() {
+        MicMuteService.shared.acknowledgeManualRestore()
     }
 }
 
@@ -1054,6 +1088,13 @@ enum BlackHoleGlyph {
                                   accessibilityDescription: "Microphone Muted")?
             .withSymbolConfiguration(.init(pointSize: 13, weight: .semibold)) else { return nil }
         return tintedImage(symbol, color: .systemRed)
+    }
+
+    static func micWarningStandaloneImage(description: String? = nil) -> NSImage? {
+        guard let symbol = NSImage(systemSymbolName: "exclamationmark.triangle.fill",
+                                  accessibilityDescription: description ?? "Microphone Warning")?
+            .withSymbolConfiguration(.init(pointSize: 13, weight: .semibold)) else { return nil }
+        return tintedImage(symbol, color: .systemOrange)
     }
 
     private static func tintedImage(_ source: NSImage, color: NSColor) -> NSImage? {

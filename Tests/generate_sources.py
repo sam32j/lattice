@@ -1057,6 +1057,19 @@ def main():
           + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
                         "    static func build(")
           + "}\n")
+    catalog_source = "Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift"
+    write("CommandBarMicrophone.swift", "import Foundation\nimport Combine\n"
+          + "extension CommandBarMicMuteTests.CommandBarCatalog {\n"
+          + "static func build(automationDenied: Bool) -> [CommandBarEntry] {\n"
+          + "let s = Strings.enUS\nvar entries: [CommandBarEntry] = []\n"
+          + declaration(catalog_source, "        if AppFeature.micMute.isAvailable {")
+          + "return entries\n}\n}\nextension CommandBarMicMuteTests.Bar {\n"
+          + "".join(declaration(bar, prefix).replace("private ", "", 1) for prefix in [
+              "    private func rebuildCatalog(", "    private func scheduleAnswerRefresh(",
+              "    private func browseGroup("])
+          + declaration("Sources/Lattice/UI/CommandBar/CommandBarView.swift", "    private func accessibilityLabel(")
+              .replace("private ", "", 1)
+          + "}\n")
     write("CommandBarCatalogSearch.swift", "import AppKit\n"
           + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
                         "struct CommandBarEntry:")

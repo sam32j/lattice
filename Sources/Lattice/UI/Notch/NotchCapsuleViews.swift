@@ -160,9 +160,11 @@ struct NotchCapsuleNoticeView: View {
             NotchAgentMark(provider: agent, size: CapsuleLayout.symbolSize).frame(width: CapsuleLayout.symbolWidth)
 
         } else if notice.event == .microphone {
-            AnimatedMicMuteSymbol(muted: isMutedMic, fontSize: CapsuleLayout.symbolSize, weight: .medium,
-                                  animateInitialChange: true)
-                .foregroundStyle(tint)
+            let isWarningMic = notice.symbol == "mic.badge.xmark" || notice.symbol.hasPrefix("exclamationmark")
+            AnimatedMicMuteSymbol(muted: isMutedMic, warning: isWarningMic,
+                                  fontSize: CapsuleLayout.symbolSize, weight: .medium,
+                                  animateInitialChange: !isWarningMic)
+                .foregroundStyle(isWarningMic ? Color.orange : tint)
                 .frame(width: CapsuleLayout.symbolWidth)
                 .capsuleCentred(notice.symbol)
                 .accessibilityHidden(true)

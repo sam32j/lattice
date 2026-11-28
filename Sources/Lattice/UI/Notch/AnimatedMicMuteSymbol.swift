@@ -8,6 +8,7 @@ import SwiftUI
 /// correct top-left-to-bottom-right geometry. Both Hub and Island use it.
 struct AnimatedMicMuteSymbol: View, Equatable {
     let muted: Bool
+    var warning = false
     let fontSize: CGFloat
     var weight: Font.Weight = .semibold
     var animateInitialChange = false
@@ -16,23 +17,24 @@ struct AnimatedMicMuteSymbol: View, Equatable {
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.muted == rhs.muted
+            && lhs.warning == rhs.warning
             && lhs.fontSize == rhs.fontSize
             && lhs.weight == rhs.weight
             && lhs.animateInitialChange == rhs.animateInitialChange
     }
 
-    private var renderedMuted: Bool {
-        if animateInitialChange && !reduceMotion && !initialKickDone {
-            return !muted
-        }
-        return muted
+    private var renderedSymbol: String {
+        if warning { return "exclamationmark.triangle" }
+        let effectiveMuted = (animateInitialChange && !reduceMotion && !initialKickDone) ? !muted : muted
+        return effectiveMuted ? "mic.slash.fill" : "mic.fill"
     }
 
     var body: some View {
-        Image(systemName: renderedMuted ? "mic.slash.fill" : "mic.fill")
+        Image(systemName: renderedSymbol)
             .font(.system(size: fontSize, weight: weight))
+            .frame(minWidth: ceil(fontSize * 1.25), alignment: .center)
             .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.26), value: renderedMuted)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.26), value: renderedSymbol)
             .transaction {
                 if !reduceMotion {
                     $0.disablesAnimations = false

@@ -503,6 +503,7 @@ private struct DeviceControlsOutputVolumeRow: View {
 private struct DeviceControlsAudioInputSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
+    @ObservedObject private var micMute = MicMuteService.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -514,6 +515,24 @@ private struct DeviceControlsAudioInputSection: View {
 
                 // Row 2: Input level control
                 DeviceControlsInputLevelRow()
+
+                if let warning = micMute.warning {
+                    HStack(alignment: .center, spacing: 8) {
+                        Label(warning.message, systemImage: "exclamationmark.triangle")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if warning == .manualRestore {
+                            Button(l10n.s.micManualRestoreChecked) {
+                                micMute.acknowledgeManualRestore()
+                            }
+                            .controlSize(.small)
+                            .fixedSize()
+                        }
+                    }
+                }
             }
             .panelCard(interactive: false, padded: true)
         }
@@ -591,9 +610,9 @@ private struct DeviceControlsInputLevelRow: View {
 
     private var isInputMuted: Bool {
         if let draggingInputVolume {
-            return draggingInputVolume <= 0.001
+            return draggingInputVolume == 0
         }
-        return micMute.isMuted || (inputManager.inputVolume != nil && (inputManager.inputVolume ?? 0) <= 0.001)
+        return micMute.isMuted || inputManager.inputVolume == 0
     }
 
     private var displayedInputVolume: Double {
@@ -608,15 +627,17 @@ private struct DeviceControlsInputLevelRow: View {
             Button {
                 toggleInputMute()
             } label: {
-                AnimatedMicMuteSymbol(muted: isInputMuted, fontSize: 11)
+                AnimatedMicMuteSymbol(muted: isInputMuted, warning: micMute.warning != nil, fontSize: 11)
                     .equatable()
-                    .foregroundStyle(isInputMuted ? Color.red : Color.secondary)
+                    .foregroundStyle(micMute.warning != nil ? Color.orange : isInputMuted ? Color.red : Color.secondary)
                     .animation(.easeInOut(duration: 0.22), value: isInputMuted)
                     .frame(width: 18, alignment: .center)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .help(micMute.warning?.message ?? (isInputMuted ? l10n.s.actionUnmute : l10n.s.actionMute))
             .accessibilityLabel(isInputMuted ? l10n.s.actionUnmute : l10n.s.actionMute)
+            .accessibilityValue(micMute.warning?.message ?? "")
 
             Text("Input level")
                 .font(.system(size: 13, weight: .medium))
@@ -644,7 +665,7 @@ private struct DeviceControlsInputLevelRow: View {
                 return
             }
             unmutingFromDrag = false
-            if let dragging = draggingInputVolume, dragging > 0.001, editIsOnCurrentInput {
+            if let dragging = draggingInputVolume, dragging > 0, editIsOnCurrentInput {
                 pendingUnmuteLevel = nil
                 inputManager.setInputVolume(dragging)
             } else if let pending = pendingUnmuteLevel {
@@ -657,7 +678,7 @@ private struct DeviceControlsInputLevelRow: View {
     }
 
     private func toggleInputMute() {
-        let currentlyMuted = micMute.isMuted || (inputManager.inputVolume != nil && (inputManager.inputVolume ?? 0) <= 0.001)
+        let currentlyMuted = micMute.isMuted || inputManager.inputVolume == 0
         if currentlyMuted {
             let level = inputManager.inputUnmuteLevel
             inputManager.seedMicMuteRestore(level)
@@ -668,7 +689,7 @@ private struct DeviceControlsInputLevelRow: View {
             micMute.setMuted(false)
             inputManager.setInputVolume(level)
         } else {
-            if let cur = inputManager.inputVolume, cur > 0.001 {
+            if let cur = inputManager.inputVolume, cur > 0 {
                 inputManager.rememberUnmutedInputVolume(cur)
             }
             micMute.setMuted(true)
@@ -691,7 +712,7 @@ private struct DeviceControlsInputLevelRow: View {
         }
         guard !editDropped, editIsOnCurrentInput else { return }
         if let finalVol = draggingInputVolume {
-            if finalVol > 0.001 {
+            if finalVol > 0 {
                 inputManager.rememberUnmutedInputVolume(finalVol)
                 if micMute.isMuted {
                     pendingUnmuteLevel = PendingInputUnmuteLevel(deviceUID: inputManager.effectiveInputDeviceUID,
@@ -718,7 +739,7 @@ private struct DeviceControlsInputLevelRow: View {
                 if editDropped { return }
                 if draggingInputVolume == nil {
                     editInputUID = .some(inputManager.effectiveInputDeviceUID)
-                    if !micMute.isMuted, let current = inputManager.inputVolume, current > 0.001 {
+                    if !micMute.isMuted, let current = inputManager.inputVolume, current > 0 {
                         levelBeforeEdit = current
                     }
                 } else if !editIsOnCurrentInput {
@@ -727,7 +748,7 @@ private struct DeviceControlsInputLevelRow: View {
                     return
                 }
                 draggingInputVolume = newValue
-                if micMute.isMuted, newValue > 0.001 {
+                if micMute.isMuted, newValue > 0 {
                     if !unmutingFromDrag {
                         unmutingFromDrag = true
                         inputManager.seedMicMuteRestore(newValue)

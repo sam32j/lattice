@@ -3,6 +3,7 @@
 
 import AppKit
 import Carbon.HIToolbox
+import Combine
 import SwiftUI
 
 /// The command bar: one floating field, summoned by a global shortcut, that
@@ -549,6 +550,7 @@ final class CommandBarService: ObservableObject {
     }
 
     func hide() {
+        micMuteChanges = nil
         // Cleared first, so the island closing under the bar does not close it again.
         let presented = presentation
         presentation = .window
@@ -1342,8 +1344,22 @@ final class CommandBarService: ObservableObject {
         let accessibility: Bool
     }
     private var builtEmojiInputs: EmojiInputs?
+    private var micMuteChanges: AnyCancellable?
 
     private func rebuildCatalog(index: Bool = true) {
+        if isVisible && AppFeature.micMute.isAvailable {
+            if micMuteChanges == nil {
+                let mic = MicMuteService.shared
+                micMuteChanges = mic.$isMuted.combineLatest(mic.$warning)
+                    .dropFirst()
+                    .sink { [weak self] _ in
+                        guard let self else { return }
+                        self.scheduleAnswerRefresh(for: self.presentationID)
+                    }
+            }
+        } else {
+            micMuteChanges = nil
+        }
         catalog = CommandBarCatalog.build(automationDenied: finderAutomationDenied)
         // The emoji rows are most of the pool and depend on nothing the
         // catalog's other rebuild triggers touch, so they are kept until one
