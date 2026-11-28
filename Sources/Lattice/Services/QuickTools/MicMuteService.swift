@@ -49,6 +49,11 @@ final class MicMuteService: ObservableObject {
     private var applyInFlight = false
     private var reapplyAfterApply = false
     private var muteReadGeneration = 0
+    /// Only the serial audio queue updates retry state or runs the timer.
+    private var retries: [String: MicMuteSupport.Retry] = [:]
+    private var retryWork: DispatchWorkItem?
+    private var retryDeadline: TimeInterval?
+    private let uptime: () -> TimeInterval
     /// What the last request asked for, kept from the moment it is queued.
     /// `isMuted` and the persisted flag only follow once the sweep has
     /// published, so a device change or a preference sync that lands while a
@@ -60,7 +65,8 @@ final class MicMuteService: ObservableObject {
     private var inputVolumeBlocked = false
     private var inputVolumeLifetime = UUID()
 
-    private init() {
+    private init(uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
+        self.uptime = uptime
         hotkey.onPress = { [weak self] in self?.toggle() }
     }
 
@@ -181,7 +187,7 @@ final class MicMuteService: ObservableObject {
         reapplyAfterApply = false
         wantsMute = false
         _ = halQueue.sync {
-            let outcome = Self.sweep(muted: false)
+            let outcome = self.sweep(muted: false)
             self.removeDeviceListeners()
             return outcome
         }
@@ -263,22 +269,26 @@ final class MicMuteService: ObservableObject {
         applyGeneration += 1
         let generation = applyGeneration
         applyInFlight = true
+        let keepRetriesIfUnmuteFails = !muted && isMuted && AppFeature.micMute.isAvailable
         halQueue.async { [weak self] in
-            var outcome = Self.sweep(muted: muted, explicitUserUnmute: explicitUserUnmute)
+            guard let self else { return }
+            var outcome = self.sweep(muted: muted,
+                                     explicitUserUnmute: explicitUserUnmute,
+                                     keepRetriesIfUnmuteFails: keepRetriesIfUnmuteFails)
             if muted {
                 // A claimed microphone that opened before its listener was in
                 // place gets the mute once more, here on the same queue, so
                 // the result this request reports is still its own. If that
                 // microphone stays open, the mute is partial, not a success.
-                if outcome.applied, self?.syncDeviceListeners(muted: true) == true,
-                   Self.sweep(muted: true).failed {
+                if outcome.applied, self.syncDeviceListeners(muted: true),
+                   self.sweep(muted: true).failed {
                     outcome.failed = true
                 }
             } else if outcome.applied {
-                self?.syncDeviceListeners(muted: false)
+                self.syncDeviceListeners(muted: false)
             }
             DispatchQueue.main.async {
-                self?.finish(outcome, muted: muted, announce: announce, generation: generation)
+                self.finish(outcome, muted: muted, announce: announce, generation: generation)
             }
         }
     }
@@ -291,10 +301,10 @@ final class MicMuteService: ObservableObject {
     /// for, both would start from the same record; the second would then find
     /// the devices the first had just silenced already quiet and unclaimed,
     /// leave them to "the user", and the unmute would never release them.
-    private static func sweep(muted: Bool, explicitUserUnmute: Bool = false) -> MuteOutcome {
+    private func sweep(muted: Bool, explicitUserUnmute: Bool = false, keepRetriesIfUnmuteFails: Bool = false) -> MuteOutcome {
         let defaults = UserDefaults.standard
-        let outcome = applyToDevices(
-            muted: muted,
+        let outcome = Self.applyToDevices(
+            muted: muted, retries: retries, now: uptime(),
             savedVolumes: defaults.dictionary(forKey: DefaultsKey.micMuteSavedVolumes) as? [String: Double] ?? [:],
             savedChannelVolumes: defaults.dictionary(forKey: DefaultsKey.micMuteSavedChannelVolumes)
                 as? [String: [String: Double]] ?? [:],
@@ -313,7 +323,30 @@ final class MicMuteService: ObservableObject {
             defaults.set(outcome.savedControls, forKey: DefaultsKey.micMuteSavedControls)
             defaults.set(outcome.mutedDevices, forKey: DefaultsKey.micMuteMutedDevices)
         }
+        // A failed manual unmute keeps the active mute's retry. Disabling
+        // the feature and teardown always cancel it, even if restoration fails.
+        if outcome.applied || !keepRetriesIfUnmuteFails { updateRetries(outcome.retries) }
         return outcome
+    }
+
+    /// A driver may become writable without another notification. Retry on
+    /// the audio queue, keeping a single timer for the earliest due device.
+    private func updateRetries(_ updated: [String: MicMuteSupport.Retry]) {
+        retries = updated
+        let next = updated.values.compactMap(\.deadline).min()
+        guard next != retryDeadline else { return }
+        retryWork?.cancel()
+        retryWork = nil
+        retryDeadline = next
+        guard let next else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.retryDeadline = nil
+            self.retryWork = nil
+            _ = self.sweep(muted: true)
+        }
+        retryWork = work
+        halQueue.asyncAfter(deadline: .now() + max(0, next - uptime()), execute: work)
     }
 
     /// Main thread. Publishes one sweep.
@@ -394,6 +427,7 @@ final class MicMuteService: ObservableObject {
         var mutedDevices: [String]
         /// A device this sweep had to reach and could not, next to ones it did.
         var failed = false
+        var retries: [String: MicMuteSupport.Retry] = [:]
     }
 
     private struct DeviceListener {
@@ -403,6 +437,7 @@ final class MicMuteService: ObservableObject {
 
     /// Runs on `halQueue`. Every CoreAudio call of a sweep happens here.
     private static func applyToDevices(muted: Bool,
+                                       retries: [String: MicMuteSupport.Retry], now: TimeInterval,
                                        savedVolumes: [String: Double],
                                        savedChannelVolumes: [String: [String: Double]],
                                        savedControls: [String: [String: Double]],
@@ -418,13 +453,15 @@ final class MicMuteService: ObservableObject {
                                mutedDevices: mutedDevices ?? [])
         }
         return muted
-            ? mute(devices, savedVolumes: savedVolumes, savedChannelVolumes: savedChannelVolumes,
-                   savedControls: savedControls, mutedDevices: mutedDevices, legacyVolume: legacyVolume)
+            ? mute(devices, retries: retries, now: now, savedVolumes: savedVolumes,
+                   savedChannelVolumes: savedChannelVolumes, savedControls: savedControls,
+                   mutedDevices: mutedDevices, legacyVolume: legacyVolume)
             : unmute(devices, savedVolumes: savedVolumes, savedChannelVolumes: savedChannelVolumes,
                      savedControls: savedControls, mutedDevices: mutedDevices, legacyVolume: legacyVolume, explicitUserUnmute: explicitUserUnmute)
     }
 
     private static func mute(_ devices: [InputDevice],
+                             retries: [String: MicMuteSupport.Retry], now: TimeInterval,
                              savedVolumes: [String: Double],
                              savedChannelVolumes: [String: [String: Double]],
                              savedControls: [String: [String: Double]],
@@ -449,6 +486,18 @@ final class MicMuteService: ObservableObject {
             }
             if silenced {
                 outcome.applied = true
+                outcome.mutedDevices.append(device.uid)
+                continue
+            }
+            // Keep listening: if a slow driver finally reports silence, the
+            // path above clears its backoff immediately. Another microphone's
+            // gain change must not keep writing this unresponsive control.
+            let retry = retries[device.uid]
+            if let retry, retry.deviceID == device.id, let deadline = retry.deadline, now < deadline,
+               isVirtualInput(device), !retry.onlyWhileIdle || isIdleInput(device.id) {
+                outcome.retries[device.uid] = retry
+                outcome.applied = true
+                outcome.failed = true
                 outcome.mutedDevices.append(device.uid)
                 continue
             }
@@ -501,6 +550,14 @@ final class MicMuteService: ObservableObject {
                 outcome.mutedDevices.append(device.uid)
                 if !snapshot.isEmpty { outcome.savedControls[device.uid] = snapshot }
                 if !quiet { outcome.failed = true }
+                // Virtual drivers can confirm zero, revert immediately and
+                // notify. Count their successive writes until a later sweep
+                // finds them quiet. Ordinary gain adjustments on physical
+                // microphones are reasserted immediately.
+                if (changed || retry != nil) && isVirtualInput(device) && (!quiet || isIdleInput(device.id)) {
+                    outcome.retries[device.uid] = MicMuteSupport.Retry(
+                        deviceID: device.id, onlyWhileIdle: quiet, previous: retry, now: now)
+                }
             } else {
                 if quiet { outcome.applied = true }
                 outcome.savedVolumes.removeValue(forKey: device.uid)
@@ -650,6 +707,20 @@ final class MicMuteService: ObservableObject {
                   MicMuteSupport.isCaptureSilenced(muteSwitch: nil, volume: Float(value)) else { return false }
         }
         return sawVolume || muteSwitchValue(of: device) == 1
+    }
+
+    private static func isVirtualInput(_ device: InputDevice) -> Bool {
+        // This is the loopback UID from the Teams report. Other drivers must
+        // identify their transport as virtual before writes can be deferred.
+        if device.uid == "MSLoopbackDriverDevice_UID" { return true }
+        var transport: UInt32 = 0
+        return read(device.id, kAudioDevicePropertyTransportType, &transport)
+            && transport == kAudioDeviceTransportTypeVirtual
+    }
+
+    private static func isIdleInput(_ device: AudioDeviceID) -> Bool {
+        var running: UInt32 = 0
+        return read(device, kAudioDevicePropertyDeviceIsRunningSomewhere, &running) && running == 0
     }
 
     /// Every device that can capture audio, skipping the app's own mixing
@@ -1001,7 +1072,7 @@ final class MicMuteService: ObservableObject {
     ]
 
     /// Runs on `halQueue`. Drops stale device listeners and, while muted,
-    /// watches the mute and volume of every input we can see.
+    /// watches every input, including drivers waiting for a slower retry.
     /// True when a claimed microphone was found open right after the
     /// listeners went in, on the one re-check a user mute arms.
     @discardableResult
@@ -1021,15 +1092,23 @@ final class MicMuteService: ObservableObject {
                     var address = AudioObjectPropertyAddress(mSelector: selector,
                                                              mScope: kAudioDevicePropertyScopeInput,
                                                              mElement: element)
-                    let status = AudioObjectAddPropertyListener(device.id,
-                                                                &address,
-                                                                Self.listenerCallback,
-                                                                listenerClient)
-                    if status == noErr {
-                        deviceListeners.append(DeviceListener(device: device.id, address: address))
-                    }
+                    addDeviceListener(device.id, address: &address)
                 }
             }
+            if retries[device.uid]?.onlyWhileIdle == true {
+                // A previously idle virtual input may now feed a call. Its
+                // start must bypass the cooldown even if gain hasn't moved.
+                var running = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+                                                         mScope: kAudioObjectPropertyScopeGlobal,
+                                                         mElement: kAudioObjectPropertyElementMain)
+                addDeviceListener(device.id, address: &running)
+            }
+        }
+    }
+
+    private func addDeviceListener(_ device: AudioDeviceID, address: inout AudioObjectPropertyAddress) {
+        if AudioObjectAddPropertyListener(device, &address, Self.listenerCallback, listenerClient) == noErr {
+            deviceListeners.append(DeviceListener(device: device, address: address))
         }
         // Now that changes notify, check the claimed microphones once more.
         // Once per user mute, so a microphone that refuses to go quiet cannot
