@@ -14,6 +14,8 @@ struct AudioInputSettings: View {
     private var micShortcutEnabled = false
     @AppStorage(DefaultsKey.micMuteMenuBarIndicator)
     private var micMenuBarIndicator = true
+    @AppStorage(DefaultsKey.micMuteFollowCallApps)
+    private var micFollowCallApps = false
 
     /// The cards only: the Audio page shows them below its segmented control.
     var body: some View {
@@ -64,6 +66,13 @@ struct AudioInputSettings: View {
                     }
 
                     SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
+
+                    SettingsToggleRow(title: l10n.s.micMuteFollowCallAppsToggle,
+                                      caption: l10n.s.micMuteFollowCallAppsCaption,
+                                      isOn: $micFollowCallApps)
+                        .onChange(of: micFollowCallApps) { _, _ in
+                            MicMuteService.shared.syncWithPreferences()
+                        }
                 }
                 .padding(.leading, settingsRowTextInset)
                 .transition(.settingsReveal)

@@ -288,6 +288,8 @@ struct Strings {
     let micMuteName: String
     let micUnmuteName: String
     let micMuteCaption: String
+    let micMuteFollowCallAppsToggle: String
+    let micMuteFollowCallAppsCaption: String
     let micMutedHUD: String
     let micUnmutedHUD: String
     let micMutePartialHUD: String
@@ -1045,6 +1047,8 @@ extension Strings {
         micMuteName: "Silenciar microfone",
         micUnmuteName: "Reativar microfone",
         micMuteCaption: "Corta o microfone do Mac com um clique ou atalho, valendo para qualquer app.",
+        micMuteFollowCallAppsToggle: "Permitir que apps de chamada reativem o microfone",
+        micMuteFollowCallAppsCaption: "Quando um app está gravando e o microfone em uso é reativado, o Lattice restaura todos os microfones que silenciou. Um ajuste automático de ganho também pode causar isso.",
         micMutedHUD: "Microfone silenciado",
         micUnmutedHUD: "Silenciamento desativado",
         micMutePartialHUD: "Alguns microfones não puderam ser silenciados",
@@ -1762,6 +1766,8 @@ extension Strings {
         micMuteName: "Mute Microphone",
         micUnmuteName: "Unmute Microphone",
         micMuteCaption: "Cuts the Mac’s microphone with a click or shortcut, across every app.",
+        micMuteFollowCallAppsToggle: "Allow call apps to unmute the microphone",
+        micMuteFollowCallAppsCaption: "If a microphone reopens while an app is recording from it, Lattice restores every microphone it muted. A call app’s automatic volume adjustment can also do this.",
         micMutedHUD: "Muted",
         micUnmutedHUD: "Unmuted",
         micMutePartialHUD: "Some microphones could not be muted",

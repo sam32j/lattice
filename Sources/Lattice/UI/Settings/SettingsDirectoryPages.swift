@@ -143,6 +143,11 @@ extension SettingsDirectory {
                                       icon: "speaker.wave.2",
                                       keywords: [settingsPages.audioInputDescription,
                                                  settingsPages.audioOutputDescription],
+                                      aliases: ["call", "zoom", "teams"],
+                                      followupKeywords: [
+                                        (.micMute, DefaultsKey.microphoneLevelControlEnabled,
+                                         [s.micMuteFollowCallAppsToggle]),
+                                      ],
                                       anchoredKeywords: [
                                         (.micMute, .micMute, [settingsPages.audioInputTitle, s.micMuteName, s.micMuteCaption,
                                                               s.micMuteMenuBarToggle, s.muteAudioInputSubtitle]),

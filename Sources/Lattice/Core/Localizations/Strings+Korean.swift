@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "마이크 음소거",
         micUnmuteName: "마이크 음소거 해제",
         micMuteCaption: "클릭 또는 단축키로 모든 앱에서 Mac의 마이크를 음소거합니다.",
+        micMuteFollowCallAppsToggle: "통화 앱에서 마이크 음소거 해제 허용",
+        micMuteFollowCallAppsCaption: "앱에서 녹음 중인 마이크의 입력이 다시 켜지면 Lattice가 음소거했던 모든 마이크를 복원합니다. 입력 게인이 자동으로 조정될 때도 음소거가 해제될 수 있습니다.",
         micMutedHUD: "마이크를 음소거했습니다",
         micUnmutedHUD: "음소거를 해제했습니다",
         micMutePartialHUD: "일부 마이크를 음소거하지 못했습니다",

@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "Stlmiť mikrofón",
         micUnmuteName: "Zrušiť stlmenie mikrofónu",
         micMuteCaption: "Vypne mikrofón Macu kliknutím alebo skratkou, vo všetkých aplikáciách.",
+        micMuteFollowCallAppsToggle: "Povoliť aplikáciám na hovory zapnúť mikrofón",
+        micMuteFollowCallAppsCaption: "Ak sa mikrofón zapne, kým ho aplikácia používa na nahrávanie, Lattice obnoví všetky mikrofóny, ktoré stlmil. Môže sa to stať aj pri automatickej úprave zosilnenia.",
         micMutedHUD: "Mikrofón je stlmený",
         micUnmutedHUD: "Stlmenie vypnuté",
         micMutePartialHUD: "Niektoré mikrofóny sa nepodarilo stlmiť",

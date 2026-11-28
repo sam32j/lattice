@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "マイクを消音",
         micUnmuteName: "マイクを再開",
         micMuteCaption: "クリックまたはショートカットでMacのマイクをどのアプリでも消音します。",
+        micMuteFollowCallAppsToggle: "通話アプリによるマイクのミュート解除を許可",
+        micMuteFollowCallAppsCaption: "アプリが録音に使っているマイクの入力が再開すると、Lattice はミュートしたすべてのマイクを元に戻します。ゲインの自動調整でもミュートが解除されることがあります。",
         micMutedHUD: "マイクを消音しました",
         micUnmutedHUD: "消音を解除しました",
         micMutePartialHUD: "一部のマイクを消音できませんでした",

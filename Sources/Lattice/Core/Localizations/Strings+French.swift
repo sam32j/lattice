@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "Couper le micro",
         micUnmuteName: "Réactiver le micro",
         micMuteCaption: "Coupe le micro du Mac d’un clic ou d’un raccourci, dans toutes les apps.",
+        micMuteFollowCallAppsToggle: "Autoriser les apps d’appel à réactiver le micro",
+        micMuteFollowCallAppsCaption: "Si un micro se réactive alors qu’une app l’utilise pour enregistrer, Lattice rétablit tous les micros qu’il avait coupés. Un réglage automatique du gain peut aussi déclencher cette action.",
         micMutedHUD: "Micro coupé",
         micUnmutedHUD: "Coupure du micro levée",
         micMutePartialHUD: "Certains micros n’ont pas pu être coupés",

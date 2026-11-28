@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "静音麦克风",
         micUnmuteName: "取消静音麦克风",
         micMuteCaption: "通过点按或快捷键切断 Mac 的麦克风，对所有 App 生效。",
+        micMuteFollowCallAppsToggle: "允许通话 App 取消麦克风静音",
+        micMuteFollowCallAppsCaption: "如果某个 App 正在通过麦克风录音，而该麦克风恢复了输入，Lattice 会恢复它之前静音的所有麦克风。自动增益调整也可能触发此操作。",
         micMutedHUD: "麦克风已静音",
         micUnmutedHUD: "静音已关闭",
         micMutePartialHUD: "部分麦克风未能静音",

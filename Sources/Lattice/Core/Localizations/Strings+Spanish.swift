@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "Silenciar micrófono",
         micUnmuteName: "Reactivar micrófono",
         micMuteCaption: "Corta el micrófono del Mac con un clic o atajo, en cualquier app.",
+        micMuteFollowCallAppsToggle: "Permitir que las apps de llamadas reactiven el micrófono",
+        micMuteFollowCallAppsCaption: "Si un micrófono se reactiva mientras una app graba con él, Lattice restablece todos los micrófonos que había silenciado. Un ajuste automático de la ganancia también puede causar este efecto.",
         micMutedHUD: "Micrófono silenciado",
         micUnmutedHUD: "Silencio desactivado",
         micMutePartialHUD: "Algunos micrófonos no se pudieron silenciar",

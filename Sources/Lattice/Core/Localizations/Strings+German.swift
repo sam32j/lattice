@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "Mikrofon stummschalten",
         micUnmuteName: "Mikrofon wieder aktivieren",
         micMuteCaption: "Schaltet das Mikrofon des Mac per Klick oder Kurzbefehl stumm, in jeder App.",
+        micMuteFollowCallAppsToggle: "Anruf-Apps erlauben, das Mikrofon zu aktivieren",
+        micMuteFollowCallAppsCaption: "Wird ein Mikrofon wieder aktiv, während eine App damit aufnimmt, stellt Lattice alle von ihm stummgeschalteten Mikrofone wieder her. Auch eine automatische Pegelanpassung kann dies auslösen.",
         micMutedHUD: "Mikrofon stumm",
         micUnmutedHUD: "Stummschaltung aus",
         micMutePartialHUD: "Einige Mikrofone konnten nicht stummgeschaltet werden",

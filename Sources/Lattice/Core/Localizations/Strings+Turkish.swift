@@ -124,6 +124,8 @@ extension Strings {
         micMuteName: "Mikrofonu sessize al",
         micUnmuteName: "Mikrofonu aç",
         micMuteCaption: "Mac’in mikrofonunu tek tıkla veya kısayolla keser; tüm uygulamalarda geçerlidir.",
+        micMuteFollowCallAppsToggle: "Arama uygulamalarının mikrofonun sesini açmasına izin ver",
+        micMuteFollowCallAppsCaption: "Bir uygulama kayıt yaparken kullandığı mikrofon yeniden açılırsa Lattice sessize aldığı tüm mikrofonları eski ayarlarına döndürür. Otomatik kazanç ayarı da buna yol açabilir.",
         micMutedHUD: "Mikrofon sessize alındı",
         micUnmutedHUD: "Sessize alma kapatıldı",
         micMutePartialHUD: "Bazı mikrofonlar sessize alınamadı",
