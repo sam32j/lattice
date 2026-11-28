@@ -1,6 +1,6 @@
 {
-  "upstreamTag": "v3.4.4",
-  "upstreamCommit": "d9c7f4a77e809405facd4d71289ec58a29e46380",
-  "baseCommit": "d9c7f4a77e809405facd4d71289ec58a29e46380",
+  "upstreamTag": "v3.4.5",
+  "upstreamCommit": "60f2b37f9730d81e89107ed419d0cf734230963c",
+  "baseCommit": "60f2b37f9730d81e89107ed419d0cf734230963c",
   "revision": 1
 }
