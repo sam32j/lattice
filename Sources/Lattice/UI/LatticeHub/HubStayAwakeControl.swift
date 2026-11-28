@@ -213,7 +213,9 @@ struct HubStayAwakeControl: View {
         .background(WindowVisibilityReader { visible in
             if !visible { showingOptions = false }
         })
-        .help(l10n.s.keepAwakeTitle)
+        .help(awake.waitingForPower
+              ? FeatureStrings.keepAwakeAutomation(l10n.language).waitingForPower
+              : l10n.s.keepAwakeTitle)
         .onChange(of: awake.endDate) { _, end in
             // Only a running session moves the end; the stop keeps the last one.
             if awake.isActive { shownEnd = end }

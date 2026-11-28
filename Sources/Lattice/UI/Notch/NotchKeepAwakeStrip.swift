@@ -101,7 +101,9 @@ struct NotchKeepAwakeStrip: View {
         if let end { return "\(strings.keepAwakeEndsIn) \(DurationPicker.remainingText(until: end))" }
         let awake = KeepAwakeManager.shared
         if awake.sessionTrigger == .automation {
-            return FeatureStrings.keepAwakeAutomation(language).activeStatus(for: awake.activeAutomationConditions)
+            return FeatureStrings.keepAwakeAutomation(language)
+                .activeStatus(for: awake.activeAutomationConditions,
+                              waitingForPower: awake.waitingForPower)
         }
         return strings.keepAwakeUntilDisabled
     }

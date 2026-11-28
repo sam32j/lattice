@@ -67,9 +67,9 @@ extension KeepAwakeManager {
     func toggle() {
         assertionFailed = false
         if isActive {
-            if sessionTrigger == .automation || automationConditionsHold() {
-                automationSuppressedUntilConditionsClear = true
-            }
+            // A session can outlive its last real match while waiting for power.
+            // In that case the next connection is a new activation.
+            automationSuppressedUntilConditionsClear = automationConditionsHold()
             deactivate(reason: .manual)
         } else {
             startDefault()
@@ -141,6 +141,7 @@ extension KeepAwakeManager {
 
     func activate(end: Date?, trigger: SessionTrigger, minutes: Int? = nil) {
         guard !isTerminating, AppFeature.keepAwake.isAvailable else { return }
+        clearPowerDisconnectGrace()
         lidSleepGeneration &+= 1
         lidSleepAttemptsRemaining = 0
         endTimer?.invalidate()
@@ -227,6 +228,7 @@ extension KeepAwakeManager {
 
     func deactivate(reason: EndReason) {
         let hadSession = isActive
+        clearPowerDisconnectGrace()
         if reason == .quit {
             isTerminating = true
             stopPreferenceObservation()

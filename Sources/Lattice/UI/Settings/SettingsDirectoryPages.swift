@@ -255,6 +255,8 @@ extension SettingsDirectory {
                                          [s.extraBrightnessName]),
                                         (.bluetoothSleep, DefaultsKey.bluetoothSleepEnabled,
                                          [FeatureStrings.bluetoothSleep(language).restoreToggle]),
+                                        (.keepAwake, DefaultsKey.keepAwakeConnectedToPower,
+                                         [FeatureStrings.keepAwakeAutomation(language).powerDisconnectDelay]),
                                       ]),
             ]),
             (SettingsOwnershipStrings.text(.utilities, language), utilityPages(s, language: language) + [

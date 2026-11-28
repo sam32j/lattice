@@ -88,7 +88,7 @@ extension KeepAwakeManager {
             if !continueAutomaticallyAfterTimerIfNeeded() { deactivate(reason: .timer) }
             return
         }
-        if sessionTrigger == .automation, !automationConditionsHold() {
+        if sessionTrigger == .automation, !automationConditionsHold(includingPowerDelay: true) {
             deactivate(reason: .manual)
             return
         }
@@ -123,15 +123,19 @@ extension KeepAwakeManager {
             powerSourceRunLoopSource = IOPSNotificationCreateRunLoopSource({ context in
                 guard let context else { return }
                 let manager = Unmanaged<KeepAwakeManager>.fromOpaque(context).takeUnretainedValue()
-                DispatchQueue.main.async {
+                // This source runs on the main run loop. Read the source now so
+                // a brief reconnect between two drops starts a fresh deadline.
+                if manager.powerDisconnectDelay > 0 {
+                    manager.evaluateAutomation()
+                } else {
                     manager.scheduleAutomationEvaluation(after: 0.1)
                 }
             }, context)?.takeRetainedValue()
             if let powerSourceRunLoopSource {
-                CFRunLoopAddSource(CFRunLoopGetMain(), powerSourceRunLoopSource, .defaultMode)
+                CFRunLoopAddSource(CFRunLoopGetMain(), powerSourceRunLoopSource, .commonModes)
             }
         } else if let powerSourceRunLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), powerSourceRunLoopSource, .defaultMode)
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), powerSourceRunLoopSource, .commonModes)
             self.powerSourceRunLoopSource = nil
         }
     }

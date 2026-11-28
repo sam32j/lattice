@@ -18,6 +18,7 @@ struct StayAwakeSettings: View {
     @AppStorage(DefaultsKey.keepAwakeAutomationRequireAll) private var requireAll = false
     @AppStorage(DefaultsKey.keepAwakeExternalDisplay) private var externalDisplay = false
     @AppStorage(DefaultsKey.keepAwakeConnectedToPower) private var connectedToPower = false
+    @AppStorage(DefaultsKey.keepAwakePowerDisconnectDelay) private var powerDisconnectDelay = 0
     @AppStorage(DefaultsKey.keepAwakeRunningApps) private var runningApps = false
     @AppStorage(DefaultsKey.keepAwakeMouseJiggleEnabled) private var mouseJiggle = false
     @AppStorage(DefaultsKey.keepAwakeMouseJiggleInterval) private var mouseJiggleInterval = 5
@@ -60,8 +61,8 @@ struct StayAwakeSettings: View {
             if inProgress { scheduleSetupProgress() } else { showsSetupProgress = false }
         }
         // Every revealed row and the cards under it move in one transaction.
-        .settingsExpansionAnimation(value: [pickingTime, runningApps, selectedConditionCount > 1, mouseJiggle,
-                                            permissions.accessibility, awake.clamshellPreferred,
+        .settingsExpansionAnimation(value: [pickingTime, connectedToPower, runningApps, selectedConditionCount > 1,
+                                            mouseJiggle, permissions.accessibility, awake.clamshellPreferred,
                                             awake.clamshellSetupFailed, hotkeyEnabled && hotkeys.registrationFailed])
     }
 
@@ -88,11 +89,51 @@ struct StayAwakeSettings: View {
             }
         }) {
             KeepAwakeConditionTiles()
+            if connectedToPower {
+                SettingsControlRow(title: automation.powerDisconnectDelay) {
+                    Picker(automation.powerDisconnectDelay, selection: powerDisconnectDelaySelection) {
+                        ForEach(powerDisconnectDelayChoices, id: \.self) { seconds in
+                            Text(powerDisconnectDelayTitle(seconds: seconds))
+                                .tag(seconds)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                .transition(.settingsReveal)
+            }
             if runningApps {
                 StayAwakeAppsList()
                     .transition(.settingsReveal)
             }
         }
+    }
+
+    private static let powerDisconnectDelayPresets = [0, 10, 30, 60]
+
+    private var powerDisconnectDelayChoices: [Int] {
+        let current = Defaults.sanitizedKeepAwakePowerDisconnectDelay(powerDisconnectDelay)
+        if Self.powerDisconnectDelayPresets.contains(current) {
+            return Self.powerDisconnectDelayPresets
+        }
+        return (Self.powerDisconnectDelayPresets + [current]).sorted()
+    }
+
+    private var powerDisconnectDelaySelection: Binding<Int> {
+        Binding(
+            get: { Defaults.sanitizedKeepAwakePowerDisconnectDelay(powerDisconnectDelay) },
+            set: { powerDisconnectDelay = $0 }
+        )
+    }
+
+    private func powerDisconnectDelayTitle(seconds: Int) -> String {
+        if seconds == 0 {
+            return FeatureStrings.keepAwakeHub(l10n.language).off
+        }
+        return Duration.seconds(seconds).formatted(.units(
+            allowed: [.seconds], width: .abbreviated
+        ).locale(l10n.language.formattingLocale()))
     }
 
     private var automationCaption: String {

@@ -151,7 +151,8 @@ struct StayAwakeSessionCard: View {
                           end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(locale)))
         case .untilDisabled: return l10n.s.keepAwakeUntilDisabled
         case .automatic(let conditions):
-            return FeatureStrings.keepAwakeAutomation(l10n.language).activeStatus(for: conditions)
+            return FeatureStrings.keepAwakeAutomation(l10n.language)
+                .activeStatus(for: conditions, waitingForPower: awake.waitingForPower)
         case .paused: return hub.paused
         case .restoreFailed: return hub.restoreFailed
         case .activationFailed: return hub.activationFailed

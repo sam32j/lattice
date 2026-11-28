@@ -32,9 +32,9 @@ extension KeepAwakeManager {
 
     func evaluateAutomation() {
         guard recoveryCompleted, !isTerminating else { return }
-        let matches = currentMatchingAutomationConditions()
-        if liveAutomationConditions != matches { liveAutomationConditions = matches }
         let enabled = currentEnabledAutomationConditions()
+        let matches = currentMatchingAutomationConditions(enabled: enabled)
+        if liveAutomationConditions != matches { liveAutomationConditions = matches }
         let requireAll = automationRequiresAllConditions()
         let satisfied = KeepAwakeAutomationSupport.conditionsSatisfied(
             matching: matches, enabled: enabled, requireAll: requireAll)
@@ -49,26 +49,32 @@ extension KeepAwakeManager {
             return
         }
 
+        let available = AppFeature.keepAwake.isAvailable
+        let automaticSessionActive = isActive && sessionTrigger == .automation
+        let effectiveMatches = available && automaticSessionActive
+            ? activeAutomationMatches(matches, enabled: enabled) : matches
         if screenLocked,
            UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakePauseWhenLocked) {
-            if sessionTrigger == .automation { activeAutomationConditions = matches }
+            waitingForPower = false
             return
         }
-
-        if sessionTrigger == .automation {
-            activeAutomationConditions = matches
+        if powerDisconnectEvaluation != nil, batteryProtectionPercent() != nil {
+            deactivate(reason: .battery)
+            return
         }
         let action = KeepAwakeAutomationSupport.action(
-            featureAvailable: AppFeature.keepAwake.isAvailable,
-            matchingConditions: matches,
+            featureAvailable: available,
+            matchingConditions: effectiveMatches,
             enabledConditions: enabled,
             requireAll: requireAll,
             sessionActive: isActive,
-            automaticSessionActive: isActive && sessionTrigger == .automation
+            automaticSessionActive: automaticSessionActive
         )
         switch action {
         case .none:
-            break
+            // An active automatic session survives unsatisfied real rules only
+            // when the power delay supplies the missing match.
+            if automaticSessionActive { waitingForPower = !satisfied }
         case .activate:
             guard automaticSessionAllowedByBatteryProtection() else { return }
             activeAutomationConditions = matches
@@ -76,6 +82,44 @@ extension KeepAwakeManager {
         case .deactivate:
             deactivate(reason: .manual)
         }
+    }
+
+    var powerDisconnectDelay: Int {
+        Defaults.sanitizedKeepAwakePowerDisconnectDelay(
+            UserDefaults.standard.integer(forKey: DefaultsKey.keepAwakePowerDisconnectDelay)
+        )
+    }
+
+    func activeAutomationMatches(_ matches: Set<KeepAwakeAutomationCondition>,
+                                 enabled: Set<KeepAwakeAutomationCondition>)
+        -> Set<KeepAwakeAutomationCondition> {
+        let deadline = powerDisconnectGrace.deadline(
+            powerEnabled: enabled.contains(.power),
+            wasOnPower: activeAutomationConditions.contains(.power),
+            onPower: matches.contains(.power),
+            delaySeconds: powerDisconnectDelay
+        )
+        activeAutomationConditions = matches
+        if powerDisconnectEvaluation?.deadline != deadline {
+            powerDisconnectEvaluation?.task.cancel()
+            powerDisconnectEvaluation = deadline.map { deadline in
+                let task = Task { @MainActor [weak self] in
+                    try? await Task.sleep(until: deadline, clock: .continuous)
+                    guard !Task.isCancelled else { return }
+                    self?.evaluateAutomation()
+                }
+                return (deadline, task)
+            }
+        }
+        // Only Power gets a grace period. All still needs every other condition.
+        return deadline == nil ? matches : matches.union([.power])
+    }
+
+    func clearPowerDisconnectGrace() {
+        waitingForPower = false
+        powerDisconnectGrace = KeepAwakePowerDisconnectGrace()
+        powerDisconnectEvaluation?.task.cancel()
+        powerDisconnectEvaluation = nil
     }
 
     func automationRequiresAllConditions() -> Bool {
@@ -95,15 +139,21 @@ extension KeepAwakeManager {
     /// mode. Every caller that used to read "any condition matches" has to ask
     /// this instead: under All, a session that stops being wanted still has a
     /// non-empty matching set (issue #1587).
-    func automationConditionsHold() -> Bool {
-        KeepAwakeAutomationSupport.conditionsSatisfied(
-            matching: currentMatchingAutomationConditions(),
-            enabled: currentEnabledAutomationConditions(),
+    func automationConditionsHold(includingPowerDelay: Bool = false) -> Bool {
+        let enabled = currentEnabledAutomationConditions()
+        let matches = currentMatchingAutomationConditions(enabled: enabled)
+        return KeepAwakeAutomationSupport.conditionsSatisfied(
+            matching: includingPowerDelay ? activeAutomationMatches(matches, enabled: enabled) : matches,
+            enabled: enabled,
             requireAll: automationRequiresAllConditions())
     }
 
-    func currentMatchingAutomationConditions() -> Set<KeepAwakeAutomationCondition> {
-        let externalDisplayEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeExternalDisplay)
+    func currentMatchingAutomationConditions(enabled: Set<KeepAwakeAutomationCondition>)
+        -> Set<KeepAwakeAutomationCondition> {
+        let powerEnabled = enabled.contains(.power)
+        let connectedToPower = powerEnabled && SystemInfo.batterySnapshot()?.isOnExternalPower == true
+
+        let externalDisplayEnabled = enabled.contains(.externalDisplay)
         let externalDisplayConnected: Bool
         if externalDisplayEnabled {
             if let current = Self.hasExternalDisplay() {
@@ -114,11 +164,7 @@ extension KeepAwakeManager {
             externalDisplayConnected = false
         }
 
-        let powerEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeConnectedToPower)
-        let connectedToPower = powerEnabled
-            && (SystemInfo.batterySnapshot().map { !$0.isOnBattery } ?? false)
-
-        let runningAppsEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeRunningApps)
+        let runningAppsEnabled = enabled.contains(.runningApps)
         let selectedAppsRunning: Bool
         if runningAppsEnabled, !runningAppBundleIDs.isEmpty {
             let running = NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier)
@@ -169,10 +215,11 @@ extension KeepAwakeManager {
         // The same full match the automation itself would need to start a
         // session: under All, a timed session must not be handed over on one
         // condition the automation would never have acted on (issue #1587).
-        let matches = currentMatchingAutomationConditions()
+        let enabled = currentEnabledAutomationConditions()
+        let matches = currentMatchingAutomationConditions(enabled: enabled)
         guard KeepAwakeAutomationSupport.conditionsSatisfied(
                 matching: matches,
-                enabled: currentEnabledAutomationConditions(),
+                enabled: enabled,
                 requireAll: automationRequiresAllConditions()) else { return false }
         activeAutomationConditions = matches
         activate(end: nil, trigger: .automation)

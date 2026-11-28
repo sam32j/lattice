@@ -28,6 +28,7 @@ final class KeepAwakeManager: ObservableObject {
     @Published var sessionStartDate: Date?
     @Published var runningAppBundleIDs: [String] = []
     @Published var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()
+    @Published var waitingForPower = false
     /// The enabled conditions that hold right now, whether or not a session
     /// runs, so Settings can mark each one Now or Not now.
     @Published var liveAutomationConditions = Set<KeepAwakeAutomationCondition>()
@@ -77,6 +78,8 @@ final class KeepAwakeManager: ObservableObject {
     var powerSourceRunLoopSource: CFRunLoopSource?
     var runningAppsObservation: NSKeyValueObservation?
     var automationEvaluationWorkItem: DispatchWorkItem?
+    var powerDisconnectGrace = KeepAwakePowerDisconnectGrace()
+    var powerDisconnectEvaluation: (deadline: ContinuousClock.Instant, task: Task<Void, Never>)?
     var lastExternalDisplayConnected: Bool?
     var screenLocked = false
     var sessionPausedForScreenLock = false

@@ -2867,6 +2867,7 @@ def main():
     keep_awake_methods = [
         "    func prepareForFeatureDisable()",
         "    func refreshPasswordlessStatus(",
+        "    func toggle()",
         "    func activate(minutes:",
         "    func activate(until date:",
         "    func startDefault(",
@@ -2876,7 +2877,17 @@ def main():
         "    func restoreSessionIfNeeded(",
         "    func deactivate(reason:",
         "    func syncWithPreferences(",
+        "    private func screenLockStateDidChange(",
         "    private func syncSessionWithScreenLock(",
+        "    private func setPowerMonitoringEnabled(",
+        "    private func scheduleAutomationEvaluation(",
+        "    private func evaluateAutomation(",
+        "    private var powerDisconnectDelay:",
+        "    private func activeAutomationMatches(",
+        "    private func clearPowerDisconnectGrace(",
+        "    private func automationConditionsHold(",
+        "    private func automaticSessionAllowedByBatteryProtection(",
+        "    private func batteryProtectionPercent(",
         "    private func applyClamshellPreference(",
         "    private func prepareClamshellPreference(",
         "    private func finishClamshellSetup(",
@@ -2894,6 +2905,14 @@ def main():
         "    private func applyDimmingAction(",
         "    private func attemptDisplayRestore(",
     ]
+    # Supply only the native samples. The production matcher still decides
+    # whether an incomplete source description counts as connected power.
+    keep_awake_matches = declaration(keep_awake, "    private func currentMatchingAutomationConditions(")
+    keep_awake_matches = (keep_awake_matches.replace("private func", "func", 1)
+                          .replace("Self.hasExternalDisplay()", "Optional(matchingConditions.contains(.externalDisplay))")
+                          .replace("SystemInfo.batterySnapshot()", "powerSample")
+                          .replace(r"NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier)",
+                                   "matchingConditions.contains(.runningApps) ? runningAppBundleIDs : []"))
     write("KeepAwakeLidSleep.swift", "import Foundation\nimport os\n\nextension KeepAwakeLidSleepContract {\n"
           # The extracted dimming bodies unwrap `Unmanaged<KeepAwakeManager>`
           # for the IOKit callback's context; this makes that name resolve to
@@ -2908,10 +2927,24 @@ def main():
           + "var clamshellSetupInProgress = false\nvar clamshellSetupFailed = false\n"
           + "var clamshellSetupRetried = false\nvar passwordlessClamshell = true\n"
           + "var recoveryCompleted = false\nvar screenLocked = false\nvar assertionsHeld = false\n"
+          + "var assertionReleases = 0\n"
           + "var defaultsObserver: Int?\nvar preferenceSyncScheduled = false\nfunc startPreferenceObservation() { defaultsObserver = 1 }\nfunc stopPreferenceObservation() { defaultsObserver = nil; preferenceSyncScheduled = false }\n"
           + "var automationSuppressedUntilConditionsClear = false\n"
+          + "var powerDisconnectGrace = KeepAwakePowerDisconnectGrace()\n"
+          + "var powerDisconnectEvaluation: (deadline: ContinuousClock.Instant, task: Task<Void, Never>)?\n"
           + "var endTimer: Timer?\nvar endDate: Date?\nvar sessionTrigger: SessionTrigger?\nvar sessionMinutes: Int?\nvar sessionStartDate: Date?\n"
           + "var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()\n"
+          + "var liveAutomationConditions = Set<KeepAwakeAutomationCondition>()\n"
+          + "var waitingForPower = false\nvar powerSourceRunLoopSource: PowerNotificationSource?\n"
+          + "var automationEvaluationWorkItem: DispatchWorkItem?\nvar lastExternalDisplayConnected: Bool?\n"
+          + "let runningAppBundleIDs = [\"com.example.selected\"]\n"
+          + "var powerSample: (isOnBattery: Bool, isOnExternalPower: Bool)?\n"
+          + "var matchingConditions = Set<KeepAwakeAutomationCondition>() { didSet {\n"
+          + "let powered = matchingConditions.contains(.power)\npowerSample = (!powered, powered)\n} }\n"
+          + "var enabledConditions: Set<KeepAwakeAutomationCondition> = [.power]\nvar requireAll = false\n"
+          + keep_awake_matches
+          + "func currentEnabledAutomationConditions() -> Set<KeepAwakeAutomationCondition> { enabledConditions }\n"
+          + "func automationRequiresAllConditions() -> Bool { requireAll }\n"
           + "var onSessionEnded: ((EndReason) -> Void)?\n"
           + "var lidDimmingNotificationPort: IONotificationPortRef?\nvar lidDimmingNotification: io_object_t = 0\n"
           + "var lidClosedForDimming: Bool?\nvar savedDisplayBrightness: Double?\n"
@@ -2920,9 +2953,9 @@ def main():
           + declaration(keep_awake, "    @Published var clamshellPreferred:").replace("@Published ", "", 1)
           + "init() { clamshellPreferred = true }\n"
           + "func syncScreenLockMonitoring() {}\nfunc applyAssertions() -> Bool { assertionsHeld = assertionsSucceed; assertionFailed = !assertionsSucceed; return assertionsSucceed }\n"
-          + "func releaseAssertions() -> Bool { if releasesSucceed { assertionsHeld = false }; return releasesSucceed }\nfunc scheduleEnd(at date: Date) {}\n"
+          + "func releaseAssertions() -> Bool { if releasesSucceed { if assertionsHeld { assertionReleases += 1 }; assertionsHeld = false }; return releasesSucceed }\nfunc scheduleEnd(at date: Date) {}\n"
           + "func startBatteryWatch() {}\nfunc stopBatteryWatch() {}\nfunc syncMouseJiggleTimer() {}\n"
-          + "func continueAutomaticallyAfterTimerIfNeeded() -> Bool { false }\nfunc automationConditionsHold() -> Bool { true }\n"
+          + "func continueAutomaticallyAfterTimerIfNeeded() -> Bool { false }\n"
           + "func stopMouseJiggleTimer() {}\nfunc stopAutomationMonitoring() {}\nfunc syncAutomationMonitoring() {}\n"
           + "static func lidSleepIsAllowed() -> Bool { KeepAwakeAutomationSupport.lidSleepIsAllowed("
           + "systemAllowsSleep: policy, externalDisplayConnected: externalDisplay, "
@@ -2942,7 +2975,7 @@ def main():
           + "var requireAll = false\nvar batteryAllows = true\n"
           + "var activations: [(end: Date?, trigger: SessionTrigger)] = []\n"
           + "func automaticSessionAllowedByBatteryProtection() -> Bool { batteryAllows }\n"
-          + "func currentMatchingAutomationConditions() -> Set<KeepAwakeAutomationCondition> { matching }\n"
+          + "func currentMatchingAutomationConditions(enabled: Set<KeepAwakeAutomationCondition>) -> Set<KeepAwakeAutomationCondition> { matching }\n"
           + "func currentEnabledAutomationConditions() -> Set<KeepAwakeAutomationCondition> { enabled }\n"
           + "func automationRequiresAllConditions() -> Bool { requireAll }\n"
           + "func activate(end: Date?, trigger: SessionTrigger) { activations.append((end, trigger)) }\n"
