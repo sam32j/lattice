@@ -1530,6 +1530,7 @@ def main():
           + declaration(cleaner, "    private static func usesAppOwnersForLeftovers(")
           + declaration(cleaner, "    private static func hasLivingOwner(")
           + declaration(cleaner, "    private static func hasLivingLeftoverOwner(")
+          + declaration(cleaner, "    private static func orphanedLaunchPlistDetail(")
           + "".join(declaration(cleaner, "    private static func " + name)
                     .replace("private static func", "static func", 1)
                     for name in ["scanLeftovers(", "appendLeftovers(", "scanCaches(", "scanLogs(",
@@ -1543,8 +1544,11 @@ def main():
           + "mayRemove(item, installedApps: installed, audioPluginIDs: audioPluginIDs)\n}\n}\n")
     write("CleanerScanFlow.swift", "import Foundation\nextension CleanerScanFlowTests {\n"
           + declaration(cleaner, "    enum Phase:")
-          + "final class Scanner: ScannerState {\nstatic let shared = Scanner()\n"
-          + "".join(declaration(cleaner, prefix).replace("AppFeature.cleaner.isAvailable", "featureAvailable") for prefix in ["    func reset()", "    func scan("])
+          + "final class Scanner: ScannerState {\ntypealias FileManager = FixtureTrash\nstatic let shared = Scanner()\n"
+          + declaration(cleaner, "    private static func cachedAppLookup(")
+          + declaration(cleaner, "    private static func removalCheck(")
+          + "".join(declaration(cleaner, prefix).replace("AppFeature.cleaner.isAvailable", "featureAvailable") for prefix in [
+              "    func reset()", "    func scan(", "    func cleanSelected("])
           + "}\n}\n")
 
     super_key = "Sources/Lattice/Services/SuperKey/SuperKeyService.swift"
