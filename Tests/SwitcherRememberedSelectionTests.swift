@@ -289,8 +289,7 @@ enum SwitcherRememberedSelectionTests {
             DefaultsKey.switcherWindowlessApps: "finder",
             DefaultsKey.switcherCurrentSpaceOnly: true,
             DefaultsKey.switcherShowFullscreenWindows: true,
-            DefaultsKey.switcherMinimizedPlacement: "hidden",
-            DefaultsKey.switcherTreatHiddenAppsLikeMinimized: true
+            DefaultsKey.switcherMinimizedPlacement: "hidden"
         ]
         var remembered = Enumerator.WindowList(
             items: [window(1), window(2), window(3, hiddenSpace: true, fullscreen: true),
@@ -317,7 +316,7 @@ enum SwitcherRememberedSelectionTests {
         suite.expect(original.items.map(\.id) == ["w:1", "w:2", "w:3", "a:7"],
                      "remembered windows retain desktop, native fullscreen, minimized, hidden-app and Finder rules")
         Preferences.standard.values[DefaultsKey.switcherAppRules] = ["test.other": "showWithoutWindows"]
-        suite.expect(select().items.contains { $0.pid == 8 }, "a windowless per-app override applies at shortcut press")
+        suite.expect(!select().items.contains { $0.pid == 8 }, "a retired showWithoutWindows app rule falls back to the global windowless setting")
         Preferences.standard.values[DefaultsKey.switcherAppRules] = [Defaults.finderBundleIdentifier: "hidden"]
         suite.expect(!select().items.contains { $0.pid == 7 }, "a newly hidden app is filtered from remembered results")
         Preferences.standard.values = [DefaultsKey.switcherWindowlessApps: "all"]
@@ -339,7 +338,8 @@ enum SwitcherRememberedSelectionTests {
                      "display filtering retains the foreground source for activation")
         remembered = Enumerator.WindowList(items: [window(1), window(2, pid: 1), window(3)], sourceItems: [])
         Preferences.standard.values[DefaultsKey.switcherMergeTabs] = true
-        suite.expect(select().items.count == 2, "merged sessions show one representative per app")
+        suite.expect(Set(select().items.compactMap(\.windowID)) == [1, 2, 3],
+                     "merged grid sessions retain backing windows for in-card window cycling")
         suite.expect(select(scope: .frontmostApp).items.compactMap(\.windowID) == [1, 2],
                      "the front-app shortcut retains its individual windows")
         Preferences.standard.values[DefaultsKey.switcherSimpleMode] = true
@@ -545,7 +545,7 @@ enum SwitcherRememberedSelectionTests {
         }
         var remembered = Enumerator.rememberSwitcherWindows(snapshot: snapshot, isCancelled: { false })
         func windows(on index: Int) -> [CGWindowID] {
-            Selection.select(remembered: remembered, scope: .allWindows, frontmostPID: pid,
+            Selection.select(remembered: remembered, scope: .allApps, frontmostPID: pid,
                              focusedWindowID: id, displayScope: .init(bounds: bounds, targetIndex: index))
                 .items.compactMap(\.windowID)
         }

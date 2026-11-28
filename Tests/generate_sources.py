@@ -493,6 +493,7 @@ def main():
           + "}\nextension SwitcherWindowTitleTests.SessionHost {\n"
           + "".join(declaration("Sources/Lattice/Services/Switcher/AppSwitcher.swift", prefix).replace("private ", "", 1)
                     for prefix in ["    private var selectedItemID:",
+                                   "    private func sanitizedSearchInput(",
                                    "    private func appendSearchText(",
                                    "    private func applySearchFilter(",
                                    "    private func updateSessionTitles("])

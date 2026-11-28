@@ -457,7 +457,7 @@ enum WindowEnumerator {
             let defaults = UserDefaults.standard
             let defersMinimized = defaults.string(forKey: DefaultsKey.switcherMinimizedPlacement)
                 == WindowSwitchMinimizedPlacement.end.rawValue
-            let hiddenAsMinimized = defaults.bool(forKey: DefaultsKey.switcherTreatHiddenAppsLikeMinimized)
+            let hiddenAsMinimized = true
             let primary = defersMinimized ? destinations.filter {
                 !$0.isMinimizedForPlacement(treatHiddenAppsLikeMinimized: hiddenAsMinimized)
             } : []
@@ -1057,7 +1057,7 @@ enum WindowEnumerator {
             showFullscreenWindows: showFullscreenWindows,
             preservingGroupedWindows: preservingGroupedWindows,
             currentSpaceOnly: currentSpaceOnly,
-            windowsOnly: windowsOnly,
+            windowsOnly: false,
             scopedToFrontmostPID: scopedToFrontmostPID,
             displayScope: displayScope,
             frontToBack: frontToBack,

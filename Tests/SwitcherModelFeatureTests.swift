@@ -5736,8 +5736,8 @@ enum SwitcherModelFeatureTests {
             return String(source[start.lowerBound..<end.lowerBound])
         }()
         let handoffCapture = commitSessionCode.range(
-            of: "let handoffSourcePID = NSWorkspace.shared.frontmostApplication")
-        let sessionEnd = commitSessionCode.range(of: "endSession()")
+            of: "let handoffSourcePID = sessionOrigin?.pid")
+        let sessionEnd = commitSessionCode.range(of: "endSession()", options: .backwards)
         suite.expect(handoffCapture != nil && sessionEnd != nil
                && handoffCapture!.lowerBound < sessionEnd!.lowerBound
                && commitSessionCode.contains("sourcePID: source?.pid,")

@@ -46,7 +46,7 @@ enum SwitcherWindowSelection {
         let showFullscreen = defaults.object(forKey: DefaultsKey.switcherShowFullscreenWindows) as? Bool ?? true
         let minimizedPlacement = WindowSwitchMinimizedPlacement(
             rawValue: defaults.string(forKey: DefaultsKey.switcherMinimizedPlacement) ?? "") ?? .normal
-        let treatHiddenAsMinimized = defaults.bool(forKey: DefaultsKey.switcherTreatHiddenAppsLikeMinimized)
+        let treatHiddenAsMinimized = true
         let mergeWindows = defaults.bool(forKey: DefaultsKey.switcherMergeTabs)
         let iconRowLayout = SwitcherSupport.usesIconRowLayout(
             iconRowMode: defaults.bool(forKey: DefaultsKey.switcherIconRowMode),
