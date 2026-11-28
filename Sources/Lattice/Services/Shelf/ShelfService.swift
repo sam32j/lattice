@@ -274,7 +274,7 @@ final class ShelfService: ObservableObject {
 
     // File providers may block for seconds. Keep all drag metadata reads off
     // the main thread and bound the number of outstanding reads on slow volumes.
-    private static let dragFileQueue = DispatchQueue(label: "com.vorssaint.utils.shelf-drag-files",
+    private static let dragFileQueue = DispatchQueue(label: "io.github.sam32j.lattice.shelf-drag-files",
                                                      qos: .userInitiated)
 
     private var persistScheduled = false

@@ -140,7 +140,7 @@ enum CleanerScanFlowTests {
     private static func checkCleanupInventories(_ suite: TestSuite) throws {
         let fm = FileManager.default
         let sandbox = fm.temporaryDirectory.resolvingSymlinksInPath()
-            .appendingPathComponent("vorssaint-inventory-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("lattice-inventory-\(UUID().uuidString)", isDirectory: true)
         let home = sandbox.appendingPathComponent("user", isDirectory: true)
         CleanerEligibilityTests.fixtureRoot = home
         defer {

@@ -125,7 +125,7 @@ final class NotchStatusItemOwners: @unchecked Sendable {
     private var searchedRunning: Set<pid_t> = []
     private var searchedAt = Date.distantPast
     private var searching = false
-    private let queue = DispatchQueue(label: "com.vorssaint.notch.status-item-owners", qos: .utility)
+    private let queue = DispatchQueue(label: "io.github.sam32j.lattice.notch.status-item-owners", qos: .utility)
 
     /// Status item frames in the same flipped coordinates as the menus, or
     /// nil while the owners are unknown or a read runs out of time.
