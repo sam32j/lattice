@@ -476,6 +476,11 @@ def main():
           + declaration("Sources/Lattice/Services/Switcher/WindowUseTracker.swift",
                         "    func reconcile(")
           + "}\n")
+    write("SwitcherWindowTitles.swift", "import AppKit\nimport ApplicationServices\n"
+          + "extension SwitcherWindowTitleTests {\n"
+          + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowTitles.swift",
+                        "final class SwitcherWindowTitles {")
+          + "}\n")
     write("SwitcherRememberedSelection.swift", "import AppKit\nimport ApplicationServices\n"
           + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowInventory.swift",
                         "struct SwitcherInventorySpaces {")
@@ -492,10 +497,10 @@ def main():
           + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowEvents.swift",
                         "    static func matchesWindowNumber(")
           + "}\nextension SwitcherRememberedSelectionTests.Inventory.WindowEnumerator {\n"
-          + declaration("Sources/Vorssaint/Services/Switcher/WindowEnumerator.swift",
+          + declaration("Sources/Lattice/Services/Switcher/WindowEnumerator.swift",
                         "    static func ownWindowID(")
           + "}\nextension SwitcherRememberedSelectionTests.Inventory {\n"
-          + declaration("Sources/Vorssaint/Services/Switcher/SwitcherWindowInventory.swift",
+          + declaration("Sources/Lattice/Services/Switcher/SwitcherWindowInventory.swift",
                         "    private func observeScreenChanges(").replace("private func", "func", 1)
           + "}\n")
     write("RecorderSystemAudioTapLifecycle.swift", "import CoreAudio\nimport Foundation\n"

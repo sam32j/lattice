@@ -488,6 +488,7 @@ enum SwitcherModelFeatureTests {
     static func run(_ suite: TestSuite) {
         SystemAppIconTests.run(suite)
         SwitcherAccessibilitySnapshotTests.run(suite)
+        SwitcherWindowTitleTests.run(suite)
         SwitcherFullscreenScopeTests.run(suite)
         SwitcherExclusiveFullscreenTests.run(suite)
         SwitcherQuickCommitTests.run(suite)
