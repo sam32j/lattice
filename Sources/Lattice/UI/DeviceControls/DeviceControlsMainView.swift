@@ -516,21 +516,19 @@ private struct DeviceControlsAudioInputSection: View {
                 // Row 2: Input level control
                 DeviceControlsInputLevelRow()
 
-                if let warning = micMute.warning {
+                if micMute.warning == .manualRestore {
                     HStack(alignment: .center, spacing: 8) {
-                        Label(warning.message, systemImage: "exclamationmark.triangle")
+                        Label(MicMuteService.Warning.manualRestore.message, systemImage: "exclamationmark.triangle")
                             .font(.system(size: 11))
                             .foregroundStyle(.orange)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        if warning == .manualRestore {
-                            Button(l10n.s.micManualRestoreChecked) {
-                                micMute.acknowledgeManualRestore()
-                            }
-                            .controlSize(.small)
-                            .fixedSize()
+                        Button(l10n.s.micManualRestoreChecked) {
+                            micMute.acknowledgeManualRestore()
                         }
+                        .controlSize(.small)
+                        .fixedSize()
                     }
                 }
             }

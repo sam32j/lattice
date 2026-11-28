@@ -1118,6 +1118,19 @@ enum MixerInputVolumeContract {
             "an aggregate with no mute or level of its own does not make the mute partial")
         HAL.reset()
         HAL.devices = [10, 40]
+        HAL.current = 10
+        HAL.levels[HAL.key(10)] = 0.5
+        QuickToolHUD.messages = []
+        MicMuteService.shared.setMuted(true)
+        DispatchQueue.drain()
+        check(
+            QuickToolHUD.messages == ["muted"] && !MicMuteService.shared.hasUnconfirmedInputs
+                && MicMuteService.inputControls(10).isSilenced
+                && UserDefaults.standard.stringArray(forKey: DefaultsKey.micMuteMutedDevices) == ["device-10"],
+            "an idle non-default input without controls does not make the mute partial")
+        HAL.reset()
+        HAL.devices = [10, 40]
+        HAL.current = 40
         HAL.levels[HAL.key(10)] = 0.5
         QuickToolHUD.messages = []
         MicMuteService.shared.setMuted(true)
@@ -1126,7 +1139,20 @@ enum MixerInputVolumeContract {
             QuickToolHUD.messages == ["mute partial"] && MicMuteService.shared.hasUnconfirmedInputs
                 && MicMuteService.inputControls(10).isSilenced
                 && UserDefaults.standard.stringArray(forKey: DefaultsKey.micMuteMutedDevices) == ["device-10"],
-            "an idle input without controls warns without being claimed for restoration")
+            "a default input without controls still warns without being claimed for restoration")
+        HAL.reset()
+        HAL.devices = [10, 40]
+        HAL.current = 10
+        HAL.running = [40]
+        HAL.levels[HAL.key(10)] = 0.5
+        QuickToolHUD.messages = []
+        MicMuteService.shared.setMuted(true)
+        DispatchQueue.drain()
+        check(
+            QuickToolHUD.messages == ["mute partial"] && MicMuteService.shared.hasUnconfirmedInputs
+                && MicMuteService.inputControls(10).isSilenced
+                && UserDefaults.standard.stringArray(forKey: DefaultsKey.micMuteMutedDevices) == ["device-10"],
+            "a running non-default input without controls still warns without being claimed for restoration")
         HAL.reset()
         HAL.levels[HAL.key(10)] = 0.5
         NotchService.shared.showsMicrophone = true

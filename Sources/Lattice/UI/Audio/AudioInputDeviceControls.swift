@@ -140,10 +140,6 @@ struct AudioInputDeviceControls: View {
                              systemImage: "exclamationmark.triangle")
                     .transition(.settingsReveal)
             }
-            if showsIcons, let warning = micMute.warning {
-                inputMessage(warning.message, systemImage: "exclamationmark.triangle", tint: .orange)
-                    .transition(.settingsReveal)
-            }
         }
         .onAppear { AudioInputDeviceManager.shared.syncWithPreferences() }
         .onChange(of: micMute.isMuted) { _, muted in

@@ -1881,14 +1881,54 @@ final class MicMuteService: ObservableObject {
     /// A control-less aggregate can report coverage only through active input
     /// members accounted for in this sweep. Resolve nested aggregates from the
     /// inside out; missing members and cycles cannot establish coverage.
+    /// An idle, non-default, non-aggregate input with no Core Audio mute or
+    /// volume controls (such as Continuity Camera / iPhone microphone) does not
+    /// fail mute confirmation unless it becomes the default input or starts
+    /// capturing.
     private static func coversInventory(_ inventory: InputInventory, confirmed: Set<InputDevice>) -> Bool {
+        let defaultInput = defaultInputDeviceID()
         var covered = confirmed
         var pending = Set(inventory.devices).subtracting(covered)
+        for device in pending where isIdleUnselectedControllessInput(device.id, defaultInput: defaultInput) {
+            pending.remove(device)
+            covered.insert(device)
+        }
         while !pending.isEmpty {
             let resolved = pending.filter { aggregate($0.id, isCoveredBy: covered, inactiveIDs: inventory.inactiveIDs) }
             guard !resolved.isEmpty else { return false }
             pending.subtract(resolved)
             covered.formUnion(resolved)
+        }
+        return true
+    }
+
+    private static func defaultInputDeviceID() -> AudioDeviceID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var defaultID = AudioObjectID(0)
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                         &address, 0, nil, &size, &defaultID) == noErr,
+              defaultID != kAudioObjectUnknown else { return nil }
+        return defaultID
+    }
+
+    private static func isIdleUnselectedControllessInput(_ device: AudioDeviceID,
+                                                         defaultInput: AudioDeviceID?) -> Bool {
+        guard device != defaultInput else { return false }
+        var transport: UInt32 = 0
+        if read(device, kAudioDevicePropertyTransportType, &transport),
+           transport == kAudioDeviceTransportTypeAggregate {
+            return false
+        }
+        guard isIdleInput(device) else { return false }
+        let count = readInputChannelCount(of: device) ?? MicMuteSupport.minimumChannelCount
+        for var address in muteAddresses(of: device, channelCount: count)
+            + volumeAddresses(of: device, channelCount: count) {
+            if AudioObjectHasProperty(device, &address) { return false }
         }
         return true
     }
@@ -2906,9 +2946,10 @@ final class MicMuteService: ObservableObject {
                     watch(selector, scope: kAudioDevicePropertyScopeInput, element: element)
                 }
             }
-            if retries[device]?.values.contains(where: \.wasIdleVirtual) == true {
-                // A previously idle virtual input may now feed a call. Its
-                // start must bypass the cooldown even if gain hasn't moved.
+            if retries[device]?.values.contains(where: \.wasIdleVirtual) == true
+                || (muted && Self.isIdleUnselectedControllessInput(device.id, defaultInput: Self.defaultInputDeviceID())) {
+                // A previously idle virtual input or skipped control-less input
+                // may now feed a call. Its start must wake verification.
                 watch(kAudioDevicePropertyDeviceIsRunningSomewhere, scope: kAudioObjectPropertyScopeGlobal)
             }
         }
