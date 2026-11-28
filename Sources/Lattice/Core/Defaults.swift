@@ -18,6 +18,7 @@ enum DefaultsKey {
     static let keepAwakeAllowDisplaySleep = "keepAwakeAllowDisplaySleep"
     static let keepAwakeExternalDisplay = "keepAwakeExternalDisplay"
     static let keepAwakeConnectedToPower = "keepAwakeConnectedToPower"
+    static let keepAwakePowerDisconnectDelay = "keepAwakePowerDisconnectDelaySeconds"
     static let keepAwakeRunningApps = "keepAwakeRunningApps"
     static let keepAwakeRunningAppBundleIDs = "keepAwakeRunningAppBundleIDs"
     // Match mode over the automation conditions: false is Any (one matching
@@ -210,6 +211,9 @@ enum DefaultsKey {
     // The read checksum fix needs its own recheck even if the paired-request
     // migration already ran and cached the monitor as write-only again.
     static let brightnessDDCReadChecksumRechecked = "brightnessDDCReadChecksumRechecked"
+    // Monitors behind an MCDP29XX HDMI converter were probed at an address
+    // it swallows; recheck them once now that it is addressed.
+    static let brightnessDDCHDMIConverterRechecked = "brightnessDDCHDMIConverterRechecked"
     /// A beta already installed the companion for this Command Bar user, once.
     static let notchMascotBetaInstalled = "notchMascotBetaInstalled"
     // Per-monitor connection paths a person has told this app to dim in
@@ -331,14 +335,16 @@ enum DefaultsKey {
     static let fanControlCurves = "fanControlCurves"
     // Re-apply the last manual speed or curve when the app opens and after wake.
     static let fanControlResume = "fanControlResume"
-    // Machine-only: the control the user left running while resume is on,
-    // cleared when they return to System so it never outlives that choice.
+    // Machine-only: arm resume only after the helper releases this connection's control.
     static let fanControlResumeConfiguration = "fanControlResumeConfiguration"
     // Previous panel visibility key, read once by the migration below.
     static let monitorShowFanControlBeta = "monitorShowFanControlBeta"
     // Machine-only recovery state. A true value means the helper must confirm
     // automatic fan control before this marker can be cleared.
     static let fanControlRecoveryNeeded = "fanControlRecoveryNeeded"
+    static let fanControlUnregisterPending = "fanControlUnregisterPending"
+    static let fanControlInterruptedStop = "fanControlInterruptedStop"
+    static let fanControlDismissedStop = "fanControlDismissedStop"
     static let fanControlHelperVersion = "fanControlHelperVersion"
     // Peripheral batteries in the Power views; also gates Bluetooth use.
     static let monitorPwrPeripherals = "monitorPwrPeripherals"
@@ -898,6 +904,7 @@ enum Defaults {
     static let allowedDurations = [0, 15, 30, 60, 120, 240, 480]
     static let allowedKeepAwakeMouseJiggleIntervals = [1, 2, 5, 10, 15]
     static let allowedBatteryLimits = [0, 5, 10, 15, 20]
+    static let allowedKeepAwakePowerDisconnectDelays = Array(stride(from: 0, through: 60, by: 5))
     static let allowedMonitorIntervals = [1, 2, 5]
     static let defaultKeyboardDebounceWindowMs = 5
     static let defaultSnippetSoundName = "Tink"
@@ -939,6 +946,7 @@ enum Defaults {
         DefaultsKey.keepAwakeAllowDisplaySleep: false,
         DefaultsKey.keepAwakeExternalDisplay: false,
         DefaultsKey.keepAwakeConnectedToPower: false,
+        DefaultsKey.keepAwakePowerDisconnectDelay: 0,
         DefaultsKey.keepAwakeRunningApps: false,
         DefaultsKey.keepAwakeRunningAppBundleIDs: [String](),
         DefaultsKey.keepAwakeAutomationRequireAll: false,
@@ -1615,6 +1623,7 @@ enum Defaults {
         migrateAppVolumesToPositions(in: defaults)
         migrateSwitcherWindowlessFinder(in: defaults)
         recheckBrightnessDDCWriteOnlyPaths(in: defaults)
+        recheckBrightnessDDCHDMIConverterPaths(in: defaults)
         hideScratchpadControlOnce(in: defaults)
         hideKeyboardLightControlOnce(in: defaults)
         // The "all apps" output choice now lasts one session; a saved one
@@ -1774,6 +1783,16 @@ enum Defaults {
         }
         defaults.set(true, forKey: DefaultsKey.brightnessDDCWriteOnlyPathsRechecked)
         defaults.set(true, forKey: DefaultsKey.brightnessDDCReadChecksumRechecked)
+        defaults.removeObject(forKey: DefaultsKey.brightnessDDCWriteOnlyPaths)
+    }
+
+    /// A monitor behind an MCDP29XX HDMI converter was probed at the
+    /// standard DDC address, which the converter accepts and drops, so it was
+    /// cached as write-only and pinned to writes that never arrive. Drop the
+    /// cache once so it is probed at the converter's address; later verdicts stand.
+    static func recheckBrightnessDDCHDMIConverterPaths(in defaults: UserDefaults) {
+        guard !defaults.bool(forKey: DefaultsKey.brightnessDDCHDMIConverterRechecked) else { return }
+        defaults.set(true, forKey: DefaultsKey.brightnessDDCHDMIConverterRechecked)
         defaults.removeObject(forKey: DefaultsKey.brightnessDDCWriteOnlyPaths)
     }
 
@@ -2082,6 +2101,10 @@ enum Defaults {
 
     static func sanitizedBatteryLimit(_ percent: Int) -> Int {
         allowedBatteryLimits.contains(percent) ? percent : 10
+    }
+
+    static func sanitizedKeepAwakePowerDisconnectDelay(_ seconds: Int) -> Int {
+        allowedKeepAwakePowerDisconnectDelays.contains(seconds) ? seconds : 0
     }
 
     static func sanitizedKeepAwakeMouseJiggleInterval(_ minutes: Int) -> Int {

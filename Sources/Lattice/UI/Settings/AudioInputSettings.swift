@@ -53,8 +53,8 @@ struct AudioInputSettings: View {
                                              showsUnavailableLabel: false,
                                              showsIcons: false)
 
-                    if let warning = micMute.warning {
-                        microphoneWarningRow(warning)
+                    if micMute.warning == .manualRestore {
+                        microphoneWarningRow(.manualRestore)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {

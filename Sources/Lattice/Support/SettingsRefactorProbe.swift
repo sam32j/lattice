@@ -102,6 +102,54 @@ enum SettingsRefactorProbe {
             if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
             exit(failures.isEmpty ? 0 : 1)
         }
+        if CommandLine.arguments.contains("--upstream-345-only") {
+            // The surfaces the v3.4.5 ports touched (ui-audit U4, U5, U7, U8,
+            // U10, U11, U12, U14, U34), each in English and German, light and
+            // dark, at the Settings detail column's minimum width.
+            var failures = [String]()
+            FeatureRuntime.shared.setAvailable([
+                .windowLayout, .keepAwake, .notch, .notchAgents, .micMute, .mixer,
+                .audioPriority, .monitorDisk, .monitorCPU, .fanControl,
+            ], true)
+            defaults.set(true, forKey: DefaultsKey.windowEdgeSnapEnabled)
+            defaults.set(true, forKey: DefaultsKey.keepAwakeConnectedToPower)
+            defaults.set(30, forKey: DefaultsKey.keepAwakePowerDisconnectDelay)
+            defaults.set(true, forKey: DefaultsKey.notchEnabled)
+            defaults.set(true, forKey: DefaultsKey.notchAgentsEnabled)
+            defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
+            defaults.set(true, forKey: DefaultsKey.audioPriorityInputEnabled)
+            defaults.set(true, forKey: DefaultsKey.monitorAlertDisk)
+            defaults.set(false, forKey: DefaultsKey.monitorAlertCPU)
+            let width: CGFloat = 560
+            for language in [AppLanguage.enUS, .de] {
+                L10n.shared.language = language
+                for scheme in [ColorScheme.light, .dark] {
+                    let suffix = "\(language.rawValue)-\(scheme == .dark ? "dark" : "light")"
+                    let surfaces: [(String, AnyView, CGFloat)] = [
+                        ("u4-window-layout", AnyView(WindowLayoutSettings()), 1300),
+                        ("u5-data-permissions", AnyView(DataPermissionsSettings()), 900),
+                        ("u7-stay-awake", AnyView(StayAwakeSettings()), 1180),
+                        ("u8-agents-settings", AnyView(ScrollView { NotchAgentsSettingsControls().padding(20) }), 760),
+                        ("u10-u11-u34-audio-input", AnyView(ScrollView { AudioInputSettings().padding(20) }), 860),
+                        ("u14-monitor-alerts", AnyView(ScrollView {
+                            SettingsCard(title: FeatureStrings.monitorAlerts(language).section,
+                                         caption: FeatureStrings.monitorAlerts(language).caption) {
+                                MonitorAlertsControls()
+                            }.padding(20)
+                        }), 620),
+                        ("u12-fan-control", AnyView(FanControlSection().frame(width: 388).padding(12)), 420),
+                    ]
+                    for (name, view, height) in surfaces {
+                        render("\(name)-\(suffix)", view: view, size: CGSize(width: width, height: height),
+                               output: output, failures: &failures, colorScheme: scheme)
+                    }
+                }
+            }
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--stay-awake-only") {
             defaults.set(true, forKey: AppFeature.keepAwake.availabilityKey)
             var failures = [String]()

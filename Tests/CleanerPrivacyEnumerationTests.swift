@@ -18,8 +18,8 @@ enum CleanerPrivacyEnumerationTests {
             defer { try? manager.removeItem(at: root) }
             try Data(repeating: 1, count: 64).write(to: root.appendingPathComponent("com.apple.Music/library.data"))
             var results: [CleanerEligibilityTests.Item] = []
-            CleanerEligibilityTests.appendLeftovers(in: root.path, usesContainerMetadata: true,
-                installed: [], fm: manager, into: &results)
+            CleanerEligibilityTests.appendLeftovers(in: root, usesContainerMetadata: true,
+                installed: [], audioPluginIDs: [], fm: manager, into: &results)
             let size = CleanerEligibilityTests.directorySize(of: root, fm: manager)
             suite.expect(!manager.prefetchedKeys.isEmpty && manager.prefetchedKeys.allSatisfy(\.isEmpty)
                          && results.isEmpty && size == 0,

@@ -13,9 +13,15 @@ extension KeepAwakeLidSleepContract {
         static let clamshellPreferred = "preferred"
         static let sleepDisabledFlag = "disabled"
         static let keepAwakePauseWhenLocked = "pause"
+        static let keepAwakePowerDisconnectDelay = "powerDisconnectDelay"
+        static let batteryLimit = "batteryLimit"
         static let dimmedDisplaySavedBrightness = "dimmedDisplaySavedBrightness"
         static let defaultDuration = "defaultDuration"
         static let keepAwakeSessionEnd = "keepAwakeSessionEnd"
+    }
+    enum SystemInfo {
+        static var battery: (isOnBattery: Bool, percent: Int)?
+        static func batterySnapshot() -> (isOnBattery: Bool, percent: Int)? { battery }
     }
     enum UserDefaults {
         static let standard = Store()

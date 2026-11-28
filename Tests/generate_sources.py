@@ -90,7 +90,7 @@ def main():
           + "extension SettingsFileTests {\nenum Backup {\n"
           + "".join(declaration(backup, prefix) for prefix in [
               "    static func write(to ", "    static func readSettings(at ",
-              "    static func apply(settings:", "    static var configFileURL:",
+              "    static func apply(settings:", "    static var configFileURL:", "    static func writeConfigFile(",
               "    static func applyConfigFileAtLaunch(", "    static func anotherInstanceIsRunning("])
           + "}\n}\n")
     slider_area = "Sources/Lattice/UI/SliderScrollArea.swift"
@@ -341,8 +341,10 @@ def main():
                              "    private func syncControls(", "    func editText(", "    func hitTest(", "    func deleteSelected()", "    func resizeHandle("])
           + "}\n}\n")
     write("ScreenshotTextDraft.swift", "import AppKit\nextension ScreenshotTextDraftTests {\nfinal class Model: State {\n"
+          + "static let undoByteBudget = 256 << 20\nstatic let undoAnnotationBytes = 512\n"
           + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
-              for prefix in ["    private func registerUndo()", "    private func applyStyleToSelection()",
+              for prefix in ["    private func registerUndo()", "    private func trimHistory(",
+                             "    private func applyStyleToSelection()",
                              "    func textSizeEditingChanged(",
                              "    func beginDrag(", "    func endDrag(", "    func commitText("])
           + "}\nfinal class Controller: ControllerState {\n"
@@ -850,18 +852,58 @@ def main():
                         "    func choose(applications:", "    func applyChosen("])
           + "}\n}\n")
     fan_control = "Sources/Lattice/Services/FanControl/FanControlService.swift"
+    fan_panel = "Sources/Lattice/UI/MenuPanel"
+    write("FanControlCard.swift", (ROOT / fan_panel / "FanControlCurveEditor.swift").read_text()
+          + "\nextension FanControlResumeContract {\ntypealias FanControlService = Service\n"
+          + declaration(fan_panel + "/FanControlSection.swift", "struct FanControlCardContent:")
+          + "struct Section {\nlet service: Service\n@Binding var modeRaw: String\n"
+          + declaration(fan_panel + "/FanControlSection.swift", "    private var modeBinding:")
+              .replace("private var modeBinding:", "var modeBinding:", 1)
+          + "}\n"
+          + "}\n")
     write("FanControlResume.swift", "import Foundation\n"
-          + "extension FanControlResumeContract {\nfinal class Service: Fixture {\n"
+          + "extension FanControlResumeContract {\n"
+          + declaration("Sources/Lattice/Services/FanControl/FanControlXPC.swift", "enum FanControlIPC {")
+          + "final class Service: Fixture {\n"
+          + declaration(fan_control, "    func applyConfiguration(_ configuration:")
+          .replace("applyConfiguration(configuration, resuming:", "sendConfiguration(configuration, resuming:", 1)
+          + declaration(fan_control, "    private func applyConfiguration(_ configuration:")
+          .replace("private func applyConfiguration", "func sendConfiguration", 1)
+          + "".join(declaration(fan_control, prefix, closing="}()").replace("@Published ", "", 1)
+                    for prefix in ["    @Published private(set) var awaitingSystemControl:",
+                                   "    @Published private(set) var interruption:"])
           + "".join(declaration(fan_control, prefix)
                     .replace("@objc private func", "func", 1)
                     .replace("private static var", "static var", 1)
+                    .replace("private var", "var", 1)
                     .replace("private func", "func", 1) for prefix in [
                         "    static func recoverIfNeeded(", "    func syncWithPreferences(",
-                        "    func returnToSystem(", "    func resumePreferenceDidChange(",
+                        "    func refresh()", "    func panelDidAppear()", "    func panelDidDisappear()",
+                        "    private func replaceRegistrationIfNeeded(",
+                        "    private func replaceReservedRegistration(",
+                        "    func returnToSystem(", "    func forgetResume(", "    private func dismissStop(",
+                        "    func resumePreferenceDidChange(",
                         "    private static var resumableConfiguration:", "    private func resume(",
                         "    private static var helperAwaitsRegistration:",
                         "    private func rememberForResume(", "    private func stopIdleWorkIfPossible(",
-                        "    @objc private func workspaceDidWake("])
+                        "    @objc private func workspaceDidWake(", "    @objc private func workspaceWillSleep(",
+                        "    private func beginResume(", "    private func cancelResumeRetry(",
+                        "    private func resumeDidFail(", "    private func scheduleResumeRetry(",
+                        "    private func retryResume(", "    private func applyStatus(", "    private func apply(_ response:",
+                        "    private var interruptedStop:", "    private var hadActiveControl:",
+                        "    private func restoreAutomatic(supersedingCurrentRequest:",
+                        "    private func disconnectForRecovery(",
+                        "    static func restoreBeforeTerminationIfNeeded()", "    private func restoreBeforeTermination()",
+                        "    private func restoreOwnedBeforeExit()",
+                        "    private func restoreThenUnregister()", "    private func checkUnregisterStatus(",
+                        "    private func prepareForUnregister(",
+                        "    private func finishUnregisterCheck(",
+                        "    private func cancelUnregisterCheck(", "    private func releaseUnregisterConnection(",
+                        "    private func finishSystemHandoff()", "    private func startTimerIfNeeded()",
+                        "    private func recordInterruption(", "    private func observeFailedHandoff(",
+                        "    private func poll(", "    private func heartbeat(",
+                        "    private func requestStatus(", "    private func connectionLost(",
+                        "    private func beginRequest(", "    private func finishRequest("])
           + "}\n}\n")
     visualizer_entry = declaration("Sources/Lattice/Services/Notch/NotchService.swift", "    func syncWithPreferences()")
     visualizer_entry = visualizer_entry.split("        preferenceSyncWork?.cancel()", 1)[0]
@@ -869,11 +911,25 @@ def main():
     write("NotchVisualizerEntry.swift", "import Foundation\nextension NotchVisualizerEntryContract {\nfinal class Service {\n"
           + visualizer_entry + "}\n}\n}\n#sourceLocation()\n")
     write("FanControlRecovery.swift", "import Foundation\n"
-          + "extension FanControlRecoveryContract {\nfinal class Controller: Fixture {\n"
+          + "extension FanControlRecoveryContract {\ntypealias FanControlIPC = FanControlResumeContract.FanControlIPC\n"
+          + "final class Controller: Fixture {\n"
+          + declaration("Sources/FanControlHelper/main.swift", "    func connectionClosed(")
+          + declaration("Sources/FanControlHelper/main.swift", "    func shutdown(")
+          + declaration("Sources/FanControlHelper/main.swift", "    func status(reply:")
+          + declaration("Sources/FanControlHelper/main.swift", "    func prepareForUnregister(session")
+          + declaration("Sources/FanControlHelper/main.swift", "    func startLegacySession(")
+          + declaration("Sources/FanControlHelper/main.swift", "    func heartbeat(session")
+          + declaration("Sources/FanControlHelper/main.swift", "    func restore(session")
+          + declaration("Sources/FanControlHelper/main.swift", "    private func applyConfiguration(session")
+              .replace("private func", "func", 1)
+              .replace("let control = FanControlHardware()", "let control = hardware", 1)
           + "".join(declaration("Sources/FanControlHelper/main.swift", prefix)
                     .replace("private func", "func", 1) for prefix in [
+                        "    private func updateActiveConfiguration(", "    private func finishFailedStart(",
                         "    private func requestedLevel(", "    private func performRestore(",
-                        "    private func watchdogTick()", "    private func stopWatchdogIfIdle()"])
+                        "    private func watchdogStopReason()",
+                        "    private func watchdogTick()", "    private func stopWatchdogIfIdle()",
+                        "    private func statusResponse()", "    private func currentSnapshot()"])
           + "}\n}\n")
     fan_hardware = "Sources/Lattice/Services/FanControl/FanControlHardware.swift"
     write("FanControlHardwareContract.swift", "import Foundation\nextension FanControlHardwareContract {\n"
@@ -886,13 +942,23 @@ def main():
                         "final class NotchAudioLevelService:")
           + "}\n")
     clipboard = "Sources/Lattice/Services/Clipboard/ClipboardHistoryService.swift"
-    pending_restore = [line for line in (ROOT / clipboard).read_text().splitlines(keepends=True)
-                       if line.startswith("    private var pendingRestore:")]
+    clipboard_lines = (ROOT / clipboard).read_text().splitlines(keepends=True)
+    pending_restore = [line for line in clipboard_lines if line.startswith("    private var pendingRestore:")]
     if len(pending_restore) != 1:
         raise ValueError("Expected one pending clipboard restore declaration")
+    capture_limits = [line for line in clipboard_lines if line.startswith((
+        "    private static let maxCopiedFiles =", "    private static let maxImageBytes =",
+        "    private static let maxRawImageBytes ="))]
+    if len(capture_limits) != 3:
+        raise ValueError("Expected three clipboard capture limits")
     write("ClipboardCaptureRestore.swift", "import AppKit\nimport Foundation\nimport Combine\n"
           + "extension ClipboardCaptureRestoreTests {\nfinal class Service: Fixture {\n"
           + pending_restore[0].replace("private ", "", 1)
+          + "".join(capture_limits)
+          + "".join(declaration(clipboard, prefix).replace("from pasteboard: NSPasteboard)",
+                                                           "from pasteboard: AppKit.NSPasteboard)")
+                    for prefix in ["    private static func copiedFilePaths(", "    private static func copiedPNGImage(",
+                                   "    private static func webURLString(", "    private static func isWebURL("])
           + declaration(clipboard, "    @Published private(set) var entries:")
           + "".join(declaration(clipboard, prefix).replace("private ", "", 1) for prefix in [
               "    private enum CapturedContent", "    private func captureIfChanged(",
@@ -902,6 +968,13 @@ def main():
               "    private func insertPromoted("])
           + "func setEntries(_ values: [ClipboardHistoryEntry]) { entries = values }\n"
           + "}\n}\n")
+    write("ClipboardCommandBarUpdates.swift", "import Combine\nimport Foundation\nextension ClipboardPreviewContract {\n"
+          + "final class CommandSearch: CommandSearchFixture {\n"
+          + "".join(declaration("Sources/Lattice/Services/CommandBar/CommandBarService.swift", prefix)
+                    .replace("private func", "func", 1) for prefix in [
+                        "    private func observeClipboardSearch(", "    private func refreshClipboardSearch(",
+                        "    private func stopClipboardSearch("])
+          + "}\n}\n")
     write("ClipboardPreview.swift", "import Foundation\nimport Combine\n"
           + "extension ClipboardPreviewContract {\nfinal class Service: Fixture {\n"
           + declaration(clipboard, "    @Published private(set) var entries:")
@@ -910,7 +983,8 @@ def main():
               "    func togglePin(", "    func clearRecent(", "    var recentEntries:", "    var recentEntriesSnapshot:",
               "    func copy(_ entry:", "    func copy(_ selectedEntries:", "    private func touch(",
               "    private var firstRecentIndex:", "    private func normalizeEntryOrder(",
-              "    func filteredEntries(", "    var filteredQuickEntries:", "    var selectedQuickEntry:",
+              "    func cancelSearch(", "    func filteredEntries(", "    var filteredQuickEntries:", "    var selectedQuickEntry:",
+              "    private func scheduleDeferredSearch(",
               "    func moveQuickSelection(", "    func removeSelectedQuickEntries(",
               "    private var quickBatchEntries:", "    private func quickEntriesForPrimaryAction(",
               "    private func selectedQuickIndex(", "    private func promote(",
@@ -959,6 +1033,10 @@ def main():
           + declaration("Sources/Lattice/Services/ResponsibleProcess.swift", "    static func displayName(")
           + "}\n}\n")
     disk_sampler = "Sources/Lattice/Services/Metrics/DiskSampler.swift"
+    disk_alerts = "Sources/Lattice/Services/SystemMonitor/MonitorAlertService.swift"
+    evaluate_disk = declaration(disk_alerts, "    private func evaluateDisk(").replace("private func", "func", 1)
+    if evaluate_disk.count("now: Date()") != 2:
+        raise ValueError("Expected clocks for disk evaluation and notification completion")
     write("DiskCapacity.swift", "import Foundation\nextension DiskCapacityTests {\n"
           + "final class Sampler: Fixture {\n"
           + "".join(declaration(disk_sampler, prefix).replace("    private ", "    ", 1)
@@ -968,10 +1046,10 @@ def main():
                                    "    private static func mountedVolumes(", "    private static func importantFree(",
                                    "    private static func positiveUInt(_ value: Int?)",
                                    "    private static func positiveUInt(_ value: Int64?)"])
-          + "}\nfinal class Alerts {\n"
-          + declaration("Sources/Lattice/Services/SystemMonitor/MonitorAlertService.swift",
-                        "    private func lowDisk(").replace("private func", "func", 1)
-          + "}\n}\n")
+          + "}\n}\n"
+          + declaration(disk_alerts, "struct DiskAlertGate")
+          + "extension DiskCapacityTests.Delivery {\n"
+          + evaluate_disk.replace("now: Date()", "now: Self.now") + "}\n")
     write("SystemMonitorCPU.swift", "import Darwin\nimport Foundation\n"
           + "extension SystemMonitorCPUTests {\nfinal class Monitor: Fixture {\n"
           + declaration("Sources/Lattice/Services/SystemMonitor/SystemMonitor.swift",
@@ -1077,12 +1155,14 @@ def main():
           + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
                         "    static func includingEnglishNames(")
           + "}\n")
-    write("CommandBarCopyAnswer.swift", "import Foundation\n"
+    write("CommandBarCopyAnswer.swift", "import AppKit\n"
           + "extension CommandBarFeatureTests.CopyAnswerHost {\n"
           + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
                         "    static func answerEntry(")
           + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
                         "    private static func copyAnswer(").replace("private static", "static", 1)
+          + "}\nextension CommandBarFeatureTests.CopyAnswerHost.Completion {\n"
+          + declaration(bar, "    func completeSelection(")
           + "}\n")
     write("CommandBarRunScript.swift", "import Foundation\n"
           + "extension CommandBarFeatureTests.ScriptRunHost {\n"
@@ -1134,7 +1214,7 @@ def main():
               "    var homebrewRemovalConfirmation:", "    func removeSelectedWithHomebrew("])
           + "}\nfinal class Service: ServiceState {\n"
           + "".join(declaration(bar, prefix).replace("private func", "func", 1) for prefix in [
-              "    @Published var query", "    private func beginUninstallReview(",
+              "    @Published var query", "    private func stopClipboardSearch(", "    private func beginUninstallReview(",
               "    private func handleUninstallKey(", "    func stepBack()",
               "    private func confirmUninstallReview(",
               "    private func finishUninstallReview()"])
@@ -1446,34 +1526,52 @@ def main():
           + "}\n")
     cleaner = "Sources/Lattice/Services/Cleaner/JunkCleaner.swift"
     write("CleanerEligibilityBodies.swift", "import Foundation\nextension CleanerEligibilityTests {\n"
+          + declaration(cleaner, "    struct Item:")
           + declaration(cleaner, "    private static let leftoverRoots:", closing="]")
           + declaration(cleaner, "    private static func isDirectLeftoverRootChild(")
+          + declaration(cleaner, "    private static func usesAppOwnersForLeftovers(")
           + declaration(cleaner, "    private static func hasLivingOwner(")
           + declaration(cleaner, "    private static func hasLivingLeftoverOwner(")
+          + declaration(cleaner, "    private static func orphanedLaunchPlistDetail(")
           + "".join(declaration(cleaner, "    private static func " + name)
                     .replace("private static func", "static func", 1)
                     for name in ["scanLeftovers(", "appendLeftovers(", "scanCaches(", "scanLogs(",
                                  "scanOrphanedLaunchPlists(", "directorySize(", "fileSize(", "sorted(",
-                                 "scanScreenshots(", "isScreenCapture(", "extendedAttribute("])
+                                 "scanScreenshots(", "isScreenCapture(", "extendedAttribute(",
+                                 "installedAudioPluginBundleIDs(", "cachedAppLookup("])
           + declaration(cleaner, "    private static func mayRemove(")
           + "static func owner(_ url: URL, metadata: Bool = false) -> String? {\n"
           + "CleanerOwnership.owner(at: url, usesContainerMetadata: metadata)\n}\n"
-          + "static func canRemove(_ item: Item, installed: Set<String> = []) -> Bool {\n"
-          + "mayRemove(item, installed: installed)\n}\n}\n")
+          + "static func canRemove(_ item: Item, installed: @autoclosure () -> Set<String> = [], audioPluginIDs: Set<String> = []) -> Bool {\n"
+          + "mayRemove(item, installedApps: installed, audioPluginIDs: audioPluginIDs)\n}\n}\n")
     write("CleanerScanFlow.swift", "import Foundation\nextension CleanerScanFlowTests {\n"
           + declaration(cleaner, "    enum Phase:")
-          + "final class Scanner: ScannerState {\nstatic let shared = Scanner()\n"
-          + "".join(declaration(cleaner, prefix).replace("AppFeature.cleaner.isAvailable", "featureAvailable") for prefix in ["    func reset()", "    func scan("])
+          + "final class Scanner: ScannerState {\ntypealias FileManager = FixtureTrash\nstatic let shared = Scanner()\n"
+          + declaration(cleaner, "    private static func cachedAppLookup(")
+          + declaration(cleaner, "    private static func removalCheck(")
+          + "".join(declaration(cleaner, prefix).replace("AppFeature.cleaner.isAvailable", "featureAvailable") for prefix in [
+              "    func reset()", "    func scan(", "    func cleanSelected("])
           + "}\n}\n")
 
     super_key = "Sources/Lattice/Services/SuperKey/SuperKeyService.swift"
-    write("SuperKeyTap.swift", "import Carbon.HIToolbox\nimport CoreGraphics\nimport Foundation\n"
+    write("SuperKeyTap.swift", "import AppKit\nimport Carbon.HIToolbox\nimport CoreGraphics\nimport Foundation\n"
+          + declaration(super_key, "enum SuperKeyMappingResult:")
           + "extension SuperKeyTapContract.State {\n"
           + declaration(super_key, "    var keyboardTapForRecording:")
             .replace("CGEvent.tapIsEnabled(tap: keyboard)", "CFMachPortIsValid(keyboard)")
           + "}\nextension SuperKeyTapContract {\nfinal class SuperKeyService: State {\n"
+          + declaration(super_key, "    private func stop(synchronously:")
+            .replace("private func", "func", 1).replace("CGEvent.tapEnable(", "Tap.enable(")
+          + declaration(super_key, "    private func applyMapping(")
+            .replace("private func", "func", 1).replace("UserDefaults.standard", "self.defaults")
+          + declaration(super_key, "    private func performMapping(")
+            .replace("private func", "func", 1).replace("Shell.run(", "runHidutil(")
+            .replace("UserDefaults.standard", "defaults").replace("SuperKeyMappingGuard.start(", "MappingGuard.start(")
           + "".join(declaration(super_key, prefix).replace("private func", "func", 1)
-                    for prefix in ["    private func runEventTap()", "    private func setMappingFailure(",
+                    for prefix in ["    private func runEventTap()", "    private func tapDidStart(",
+                                   "    private func setMappingFailure(",
+                                   "    private func confirmMapping(", "    private func mappingDidFinish(",
+                                   "    private func waitForKeyboard(", "    private func cancelKeyboardWait()",
                                    "    private func handle(", "    private static func classify(",
                                    "    private func repairMappingIfStale(", "    private func clearUnmappedCapsLock(",
                                    "    private func performSoloAction(", "    private func toggleCapsLock(",
@@ -1482,7 +1580,7 @@ def main():
           + "}\nfinal class ShortcutRecordingTap: RecordingState {\n"
           + "".join(declaration("Sources/Lattice/Services/ShortcutRecordingTap.swift", prefix)
                     .replace("private static func", "static func", 1)
-                    for prefix in ["    static func begin(", "    private static func handle("])
+                    for prefix in ["    static func begin(", "    static func resetSuperKey()", "    private static func handle("])
             .replace("CGEvent.tapCreate(", "Tap.create(")
           + "}\n}\n")
 
@@ -1594,36 +1692,58 @@ def main():
     write("OverlayPanelDeclaration.swift", "import AppKit\n"
           + declaration("Sources/Lattice/UI/OverlayPanel.swift", "class OverlayPanel:"))
     shelf = "Sources/Lattice/Services/Shelf/ShelfService.swift"
+    shelf_tiles = "Sources/Lattice/UI/Shelf/ShelfTilesView.swift"
     write("ShelfDragCompletion.swift", "import AppKit\n\nextension ShelfDragCompletionContract {\n"
           + "final class Service {\nstatic var shared = Service()\n"
           + declaration(shelf, "    struct Item:")
           + "var items: [Item] = []\nvar selection: Set<UUID> = []\n"
           + "var activeInternalDragIDs: [UUID] = []\nvar internalDragHoldsPackageContent = false\n"
+          + "static let dragFileQueue = DispatchQueue(label: \"shelf-drag-test\")\n"
           + "weak var internalDragWindow: NSWindow?\nvar internalDragWasMerged = false\n"
           + "var panel: NSWindow?\nvar dockedPanel: NSWindow?\n"
           + "var isPinned = false\nvar isVisible = false\nvar dockedVisible = false\n"
           + "var removed: [UUID] = []\nvar protectedIDs: Set<UUID> = []\n"
           + "var floatingClosures = 0\nvar dockedClosures = 0\n"
           + "func beginInteraction() {}\nfunc endInteraction() {}\n"
+          + "func toggleBatchExpansion(_ id: UUID) { preconditionFailure() }\n"
+          + "func extendSelection(to id: UUID) { preconditionFailure() }\n"
+          + "func toggleSelection(_ id: UUID) { preconditionFailure() }\n"
           + "func removeItems(_ ids: [UUID]) { removed += ids }\n"
           + "var replacements: [Item] = []\nfunc replaceItem(_ item: Item) { replacements.append(item) }\n"
-          + "func handleDeadDrag(_ items: [Item]) {}\n"
           + "func hide() { floatingClosures += 1; isVisible = false }\n"
           + "func collapseDocked() { dockedClosures += 1; dockedVisible = false }\n"
           + "".join(declaration(shelf, prefix) for prefix in [
               "    func selectedItems()", "    private func selectedItems(in",
               "    func dragItems(for items:", "    private func appendDragLeaves(",
-              "    func livingDragItems(", "    private static func resolvedBookmarkPath(",
-              "    private func rebookedItem(", "    func pasteboardWriter(",
+              "    private func item(withID id: UUID)", "    private func item(withID id: UUID,",
+              "    func dragItemsForTile(", "    struct PreparedDrag", "    func prepareDrag(",
+              "    private static func readDragFiles(", "    func finishPreparingDrag(",
+              "    private static func resolvedBookmarkPath(",
+              "    private static func rebookedItem(", "    func pasteboardWriter(",
               "    func sourceOperationMask("])
           + declaration(shelf, "    func beginInternalDrag(")
           + declaration(shelf, "    func internalDragMoved(")
           + declaration(shelf, "    func finishInternalDrag(")
           + declaration(shelf, "    func completeInternalDrag(")
+          + "}\nenum ShelfTilesView {\n"
+          + "static let tileSize = NSSize(width: 78, height: 88), spacing: CGFloat = 10, inset: CGFloat = 4\n"
+          + "final class FlippedView: NSView { var sideways = false }\n"
+          + declaration(shelf_tiles, "    final class Coordinator")
+          + declaration(shelf_tiles, "    private static func revealIfNeeded(")
+          + declaration(shelf_tiles, "    static func rebuildTiles(")
           + "}\nfinal class Tile: TileState {\n"
-          + declaration("Sources/Lattice/UI/Shelf/ShelfTilesView.swift", "    private func beginItemDrag(")
+          + declaration(shelf_tiles, "    fileprivate func updateContent(")
+          + declaration(shelf_tiles, "    override func mouseDragged(").replace("override func", "func", 1)
+          + declaration(shelf_tiles, "    override func mouseUp(").replace("override func", "func", 1)
+          + declaration(shelf_tiles, "    private func cancelDragPreparation(")
               .replace("private func", "func", 1)
-          + "}\n}\n")
+          + declaration(shelf_tiles, "    private func beginItemDrag(")
+              .replace("private func", "func", 1)
+          + "}\n}\nextension ShelfDragCompletionContract.TileState {\n"
+          + declaration(shelf_tiles, "    private func buildSubviews(").replace("private func", "func", 1)
+          + declaration(shelf_tiles, "    private func updateIcon(").replace("private func", "func", 1)
+          + declaration(shelf_tiles, "    private func addStackBackplates(")
+          + "}\n")
     notch = "Sources/Lattice/Services/Notch/NotchService.swift"
     write("NotchFullscreen.swift", "import CoreGraphics\nimport Foundation\nextension NotchFullscreenTests {\n"
           + declaration("Sources/Lattice/Services/Switcher/SpaceWindowBridge.swift", "    struct Topology {")
@@ -2086,7 +2206,7 @@ def main():
           + declaration("Sources/Lattice/Services/Notch/NotchFileToolsService.swift", "    func hideMedia(")
           + declaration("Sources/Lattice/Services/Notch/NotchFileToolsService.swift", "    func showMedia(")
           + "}\nfinal class Notch: NotchState {\n"
-          + declaration(notch, "    var canAcceptFileDrop:")
+          + declaration(notch, "    func canAcceptFileDrop(")
           + declaration(notch, "    var canDropOnShelf:")
           + declaration(notch, "    func beginFileDrop(")
           + declaration(notch, "    func updateFileDrop(")
@@ -2235,9 +2355,14 @@ def main():
           + "var body: some View { layout }\n"
           + declaration(media_workspace, "    @ViewBuilder private var layout:")
           + declaration(media_workspace, "    private var workspaceContent:")
-          + "}\nstruct Input: View {\nlet inNotch: Bool\n@State var isDropTargeted = false\n"
+          + "}\nstruct Input: View {\nlet acceptsDirectDrops: Bool\nvar fixture = DropFixture()\n@State var isDropTargeted = false\n"
           + "var inputSelector: some View { Color.clear.frame(width: 300, height: 70) }\n"
-          + "func acceptDrop(_ providers: [NSItemProvider]) -> Bool { false }\n"
+          + "var workspace: DropFixture { fixture }\nvar media: DropFixture { fixture }\n"
+          + "var selectedTool: MediaTool { fixture.tool }\nvar isRunning: Bool { fixture.running }\n"
+          + "func setInputs(_ urls: [URL]) { fixture.inputs = urls }\n"
+          + "typealias AppFeature = ShelfDropRoutingContract.AppFeature\n"
+          + declaration(media_workspace, "    private var inputTypes:")
+          + declaration(media_workspace, "    private func acceptDrop(").replace("private func", "func", 1)
           + "var body: some View { inputDropTarget }\n"
           + declaration(media_workspace, "    @ViewBuilder private var inputDropTarget:")
           + "}\nstruct ToolPicker {\nlet fixture: Selection\nlet onToolChange: (() -> Void)?\n"
@@ -2772,7 +2897,8 @@ def main():
           + "softwareDims.append((id, value)); events.append(\"picture:\\(value)\")\n"
           + "if softwareSucceeds { if value >= 0.999 { dimmedDisplays.remove(id) } else { dimmedDisplays.insert(id) } }\n"
           + "return softwareSucceeds\n}\n"
-          + "func ddcSend(to id: CGDirectDisplayID, service: CFTypeRef, packet: [UInt8], whileCurrent: () -> Bool) -> Bool {\n"
+          + "func ddcSend(to id: CGDirectDisplayID, service: CFTypeRef, chip: UInt32, packet: [UInt8], "
+          + "whileCurrent: () -> Bool) -> Bool {\n"
           + "guard whileCurrent() else { return false }\n"
           + "let value = UInt16(packet[3]) << 8 | UInt16(packet[4])\n"
           + "events.append(\"ddc:\\(value)\"); return ddcSucceeds\n}\n"
@@ -2801,6 +2927,7 @@ def main():
     keep_awake_methods = [
         "    func prepareForFeatureDisable()",
         "    func refreshPasswordlessStatus(",
+        "    func toggle()",
         "    func activate(minutes:",
         "    func activate(until date:",
         "    func startDefault(",
@@ -2810,7 +2937,17 @@ def main():
         "    func restoreSessionIfNeeded(",
         "    func deactivate(reason:",
         "    func syncWithPreferences(",
+        "    private func screenLockStateDidChange(",
         "    private func syncSessionWithScreenLock(",
+        "    private func setPowerMonitoringEnabled(",
+        "    private func scheduleAutomationEvaluation(",
+        "    private func evaluateAutomation(",
+        "    private var powerDisconnectDelay:",
+        "    private func activeAutomationMatches(",
+        "    private func clearPowerDisconnectGrace(",
+        "    private func automationConditionsHold(",
+        "    private func automaticSessionAllowedByBatteryProtection(",
+        "    private func batteryProtectionPercent(",
         "    private func applyClamshellPreference(",
         "    private func prepareClamshellPreference(",
         "    private func finishClamshellSetup(",
@@ -2828,6 +2965,14 @@ def main():
         "    private func applyDimmingAction(",
         "    private func attemptDisplayRestore(",
     ]
+    # Supply only the native samples. The production matcher still decides
+    # whether an incomplete source description counts as connected power.
+    keep_awake_matches = declaration(keep_awake, "    private func currentMatchingAutomationConditions(")
+    keep_awake_matches = (keep_awake_matches.replace("private func", "func", 1)
+                          .replace("Self.hasExternalDisplay()", "Optional(matchingConditions.contains(.externalDisplay))")
+                          .replace("SystemInfo.batterySnapshot()", "powerSample")
+                          .replace(r"NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier)",
+                                   "matchingConditions.contains(.runningApps) ? runningAppBundleIDs : []"))
     write("KeepAwakeLidSleep.swift", "import Foundation\nimport os\n\nextension KeepAwakeLidSleepContract {\n"
           # The extracted dimming bodies unwrap `Unmanaged<KeepAwakeManager>`
           # for the IOKit callback's context; this makes that name resolve to
@@ -2842,10 +2987,24 @@ def main():
           + "var clamshellSetupInProgress = false\nvar clamshellSetupFailed = false\n"
           + "var clamshellSetupRetried = false\nvar passwordlessClamshell = true\n"
           + "var recoveryCompleted = false\nvar screenLocked = false\nvar assertionsHeld = false\n"
+          + "var assertionReleases = 0\n"
           + "var defaultsObserver: Int?\nvar preferenceSyncScheduled = false\nfunc startPreferenceObservation() { defaultsObserver = 1 }\nfunc stopPreferenceObservation() { defaultsObserver = nil; preferenceSyncScheduled = false }\n"
           + "var automationSuppressedUntilConditionsClear = false\n"
+          + "var powerDisconnectGrace = KeepAwakePowerDisconnectGrace()\n"
+          + "var powerDisconnectEvaluation: (deadline: ContinuousClock.Instant, task: Task<Void, Never>)?\n"
           + "var endTimer: Timer?\nvar endDate: Date?\nvar sessionTrigger: SessionTrigger?\nvar sessionMinutes: Int?\nvar sessionStartDate: Date?\n"
           + "var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()\n"
+          + "var liveAutomationConditions = Set<KeepAwakeAutomationCondition>()\n"
+          + "var waitingForPower = false\nvar powerSourceRunLoopSource: PowerNotificationSource?\n"
+          + "var automationEvaluationWorkItem: DispatchWorkItem?\nvar lastExternalDisplayConnected: Bool?\n"
+          + "let runningAppBundleIDs = [\"com.example.selected\"]\n"
+          + "var powerSample: (isOnBattery: Bool, isOnExternalPower: Bool)?\n"
+          + "var matchingConditions = Set<KeepAwakeAutomationCondition>() { didSet {\n"
+          + "let powered = matchingConditions.contains(.power)\npowerSample = (!powered, powered)\n} }\n"
+          + "var enabledConditions: Set<KeepAwakeAutomationCondition> = [.power]\nvar requireAll = false\n"
+          + keep_awake_matches
+          + "func currentEnabledAutomationConditions() -> Set<KeepAwakeAutomationCondition> { enabledConditions }\n"
+          + "func automationRequiresAllConditions() -> Bool { requireAll }\n"
           + "var onSessionEnded: ((EndReason) -> Void)?\n"
           + "var lidDimmingNotificationPort: IONotificationPortRef?\nvar lidDimmingNotification: io_object_t = 0\n"
           + "var lidClosedForDimming: Bool?\nvar savedDisplayBrightness: Double?\n"
@@ -2854,9 +3013,9 @@ def main():
           + declaration(keep_awake, "    @Published var clamshellPreferred:").replace("@Published ", "", 1)
           + "init() { clamshellPreferred = true }\n"
           + "func syncScreenLockMonitoring() {}\nfunc applyAssertions() -> Bool { assertionsHeld = assertionsSucceed; assertionFailed = !assertionsSucceed; return assertionsSucceed }\n"
-          + "func releaseAssertions() -> Bool { if releasesSucceed { assertionsHeld = false }; return releasesSucceed }\nfunc scheduleEnd(at date: Date) {}\n"
+          + "func releaseAssertions() -> Bool { if releasesSucceed { if assertionsHeld { assertionReleases += 1 }; assertionsHeld = false }; return releasesSucceed }\nfunc scheduleEnd(at date: Date) {}\n"
           + "func startBatteryWatch() {}\nfunc stopBatteryWatch() {}\nfunc syncMouseJiggleTimer() {}\n"
-          + "func continueAutomaticallyAfterTimerIfNeeded() -> Bool { false }\nfunc automationConditionsHold() -> Bool { true }\n"
+          + "func continueAutomaticallyAfterTimerIfNeeded() -> Bool { false }\n"
           + "func stopMouseJiggleTimer() {}\nfunc stopAutomationMonitoring() {}\nfunc syncAutomationMonitoring() {}\n"
           + "static func lidSleepIsAllowed() -> Bool { KeepAwakeAutomationSupport.lidSleepIsAllowed("
           + "systemAllowsSleep: policy, externalDisplayConnected: externalDisplay, "
@@ -2876,7 +3035,7 @@ def main():
           + "var requireAll = false\nvar batteryAllows = true\n"
           + "var activations: [(end: Date?, trigger: SessionTrigger)] = []\n"
           + "func automaticSessionAllowedByBatteryProtection() -> Bool { batteryAllows }\n"
-          + "func currentMatchingAutomationConditions() -> Set<KeepAwakeAutomationCondition> { matching }\n"
+          + "func currentMatchingAutomationConditions(enabled: Set<KeepAwakeAutomationCondition>) -> Set<KeepAwakeAutomationCondition> { matching }\n"
           + "func currentEnabledAutomationConditions() -> Set<KeepAwakeAutomationCondition> { enabled }\n"
           + "func automationRequiresAllConditions() -> Bool { requireAll }\n"
           + "func activate(end: Date?, trigger: SessionTrigger) { activations.append((end, trigger)) }\n"

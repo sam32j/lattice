@@ -993,6 +993,55 @@ enum FeatureCatalogTests {
                 && FanControlPolicy.curveCoolingLevel(curves: [defaultCurve, cpuCurve],
                                                       temperatures: [curveTemperatures[0]]) == nil,
                "several temperature rules use their highest demand and require every selected sensor")
+        // An idle M1 Pro GPU answered 0 and 9.2 °C from Tg04/Tg05/Tg0C/Tg0D
+        // while its cores sat in the forties, which ended five-sensor curves.
+        let m1Pro = "MacBookPro18,3"
+        let sleepingGPU: [(key: String, value: Double?)] = [
+            ("Tg04", 0), ("Tg05", 9.2), ("Tg0C", 0), ("Tg0D", 9.2),
+        ]
+        suite.expect(FanControlPolicy.gpuIsPoweredDown(modelIdentifier: m1Pro, readings: sleepingGPU)
+                && !FanControlPolicy.gpuIsPoweredDown(modelIdentifier: "MacBookPro17,1", readings: sleepingGPU)
+                && !FanControlPolicy.gpuIsPoweredDown(modelIdentifier: nil, readings: sleepingGPU)
+                && !FanControlPolicy.gpuIsPoweredDown(modelIdentifier: m1Pro, readings: [])
+                && !FanControlPolicy.gpuIsPoweredDown(modelIdentifier: m1Pro,
+                                                      readings: sleepingGPU + [("Tg1b", nil)]),
+               "only the verified M1 Pro and its four measured GPU keys qualify for sleep detection")
+        let invalidGPUAnswers: [Double?] = [nil, .nan, .infinity, -1, 0, 5, 9.3, 45, 125]
+        for invalid in invalidGPUAnswers {
+            var readings = sleepingGPU
+            readings[3].value = invalid
+            suite.expect(!FanControlPolicy.gpuIsPoweredDown(modelIdentifier: m1Pro, readings: readings),
+                         "missing or unexpected answers do not establish GPU sleep")
+        }
+        let m1Cores = [("Tp01", 45.0), ("Tp05", 47.3), ("Tp09", 46.6)].map { (key: $0.0, value: $0.1) }
+        let sleepingTemperatures = FanControlPolicy.aggregatedTemperatures(
+            cpuReadings: m1Cores, gpuReadings: sleepingGPU.compactMap(\.value),
+            platform: .appleM1Family
+        )
+        suite.expect(!sleepingTemperatures.contains { $0.source == .hottestGPU }
+                && sleepingTemperatures.first { $0.source == .hottestSoC }?.celsius == 47.3,
+               "a sleeping GPU contributes no measured GPU or SoC temperature")
+        let fiveSensorCurves = FanControlTemperatureSource.allCases.map {
+            FanControlCurve(sensor: $0,
+                            points: [FanControlCurvePoint(temperature: 20, coolingLevel: 50),
+                                     FanControlCurvePoint(temperature: 60, coolingLevel: 100)])
+        }
+        let gpuCurve = FanControlCurve(sensor: .hottestGPU,
+                                       points: [.init(temperature: 25, coolingLevel: 35),
+                                                .init(temperature: 60, coolingLevel: 100)])
+        suite.expect(FanControlPolicy.curveCoolingLevel(curves: [gpuCurve], temperatures: [],
+                                                      gpuPoweredDown: true, previousLevel: 95) == 35
+                && FanControlPolicy.curveCoolingLevel(curves: [gpuCurve, cpuCurve], temperatures: [],
+                                                      gpuPoweredDown: true) == nil,
+               "a sleeping GPU requests its own first curve level and cannot substitute for a missing CPU")
+        suite.expect(FanControlPolicy.curveCoolingLevel(curves: fiveSensorCurves,
+                                                       temperatures: sleepingTemperatures,
+                                                       gpuPoweredDown: true,
+                                                       previousLevel: 90) == 90
+                && FanControlPolicy.curveCoolingLevel(curves: fiveSensorCurves,
+                                                      temperatures: sleepingTemperatures,
+                                                      previousLevel: 90) == nil,
+               "a sleeping GPU keeps a curve on every sensor running, while a failed GPU sensor still stops it")
         let duplicateCurves = [defaultCurve,
                                FanControlCurve(sensor: .hottestSoC, points: cpuCurve.points)]
         let descendingCurve = FanControlCurve(
@@ -1027,6 +1076,17 @@ enum FeatureCatalogTests {
         FanControlResumeContract.run(suite)
         FanControlRecoveryContract.run(suite)
         FanControlHardwareContract.run(suite)
+        let legacySnapshotData = Data(#"{"fans":[],"isCooling":false,"temperatures":[{"source":"hottestCPU","celsius":45}]}"#.utf8)
+        let legacySnapshot = try? JSONDecoder().decode(FanControlSnapshot.self, from: legacySnapshotData)
+        suite.expect(legacySnapshot?.availableTemperatureSources == [.hottestCPU],
+                     "the panel offers only measured sources when an older helper omits the GPU sleep flag")
+        var idleSnapshot = legacySnapshot ?? .empty
+        idleSnapshot.gpuPoweredDown = true
+        let encodedIdle = try? JSONEncoder().encode(idleSnapshot)
+        let decodedIdle = encodedIdle.flatMap { try? JSONDecoder().decode(FanControlSnapshot.self, from: $0) }
+        suite.expect(decodedIdle?.availableTemperatureSources == [.hottestCPU, .hottestGPU]
+                        && decodedIdle?.temperatures == [.init(source: .hottestCPU, celsius: 45)],
+                     "a sleeping GPU remains selectable after an IPC round trip without a temperature to display")
         let addedPoints = FanControlPolicy.addingCurvePoint(to: defaultCurve.points)
         suite.expect(FanControlPolicy.nextCurvePoint(for: defaultCurve.points) == FanControlCurvePoint(temperature: 60, coolingLevel: 50)
                 && addedPoints == [
@@ -1636,6 +1696,14 @@ enum FeatureCatalogTests {
                                                   boolFor: { $0 == DefaultsKey.monitorAlertDisk }),
                "an alert with its metric off in the hub stays disarmed")
 
+        let savedAlerts: Set<String> = [DefaultsKey.monitorAlertDisk, DefaultsKey.monitorAlertCPU]
+        suite.expect(!AppFeature.anyMonitorAlertEnabled(includingDisk: false, isAvailable: { $0 != .monitorCPU },
+                                                       boolFor: savedAlerts.contains),
+                     "the repeat picker stays inactive with disk and a saved alert for a removed CPU monitor")
+        suite.expect(AppFeature.anyMonitorAlertEnabled(includingDisk: false, isAvailable: { _ in true },
+                                                      boolFor: savedAlerts.contains),
+                     "restoring the CPU monitor makes the repeat picker available again")
+
         suite.expect(GlobalShortcutRole.activeRoles(isOn: { _ in true }).count
                 == GlobalShortcutRole.allCases.count - 2,
                "standalone OCR and color-picker shortcuts are no longer offered")
@@ -1755,6 +1823,8 @@ enum FeatureCatalogTests {
             suite.expect(FeatureStrings.backup(language).description.contains(
                 FeatureStrings.scratchpad(language).pageTitle),
                    "every backup description accounts for the Scratchpad text (\(language.rawValue))")
+            expectFormat(FeatureStrings.backup(language).configFileConfirmFormat, ["@"],
+                         "\(language.rawValue) settings file confirmation names the path")
             suite.expect(FeatureStrings.appUpdates(language).updateSelectedFormat.contains("%d")
                     && FeatureStrings.appUpdates(language).lastCheckFormat.contains("%@")
                     && FeatureStrings.appUpdates(language).nextCheckFormat.contains("%@")
@@ -2371,6 +2441,25 @@ enum FeatureCatalogTests {
                "DDC read request's checksum covers the source address")
         suite.expect(Array(BrightnessSupport.writePacket(code: 0x10, value: 100)[3...4]) == [0x00, 0x64],
                "DDC values split into high and low bytes")
+        // A Dell P2715Q on the built-in HDMI port of an M1 Max MacBook Pro
+        // took writes at 0x37 without changing, and answered a luminance read
+        // only at 0xB7, with the same packets.
+        suite.expect(BrightnessSupport.ddcChipAddress(epicProviderClass: "AppleDCPMCDP29XX") == 0xB7,
+               "DDC behind the built-in HDMI port's converter goes to the converter's address")
+        suite.expect(BrightnessSupport.ddcChipAddress(epicProviderClass: nil) == 0x37
+                && BrightnessSupport.ddcChipAddress(epicProviderClass: "AppleDCPDPTXProxy") == 0x37,
+               "every other DDC service keeps the standard address")
+        suite.expect(!SettingsBackupSupport.exportKeys().contains(DefaultsKey.brightnessDDCHDMIConverterRechecked),
+               "the HDMI converter recheck marker stays on the Mac that ran it")
+        suite.expect(BrightnessSupport.keepsSoftwareDimOnDiscovery(previouslySoftware: true,
+                        dimmed: true, pending: nil)
+                     && BrightnessSupport.keepsSoftwareDimOnDiscovery(previouslySoftware: true,
+                        dimmed: false, pending: 0.5)
+                     && !BrightnessSupport.keepsSoftwareDimOnDiscovery(previouslySoftware: true,
+                        dimmed: false, pending: 1.0)
+                     && !BrightnessSupport.keepsSoftwareDimOnDiscovery(previouslySoftware: false,
+                        dimmed: true, pending: 0.5),
+                     "discovery keeps software dimming only when a dimmed software display already holds the picture")
 
         var ddcReply: [UInt8] = [0x6E, 0x88, 0x02, 0x00, 0x10, 0x00, 0x00, 0x64, 0x00, 0x32]
         ddcReply.append(ddcReply.reduce(UInt8(0x50)) { $0 ^ $1 })
@@ -2468,7 +2557,41 @@ enum FeatureCatalogTests {
             (displayIndex: 1, serviceOrdinal: 2, score: 4),
         ])
         suite.expect(assignment == [0: 2, 1: 1],
-               "greedy assignment gives each display its best free service")
+               "each display gets its strongest unambiguous service")
+        suite.expect(BrightnessSupport.assignServices(scores: [(0, 1, 11), (0, 2, 3), (1, 2, 1)])
+                == [0: 1],
+               "a spare service with stronger evidence for the first display cannot go to the second")
+        var firstTwin = BrightnessSupport.DisplayIdentity(productName: "HDMI panel")
+        var secondTwin = BrightnessSupport.DisplayIdentity(productName: "HDMI panel")
+        var hdmiEndpoint = BrightnessSupport.ServiceIdentity(productName: "HDMI panel", ordinal: 4)
+        firstTwin.ioDisplayLocation = "port-a"
+        secondTwin.ioDisplayLocation = "port-b"
+        hdmiEndpoint.ioDisplayLocation = "port-a"
+        let twins = [(index: 0, identity: firstTwin), (index: 1, identity: secondTwin)]
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins,
+                        candidates: [0, 1], services: [hdmiEndpoint]) == [0: 4],
+                     "one service behind identical EDIDs belongs only to the matching physical connection")
+        let modelOnly = BrightnessSupport.ServiceIdentity(productName: "HDMI panel", ordinal: 5)
+        for displays in [twins, Array(twins.reversed())] {
+            for services in [[hdmiEndpoint, modelOnly], [modelOnly, hdmiEndpoint]] {
+                suite.expect(BrightnessSupport.brightnessServices(displays: displays, candidates: [0, 1],
+                                services: services) == [0: 4, 1: 5],
+                             "the port match leaves the other twin its model-matched service in either order")
+            }
+        }
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [1],
+                        services: [hdmiEndpoint, modelOnly]) == [1: 5],
+                     "a twin outside the brightness candidates still reserves its port-matched service")
+        let otherModelOnly = BrightnessSupport.ServiceIdentity(productName: "HDMI panel", ordinal: 6)
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [0, 1],
+                        services: [modelOnly, otherModelOnly]).isEmpty,
+                     "identical models without a port or serial match leave both services ambiguous")
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [0, 1],
+                        services: [hdmiEndpoint, modelOnly, otherModelOnly]) == [0: 4],
+                     "two equally good services for the remaining twin keep only the port match")
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [0, 1],
+                        services: [hdmiEndpoint, .init(ordinal: 5)]) == [0: 4],
+                     "a leftover service without identity evidence cannot acquire the other twin")
         suite.expect(BrightnessSupport.assignServices(scores: [(displayIndex: 0, serviceOrdinal: 1, score: 0)])
                 .isEmpty,
                "zero-score pairs never pair up")

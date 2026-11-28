@@ -255,6 +255,8 @@ extension SettingsDirectory {
                                          [s.extraBrightnessName]),
                                         (.bluetoothSleep, DefaultsKey.bluetoothSleepEnabled,
                                          [FeatureStrings.bluetoothSleep(language).restoreToggle]),
+                                        (.keepAwake, DefaultsKey.keepAwakeConnectedToPower,
+                                         [FeatureStrings.keepAwakeAutomation(language).powerDisconnectDelay]),
                                       ]),
             ]),
             (SettingsOwnershipStrings.text(.utilities, language), utilityPages(s, language: language) + [
@@ -302,7 +304,9 @@ extension SettingsDirectory {
                                                  s.advancedClearButton,
                                                  DataPermissionsStrings.localized(language).data,
                                                  FeatureStrings.backup(language).title,
-                                                 s.advancedUninstallButton]),
+                                                 FeatureStrings.backup(language).configFileButton,
+                                                 s.advancedUninstallButton],
+                                      aliases: ["xdg", "config file", "dotfiles", "settings file"]),
             ]),
         ]
     }

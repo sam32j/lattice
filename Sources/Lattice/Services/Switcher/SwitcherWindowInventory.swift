@@ -74,8 +74,8 @@ final class SwitcherWindowInventory {
     private var terminatedDuringRefresh: Set<pid_t> = []
     private let lifetimeLock = NSLock()
     private var lifetime: UUID?
-    private let queue = DispatchQueue(label: "com.vorssaint.switcher.inventory", qos: .userInitiated)
-    private let discoveryQueue = DispatchQueue(label: "com.vorssaint.switcher.discovery", qos: .utility)
+    private let queue = DispatchQueue(label: "io.github.sam32j.lattice.switcher.inventory", qos: .userInitiated)
+    private let discoveryQueue = DispatchQueue(label: "io.github.sam32j.lattice.switcher.discovery", qos: .utility)
     private let titles = SwitcherWindowTitles()
 
     var onReady: (([SwitcherItem]) -> Void)?

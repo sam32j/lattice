@@ -173,7 +173,9 @@ final class StatusItemController {
             }
             .store(in: &cancellables)
 
-        KeepAwakeManager.shared.$endDate
+        let awake = KeepAwakeManager.shared
+        awake.$endDate.combineLatest(awake.$activeAutomationConditions, awake.$waitingForPower)
+            .removeDuplicates { $0 == $1 }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.refresh() }
             .store(in: &cancellables)
@@ -552,8 +554,11 @@ final class StatusItemController {
             }
         }
 
-        if button.toolTip != nil {
-            button.toolTip = nil
+        let toolTip: String? = (manager.isActive && manager.sessionTrigger == .automation && manager.waitingForPower)
+            ? FeatureStrings.keepAwakeAutomation(L10n.shared.language).waitingForPower
+            : nil
+        if button.toolTip != toolTip {
+            button.toolTip = toolTip
         }
 
         // The icon decision depends on the title just written (the glyph may

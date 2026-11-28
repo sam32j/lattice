@@ -215,7 +215,13 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     private var undoStack: [(image: CGImage, annotations: [ScreenshotSupport.Annotation])] = []
     private var redoStack: [(image: CGImage, annotations: [ScreenshotSupport.Annotation])] = []
     private static let undoLimit = 60
-    private var cleanImage: CGImage?
+    /// Undo also stops by memory, so a few full captures on a 5K or 6K
+    /// display cannot pile up into gigabytes of history.
+    private static let undoByteBudget = 256 << 20
+    /// A mark costs far less than a frame, but a long session adds up and
+    /// should not be free. An estimate, not a measurement.
+    private static let undoAnnotationBytes = 512
+    private weak var cleanImage: CGImage?
     private var cleanAnnotations: [ScreenshotSupport.Annotation] = []
     private var cleanBackdropStyle = ScreenshotSupport.BackdropStyle()
     private var cleanWatermarkStyle = ScreenshotSupport.WatermarkStyle()
@@ -574,23 +580,52 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
     private func registerUndo() {
         undoStack.append((baseImage, annotations))
-        if undoStack.count > Self.undoLimit {
-            undoStack.removeFirst()
-        }
         redoStack.removeAll()
+        trimHistory(afterUndo: false)
         refreshUndoFlags()
         isDirty = true
+    }
+
+    /// Both directions share one budget. Drop the most distant step first,
+    /// preserving the immediate reverse operation even for an oversized image.
+    private func trimHistory(afterUndo: Bool) {
+        var references = [ObjectIdentifier: Int]()
+        var bytes = 0
+        func count(_ image: CGImage, by delta: Int) {
+            let id = ObjectIdentifier(image)
+            let previous = references[id, default: 0]
+            let next = previous + delta
+            references[id] = next
+            if previous == 0 { bytes += image.bytesPerRow * image.height }
+            if next == 0 { bytes -= image.bytesPerRow * image.height }
+        }
+        func count(_ state: (image: CGImage, annotations: [ScreenshotSupport.Annotation]), by delta: Int) {
+            count(state.image, by: delta)
+            bytes += delta * state.annotations.count * Self.undoAnnotationBytes
+        }
+        for state in undoStack { count(state, by: 1) }
+        for state in redoStack { count(state, by: 1) }
+        while undoStack.count + redoStack.count > 1,
+              undoStack.count + redoStack.count > Self.undoLimit || bytes > Self.undoByteBudget {
+            if undoStack.count > redoStack.count || (undoStack.count == redoStack.count && afterUndo) {
+                count(undoStack.removeFirst(), by: -1)
+            } else {
+                count(redoStack.removeFirst(), by: -1)
+            }
+        }
     }
 
     func undo() {
         guard let last = undoStack.popLast() else { return }
         redoStack.append((baseImage, annotations))
+        trimHistory(afterUndo: true)
         restore(last)
     }
 
     func redo() {
         guard let next = redoStack.popLast() else { return }
         undoStack.append((baseImage, annotations))
+        trimHistory(afterUndo: false)
         restore(next)
     }
 
@@ -641,7 +676,6 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     }
 
     private func refreshDirtyState() {
-        guard let cleanImage else { return }
         isDirty = baseImage !== cleanImage
             || annotations != cleanAnnotations
             || backdropStyle.sanitized() != cleanBackdropStyle
@@ -1347,12 +1381,15 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         let cropRect = ScreenshotSupport.pixelSnappedCropRect(
             draft,
             within: CGRect(origin: .zero, size: imageSize))
-        guard cropRect.width >= 8, cropRect.height >= 8,
-              let cropped = baseImage.cropping(to: cropRect)
+        guard cropRect != CGRect(origin: .zero, size: imageSize),
+              cropRect.width >= 8, cropRect.height >= 8,
+              let crop = baseImage.cropping(to: cropRect)
         else {
             tool = .select
             return
         }
+        // The crop keeps its own pixels, so the frame it came from can go.
+        let cropped = ScreenshotSupport.independentImage(crop) ?? crop
         registerUndo()
         let previousImage = baseImage
         baseImage = cropped

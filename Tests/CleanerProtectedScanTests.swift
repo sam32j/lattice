@@ -16,8 +16,8 @@ enum CleanerProtectedScanTests {
                     let items: [CleanerEligibilityTests.Item]
                     if path.contains("Application Support") {
                         var found: [CleanerEligibilityTests.Item] = []
-                        CleanerEligibilityTests.appendLeftovers(in: candidate.deletingLastPathComponent().path,
-                            usesContainerMetadata: false, installed: [], fm: fm, into: &found)
+                        CleanerEligibilityTests.appendLeftovers(in: candidate.deletingLastPathComponent(),
+                            usesContainerMetadata: false, installed: [], audioPluginIDs: [], fm: fm, into: &found)
                         items = found
                     } else { items = CleanerEligibilityTests.scanLogs(excluding: []) }
                     return items.contains { $0.url.standardizedFileURL.path == candidate.standardizedFileURL.path }

@@ -74,6 +74,30 @@ extension JunkCleaner {
         return ids
     }
 
+    /// Audio plugins are not apps, yet they keep preferences, support data
+    /// and licenses under their own identifiers. An installed plugin is a
+    /// living owner like an app; without it, a plugin's license reads as the
+    /// leftover of an uninstalled app.
+    static func installedAudioPluginBundleIDs() -> Set<String> {
+        let extensions: Set<String> = ["component", "vst", "vst3", "clap", "aaxplugin"]
+        let roots = [NSHomeDirectory() + "/Library", systemLibrary].flatMap {
+            [$0 + "/Audio/Plug-Ins", $0 + "/Application Support/Avid/Audio/Plug-Ins"]
+        }
+        var ids = Set<String>()
+        for root in roots {
+            guard let enumerator = FileManager.default.enumerator(
+                at: URL(fileURLWithPath: root, isDirectory: true),
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { continue }
+            for case let url as URL in enumerator {
+                guard extensions.contains(url.pathExtension.lowercased()),
+                      let id = Bundle(url: url)?.bundleIdentifier else { continue }
+                ids.insert(id.lowercased())
+            }
+        }
+        return ids
+    }
+
     /// The final say on whether a candidate identifier has a living owner:
     /// the collected set (family match), the vendor namespace rule (suites
     /// and updaters share a namespace with sibling identifiers), and Launch
@@ -109,16 +133,28 @@ extension JunkCleaner {
         }
     }
 
-    static func scanLeftovers(installed: Set<String>) -> [Item] {
+    /// Plugin caches have a separate exclusion. The user log scanner recommends
+    /// eligible unclaimed entries, so only apps can establish ownership there.
+    static func usesAppOwnersForLeftovers(in directory: URL) -> Bool {
+        if directory.lastPathComponent == "Caches" { return true }
+        guard directory.lastPathComponent == "Logs" else { return false }
+        let userLibrary = URL(fileURLWithPath: NSHomeDirectory() + "/Library", isDirectory: true)
+        return CleanerSupport.isDirectChild(directory, of: userLibrary)
+    }
+
+    static func scanLeftovers(installedApps: Set<String>, audioPluginIDs: Set<String>) -> [Item] {
         let fm = FileManager.default
         let libraries = [NSHomeDirectory() + "/Library", systemLibrary]
+        let installed = installedApps.union(audioPluginIDs)
         var found: [Item] = []
         for library in libraries {
             for root in leftoverRoots {
-                let dir = library + "/" + root.path
+                let dir = URL(fileURLWithPath: library + "/" + root.path, isDirectory: true)
+                let owners = usesAppOwnersForLeftovers(in: dir) ? installedApps : installed
                 appendLeftovers(in: dir,
                                 usesContainerMetadata: root.usesContainerMetadata,
-                                installed: installed,
+                                installed: owners,
+                                audioPluginIDs: audioPluginIDs,
                                 fm: fm,
                                 into: &found)
             }
@@ -126,19 +162,21 @@ extension JunkCleaner {
         return sorted(found)
     }
 
-    static func appendLeftovers(in dir: String,
+    static func appendLeftovers(in root: URL,
                                         usesContainerMetadata: Bool,
                                         installed: Set<String>,
+                                        audioPluginIDs: Set<String>,
                                         fm: FileManager,
                                         into found: inout [Item]) {
-        let root = URL(fileURLWithPath: dir, isDirectory: true)
         let keys: Set<URLResourceKey> = [.isSymbolicLinkKey]
         guard let entries = try? fm.contentsOfDirectory(at: root,
                                                         includingPropertiesForKeys: nil,
                                                         options: []) else { return }
+        let isCacheRoot = root.lastPathComponent == "Caches"
         for url in entries {
             let entry = url.lastPathComponent
             guard !entry.hasPrefix("."), CleanerScanPrivacy.mayInspect(entry) else { continue }
+            if isCacheRoot && CleanerPolicy.isExcludedCacheEntry(entry, audioPluginIDs: audioPluginIDs) { continue }
             let values = try? url.resourceValues(forKeys: keys)
             guard values?.isSymbolicLink != true else { continue }
             if let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: usesContainerMetadata) {
@@ -168,36 +206,40 @@ extension JunkCleaner {
             guard let entries = try? fm.contentsOfDirectory(atPath: root) else { continue }
             for entry in entries where entry.hasSuffix(".plist") {
                 let url = URL(fileURLWithPath: root).appendingPathComponent(entry)
-                guard !UninstallerSupport.isSymbolicLink(url) else { continue }
-                guard let plist = NSDictionary(contentsOfFile: url.path) as? [String: Any] else { continue }
-                let label = plist["Label"] as? String
-                let executables = CleanerSupport.executablePaths(inLaunchPlist: plist)
-                guard CleanerSupport.launchPlistIsRemovableOrphan(
-                    label: label,
-                    executables: executables,
-                    // A missing binary on an external volume is inconclusive
-                    // (the volume may just be unmounted), so it counts as
-                    // present and the plist is left alone.
-                    executableExists: { $0.hasPrefix("/Volumes/") || fm.fileExists(atPath: $0) }) else { continue }
-                // Second signal: the label itself must not belong to anything
-                // installed either (a moved binary is not an uninstalled app).
-                if let label, hasLivingOwner(label, installed: installed) { continue }
+                guard !UninstallerSupport.isSymbolicLink(url),
+                      let detail = orphanedLaunchPlistDetail(at: url, installed: installed) else { continue }
                 found.append(Item(url: url, category: .loginItems,
                                   size: directorySize(of: url, fm: fm),
-                                  detail: label ?? entry,
+                                  detail: detail,
                                   recommended: CleanerPolicy.precheckLoginItems))
             }
         }
         return sorted(found)
     }
 
-    static func scanCaches(excluding claimed: Set<String>) -> [Item] {
+    /// Reads the current plist so a selected job must still qualify at cleanup.
+    static func orphanedLaunchPlistDetail(at url: URL, installed: Set<String>) -> String? {
+        guard let plist = NSDictionary(contentsOf: url) as? [String: Any] else { return nil }
+        let label = plist["Label"] as? String
+        let executables = CleanerSupport.executablePaths(inLaunchPlist: plist)
+        guard CleanerSupport.launchPlistIsRemovableOrphan(
+            label: label,
+            executables: executables,
+            executableIsConfirmedAbsent: { path in
+                UninstallerSupport.isConfirmedAbsent(at: URL(fileURLWithPath: path, isDirectory: false))
+            }
+        ) else { return nil }
+        if let label, hasLivingOwner(label, installed: installed) { return nil }
+        return label ?? url.lastPathComponent
+    }
+
+    static func scanCaches(excluding claimed: Set<String>, audioPluginIDs: Set<String>) -> [Item] {
         let fm = FileManager.default
         let dir = NSHomeDirectory() + "/Library/Caches"
         guard let entries = try? fm.contentsOfDirectory(atPath: dir) else { return [] }
         var found: [Item] = []
         for entry in entries where !entry.hasPrefix(".") {
-            guard !CleanerPolicy.isExcludedCacheEntry(entry) else { continue }
+            guard !CleanerPolicy.isExcludedCacheEntry(entry, audioPluginIDs: audioPluginIDs) else { continue }
             let url = URL(fileURLWithPath: dir).appendingPathComponent(entry)
             guard !claimed.contains(url.standardizedFileURL.path) else { continue }
             guard CleanerScanPrivacy.mayRemoveTree(url, fm: fm) else { continue }
@@ -205,7 +247,7 @@ extension JunkCleaner {
             guard size > 0 else { continue }
             found.append(Item(url: url, category: .caches, size: size,
                               detail: entry,
-                              recommended: CleanerPolicy.precheckCacheEntry(entry)))
+                              recommended: CleanerPolicy.precheckCacheEntry(entry, audioPluginIDs: audioPluginIDs)))
         }
         return sorted(found)
     }

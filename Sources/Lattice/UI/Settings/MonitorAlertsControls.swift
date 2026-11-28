@@ -10,6 +10,7 @@ import UserNotifications
 struct MonitorAlertsControls: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @State private var notificationsDenied = false
     @AppStorage(DefaultsKey.monitorAlertCPU) private var alertCPU = false
     @AppStorage(DefaultsKey.monitorAlertCPUTemperature) private var alertCPUTemperature = false
@@ -111,8 +112,7 @@ struct MonitorAlertsControls: View {
     }
 
     private var anyAlertEnabled: Bool {
-        alertCPU || alertCPUTemperature || alertMemory || alertDisk
-            || (PowerSampler.hasInternalBattery && (alertBatteryTemperature || alertBattery))
+        MonitorAlertService.anyEnabled(in: .standard)
     }
 
     /// Checked slightly delayed so a just-fired authorization prompt has a
@@ -212,6 +212,7 @@ struct MonitorAlertRow: View {
 /// all the alerts rather than one more of them.
 struct MonitorAlertsRepeatMenu: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.monitorAlertCooldownMinutes) private var alertCooldown = 15
     @AppStorage(DefaultsKey.monitorAlertCPU) private var alertCPU = false
     @AppStorage(DefaultsKey.monitorAlertCPUTemperature) private var alertCPUTemperature = false
@@ -238,7 +239,6 @@ struct MonitorAlertsRepeatMenu: View {
             .controlSize(.small)
             .fixedSize()
         }
-        .disabled(!(alertCPU || alertCPUTemperature || alertMemory || alertDisk
-                    || (PowerSampler.hasInternalBattery && (alertBatteryTemperature || alertBattery))))
+        .disabled(!MonitorAlertService.anyEnabled(in: .standard, includingDisk: false))
     }
 }

@@ -70,18 +70,19 @@ extension JunkCleaner {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard !cancellation.isCancelled else { return }
-            let installed = Self.installedBundleIDs()
+            let audioPluginIDs = Self.installedAudioPluginBundleIDs()
+            let installedApps = Self.installedBundleIDs()
             // A path claimed by the leftover scan must not reappear under
             // caches or logs: one path, one row, one decision.
             var claimed = Set<String>()
             let categories: [(CleanerSupport.Category, () -> [Item])] = [
                 (.leftovers, {
-                    let found = Self.scanLeftovers(installed: installed)
+                    let found = Self.scanLeftovers(installedApps: installedApps, audioPluginIDs: audioPluginIDs)
                     claimed.formUnion(found.map { $0.url.standardizedFileURL.path })
                     return found
                 }),
-                (.loginItems, { Self.scanOrphanedLaunchPlists(installed: installed) }),
-                (.caches, { Self.scanCaches(excluding: claimed) }),
+                (.loginItems, { Self.scanOrphanedLaunchPlists(installed: installedApps.union(audioPluginIDs)) }),
+                (.caches, { Self.scanCaches(excluding: claimed, audioPluginIDs: audioPluginIDs) }),
                 (.logs, { Self.scanLogs(excluding: claimed) }),
                 (.developer, { Self.scanDeveloperJunk() }),
                 (.trash, { Self.scanTrash() }),
@@ -112,6 +113,24 @@ extension JunkCleaner {
 
     // MARK: - Clean
 
+    /// Each batch shares one app inventory across its serial removal checks.
+    static func cachedAppLookup(_ load: @escaping () -> Set<String>) -> () -> Set<String> {
+        var cached: Set<String>?
+        return {
+            if let cached { return cached }
+            let apps = load()
+            cached = apps
+            return apps
+        }
+    }
+
+    static func removalCheck(for items: [Item]) -> (Item) -> Bool {
+        let needsPluginIDs = items.contains { [.leftovers, .loginItems, .caches, .logs].contains($0.category) }
+        let audioPluginIDs = needsPluginIDs ? installedAudioPluginBundleIDs() : []
+        let installedApps = cachedAppLookup(installedBundleIDs)
+        return { mayRemove($0, installedApps: installedApps, audioPluginIDs: audioPluginIDs) }
+    }
+
     /// `escalate: false` leaves whatever the Trash move refused in place
     /// instead of handing it to Finder, which is an administrator password
     /// prompt. No default: each caller says whether someone is there to answer.
@@ -123,15 +142,6 @@ extension JunkCleaner {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let fm = FileManager.default
-            // One installed-apps oracle for the whole pass, and only when the
-            // selection can ask for it: building it walks the application
-            // folders, and `mayRemove` reads it under `.leftovers` alone, so a
-            // clean without leftover rows must not pay for the walk. Nothing
-            // can install an app mid-clean that this pass would have to
-            // respect. `stubborn` is a subset of `chosen`, so the second and
-            // third passes are covered by the same test.
-            let installed = chosen.contains { $0.category == .leftovers }
-                ? Self.installedBundleIDs() : []
             var freed: Int64 = 0
             var failed = 0
             var stubborn: [Item] = []
@@ -144,19 +154,12 @@ extension JunkCleaner {
                 if Self.emptyTrash() { freed += item.size } else { failed += 1 }
             }
 
+            // Emptying the Trash may have waited for Finder. Read ownership after it returns.
+            let canRemove = Self.removalCheck(for: chosen)
             for item in chosen where item.category != .trash {
-                guard Self.mayRemove(item, installed: installed) else {
+                guard canRemove(item) else {
                     failed += 1
                     continue
-                }
-                if item.category == .loginItems {
-                    // Retire the job first so nothing keeps running from a
-                    // plist that is about to leave; then the regular move.
-                    Self.bootoutUserAgent(item.url)
-                    guard Self.mayRemove(item, installed: installed) else {
-                        failed += 1
-                        continue
-                    }
                 }
                 do {
                     try fm.trashItem(at: item.url, resultingItemURL: nil)
@@ -166,25 +169,20 @@ extension JunkCleaner {
                 }
             }
 
-            // Root owned files (system LaunchDaemons and friends) go through
-            // Finder, which shows the standard administrator prompt and moves
-            // them to the Trash exactly like a drag would. One batch, one
-            // prompt; a cancel leaves them in place and they count as failed.
-            if !escalate {
-                // Unattended pass: nobody can answer the prompt, so they
-                // stay put and count as failed.
-                failed += stubborn.count
-            } else if !stubborn.isEmpty {
-                let stillSafe = stubborn.filter { Self.mayRemove($0, installed: installed) }
-                failed += stubborn.count - stillSafe.count
-                Self.trashViaFinder(stillSafe.map(\.url))
-                for item in stillSafe {
-                    if fm.fileExists(atPath: item.url.path) {
-                        failed += 1
-                    } else {
-                        freed += item.size
-                    }
+            // Finder may wait for an administrator password after receiving the URLs.
+            // A login item can regain its owner during that wait, so leave its plist in place.
+            let candidates = escalate ? stubborn.filter { $0.category != .loginItems && canRemove($0) } : []
+            if !candidates.isEmpty, AppleScriptRunner.consentToAutomate(bundleID: "com.apple.finder") {
+                // An owner may have been installed while the consent prompt was open.
+                let stillSafe = candidates.filter(Self.removalCheck(for: candidates))
+                if !stillSafe.isEmpty {
+                    Self.trashViaFinder(stillSafe.map(\.url))
                 }
+                let removed = stillSafe.filter { UninstallerSupport.isConfirmedAbsent(at: $0.url) }
+                freed += removed.reduce(0) { $0 + $1.size }
+                failed += stubborn.count - removed.count
+            } else {
+                failed += stubborn.count
             }
 
             DispatchQueue.main.async { [weak self] in
@@ -198,7 +196,8 @@ extension JunkCleaner {
     /// Exact match guard against ever removing a critical root, even if a
     /// scanner bug produced one. Items are already scoped by construction;
     /// this is the last line of defense.
-    static func mayRemove(_ item: Item, installed: Set<String>) -> Bool {
+    static func mayRemove(_ item: Item, installedApps: () -> Set<String>,
+                          audioPluginIDs: Set<String>) -> Bool {
         let url = item.url
         let path = url.standardizedFileURL.path
         let home = NSHomeDirectory()
@@ -215,11 +214,32 @@ extension JunkCleaner {
               !UninstallerSupport.isSymbolicLink(url),
               url.resolvingSymlinksInPath().standardizedFileURL.path == path else { return false }
         guard CleanerScanPrivacy.mayRemoveTree(url, fm: .default) else { return false }
+        let parent = url.deletingLastPathComponent()
+        let isLeftoverCache = item.category == .leftovers && parent.lastPathComponent == "Caches"
+        if item.category == .caches || isLeftoverCache {
+            guard !CleanerPolicy.isExcludedCacheEntry(url.lastPathComponent,
+                                                      audioPluginIDs: audioPluginIDs) else { return false }
+        }
+        // A plugin alone cannot justify a recommendation that a fresh scan
+        // would now offer as an unchecked leftover.
+        if [.caches, .logs].contains(item.category), item.recommended, !audioPluginIDs.isEmpty,
+           let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: false),
+           !CleanerSupport.isProtectedBundleID(owner),
+           CleanerSupport.isOwned(candidate: owner, byInstalled: audioPluginIDs)
+               || CleanerSupport.sharesVendorNamespace(candidate: owner, withInstalled: audioPluginIDs),
+           !hasLivingOwner(owner, installed: installedApps()) { return false }
         if item.category == .leftovers {
+            let apps = installedApps()
+            let installed = usesAppOwnersForLeftovers(in: parent) ? apps : apps.union(audioPluginIDs)
             guard isDirectLeftoverRootChild(url),
                   CleanerSupport.isAttributableBundleID(item.detail),
                   !CleanerSupport.isProtectedBundleID(item.detail),
                   !hasLivingLeftoverOwner(item.detail, at: url, installed: installed) else { return false }
+        }
+        if item.category == .loginItems {
+            // Only move the selected plist. launchd may have loaded another file with the same label.
+            let installed = installedApps().union(audioPluginIDs)
+            guard orphanedLaunchPlistDetail(at: url, installed: installed) == item.detail else { return false }
         }
         if item.category == .screenshots {
             guard isScreenshotFolderChild(url), isScreenCapture(url) else { return false }

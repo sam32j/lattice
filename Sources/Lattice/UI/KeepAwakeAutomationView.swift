@@ -35,10 +35,12 @@ struct KeepAwakeConditionTiles: View {
 
     /// What a chosen tile says about its condition right now, in that
     /// condition's own words.
-    private func stateText(_ condition: KeepAwakeAutomationCondition, holds: Bool) -> String {
+    private func stateText(_ condition: KeepAwakeAutomationCondition, holds: Bool, waiting: Bool) -> String {
         switch condition {
         case .externalDisplay: return holds ? settings.displayConnected : settings.displayNotConnected
-        case .power: return holds ? settings.powerConnected : settings.powerOnBattery
+        case .power:
+            if waiting { return strings.waitingForPower }
+            return holds ? settings.powerConnected : settings.powerOnBattery
         case .runningApps: return holds ? settings.appsOpen : settings.appsNotOpen
         }
     }
@@ -46,7 +48,8 @@ struct KeepAwakeConditionTiles: View {
     private func conditionTile(_ condition: KeepAwakeAutomationCondition, title: String, icon: String,
                                selected: Bool, toggle: @escaping () -> Void) -> some View {
         let holds = awake.liveAutomationConditions.contains(condition)
-        let state = stateText(condition, holds: holds)
+        let waiting = condition == .power && awake.waitingForPower
+        let state = stateText(condition, holds: holds, waiting: waiting)
         return Button {
             withAnimation(reduceMotion ? nil : .settingsExpansion, toggle)
             awake.automationPreferencesDidChange()
@@ -71,7 +74,9 @@ struct KeepAwakeConditionTiles: View {
                 // Only a chosen condition is watched, so only it can say.
                 Text(state)
                     .font(.system(size: 10.5, weight: .medium))
-                    .foregroundStyle(holds ? AnyShapeStyle(Color.green) : AnyShapeStyle(.tertiary))
+                    .foregroundStyle(holds ? AnyShapeStyle(Color.green)
+                                     : waiting ? AnyShapeStyle(Color.orange)
+                                     : AnyShapeStyle(.tertiary))
                     .opacity(selected ? 1 : 0)
             }
             .padding(9)

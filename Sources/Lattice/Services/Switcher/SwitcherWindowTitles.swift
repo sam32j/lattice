@@ -9,7 +9,7 @@ final class SwitcherWindowTitles {
     private var elements: [pid_t: [CGWindowID: AXUIElement]] = [:]
     private var pending: [pid_t: UUID] = [:]
     private var observed: [pid_t: Set<CGWindowID>] = [:]
-    private let queue = DispatchQueue(label: "com.vorssaint.switcher.titles", qos: .utility)
+    private let queue = DispatchQueue(label: "io.github.sam32j.lattice.switcher.titles", qos: .utility)
     private let lifecycleLock = NSLock()
     private var generation: UUID?
     var onChange: ((pid_t) -> Void)?

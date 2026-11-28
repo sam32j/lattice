@@ -63,6 +63,48 @@ enum BrightnessSupport {
     static let chipAddress: UInt32 = 0x37
     /// Sub-address DDC hosts write through.
     static let dataAddress: UInt32 = 0x51
+    /// Address that reaches the monitor through an MCDP29XX DisplayPort to
+    /// HDMI converter, which sits behind the built-in HDMI port of at least
+    /// the M1 Max MacBook Pro. The converter accepts writes to the standard
+    /// address and passes none of them on, so they report success while the
+    /// monitor never moves. The packets themselves, checksum included, stay
+    /// the same.
+    static let hdmiConverterChipAddress: UInt32 = 0xB7
+    /// EPIC provider class of a DDC service that sits behind that converter.
+    static let hdmiConverterProviderClass = "AppleDCPMCDP29XX"
+
+    /// The I2C address to speak DDC on for a service, from the provider class
+    /// its registry entry reports.
+    static func ddcChipAddress(epicProviderClass: String?) -> UInt32 {
+        epicProviderClass == hdmiConverterProviderClass ? hdmiConverterChipAddress : chipAddress
+    }
+
+    /// Backoff delays (in seconds) when retrying a display whose DDC service
+    /// was not yet ready at discovery time.
+    static let ddcRetryDelays: [TimeInterval] = [1, 2, 4, 8]
+
+    /// Each online display has its own deadlines, even if its EDID is shared
+    /// with another panel. Opening Settings can probe early without spending
+    /// another scheduled attempt.
+    struct ServiceDiscoveryRetries {
+        private var deadlines: [UInt32: (attempt: Int, due: TimeInterval)] = [:]
+
+        mutating func found(_ display: UInt32) { deadlines[display] = nil }
+
+        mutating func missing(_ display: UInt32, now: TimeInterval) -> TimeInterval? {
+            if let previous = deadlines[display], now < previous.due { return previous.due - now }
+            let attempt = deadlines[display]?.attempt ?? 0
+            guard ddcRetryDelays.indices.contains(attempt) else { return nil }
+            let delay = ddcRetryDelays[attempt]
+            deadlines[display] = (attempt + 1, now + delay)
+            return delay
+        }
+    }
+
+    static func keepsSoftwareDimOnDiscovery(previouslySoftware: Bool,
+                                             dimmed: Bool, pending: Double?) -> Bool {
+        previouslySoftware && (dimmed || pending.map { $0 < 0.999 } == true)
+    }
 
     // Field-proven pacing: displays lose I2C transactions that arrive back to
     // back, so every write waits first, reads settle longer, and failures
@@ -721,7 +763,8 @@ enum BrightnessSupport {
     /// The EDID UUID embeds identity fields at fixed positions; each one that
     /// matches the display scores a point, and the IORegistry path match is
     /// decisive on its own. Zero means the pair is unrelated.
-    static func matchScore(service: ServiceIdentity, display: DisplayIdentity) -> Int {
+    static func matchScore(service: ServiceIdentity, display: DisplayIdentity,
+                           requireIdentity: Bool = false) -> Int {
         var score = 0
         func uuidChunk(at location: Int) -> String {
             String(service.edidUUID.prefix(location + 4).suffix(4))
@@ -735,6 +778,15 @@ enum BrightnessSupport {
             let key = String(format: "%02X%02X", UInt8(value & 0xFF), UInt8(value >> 8))
             if key != "0000", key == uuidChunk(at: 4) { score += 1 }
         }
+        let sameEDIDProduct = score == 2
+        let sameLocation = !service.ioDisplayLocation.isEmpty && service.ioDisplayLocation == display.ioDisplayLocation
+        let sameName = !service.productName.isEmpty
+            && service.productName.lowercased() == display.productName?.lowercased()
+        if requireIdentity {
+            guard sameLocation || sameEDIDProduct || sameName else { return 0 }
+            if let serial = display.serialNumber, serial != 0, service.serialNumber != 0,
+               serial != service.serialNumber { return 0 }
+        }
         if let week = display.weekOfManufacture, let year = display.yearOfManufacture, year >= 1990 {
             let key = String(format: "%02X%02X",
                              UInt8(clamping: week),
@@ -747,31 +799,57 @@ enum BrightnessSupport {
                              UInt8(clamping: vertical / 10))
             if key != "0000", key == uuidChunk(at: 30) { score += 1 }
         }
-        if !service.ioDisplayLocation.isEmpty, service.ioDisplayLocation == display.ioDisplayLocation {
-            score += 10
-        }
-        if !service.productName.isEmpty,
-           service.productName.lowercased() == display.productName?.lowercased() {
-            score += 1
-        }
+        if sameLocation { score += 10 }
+        if sameName { score += 1 }
         if service.serialNumber != 0, service.serialNumber == display.serialNumber {
             score += 1
         }
         return score
     }
 
-    /// Greedy assignment, best scores first: each display and each service is
-    /// used at most once, and zero-score pairs never match. Returns display
-    /// index to service ordinal.
+    /// Native and inactive external displays also own their DDC services.
+    /// Reserve their matches even though they do not need a brightness probe.
+    static func brightnessServices(displays: [(index: Int, identity: DisplayIdentity)],
+                                   candidates: Set<Int>, services: [ServiceIdentity]) -> [Int: Int] {
+        let scores = displays.flatMap { display in
+            services.map { service in
+                let serial = display.identity.serialNumber ?? 0
+                let conflict = serial != 0 && service.serialNumber != 0 && serial != service.serialNumber
+                let score = conflict ? 0 : matchScore(service: service, display: display.identity,
+                                                       requireIdentity: displays.count > 1)
+                return (displayIndex: display.index, serviceOrdinal: service.ordinal, score: score)
+            }
+        }
+        let assigned = assignServices(scores: scores)
+        if assigned.isEmpty, displays.count == 1, services.count == 1, let display = displays.first,
+           candidates.contains(display.index), let service = services.first {
+            if let serial = display.identity.serialNumber, serial != 0, service.serialNumber != 0,
+               serial != service.serialNumber { return [:] }
+            return [display.index: service.ordinal]
+        }
+        return assigned.filter { candidates.contains($0.key) }
+    }
+
+    /// Keep each service's strongest possible owners. A tie can resolve once
+    /// another display has claimed its own service, provided the remaining
+    /// display also has a unique best choice.
     static func assignServices(scores: [(displayIndex: Int, serviceOrdinal: Int, score: Int)])
         -> [Int: Int] {
+        var remaining = scores.filter { pair in
+            pair.score > 0 && !scores.contains {
+                $0.serviceOrdinal == pair.serviceOrdinal && $0.score > pair.score
+            }
+        }
         var assignment: [Int: Int] = [:]
-        var takenServices = Set<Int>()
-        for entry in scores.sorted(by: { $0.score > $1.score }) where entry.score > 0 {
-            guard assignment[entry.displayIndex] == nil,
-                  !takenServices.contains(entry.serviceOrdinal) else { continue }
-            assignment[entry.displayIndex] = entry.serviceOrdinal
-            takenServices.insert(entry.serviceOrdinal)
+        while let match = remaining.first(where: { pair in
+            !remaining.contains { other in
+                (other.serviceOrdinal == pair.serviceOrdinal && other.displayIndex != pair.displayIndex)
+                    || (other.displayIndex == pair.displayIndex && other.serviceOrdinal != pair.serviceOrdinal
+                        && other.score >= pair.score)
+            }
+        }) {
+            assignment[match.displayIndex] = match.serviceOrdinal
+            remaining.removeAll { $0.displayIndex == match.displayIndex || $0.serviceOrdinal == match.serviceOrdinal }
         }
         return assignment
     }
