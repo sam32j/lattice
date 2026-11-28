@@ -3,6 +3,7 @@
 
 import AppKit
 import Carbon.HIToolbox
+import Combine
 import SwiftUI
 
 /// The command bar: one floating field, summoned by a global shortcut, that
@@ -142,7 +143,7 @@ final class CommandBarService: ObservableObject {
     var farewell = NotchMascotMood.wink
 
     private let hotkey = QuickToolHotkey(id: 20)
-    private var rowHotkeys: [QuickToolHotkey] = []
+    private var rowHotkeys: [String: QuickToolHotkey] = [:]
     private var panel: NSPanel?
     private var keyMonitor: Any?
     private var outsideClickMonitor: Any?
@@ -277,20 +278,6 @@ final class CommandBarService: ObservableObject {
                                                   storageKey: DefaultsKey.commandBarShortcut)
         reloadPreferenceCaches()
         syncRowHotkeys()
-        if available {
-            // Build the one view tree after launch, outside the keystroke that
-            // asks to see it for the first time, and lay it out: a window draws
-            // itself before it first appears, and keys typed meanwhile would
-            // still reach the app in front.
-            DispatchQueue.main.async { [weak self] in
-                guard AppFeature.commandBar.isAvailable, let self else { return }
-                let panel = self.ensurePanel()
-                if !panel.isVisible {
-                    panel.contentViewController?.view.layoutSubtreeIfNeeded()
-                    panel.display()
-                }
-            }
-        }
         if !available {
             hide()
             panel = nil
@@ -325,8 +312,8 @@ final class CommandBarService: ObservableObject {
     func suspend() {
         pendingAppShortcut.cancel()
         hotkey.unregister()
-        for hotkey in rowHotkeys { hotkey.unregister() }
-        rowHotkeys = []
+        for hotkey in rowHotkeys.values { hotkey.unregister() }
+        rowHotkeys = [:]
         hide()
         cancelPendingRestart()
     }
@@ -563,6 +550,7 @@ final class CommandBarService: ObservableObject {
     }
 
     func hide() {
+        micMuteChanges = nil
         // Cleared first, so the island closing under the bar does not close it again.
         let presented = presentation
         presentation = .window
@@ -848,8 +836,8 @@ final class CommandBarService: ObservableObject {
     /// quick tools so the two can never collide.
     private func syncRowHotkeys() {
         let wanted = AppFeature.commandBar.isAvailable ? rowShortcuts : [:]
-        for hotkey in rowHotkeys { hotkey.unregister() }
-        rowHotkeys = []
+        for hotkey in rowHotkeys.values { hotkey.unregister() }
+        rowHotkeys = [:]
         var index: UInt32 = 0
         var refused: Set<String> = []
         for (key, shortcut) in wanted.sorted(by: { $0.key < $1.key })
@@ -862,10 +850,30 @@ final class CommandBarService: ObservableObject {
                             storageKey: CommandBarRowShortcuts.takeOverKey(for: key)) {
                 refused.insert(key)
             }
-            rowHotkeys.append(hotkey)
+            rowHotkeys[key] = hotkey
             index += 1
         }
         if refused != refusedRowShortcutKeys { refusedRowShortcutKeys = refused }
+        // A shortcut can be pressed before the first panel and its field finish
+        // drawing. Prepare them now so immediate typing reaches the bar.
+        guard needsPreparedPanel else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.needsPreparedPanel else { return }
+            let panel = self.ensurePanel()
+            guard !panel.isVisible else { return }
+            panel.contentViewController?.view.layoutSubtreeIfNeeded()
+            panel.display()
+        }
+    }
+
+    private var needsPreparedPanel: Bool {
+        guard AppFeature.commandBar.isAvailable else { return false }
+        if hotkey.isRegistered && UserDefaults.standard.bool(forKey: DefaultsKey.commandBarShortcutEnabled) {
+            return true
+        }
+        // App shortcuts launch or hide their app directly. Treat other rows
+        // as possible prompts without building the catalog to find out.
+        return rowHotkeys.contains { $0.value.isRegistered && CommandBarPreferences.source(ofRowID: $0.key) != .apps }
     }
 
     /// Runs a row from its own combination, with no bar involved. Runnable
@@ -1336,8 +1344,22 @@ final class CommandBarService: ObservableObject {
         let accessibility: Bool
     }
     private var builtEmojiInputs: EmojiInputs?
+    private var micMuteChanges: AnyCancellable?
 
     private func rebuildCatalog(index: Bool = true) {
+        if isVisible && AppFeature.micMute.isAvailable {
+            if micMuteChanges == nil {
+                let mic = MicMuteService.shared
+                micMuteChanges = mic.$isMuted.combineLatest(mic.$warning)
+                    .dropFirst()
+                    .sink { [weak self] _ in
+                        guard let self else { return }
+                        self.scheduleAnswerRefresh(for: self.presentationID)
+                    }
+            }
+        } else {
+            micMuteChanges = nil
+        }
         catalog = CommandBarCatalog.build(automationDenied: finderAutomationDenied)
         // The emoji rows are most of the pool and depend on nothing the
         // catalog's other rebuild triggers touch, so they are kept until one

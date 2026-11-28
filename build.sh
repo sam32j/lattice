@@ -418,6 +418,8 @@ if (( TEST )); then
         Sources/Lattice/Services/AgentUsage/Harness/CodexReader.swift
         Sources/Lattice/Services/AgentUsage/Harness/OpenCodeReader.swift
         Sources/Lattice/Services/AgentUsage/Harness/CopilotReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/CursorReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/CursorTranscriptAccess.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageSummary.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageStore.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageArchive.swift
@@ -451,6 +453,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchBrowserArtworkSupport.swift
         Sources/Lattice/UI/Notch/NotchEqualizerBars.swift
         Sources/Lattice/UI/Notch/NotchScrollEdgeFade.swift
+        Sources/Lattice/UI/Notch/NotchAgentComponents.swift
         Sources/Lattice/UI/Notch/NotchAgentAnimationView.swift
         Sources/Lattice/UI/WindowVisibilityReader.swift
         Sources/Lattice/Services/Notch/NotchMusicAutomationSupport.swift
@@ -764,6 +767,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Switcher/SwitcherModels.swift
         Sources/Lattice/Services/Switcher/WindowServerCaptureQueue.swift
         Sources/Lattice/Services/Switcher/SwitcherSupport.swift
+        Sources/Lattice/Services/Switcher/SwitcherExclusiveFullscreenWatch.swift
         Sources/Lattice/Services/Switcher/SpaceHopSupport.swift
         Sources/Lattice/Services/Switcher/WindowUseOrder.swift
         Sources/Lattice/Services/Switcher/WindowEnumeratorAccessibilityPrefetch.swift

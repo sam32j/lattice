@@ -22,6 +22,7 @@ final class QuickToolHotkey {
     /// registered hotkey; owners that care about holds (the radial menu)
     /// listen, the rest leave it nil.
     var onRelease: (() -> Void)?
+    var isRegistered: Bool { hotKeyRef != nil }
 
     init(id: UInt32) {
         hotKeyID = id

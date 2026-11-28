@@ -21,6 +21,7 @@ struct AudioOutputPriorityControls: View {
                                currentUID: mixer.currentOutputDeviceUID,
                                emptyText: l10n.s.mixerSystemOutputNoDevices,
                                onMove: { priority.setOutputPriorityUIDs($0) },
+                               onRemove: { priority.removeOutputPriorityUID($0) },
                                latestPriorityUIDs: { priority.outputPriorityUIDs })
         }
     }
@@ -47,6 +48,7 @@ struct AudioInputPriorityControls: View {
                                currentUID: input.currentInputDeviceUID,
                                emptyText: l10n.s.mixerInputNoDevices,
                                onMove: { priority.setInputPriorityUIDs($0) },
+                               onRemove: { priority.removeInputPriorityUID($0) },
                                canCycle: false,
                                latestPriorityUIDs: { priority.inputPriorityUIDs })
         }

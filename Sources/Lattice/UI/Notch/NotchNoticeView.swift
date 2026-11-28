@@ -13,8 +13,11 @@ struct NotchNoticeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var wings: NotchNoticeWings { notice.wings(in: geometry) }
+    private var isWarningMic: Bool {
+        notice.event == .microphone && (notice.symbol == "mic.badge.xmark" || notice.symbol.hasPrefix("exclamationmark"))
+    }
     private var isMutedMic: Bool {
-        notice.event == .microphone && (notice.symbol.contains("slash") || notice.detail == "Muted")
+        notice.event == .microphone && !isWarningMic && (notice.symbol.contains("slash") || notice.detail == "Muted")
     }
     private var tint: Color {
         switch notice.event {
@@ -22,7 +25,7 @@ struct NotchNoticeView: View {
         case .agents: return notice.symbol.hasPrefix("exclamationmark") ? .orange : notice.agent?.tint ?? .white
         // The timer's notice keeps the orange its strip and page wear.
         case .timer: return .orange
-        case .microphone: return isMutedMic ? .red : .white
+        case .microphone: return isWarningMic ? .orange : isMutedMic ? .red : .white
         default: return .white
         }
     }
@@ -30,7 +33,7 @@ struct NotchNoticeView: View {
     private var textTint: Color {
         switch notice.event {
         case .timer: return .orange
-        case .microphone: return isMutedMic ? .red : .white
+        case .microphone: return isWarningMic ? .orange : isMutedMic ? .red : .white
         default: return .white
         }
     }
@@ -104,8 +107,9 @@ struct NotchNoticeView: View {
                         NotchAgentMark(provider: agent, size: 13)
 
                     } else if notice.event == .microphone {
-                        AnimatedMicMuteSymbol(muted: isMutedMic, fontSize: 14, weight: .medium,
-                                              animateInitialChange: true)
+                        AnimatedMicMuteSymbol(muted: isMutedMic, warning: isWarningMic,
+                                              fontSize: 14, weight: .medium,
+                                              animateInitialChange: !isWarningMic)
                             .foregroundStyle(tint)
                             .frame(width: 18)
                     } else {

@@ -101,10 +101,10 @@ enum WindowGestureFrontingRuntimeTests {
         var activeGesture: WindowPointerGesture?
         var pendingGesture: PendingWindowGesture?
         var gestureAssistiveMode: EnhancedUserInterfaceSuspension?
-        var gestureTap: CFMachPort?
-        var gestureRunLoopSource: CFRunLoopSource?
+        var pointerTapDemand: WindowLayoutPointerDemand = [.gesture]
+        var edgeSnapSystemDrag = WindowEdgeSnapSystemDrag.idle
+        var edgeSnapOptionClaims: UInt64 = 0
         var isGestureRunning = true
-        var edgeSnapTap: CFMachPort?
         let moveGestureUpdateInterval: TimeInterval = 0
         let resizeGestureUpdateInterval: TimeInterval = 0
         let gestureApplyQueue = DispatchQueue(label: "test fronting and movement", qos: .userInteractive)

@@ -30,12 +30,13 @@ enum QuickToolHUD {
         ScrollingCaptureOverlayController.activeWindowIDs
     }
 
-    static func show(icon: String, message: String, swatch: NSColor? = nil) {
+    static func show(icon: String, message: String, swatch: NSColor? = nil, showsFullMessage: Bool = false) {
         guard Thread.isMainThread else {
-            DispatchQueue.main.async { show(icon: icon, message: message, swatch: swatch) }
+            DispatchQueue.main.async { show(icon: icon, message: message, swatch: swatch, showsFullMessage: showsFullMessage) }
             return
         }
         let isMutedMic = icon == "mic.slash.fill"
+        let isWarning = icon == "exclamationmark.triangle"
         let content = HStack(spacing: 8) {
             if let swatch {
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
@@ -48,7 +49,7 @@ enum QuickToolHUD {
             } else {
                 LatticeSymbol(icon)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isMutedMic ? Color.red : Color.accentColor)
+                    .foregroundStyle(isWarning ? Color.orange : isMutedMic ? Color.red : Color.accentColor)
             }
             Text(message)
                 .font(.system(size: 12, weight: .semibold))
@@ -63,8 +64,12 @@ enum QuickToolHUD {
                 // on the second line is cut at a line break, not inside one,
                 // and middle truncation leaves no mark at all there — the
                 // preview then reads as the whole of what was copied.
-                .lineLimit(2)
+                .lineLimit(showsFullMessage ? nil : 2)
                 .truncationMode(.tail)
+                // The hosting panel measures its ideal size before showing.
+                // Give full instructions a width at which Text can wrap.
+                .fixedSize(horizontal: false, vertical: showsFullMessage)
+                .frame(width: showsFullMessage ? messageWidthLimit : nil, alignment: .leading)
                 .frame(maxWidth: messageWidthLimit, alignment: .leading)
         }
         .padding(.horizontal, 14)

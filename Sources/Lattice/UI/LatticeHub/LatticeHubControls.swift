@@ -47,7 +47,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
 
     func icon(colorScheme: ColorScheme) -> String {
         switch self {
-        case .micMute: return MicMuteService.shared.isMuted ? "mic.slash.fill" : "mic.fill"
+        case .micMute: return MicMuteService.shared.controlSymbol
         case .keepAwake: return KeepAwakeManager.shared.isActive ? "bolt.fill" : "bolt"
         case .cameraPreview: return "person.crop.square.badge.camera"
         case .darkMode: return "circle.lefthalf.filled"
@@ -65,7 +65,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
 
     func isActive(colorScheme: ColorScheme) -> Bool {
         switch self {
-        case .micMute: return MicMuteService.shared.isMuted
+        case .micMute: return MicMuteService.shared.isMuted || MicMuteService.shared.warning != nil
         case .keepAwake: return KeepAwakeManager.shared.isActive
         case .cameraPreview: return CameraPreviewService.shared.isVisible || CameraPreviewService.shared.isEmbeddedPresented
         case .darkMode: return QuickTogglesService.shared.systemAppearanceIsDark ?? (colorScheme == .dark)
@@ -79,7 +79,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
 
     var tint: Color {
         switch self {
-        case .micMute: return .red
+        case .micMute: return MicMuteService.shared.warning != nil ? .orange : .red
         case .keepAwake: return KeepAwakeAppearance.indicatorColor
         case .cameraPreview: return .blue
         case .darkMode: return .indigo
@@ -155,6 +155,8 @@ struct HubControlButton: View {
     var isEditing: Bool = false
     var actionRawValue: String? = nil
     var darkModeIsDark = false
+    var micWarning = false
+    var warningMessage: String? = nil
     var onHide: (() -> Void)? = nil
     let action: () -> Void
 
@@ -165,7 +167,7 @@ struct HubControlButton: View {
     /// replace symbols. Dark Mode changes orientation without animating.
     @ViewBuilder private var controlSymbol: some View {
         if actionRawValue == HubControlAction.micMute.rawValue {
-            AnimatedMicMuteSymbol(muted: isActive, fontSize: iconSize)
+            AnimatedMicMuteSymbol(muted: isActive, warning: micWarning, fontSize: iconSize)
         } else if actionRawValue == HubControlAction.darkMode.rawValue {
             Image(systemName: icon)
                 .font(.system(size: iconSize, weight: .semibold))
@@ -217,8 +219,9 @@ struct HubControlButton: View {
                 }
             }
         }
-        .help(isEditing ? FeatureStrings.hubCustomization(l10n.language).hideFromHub : title)
+        .help(isEditing ? FeatureStrings.hubCustomization(l10n.language).hideFromHub : (warningMessage ?? title))
         .accessibilityLabel(isEditing ? "\(FeatureStrings.hubCustomization(l10n.language).hideFromHub): \(title)" : title)
+        .accessibilityValue(warningMessage ?? "")
         .onHover { isHovered = $0 }
     }
 }
@@ -296,6 +299,8 @@ struct HubQuickControls: View {
                                      actionRawValue: action.rawValue,
                                      darkModeIsDark: action == .darkMode
                                         && (toggles.systemAppearanceIsDark ?? (colorScheme == .dark)),
+                                     micWarning: action == .micMute && micMute.warning != nil,
+                                     warningMessage: action == .micMute ? micMute.warning?.message : nil,
                                      onHide: {
                                          withAnimation(.easeInOut(duration: 0.22)) {
                                              launcher.setControlHidden(action, true)

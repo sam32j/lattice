@@ -46,7 +46,7 @@ extension SettingsDirectory {
                                              ? [FeatureStrings.notch(language).withoutNotch,
                                                 FeatureStrings.notch(language).capsuleFit] : []),
                                       aliases: ["notch", "dynamic island", "island", "camera", "music", "clipboard",
-                                                "Claude", "Codex", "OpenCode", "GitHub Copilot", "AI", "tokens"]),
+                                                "Claude", "Codex", "OpenCode", "GitHub Copilot", "Cursor", "AI", "tokens"]),
                 SettingsDirectoryItem(page: .commandBar,
                                       title: FeatureStrings.commandBar(language).pageTitle,
                                       icon: "chevron.right.square",
@@ -143,6 +143,11 @@ extension SettingsDirectory {
                                       icon: "speaker.wave.2",
                                       keywords: [settingsPages.audioInputDescription,
                                                  settingsPages.audioOutputDescription],
+                                      aliases: ["call", "zoom", "teams"],
+                                      followupKeywords: [
+                                        (.micMute, DefaultsKey.microphoneLevelControlEnabled,
+                                         [s.micMuteFollowCallAppsToggle]),
+                                      ],
                                       anchoredKeywords: [
                                         (.micMute, .micMute, [settingsPages.audioInputTitle, s.micMuteName, s.micMuteCaption,
                                                               s.micMuteMenuBarToggle, s.muteAudioInputSubtitle]),

@@ -147,7 +147,7 @@ struct NotchAgentRestingWing: View {
                                   tint: agentLimitTint(limit.provider, usedFraction: limit.window.usedFraction))
         } else if let provider = AgentProvider.allCases.first(where: snapshot.seen.contains) {
             NotchAgentIdleReading(leading: leading, height: height, provider: provider,
-                                  fraction: nil, value: AgentFormat.cost(snapshot.usage(.today).total.cost))
+                                  fraction: nil, value: AgentFormat.cost(snapshot, for: .today))
         }
     }
 }
@@ -176,7 +176,7 @@ struct NotchAgentIdleReading: View {
                 .font(.system(size: min(12, max(9, height * 0.4)), weight: .medium))
                 .monospacedDigit()
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.6)
         }
     }
 }
