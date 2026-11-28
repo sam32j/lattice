@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Vorssaint
+
+import AppKit
+
+enum SwitcherWindowSelection {
+    static func contains(_ selected: SwitcherItem, in current: [SwitcherItem]) -> Bool {
+        current.contains { $0.id == selected.id || (selected.isAppEntry && $0.pid == selected.pid) }
+    }
+
+    static func select(
+        remembered: WindowEnumerator.WindowList,
+        scope: SwitcherSessionScope,
+        frontmostPID: pid_t,
+        focusedWindowID: CGWindowID?,
+        displayScope: WindowEnumerator.DisplayScope?
+    ) -> WindowEnumerator.WindowList {
+        let defaults = UserDefaults.standard
+        let rules = SwitcherAppRule.rules(storedValue: defaults.dictionary(forKey: DefaultsKey.switcherAppRules))
+        let windowlessMode = SwitcherWindowlessApps.mode(
+            storedValue: defaults.string(forKey: DefaultsKey.switcherWindowlessApps))
+        let candidates = remembered.items.filter(\.isAppEntry).map {
+            SwitcherAppCandidate(pid: $0.pid, bundleIdentifier: remembered.bundleIdentifiers[$0.pid])
+        }
+        let windowlessPIDs = Set(SwitcherSupport.windowlessAppPIDs(
+            mode: windowlessMode,
+            candidates: candidates,
+            pidsWithWindows: Set(remembered.items.filter { !$0.isAppEntry }.map(\.pid)),
+            pidsWithWithheldWindows: [],
+            desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
+            appRules: rules))
+        let currentSpaceOnly = defaults.bool(forKey: DefaultsKey.switcherCurrentSpaceOnly)
+        let showFullscreen = defaults.object(forKey: DefaultsKey.switcherShowFullscreenWindows) as? Bool ?? true
+        let minimizedPlacement = WindowSwitchMinimizedPlacement(
+            rawValue: defaults.string(forKey: DefaultsKey.switcherMinimizedPlacement) ?? "") ?? .normal
+        let treatHiddenAsMinimized = defaults.bool(forKey: DefaultsKey.switcherTreatHiddenAppsLikeMinimized)
+        let mergeWindows = defaults.bool(forKey: DefaultsKey.switcherMergeTabs)
+        let iconRowLayout = SwitcherSupport.usesIconRowLayout(
+            iconRowMode: defaults.bool(forKey: DefaultsKey.switcherIconRowMode),
+            simpleMode: defaults.bool(forKey: DefaultsKey.switcherSimpleMode))
+        let groupByApp = SwitcherSupport.groupsGridByApp(
+            allApps: scope == .allApps,
+            mergeWindowsByApp: mergeWindows,
+            iconRowLayout: iconRowLayout)
+        let preservesGroupedWindows = SwitcherSupport.preservesGroupedWindowsDuringEnumeration(
+            allApps: scope == .allApps,
+            mergeWindowsByApp: mergeWindows,
+            iconRowLayout: iconRowLayout)
+        let filtered = remembered.items.filter { item in
+            if SwitcherSupport.hidesApp(bundleIdentifier: remembered.bundleIdentifiers[item.pid], appRules: rules) {
+                return false
+            }
+            if item.isAppEntry, !windowlessPIDs.contains(item.pid) { return false }
+            if currentSpaceOnly, item.isOnHiddenSpace,
+               !(showFullscreen && item.windowID.map { remembered.nativeFullscreenWindowIDs.contains($0) } == true) {
+                return false
+            }
+            return true
+        }
+        let sessionItems = scope == .frontmostApp
+            ? SwitcherSupport.frontmostAppWindows(allItems: filtered, frontmostPID: frontmostPID)
+            : filtered
+        let hiddenSpaceIDs = Set(sessionItems.filter(\.isOnHiddenSpace).compactMap(\.windowID))
+        let frontToBack = WindowUseTracker.FrontToBack(windows: sessionItems.compactMap(\.windowID), apps: [])
+        var list = WindowEnumerator.selectWindows(
+            sessionItems,
+            maximumCount: 48,
+            windowlessApps: windowlessMode,
+            groupByApp: groupByApp,
+            minimizedPlacement: minimizedPlacement,
+            treatHiddenAppsLikeMinimized: treatHiddenAsMinimized,
+            showFullscreenWindows: showFullscreen,
+            preservingGroupedWindows: preservesGroupedWindows,
+            currentSpaceOnly: currentSpaceOnly,
+            windowsOnly: false,
+            scopedToFrontmostPID: scope == .frontmostApp ? frontmostPID : nil,
+            displayScope: displayScope,
+            frontToBack: frontToBack,
+            isOnHiddenSpace: { hiddenSpaceIDs.contains($0) },
+            resolveSource: { items in
+                SwitcherSupport.sessionSourceItem(
+                    frontmostPID: frontmostPID,
+                    focusedWindowID: focusedWindowID,
+                    items: items)
+            })
+        list.activationSnapshot = remembered.activationSnapshot
+        return list
+    }
+}
