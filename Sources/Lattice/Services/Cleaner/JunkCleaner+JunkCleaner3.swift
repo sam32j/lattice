@@ -150,7 +150,6 @@ extension JunkCleaner {
                     continue
                 }
                 if UninstallerSupport.isSymbolicLink(item) {
-                    enumerator.skipDescendants()
                     continue
                 }
                 total += fileSize(item)

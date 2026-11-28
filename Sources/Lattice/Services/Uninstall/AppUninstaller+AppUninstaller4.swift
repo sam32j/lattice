@@ -35,7 +35,6 @@ extension AppUninstaller {
         for case let url as URL in enumerator {
             let values = try? url.resourceValues(forKeys: keys)
             if values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
                 continue
             }
             guard values?.isDirectory == true,
@@ -157,7 +156,6 @@ extension AppUninstaller {
         for case let url as URL in enumerator {
             let values = try? url.resourceValues(forKeys: keys)
             if values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
                 continue
             }
             guard values?.isDirectory == true,
@@ -258,7 +256,6 @@ extension AppUninstaller {
                                           options: [], errorHandler: nil) {
             for case let item as URL in enumerator {
                 if UninstallerSupport.isSymbolicLink(item) {
-                    enumerator.skipDescendants()
                     continue
                 }
                 total += fileSize(item)
