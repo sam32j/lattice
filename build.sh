@@ -689,8 +689,9 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/QuickToolsSupport.swift
         Sources/Lattice/Services/CommandBar/CommandBarSupport.swift
         Sources/Lattice/Services/CommandBar/CommandBarPreferences.swift
-        Sources/Lattice/Services/CommandBar/CommandBarMath.swift
-        Sources/Lattice/Services/CommandBar/CommandBarUnits.swift
+        Sources/Lattice/Services/CommandBar/CommandBarUnitCatalog.swift
+        Sources/Lattice/Services/CommandBar/CommandBarExpressions.swift
+        Sources/Lattice/Services/CommandBar/CommandBarCalculator.swift
         Sources/Lattice/Services/CommandBar/CommandBarColors.swift
         Sources/Lattice/Services/CommandBar/CommandBarEmoji.swift
         Sources/Lattice/Services/CommandBar/CommandBarLinks.swift
