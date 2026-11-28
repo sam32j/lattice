@@ -2487,7 +2487,41 @@ enum FeatureCatalogTests {
             (displayIndex: 1, serviceOrdinal: 2, score: 4),
         ])
         suite.expect(assignment == [0: 2, 1: 1],
-               "greedy assignment gives each display its best free service")
+               "each display gets its strongest unambiguous service")
+        suite.expect(BrightnessSupport.assignServices(scores: [(0, 1, 11), (0, 2, 3), (1, 2, 1)])
+                == [0: 1],
+               "a spare service with stronger evidence for the first display cannot go to the second")
+        var firstTwin = BrightnessSupport.DisplayIdentity(productName: "HDMI panel")
+        var secondTwin = BrightnessSupport.DisplayIdentity(productName: "HDMI panel")
+        var hdmiEndpoint = BrightnessSupport.ServiceIdentity(productName: "HDMI panel", ordinal: 4)
+        firstTwin.ioDisplayLocation = "port-a"
+        secondTwin.ioDisplayLocation = "port-b"
+        hdmiEndpoint.ioDisplayLocation = "port-a"
+        let twins = [(index: 0, identity: firstTwin), (index: 1, identity: secondTwin)]
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins,
+                        candidates: [0, 1], services: [hdmiEndpoint]) == [0: 4],
+                     "one service behind identical EDIDs belongs only to the matching physical connection")
+        let modelOnly = BrightnessSupport.ServiceIdentity(productName: "HDMI panel", ordinal: 5)
+        for displays in [twins, Array(twins.reversed())] {
+            for services in [[hdmiEndpoint, modelOnly], [modelOnly, hdmiEndpoint]] {
+                suite.expect(BrightnessSupport.brightnessServices(displays: displays, candidates: [0, 1],
+                                services: services) == [0: 4, 1: 5],
+                             "the port match leaves the other twin its model-matched service in either order")
+            }
+        }
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [1],
+                        services: [hdmiEndpoint, modelOnly]) == [1: 5],
+                     "a twin outside the brightness candidates still reserves its port-matched service")
+        let otherModelOnly = BrightnessSupport.ServiceIdentity(productName: "HDMI panel", ordinal: 6)
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [0, 1],
+                        services: [modelOnly, otherModelOnly]).isEmpty,
+                     "identical models without a port or serial match leave both services ambiguous")
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [0, 1],
+                        services: [hdmiEndpoint, modelOnly, otherModelOnly]) == [0: 4],
+                     "two equally good services for the remaining twin keep only the port match")
+        suite.expect(BrightnessSupport.brightnessServices(displays: twins, candidates: [0, 1],
+                        services: [hdmiEndpoint, .init(ordinal: 5)]) == [0: 4],
+                     "a leftover service without identity evidence cannot acquire the other twin")
         suite.expect(BrightnessSupport.assignServices(scores: [(displayIndex: 0, serviceOrdinal: 1, score: 0)])
                 .isEmpty,
                "zero-score pairs never pair up")
