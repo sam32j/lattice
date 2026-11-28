@@ -124,9 +124,8 @@ extension JunkCleaner {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let fm = FileManager.default
-            // Refresh plugin ownership even for a cache-only selection. Share one
-            // fresh app inventory across the removal checks that need it.
-            let needsPluginIDs = chosen.contains { $0.category == .leftovers || $0.category == .caches }
+            // A recommended cache or log may have lost its owning app since the scan.
+            let needsPluginIDs = chosen.contains { [.leftovers, .caches, .logs].contains($0.category) }
             let audioPluginIDs = needsPluginIDs ? Self.installedAudioPluginBundleIDs() : []
             lazy var installedApps = Self.installedBundleIDs()
             var freed: Int64 = 0
@@ -215,21 +214,23 @@ extension JunkCleaner {
               !UninstallerSupport.isSymbolicLink(url),
               url.resolvingSymlinksInPath().standardizedFileURL.path == path else { return false }
         guard CleanerScanPrivacy.mayRemoveTree(url, fm: .default) else { return false }
-        let isLeftoverCache = item.category == .leftovers
-            && url.deletingLastPathComponent().lastPathComponent == "Caches"
+        let parent = url.deletingLastPathComponent()
+        let isLeftoverCache = item.category == .leftovers && parent.lastPathComponent == "Caches"
         if item.category == .caches || isLeftoverCache {
-            let name = url.lastPathComponent
-            guard !CleanerPolicy.isExcludedCacheEntry(name, audioPluginIDs: audioPluginIDs) else { return false }
-            // If the vendor's app was uninstalled, a fresh scan would now offer
-            // its sibling cache as an unchecked leftover.
-            if item.category == .caches, item.recommended, !audioPluginIDs.isEmpty,
-               let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: false),
-               !CleanerSupport.isProtectedBundleID(owner),
-               CleanerSupport.sharesVendorNamespace(candidate: owner, withInstalled: audioPluginIDs),
-               !hasLivingOwner(owner, installed: installedApps()) { return false }
+            guard !CleanerPolicy.isExcludedCacheEntry(url.lastPathComponent,
+                                                      audioPluginIDs: audioPluginIDs) else { return false }
         }
+        // A plugin alone cannot justify a recommendation that a fresh scan
+        // would now offer as an unchecked leftover.
+        if [.caches, .logs].contains(item.category), item.recommended, !audioPluginIDs.isEmpty,
+           let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: false),
+           !CleanerSupport.isProtectedBundleID(owner),
+           CleanerSupport.isOwned(candidate: owner, byInstalled: audioPluginIDs)
+               || CleanerSupport.sharesVendorNamespace(candidate: owner, withInstalled: audioPluginIDs),
+           !hasLivingOwner(owner, installed: installedApps()) { return false }
         if item.category == .leftovers {
-            let installed = isLeftoverCache ? installedApps() : installedApps().union(audioPluginIDs)
+            let apps = installedApps()
+            let installed = usesAppOwnersForLeftovers(in: parent) ? apps : apps.union(audioPluginIDs)
             guard isDirectLeftoverRootChild(url),
                   CleanerSupport.isAttributableBundleID(item.detail),
                   !CleanerSupport.isProtectedBundleID(item.detail),

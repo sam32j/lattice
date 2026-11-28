@@ -133,6 +133,15 @@ extension JunkCleaner {
         }
     }
 
+    /// Plugin caches have a separate exclusion. The user log scanner recommends
+    /// eligible unclaimed entries, so only apps can establish ownership there.
+    static func usesAppOwnersForLeftovers(in directory: URL) -> Bool {
+        if directory.lastPathComponent == "Caches" { return true }
+        guard directory.lastPathComponent == "Logs" else { return false }
+        let userLibrary = URL(fileURLWithPath: NSHomeDirectory() + "/Library", isDirectory: true)
+        return CleanerSupport.isDirectChild(directory, of: userLibrary)
+    }
+
     static func scanLeftovers(installedApps: Set<String>, audioPluginIDs: Set<String>) -> [Item] {
         let fm = FileManager.default
         let libraries = [NSHomeDirectory() + "/Library", systemLibrary]
@@ -140,10 +149,8 @@ extension JunkCleaner {
         var found: [Item] = []
         for library in libraries {
             for root in leftoverRoots {
-                let dir = library + "/" + root.path
-                // Plugin cache families are excluded directly. Treating a plugin as a
-                // vendor-wide cache owner would promote its siblings to recommended caches.
-                let owners = root.path == "Caches" ? installedApps : installed
+                let dir = URL(fileURLWithPath: library + "/" + root.path, isDirectory: true)
+                let owners = usesAppOwnersForLeftovers(in: dir) ? installedApps : installed
                 appendLeftovers(in: dir,
                                 usesContainerMetadata: root.usesContainerMetadata,
                                 installed: owners,
@@ -155,13 +162,12 @@ extension JunkCleaner {
         return sorted(found)
     }
 
-    static func appendLeftovers(in dir: String,
+    static func appendLeftovers(in root: URL,
                                         usesContainerMetadata: Bool,
                                         installed: Set<String>,
                                         audioPluginIDs: Set<String>,
                                         fm: FileManager,
                                         into found: inout [Item]) {
-        let root = URL(fileURLWithPath: dir, isDirectory: true)
         let keys: Set<URLResourceKey> = [.isSymbolicLinkKey]
         guard let entries = try? fm.contentsOfDirectory(at: root,
                                                         includingPropertiesForKeys: nil,
