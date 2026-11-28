@@ -478,9 +478,8 @@ enum SwitcherModelFeatureTests {
             .contains("releaseSecureInputActionsIfIdle()")
             && source.contains("if startPending, !clickPressedAKey {\n                    DispatchQueue.main.async { [weak self] in self?.releaseSecureInputActionsIfIdle() }"),
             "failed enumeration and a cancelling click release guards without disturbing a newer session")
-        suite.expect(source.contains("pending?.reconcileReplayedModifiers(CGEventSource.flagsState(.combinedSessionState))")
-            && source.components(separatedBy: "isSecureInputReplay: secureInputReplay").count == 3,
-            "both replay start paths reconcile current modifiers before presenting the session")
+        suite.expect(source.contains("pending?.reconcileReplayedModifiers(CGEventSource.flagsState(.combinedSessionState))"),
+            "the pending replay reconciles current modifiers before presenting the session")
         suite.expect(source.contains("secureInputReplays.invalidate()")
             && source.contains("self.secureInputReplays.contains(generation)"),
             "unregistering Carbon invalidates already queued presses before they reach routing")
@@ -490,6 +489,7 @@ enum SwitcherModelFeatureTests {
         SystemAppIconTests.run(suite)
         SwitcherAccessibilitySnapshotTests.run(suite)
         SwitcherFullscreenScopeTests.run(suite)
+        SwitcherExclusiveFullscreenTests.run(suite)
         SwitcherQuickCommitTests.run(suite)
         SwitcherRememberedSelectionTests.run(suite)
         ScrollingTitleMotionTests.run(suite)

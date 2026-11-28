@@ -131,6 +131,10 @@ final class AppSwitcher: ObservableObject {
     private var secureInputActionHotKeys: [GlobalShortcut: EventHotKeyRef] = [:]
     private var secureInputGuardedModifiers: Set<GlobalShortcutModifiers> = []
     private var secureInputRegistrationFailed = false
+    private lazy var exclusiveFullscreenWatch = SwitcherExclusiveFullscreenWatch { [weak self] in
+        self?.setYieldsToExclusiveFullscreen($0)
+    }
+    private var yieldsToExclusiveFullscreen = false
 
     /// The little state the tap thread needs to route an event without
     /// touching the main thread; mutated only under `routeLock`.
@@ -140,6 +144,7 @@ final class AppSwitcher: ObservableObject {
     private var routeWindowShortcut = GlobalShortcut.switcherWindowDefault
     private var routeCapturing = false
     private var routeCanStartSession = false
+    private var routeYieldsToExclusiveFullscreen = false
     private var routePendingSessionStart: SwitcherPendingSessionStart?
     private var sessionStartGeneration: UInt64 = 0
     private var secureInputReplays = SwitcherSecureInputReplayState()
@@ -259,7 +264,10 @@ final class AppSwitcher: ObservableObject {
             // still hides them from the tap, so the Carbon stand-ins are
             // watched for whenever a session can start.
             if !Self.replacesNativeHotkeys(appsShortcut: shortcut, windowShortcut: windowShortcut) {
+                stopObservingExclusiveFullscreen()
                 SystemShortcutTakeover.setWanted([], for: SystemShortcutTakeover.switcherSource)
+            } else {
+                exclusiveFullscreenWatch.start()
             }
             secureInputWatch.start()
             applyNativeHotkeySuppressionIfTapLive()
@@ -274,6 +282,7 @@ final class AppSwitcher: ObservableObject {
         } else {
             windowInventory.stop()
             secureInputWatch.stop()
+            stopObservingExclusiveFullscreen()
             restoreNativeHotkeys()
             stopObservingKeyboardLayout()
             stopObservingWake()
@@ -286,11 +295,12 @@ final class AppSwitcher: ObservableObject {
     /// resets its own permissions, so a revoked Accessibility grant can never
     /// leave a live tap behind.
     func suspend() {
+        routeLock.withLock { routeCanStartSession = false }
         windowInventory.stop()
         secureInputWatch.stop()
+        stopObservingExclusiveFullscreen()
         restoreNativeHotkeys()
         stopObservingWake()
-        routeLock.withLock { routeCanStartSession = false }
         removeTap()
     }
 
@@ -311,6 +321,32 @@ final class AppSwitcher: ObservableObject {
         }
         if capturing { unregisterSecureInputHotKeys() }
         applyNativeHotkeySuppressionIfTapLive()
+    }
+
+    // MARK: - Exclusive full screen
+
+    private func stopObservingExclusiveFullscreen() {
+        exclusiveFullscreenWatch.stop()
+        setYieldsToExclusiveFullscreen(false)
+    }
+
+    private func setYieldsToExclusiveFullscreen(_ yields: Bool) {
+        guard yields != yieldsToExclusiveFullscreen else { return }
+        yieldsToExclusiveFullscreen = yields
+        routeLock.withLock {
+            routeYieldsToExclusiveFullscreen = yields
+            if yields {
+                routePendingSessionStart = nil
+                secureInputReplays.invalidate()
+            }
+        }
+        if yields {
+            if sessionActive { cancelSession() }
+            // A disabled tap can still own Dock hotkeys from before its timeout.
+            restoreNativeHotkeys()
+        } else {
+            applyNativeHotkeySuppressionIfTapLive()
+        }
     }
 
     // MARK: - Event tap
@@ -520,6 +556,7 @@ final class AppSwitcher: ObservableObject {
                 // Recording uses the focused AppKit field, even under secure
                 // input. Keep native keys out of its way while Carbon yields.
                 secureInputEnabled: IsSecureEventInputEnabled() && secureInputHotKeys.isEmpty && !capturing,
+                exclusiveFullscreen: yieldsToExclusiveFullscreen,
                 appsShortcut: apps,
                 windowShortcut: windows,
                 liveEntries: SymbolicHotKeys.entries(for: SwitcherNativeSymbolicHotKey.ids) ?? []),
@@ -589,7 +626,9 @@ final class AppSwitcher: ObservableObject {
             canStartSession: canStart, capturingShortcut: capturing,
             secureInputEnabled: IsSecureEventInputEnabled(),
             registrationFailed: secureInputRegistrationFailed)
-        guard wanted else {
+        // No Carbon stand-in either while a game owns the display: macOS's
+        // switcher answers ⌘Tab there, as it does without any stand-in.
+        guard wanted, !yieldsToExclusiveFullscreen else {
             unregisterSecureInputHotKeys()
             return
         }
@@ -709,7 +748,8 @@ final class AppSwitcher: ObservableObject {
             let matchesWindows = !matchesApps
                 && (routeWindowShortcut.matches(event: event, allowingExtraShift: true)
                     || routeWindowShortcut.matchesByCharacter(event: event))
-            guard routeCanStartSession, !routeCapturing, matchesApps || matchesWindows else { return nil }
+            guard routeCanStartSession, !routeCapturing, !routeYieldsToExclusiveFullscreen,
+                  matchesApps || matchesWindows else { return nil }
             let matched = matchesApps ? routeShortcut : routeWindowShortcut
             let owner = sessionShortcut ?? routePendingSessionStart?.shortcut ?? secureInputReplays.shortcut ?? matched
             return (secureInputReplays.enqueue(shortcut: owner), owner, matched)
@@ -772,18 +812,21 @@ final class AppSwitcher: ObservableObject {
                 guard let self else { return }
                 if self.sessionActive { self.cancelSession() }
                 self.releaseSecureInputActionsIfIdle()
+                // Full screen may have ended while the tap was disabled.
+                self.applyNativeHotkeySuppressionIfTapLive()
             }
             return Unmanaged.passUnretained(event)
         }
 
-        let (active, shortcut, windowShortcut, capturing, canStartSession, hasPendingStart) = routeLock.withLock {
+        let (active, shortcut, windowShortcut, capturing, canStartSession, hasPendingStart,
+             yieldsToExclusiveFullscreen) = routeLock.withLock {
             (routeSessionActive, routeShortcut, routeWindowShortcut, routeCapturing,
-             routeCanStartSession, routePendingSessionStart != nil)
+             routeCanStartSession, routePendingSessionStart != nil, routeYieldsToExclusiveFullscreen)
         }
         // A shortcut field in Settings has the keyboard: hand every key
         // straight through so the user can record this feature's own
         // combination instead of opening the switcher with it.
-        if capturing { return Unmanaged.passUnretained(event) }
+        if capturing || yieldsToExclusiveFullscreen { return Unmanaged.passUnretained(event) }
         if !active {
             guard canStartSession else { return Unmanaged.passUnretained(event) }
             if type == .flagsChanged {
@@ -843,24 +886,28 @@ final class AppSwitcher: ObservableObject {
             let matchesWindows = !matchesApps
                 && (windowShortcut.matches(event: event, allowingExtraShift: true)
                     || windowShortcut.matchesByCharacter(event: event))
-            let matchesShortcut = matchesApps || matchesWindows
-            guard matchesShortcut || hasPendingStart else {
+            let match: (shortcut: GlobalShortcut, scope: SwitcherSessionScope, reversed: Bool)?
+            if matchesApps {
+                let reversed = shortcut.shiftIsNavigationModifier && event.flags.contains(.maskShift)
+                match = (shortcut, .allApps, reversed)
+            } else if matchesWindows {
+                let positional = windowShortcut.matches(event: event, allowingExtraShift: true)
+                let reversed = SwitcherSupport.windowNavigationDelta(
+                    positionalMatch: positional,
+                    shiftIsNavigationModifier: windowShortcut.shiftIsNavigationModifier,
+                    shiftHeld: event.flags.contains(.maskShift)
+                ) < 0
+                match = (windowShortcut, .frontmostApp, reversed)
+            } else {
+                match = nil
+            }
+            guard match != nil || hasPendingStart else {
                 return Unmanaged.passUnretained(event)
             }
-            let pendingKeyDecision = routeLock.withLock { () -> SwitcherPendingKeyDecision in
-                let decision = SwitcherSupport.pendingKeyDecision(
-                    sessionIsActive: routeSessionActive,
-                    hasPendingStart: routePendingSessionStart != nil,
-                    commitWhenReady: routePendingSessionStart?.commitWhenReady ?? false,
-                    matchesShortcut: matchesShortcut
-                )
-                if decision == .cancelAndSwallow {
-                    routePendingSessionStart = nil
-                    secureInputReplays.invalidate()
-                }
-                return decision
+            guard let claim = claimPendingKey(match: match, secureInputReplay: secureInputReplay) else {
+                return Unmanaged.passUnretained(event)
             }
-            switch pendingKeyDecision {
+            switch claim.decision {
             case .cancelAndSwallow:
                 DispatchQueue.main.async { [weak self] in self?.releaseSecureInputActionsIfIdle() }
                 return nil
@@ -869,68 +916,13 @@ final class AppSwitcher: ObservableObject {
             case .handleActiveSession:
                 break
             case .routeShortcut:
-                guard matchesShortcut else { return Unmanaged.passUnretained(event) }
-
-                let requestedShortcut = matchesWindows ? windowShortcut : shortcut
-                let requestedScope: SwitcherSessionScope = matchesWindows ? .frontmostApp : .allApps
-                let reversed: Bool
-                if matchesWindows {
-                    let positional = windowShortcut.matches(event: event, allowingExtraShift: true)
-                    reversed = SwitcherSupport.windowNavigationDelta(
-                        positionalMatch: positional,
-                        shiftIsNavigationModifier: windowShortcut.shiftIsNavigationModifier,
-                        shiftHeld: event.flags.contains(.maskShift)
-                    ) < 0
-                } else {
-                    reversed = shortcut.shiftIsNavigationModifier && event.flags.contains(.maskShift)
-                }
-
-                var generationToSchedule: UInt64?
-                let claimedWhileInactive = routeLock.withLock { () -> Bool in
-                    guard !routeSessionActive else { return false }
-                    if var pending = routePendingSessionStart {
-                        if pending.commitWhenReady {
-                            sessionStartGeneration &+= 1
-                            let generation = sessionStartGeneration
-                            routePendingSessionStart = SwitcherPendingSessionStart(
-                                generation: generation,
-                                shortcut: requestedShortcut,
-                                scope: requestedScope,
-                                reversed: reversed,
-                                isSecureInputReplay: secureInputReplay
-                            )
-                            generationToSchedule = generation
-                            return true
-                        }
-                        if pending.scope == requestedScope {
-                            let next = pending.additionalNavigation + (reversed ? -1 : 1)
-                            pending.additionalNavigation = max(-64, min(64, next))
-                            routePendingSessionStart = pending
-                        }
-                        return true
+                if let generation = claim.generation {
+                    // The active tap returns before main performs TCC or window enumeration.
+                    DispatchQueue.main.async { [weak self] in
+                        self?.beginPendingSession(generation: generation)
                     }
-                    sessionStartGeneration &+= 1
-                    let generation = sessionStartGeneration
-                    routePendingSessionStart = SwitcherPendingSessionStart(
-                        generation: generation,
-                        shortcut: requestedShortcut,
-                        scope: requestedScope,
-                        reversed: reversed,
-                        isSecureInputReplay: secureInputReplay
-                    )
-                    generationToSchedule = generation
-                    return true
                 }
-                if claimedWhileInactive {
-                    if let generationToSchedule {
-                        // The active tap returns before the main queue performs
-                        // any TCC, window-server or Accessibility work.
-                        DispatchQueue.main.async { [weak self] in
-                            self?.beginPendingSession(generation: generationToSchedule)
-                        }
-                    }
-                    return nil
-                }
+                return nil
             }
         }
 
@@ -941,9 +933,42 @@ final class AppSwitcher: ObservableObject {
         return verdict
     }
 
+    /// The window scan can hand the keyboard back while the tap is matching
+    /// a shortcut. Check ownership under the same lock that claims the press.
+    private func claimPendingKey(match: (shortcut: GlobalShortcut, scope: SwitcherSessionScope, reversed: Bool)?,
+                                 secureInputReplay: Bool) -> (decision: SwitcherPendingKeyDecision, generation: UInt64?)? {
+        routeLock.withLock {
+            guard routeCanStartSession, !routeCapturing, !routeYieldsToExclusiveFullscreen else { return nil }
+            let decision = SwitcherSupport.pendingKeyDecision(
+                sessionIsActive: routeSessionActive, hasPendingStart: routePendingSessionStart != nil,
+                commitWhenReady: routePendingSessionStart?.commitWhenReady ?? false, matchesShortcut: match != nil)
+            if decision == .cancelAndSwallow {
+                routePendingSessionStart = nil
+                secureInputReplays.invalidate()
+            }
+            guard decision == .routeShortcut else { return (decision, nil) }
+            guard let match else { return nil }
+            if var pending = routePendingSessionStart, !pending.commitWhenReady {
+                if pending.scope == match.scope {
+                    let next = pending.additionalNavigation + (match.reversed ? -1 : 1)
+                    pending.additionalNavigation = max(-64, min(64, next))
+                    routePendingSessionStart = pending
+                }
+                return (.swallow, nil)
+            }
+            sessionStartGeneration &+= 1
+            routePendingSessionStart = SwitcherPendingSessionStart(
+                generation: sessionStartGeneration, shortcut: match.shortcut, scope: match.scope,
+                reversed: match.reversed, isSecureInputReplay: secureInputReplay)
+            return (.routeShortcut, sessionStartGeneration)
+        }
+    }
+
     /// Main-thread side of the tap; reached only for events `route` decided
     /// the switcher may care about.
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // A hand-back on main can precede an active-session event dispatched by the tap.
+        guard !yieldsToExclusiveFullscreen else { return Unmanaged.passUnretained(event) }
         // With Accessibility revoked the AX lookups behind a session would hang
         // and freeze input; pass events through and drop any session that was
         // open. Cached flag: a live TCC round-trip is too heavy per key.
@@ -1203,10 +1228,11 @@ final class AppSwitcher: ObservableObject {
 
         let list = SwitcherSupport.orderedForSession(windows, currentID: listedSource?.id)
         let handedOverPending = routeLock.withLock({ () -> SwitcherPendingSessionStart? in
-            guard SwitcherSupport.isCurrentSessionStart(
-                generation: generation,
-                pendingGeneration: routePendingSessionStart?.generation
-            ) else { return nil }
+            guard !routeYieldsToExclusiveFullscreen,
+                  SwitcherSupport.isCurrentSessionStart(
+                      generation: generation,
+                      pendingGeneration: routePendingSessionStart?.generation
+                  ) else { return nil }
             var pending = routePendingSessionStart
             pending?.reconcileReplayedModifiers(CGEventSource.flagsState(.combinedSessionState))
             routePendingSessionStart = nil

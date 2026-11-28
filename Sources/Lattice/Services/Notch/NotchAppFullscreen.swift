@@ -9,6 +9,7 @@ import CoreGraphics
 /// on the current desktop, so Space queries never report them.
 enum NotchAppFullscreen {
     struct WindowInfo: Equatable {
+        var number: CGWindowID = 0
         let ownerPID: pid_t
         let layer: Int
         let alpha: Double
@@ -39,24 +40,34 @@ enum NotchAppFullscreen {
         let ownPID = ProcessInfo.processInfo.processIdentifier
         guard let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier,
               frontmostPID != ownPID,
-              let entries = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
-                                                       kCGNullWindowID) as? [[String: Any]]
+              let windows = onScreenWindows(ownerPID: frontmostPID),
+              !windows.isEmpty
         else { return [] }
-        let windows: [WindowInfo] = entries.compactMap { entry in
-            guard let pid = (entry[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value, pid == frontmostPID,
+        return coveredDisplays(windows: windows, frontmostPID: frontmostPID, ownPID: ownPID,
+                               displays: activeDisplays())
+    }
+
+    /// The windows on screen, front to back, or nil when the window server
+    /// did not answer. Shared with the window switcher's exclusive full
+    /// screen check.
+    static func onScreenWindows(ownerPID: pid_t? = nil) -> [WindowInfo]? {
+        guard let entries = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
+                                                       kCGNullWindowID) as? [[String: Any]]
+        else { return nil }
+        return entries.compactMap { entry in
+            guard let pid = (entry[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
+                  ownerPID == nil || ownerPID == pid,
+                  let number = (entry[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let layer = (entry[kCGWindowLayer as String] as? NSNumber)?.intValue,
                   let bounds = entry[kCGWindowBounds as String] as? NSDictionary,
                   let rect = CGRect(dictionaryRepresentation: bounds as CFDictionary)
             else { return nil }
             let alpha = (entry[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 1
-            return WindowInfo(ownerPID: pid, layer: layer, alpha: alpha, bounds: rect)
+            return WindowInfo(number: number, ownerPID: pid, layer: layer, alpha: alpha, bounds: rect)
         }
-        guard !windows.isEmpty else { return [] }
-        return coveredDisplays(windows: windows, frontmostPID: frontmostPID, ownPID: ownPID,
-                               displays: activeDisplays())
     }
 
-    private static func activeDisplays() -> [CGDirectDisplayID: CGRect] {
+    static func activeDisplays() -> [CGDirectDisplayID: CGRect] {
         var count: UInt32 = 0
         guard CGGetActiveDisplayList(0, nil, &count) == .success, count > 0 else { return [:] }
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
