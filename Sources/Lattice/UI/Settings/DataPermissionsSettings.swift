@@ -21,9 +21,11 @@ struct DataPermissionsSettings: View {
     @State private var uninstallFailedBody = ""
     @State private var working = false
     @State private var exported: Bool?
+    @State private var savedConfigFile: Bool?
     @State private var importFailed = false
     @State private var pendingImport: [String: Any]?
     @State private var showImportConfirm = false
+    @State private var showConfigFileConfirm = false
 
     private var backup: BackupFeatureStrings {
         FeatureStrings.backup(l10n.language)
@@ -58,6 +60,15 @@ struct DataPermissionsSettings: View {
         return copy(.exportDescription)
     }
 
+    private var configFileDisplayPath: String {
+        (SettingsBackup.configFileURL.path as NSString).abbreviatingWithTildeInPath
+    }
+
+    private var configFileDescription: String {
+        if let savedConfigFile { return savedConfigFile ? backup.exported : backup.exportFailed }
+        return configFileDisplayPath
+    }
+
     private func confirmAndUninstall() {
         let alert = NSAlert()
         alert.alertStyle = .informational
@@ -87,6 +98,7 @@ struct DataPermissionsSettings: View {
                         description: importFailed ? backup.invalidFile : copy(.importDescription),
                         descriptionIsError: importFailed, actionTitle: backup.compactImport(l10n.language)) {
                             exported = nil
+                            savedConfigFile = nil
                             importFailed = false
                             let parent = dialogWindow.window ?? NSApp.mainWindow
                             guard let url = SettingsBackup.runImportPanel(over: parent) else { return }
@@ -99,9 +111,18 @@ struct DataPermissionsSettings: View {
                     DataPermissionsRow(symbol: "square.and.arrow.up", title: backup.exportButton,
                         description: exportDescription, descriptionIsError: exported == false,
                         actionTitle: backup.compactExport(l10n.language)) {
+                            savedConfigFile = nil
                             importFailed = false
                             let parent = dialogWindow.window ?? NSApp.mainWindow
                             exported = SettingsBackup.runExportPanel(over: parent)
+                        }
+                    DataSettingsDivider()
+                    DataPermissionsRow(symbol: "doc.badge.gearshape", title: backup.configFileButton,
+                        description: configFileDescription, descriptionIsError: savedConfigFile == false,
+                        actionTitle: backup.configFileAction) {
+                            exported = nil
+                            importFailed = false
+                            showConfigFileConfirm = true
                         }
                 }
                 DataSettingsSection(title: FeatureStrings.hub(l10n.language).tabPermissions) {
@@ -134,8 +155,21 @@ struct DataPermissionsSettings: View {
                 }
             }
         } message: {
-            Text(SettingsBackupSupport.omitsDynamicIslandSettings(pendingImport ?? [:])
-                 ? backup.importMissingIslandBody : backup.importConfirmBody)
+            let body = SettingsBackupSupport.omitsDynamicIslandSettings(pendingImport ?? [:])
+                ? backup.importMissingIslandBody : backup.importConfirmBody
+            if FileManager.default.fileExists(atPath: SettingsBackup.configFileURL.path) {
+                Text(body + "\n\n" + backup.importConfigFileNotice)
+            } else {
+                Text(body)
+            }
+        }
+        .alert(backup.configFileConfirmTitle, isPresented: $showConfigFileConfirm) {
+            Button(l10n.s.uninstallerCancel, role: .cancel) {}
+            Button(backup.configFileAction) {
+                savedConfigFile = SettingsBackup.writeConfigFile()
+            }
+        } message: {
+            Text(String(format: backup.configFileConfirmFormat, configFileDisplayPath))
         }
     }
 }

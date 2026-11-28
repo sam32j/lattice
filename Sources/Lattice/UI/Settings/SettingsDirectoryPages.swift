@@ -304,7 +304,9 @@ extension SettingsDirectory {
                                                  s.advancedClearButton,
                                                  DataPermissionsStrings.localized(language).data,
                                                  FeatureStrings.backup(language).title,
-                                                 s.advancedUninstallButton]),
+                                                 FeatureStrings.backup(language).configFileButton,
+                                                 s.advancedUninstallButton],
+                                      aliases: ["xdg", "config file", "dotfiles", "settings file"]),
             ]),
         ]
     }
