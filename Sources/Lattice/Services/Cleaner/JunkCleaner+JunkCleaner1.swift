@@ -71,17 +71,17 @@ extension JunkCleaner {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard !cancellation.isCancelled else { return }
             let audioPluginIDs = Self.installedAudioPluginBundleIDs()
-            let installed = Self.installedBundleIDs().union(audioPluginIDs)
+            let installedApps = Self.installedBundleIDs()
             // A path claimed by the leftover scan must not reappear under
             // caches or logs: one path, one row, one decision.
             var claimed = Set<String>()
             let categories: [(CleanerSupport.Category, () -> [Item])] = [
                 (.leftovers, {
-                    let found = Self.scanLeftovers(installed: installed)
+                    let found = Self.scanLeftovers(installedApps: installedApps, audioPluginIDs: audioPluginIDs)
                     claimed.formUnion(found.map { $0.url.standardizedFileURL.path })
                     return found
                 }),
-                (.loginItems, { Self.scanOrphanedLaunchPlists(installed: installed) }),
+                (.loginItems, { Self.scanOrphanedLaunchPlists(installed: installedApps.union(audioPluginIDs)) }),
                 (.caches, { Self.scanCaches(excluding: claimed, audioPluginIDs: audioPluginIDs) }),
                 (.logs, { Self.scanLogs(excluding: claimed) }),
                 (.developer, { Self.scanDeveloperJunk() }),
@@ -124,13 +124,11 @@ extension JunkCleaner {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let fm = FileManager.default
-            // A plugin may have been installed since the scan, even if the
-            // only selected row was a recommended cache. Only leftovers
-            // also need the application inventory.
-            let hasLeftovers = chosen.contains { $0.category == .leftovers }
-            let needsPluginIDs = hasLeftovers || chosen.contains { $0.category == .caches }
+            // Refresh plugin ownership even for a cache-only selection. Share one
+            // fresh app inventory across the removal checks that need it.
+            let needsPluginIDs = chosen.contains { $0.category == .leftovers || $0.category == .caches }
             let audioPluginIDs = needsPluginIDs ? Self.installedAudioPluginBundleIDs() : []
-            let installed = hasLeftovers ? Self.installedBundleIDs().union(audioPluginIDs) : []
+            lazy var installedApps = Self.installedBundleIDs()
             var freed: Int64 = 0
             var failed = 0
             var stubborn: [Item] = []
@@ -144,7 +142,7 @@ extension JunkCleaner {
             }
 
             for item in chosen where item.category != .trash {
-                guard Self.mayRemove(item, installed: installed, audioPluginIDs: audioPluginIDs) else {
+                guard Self.mayRemove(item, installedApps: installedApps, audioPluginIDs: audioPluginIDs) else {
                     failed += 1
                     continue
                 }
@@ -152,7 +150,7 @@ extension JunkCleaner {
                     // Retire the job first so nothing keeps running from a
                     // plist that is about to leave; then the regular move.
                     Self.bootoutUserAgent(item.url)
-                    guard Self.mayRemove(item, installed: installed, audioPluginIDs: audioPluginIDs) else {
+                    guard Self.mayRemove(item, installedApps: installedApps, audioPluginIDs: audioPluginIDs) else {
                         failed += 1
                         continue
                     }
@@ -175,7 +173,7 @@ extension JunkCleaner {
                 failed += stubborn.count
             } else if !stubborn.isEmpty {
                 let stillSafe = stubborn.filter {
-                    Self.mayRemove($0, installed: installed, audioPluginIDs: audioPluginIDs)
+                    Self.mayRemove($0, installedApps: installedApps, audioPluginIDs: audioPluginIDs)
                 }
                 failed += stubborn.count - stillSafe.count
                 Self.trashViaFinder(stillSafe.map(\.url))
@@ -199,7 +197,8 @@ extension JunkCleaner {
     /// Exact match guard against ever removing a critical root, even if a
     /// scanner bug produced one. Items are already scoped by construction;
     /// this is the last line of defense.
-    static func mayRemove(_ item: Item, installed: Set<String>, audioPluginIDs: Set<String>) -> Bool {
+    static func mayRemove(_ item: Item, installedApps: @autoclosure () -> Set<String>,
+                          audioPluginIDs: Set<String>) -> Bool {
         let url = item.url
         let path = url.standardizedFileURL.path
         let home = NSHomeDirectory()
@@ -219,10 +218,18 @@ extension JunkCleaner {
         let isLeftoverCache = item.category == .leftovers
             && url.deletingLastPathComponent().lastPathComponent == "Caches"
         if item.category == .caches || isLeftoverCache {
-            guard !CleanerPolicy.isExcludedCacheEntry(url.lastPathComponent,
-                                                      audioPluginIDs: audioPluginIDs) else { return false }
+            let name = url.lastPathComponent
+            guard !CleanerPolicy.isExcludedCacheEntry(name, audioPluginIDs: audioPluginIDs) else { return false }
+            // If the vendor's app was uninstalled, a fresh scan would now offer
+            // its sibling cache as an unchecked leftover.
+            if item.category == .caches, item.recommended, !audioPluginIDs.isEmpty,
+               let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: false),
+               !CleanerSupport.isProtectedBundleID(owner),
+               CleanerSupport.sharesVendorNamespace(candidate: owner, withInstalled: audioPluginIDs),
+               !hasLivingOwner(owner, installed: installedApps()) { return false }
         }
         if item.category == .leftovers {
+            let installed = isLeftoverCache ? installedApps() : installedApps().union(audioPluginIDs)
             guard isDirectLeftoverRootChild(url),
                   CleanerSupport.isAttributableBundleID(item.detail),
                   !CleanerSupport.isProtectedBundleID(item.detail),

@@ -133,16 +133,21 @@ extension JunkCleaner {
         }
     }
 
-    static func scanLeftovers(installed: Set<String>) -> [Item] {
+    static func scanLeftovers(installedApps: Set<String>, audioPluginIDs: Set<String>) -> [Item] {
         let fm = FileManager.default
         let libraries = [NSHomeDirectory() + "/Library", systemLibrary]
+        let installed = installedApps.union(audioPluginIDs)
         var found: [Item] = []
         for library in libraries {
             for root in leftoverRoots {
                 let dir = library + "/" + root.path
+                // Plugin cache families are excluded directly. Treating a plugin as a
+                // vendor-wide cache owner would promote its siblings to recommended caches.
+                let owners = root.path == "Caches" ? installedApps : installed
                 appendLeftovers(in: dir,
                                 usesContainerMetadata: root.usesContainerMetadata,
-                                installed: installed,
+                                installed: owners,
+                                audioPluginIDs: audioPluginIDs,
                                 fm: fm,
                                 into: &found)
             }
@@ -153,6 +158,7 @@ extension JunkCleaner {
     static func appendLeftovers(in dir: String,
                                         usesContainerMetadata: Bool,
                                         installed: Set<String>,
+                                        audioPluginIDs: Set<String>,
                                         fm: FileManager,
                                         into found: inout [Item]) {
         let root = URL(fileURLWithPath: dir, isDirectory: true)
@@ -164,7 +170,7 @@ extension JunkCleaner {
         for url in entries {
             let entry = url.lastPathComponent
             guard !entry.hasPrefix("."), CleanerScanPrivacy.mayInspect(entry) else { continue }
-            if isCacheRoot && CleanerPolicy.isExcludedCacheEntry(entry) { continue }
+            if isCacheRoot && CleanerPolicy.isExcludedCacheEntry(entry, audioPluginIDs: audioPluginIDs) { continue }
             let values = try? url.resourceValues(forKeys: keys)
             guard values?.isSymbolicLink != true else { continue }
             if let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: usesContainerMetadata) {

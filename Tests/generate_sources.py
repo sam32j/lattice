@@ -1524,6 +1524,7 @@ def main():
           + "}\n")
     cleaner = "Sources/Lattice/Services/Cleaner/JunkCleaner.swift"
     write("CleanerEligibilityBodies.swift", "import Foundation\nextension CleanerEligibilityTests {\n"
+          + declaration(cleaner, "    struct Item:")
           + declaration(cleaner, "    private static let leftoverRoots:", closing="]")
           + declaration(cleaner, "    private static func isDirectLeftoverRootChild(")
           + declaration(cleaner, "    private static func hasLivingOwner(")
@@ -1537,8 +1538,8 @@ def main():
           + declaration(cleaner, "    private static func mayRemove(")
           + "static func owner(_ url: URL, metadata: Bool = false) -> String? {\n"
           + "CleanerOwnership.owner(at: url, usesContainerMetadata: metadata)\n}\n"
-          + "static func canRemove(_ item: Item, installed: Set<String> = [], audioPluginIDs: Set<String> = []) -> Bool {\n"
-          + "mayRemove(item, installed: installed, audioPluginIDs: audioPluginIDs)\n}\n}\n")
+          + "static func canRemove(_ item: Item, installed: @autoclosure () -> Set<String> = [], audioPluginIDs: Set<String> = []) -> Bool {\n"
+          + "mayRemove(item, installedApps: installed(), audioPluginIDs: audioPluginIDs)\n}\n}\n")
     write("CleanerScanFlow.swift", "import Foundation\nextension CleanerScanFlowTests {\n"
           + declaration(cleaner, "    enum Phase:")
           + "final class Scanner: ScannerState {\nstatic let shared = Scanner()\n"
